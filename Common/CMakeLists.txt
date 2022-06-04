@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.4)
+
+set(COMMON_SOURCES ${COMMON_SOURCES} ${CMAKE_CURRENT_LIST_DIR}/Network/Networking.cpp ${CMAKE_CURRENT_LIST_DIR}/Network/Networking.h PARENT_SCOPE)
+if(WIN32)
+set(ADDITIONAL_LIBS ${ADDITIONAL_LIBS} ws2_32.lib PARENT_SCOPE)
+endif()
