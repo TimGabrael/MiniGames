@@ -3,7 +3,8 @@
 #include "../CustomWidgets/CustomTextInput.h"
 #include "SettingsFrame.h"
 #include "LobbyFrame.h"
-
+#include "CommonCollection.h"
+#include "../Application.h"
 
 
 
@@ -118,6 +119,11 @@ void MainMenuFrame::OnCreateClick()
     QMainWindow* main = (QMainWindow*)parentWidget();
     main->layout()->removeWidget(this);
     delete this;
+
+    auto app = MainApplication::GetInstance();
+    TestPacket pack("Hallo Ich Bins aus der funktion");
+    app->socket.SendPacket(&pack);
+
 
     LobbyFrame* lobby = new LobbyFrame(main);
 }

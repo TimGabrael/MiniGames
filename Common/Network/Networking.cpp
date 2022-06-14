@@ -1,4 +1,6 @@
 #include "Networking.h"
+#include <random>
+#include "../logging.h"
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -12,12 +14,43 @@
 #include <arpa/inet.h>
 #define INVALID_SOCKET -1LL
 typedef int SOCKET;
+#define ARRAYSIZE(arr) (sizeof(arr) / sizeof(arr[0]))
 #endif
-#include "../logging.h"
 
 #ifndef _WIN32
 static void closesocket(uintptr_t socket) { close(socket); }
 #endif
+
+
+
+
+
+ValidationPacket::ValidationPacket() : PacketParent(PacketType::CHECK, sizeof(ValidationPacket))
+{
+	std::random_device dev;
+	std::mt19937 rng(dev());
+	std::uniform_int_distribution<std::mt19937::result_type> dist(0, UINT32_MAX);
+	for (int i = 0; i < ARRAYSIZE(data); i++)
+	{
+		data[i] = dist(rng);
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 void CleanUp()
 {
@@ -129,8 +162,8 @@ NetError TCPSocket::Connect(const char* host, const char* port)
 	NetError err = BuildTcpSocket(host, port, sock, &info);
 	if (err != NetError::OK) return err;
 
-
 	int res = connect(sock, info->ai_addr, (int)info->ai_addrlen);
+
 
 	if (res != 0)
 	{
@@ -147,12 +180,25 @@ NetError TCPSocket::Connect(const char* host, const char* port)
 void TCPSocket::Disconnect()
 {
 	if (sock == INVALID_SOCKET) return;
-	closesocket(sock);	
+	closesocket(sock);
+	sock = INVALID_SOCKET;
 }
 void TCPSocket::SendPacket(PacketParent* pack)
 {
-	uint32_t size = sizeof(PacketHeader) + pack->header.size;
-	send(sock, (const char*)pack, size, 0);
+	if (sock == INVALID_SOCKET) return;
+
+	const uint32_t size = sizeof(PacketHeader) + pack->header.size;
+	uint32_t sendBytes = 0;
+	while (sendBytes < size)
+	{
+		uint32_t temp = send(sock, (const char*)pack, size, 0);
+		if (temp == -1)
+		{
+			this->Disconnect();
+			return;
+		}
+		sendBytes += temp;
+	}
 }
 
 
@@ -175,9 +221,9 @@ void TCPServerSocket::TCPServerListenToClient(void* server, Connection* conn)
 			return;
 		}
 		// the packet is finished at this point.
-		TestPacket* pack = (TestPacket*)cur->body.data();
-		std::cout << "pack: " << pack->buf << std::endl;
 
+		if (s->packetCallback)
+			s->packetCallback(s->userData, cur);
 	}
 }
 NetError TCPServerSocket::Create(const char* host, const char* port)
@@ -199,6 +245,28 @@ NetError TCPServerSocket::Create(const char* host, const char* port)
 
 	return NetError::OK;
 }
+void TCPServerSocket::TestClient(uintptr_t s)
+{
+	ValidationPacket packet;
+	send(s, (const char*)&packet, sizeof(ValidationPacket), 0);	// call the raw send function, as the bytes should not be interfered with
+	
+	char inBuf[sizeof(ValidationPacket)];
+	int readBytes = 0;
+	while (readBytes < sizeof(ValidationPacket))
+	{
+		int res = recv(s, inBuf + readBytes, sizeof(ValidationPacket) - readBytes, 0);
+		if(res == -1)
+		{
+			readBytes = -1;
+			break;
+		}
+		readBytes += res;
+	}
+	if (readBytes != -1)
+	{
+
+	}
+}
 NetError TCPServerSocket::AcceptConnection()
 {
 	if (listen(sock, 1) == -1)
@@ -207,10 +275,17 @@ NetError TCPServerSocket::AcceptConnection()
 	}
 
 	SOCKET conn = accept(sock, nullptr, nullptr);
-	if(conn != INVALID_SOCKET)
-		AddClient(conn);
+	if (conn != INVALID_SOCKET)
+	{
 
+		AddClient(conn);
+	}
 	return NetError::OK;
+}
+void TCPServerSocket::SetPacketCallback(PacketCallback cb, void* data)
+{
+	this->packetCallback = cb;
+	this->userData = data;
 }
 void TCPServerSocket::AddClient(uintptr_t connSocket)
 {

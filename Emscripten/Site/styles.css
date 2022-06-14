@@ -1,0 +1,92 @@
+
+
+:root,
+:root.dark{
+    --bg-color: #121222;
+    --header-bg-color: #404040;
+    --in-bg-color: #606080;
+    --btn-bg-color: #606080;
+    --text-color: #FFF;
+}
+:root.light{
+    --bg-color: #D0D0E0;
+    --header-bg-color: #808080;
+    --in-bg-color: #A0A0B0;
+    --btn-bg-color: #A0A0B0;
+    --text-color: #000;
+}
+
+html{
+    font-family: Arial;
+    font-size: 32px;
+}
+input, select, textarea, button{ font-family: inherit; font-size:inherit; color: inherit;}
+
+input 
+{
+    cursor:text;
+    border: 1px solid orange;
+}
+button 
+{
+    cursor: pointer;
+    border: 1px solid orange;
+}
+
+
+
+body{
+    margin: 0;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    -webkit-text-size-adjust: none;
+}
+
+
+
+.content{
+    display: flex;
+    flex-direction: column;
+    height: 80vh;
+    width: 100vw;
+    align-items: center;
+    justify-content: center;
+    
+
+}
+.header{
+    text-decoration: underline;
+    padding-bottom: 2rem;
+    font-size: 4rem;
+}
+.Input-Wrapper{
+    padding-bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
+}
+.block{
+    display: inline-block;
+    text-align: right;
+    margin: 0.5rem;
+}
+
+.block > input{
+    min-width: 300px;
+    min-height: 1.5rem;
+    background-color: var(--in-bg-color);
+}
+
+
+.content > button{
+    background-color: var(--btn-bg-color);
+    min-width: 200px;
+    min-height: 1.5rem;
+}
+.content > button:hover{
+    background-color: lightcoral;
+}
+.content > button:focus{
+    background-color: lightcoral;
+}
+
+

@@ -5,4 +5,5 @@ Android/.gradle
 Android/.idea
 Android/app/.cxx
 Android/app/build
+Android/app/libs
 Android/Common

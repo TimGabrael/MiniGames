@@ -13,6 +13,7 @@
 #include "CustomWidgets/CustomButton.h"
 #include "Frames/MainMenuFrame.h"
 #include "CommonCollection.h"
+#include "Application.h"
 
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
@@ -32,15 +33,13 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     this->setSizePolicy(sizePolicy);
     this->resize(1200, 800);
 
-    this->socket.Connect(DEBUG_IP, DEBUG_PORT);
+    auto app = MainApplication::GetInstance();
+    app->socket.Connect(DEBUG_IP, DEBUG_PORT);
     TestPacket pack("Hallo Ich Bins");
-    socket.SendPacket(&pack);
+    app->socket.SendPacket(&pack);
 
 
     MainMenuFrame* f = new MainMenuFrame(this);
-
-
-    
 }
 
 MainWindow::~MainWindow()

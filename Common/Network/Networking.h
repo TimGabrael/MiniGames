@@ -16,6 +16,10 @@ enum class NetError
 	E_READ,		// failed to Read bytes from socket
 };
 
+enum class PacketType
+{
+	CHECK = 0,
+};
 
 struct PacketHeader
 {
@@ -32,13 +36,21 @@ struct Packet
 
 struct PacketParent
 {
-	PacketParent(uint32_t type, uint32_t size) : header(type, size) { }
+	PacketParent(uint32_t type, uint32_t size) : header(type, size - sizeof(PacketParent)) { }
+	PacketParent(PacketType type, uint32_t size) : header((uint32_t)type, size - sizeof(PacketParent)) { }
 	PacketHeader header;
+};
+
+struct ValidationPacket : public PacketParent
+{
+	ValidationPacket();
+
+	uint32_t data[4];
 };
 
 struct TestPacket : public PacketParent
 {
-	TestPacket(const char* str) : PacketParent(1, sizeof(TestPacket) - sizeof(PacketParent))
+	TestPacket(const char* str) : PacketParent(1, sizeof(TestPacket))
 	{
 		memcpy(buf, str, 100);
 		buf[99] = '\00';
@@ -48,6 +60,7 @@ struct TestPacket : public PacketParent
 
 
 typedef void(*ConnectionFunc)(void* obj, struct Connection* conn);
+typedef void(*PacketCallback)(void* userData, Packet* pack);
 
 struct Connection
 {
@@ -80,6 +93,8 @@ public:
 	NetError Create(const char* host, const char* port);
 	NetError AcceptConnection();
 
+	void SetPacketCallback(PacketCallback cb, void* userData = nullptr);
+
 	void RemoveAll();
 
 	void Send(uint32_t clientIdx);
@@ -87,12 +102,17 @@ public:
 	static void TCPServerListenToClient(void* server, Connection* conn);
 
 private:
+
+	void TestClient(uintptr_t s);
+
 	void AddClient(uintptr_t connSocket);
 	void RemoveClient(uintptr_t connSocket);
 	void RemoveClientAtIdx(size_t idx);
 
 	void RemoveInListener(uintptr_t connSocket);
 
+	PacketCallback packetCallback;
+	void* userData;
 	uintptr_t sock;
 	std::mutex clientMut;
 	std::vector<Connection> clients;

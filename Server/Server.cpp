@@ -1,10 +1,19 @@
 #include <iostream>
 #include "CommonCollection.h"
 
+
+void PacketCB(void* userData, Packet* packet)
+{
+	TestPacket* pack = (TestPacket*)packet->body.data();
+	std::cout << "pack: " << pack->buf << std::endl;
+}
+
 int main()
 {
 	NetError err = NetError::OK;
 	TCPServerSocket server;
+
+	server.SetPacketCallback(PacketCB);
 
 	do
 	{
@@ -20,7 +29,7 @@ int main()
 	while (true)
 	{
 		server.AcceptConnection();
-		std::cout << "her" << std::endl;
+
 	}
 
 	return 0;

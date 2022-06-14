@@ -13,6 +13,4 @@ public:
     MainWindow(QWidget* parent = nullptr);
     ~MainWindow();
 
-private:
-    TCPSocket socket;
 };
