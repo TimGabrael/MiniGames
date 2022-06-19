@@ -10,7 +10,6 @@
 
 MainMenuFrame::MainMenuFrame(QMainWindow* MainWindow) : QWidget(MainWindow)
 {
-    // MainWindow->showFullScreen();
     verticalLayout = new QVBoxLayout(this);
     {
         verticalLayout->setSpacing(4);

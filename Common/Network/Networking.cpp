@@ -167,7 +167,7 @@ NetError TCPSocket::Connect(const char* host, const char* port)
 
 	if (res != 0)
 	{
-		LOG("Connection Failed ErrorCode: %d", errno);
+		LOG("Connection Failed ErrorCode: %d\n", errno);
 		closesocket(sock);
 
 		sock = INVALID_SOCKET;

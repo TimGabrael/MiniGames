@@ -16,12 +16,25 @@ struct PLUGIN_INFO
 #define EXPORT
 #endif
 
+
+
+struct PB_InitData
+{
+	int colorDepth;
+};
+
+
+
 class PluginClass
 {
 public:
 	virtual PLUGIN_INFO GetPluginInfos() = 0;
-	virtual void PluginInit(void* backendData) = 0;
-	virtual void PluginRender(void* backendData) = 0;
+	virtual void Init(void* backendData) = 0;
+	virtual void Resize(void* backendData) = 0;
+	virtual void Render(void* backendData) = 0;
+
+	int sizeX, sizeY;
+	int framebufferX, framebufferY;
 };
 
 

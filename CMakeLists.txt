@@ -28,10 +28,11 @@ if(WIN32 OR (UNIX AND NOT ANDROID))
 	set(CMAKE_AUTOMOC ON)
 	set(CMAKE_AUTORCC ON)
 
-	find_package(Qt6 COMPONENTS Widgets)
-	find_package(Qt6 COMPONENTS Core)
-	find_package(Qt6 COMPONENTS Gui)
-	find_package(Qt6 COMPONENTS svg)
+	find_package(Qt6 REQUIRED COMPONENTS Widgets)
+	find_package(Qt6 REQUIRED COMPONENTS Core)
+	find_package(Qt6 REQUIRED COMPONENTS Gui)
+	find_package(Qt6 REQUIRED COMPONENTS svg)
+	find_package(Qt6 REQUIRED COMPONENTS OpenGLWidgets)
 	
 
 	if(APPLE) #MACOS

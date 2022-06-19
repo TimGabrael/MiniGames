@@ -6,6 +6,11 @@
 #include <qlayout.h>
 #include "Application.h"
 #include <iostream>
+#include <qopengl.h>
+#include <qopenglcontext.h>
+#include <qopenglcontext_platform.h>
+#include <qopenglfunctions.h>
+
 
 QColor AlphaBlend(const QColor& top, const QColor& bottom, float topalpha)
 {

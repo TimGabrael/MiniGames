@@ -14,6 +14,8 @@
 #include "Frames/MainMenuFrame.h"
 #include "CommonCollection.h"
 #include "Application.h"
+#include "util/PluginLoader.h"
+#include "Frames/PluginFrame.h"
 
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
@@ -34,12 +36,20 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     this->resize(1200, 800);
 
     auto app = MainApplication::GetInstance();
-    app->socket.Connect(DEBUG_IP, DEBUG_PORT);
-    TestPacket pack("Hallo Ich Bins");
-    app->socket.SendPacket(&pack);
+    //app->socket.Connect(DEBUG_IP, DEBUG_PORT);
+    //TestPacket pack("Hallo Ich Bins");
+    //app->socket.SendPacket(&pack);
 
+    LoadAllPlugins();
 
-    MainMenuFrame* f = new MainMenuFrame(this);
+    auto& pl = GetPlugins();
+    if (!pl.empty()) {
+        PluginFrame* f = new PluginFrame(this, pl.at(0));
+    }
+    else
+    {
+        MainMenuFrame* f = new MainMenuFrame(this);
+    }
 }
 
 MainWindow::~MainWindow()
