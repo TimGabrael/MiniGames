@@ -9,7 +9,7 @@
 #include "stb_truetype.h"
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
 #include "stb_image_resize.h"
-
+#include "../logging.h"
 
 
 void InitializeOpenGL()
@@ -19,7 +19,7 @@ void InitializeOpenGL()
 
 GLuint CreateProgram(const char* vertexShaderSrc, const char* fragmentShaderSrc)
 {
-	GLuint resultProgram;
+	GLuint resultProgram = 0;
 	GLuint vertexShader;
 	GLuint fragmentShader;
 	int  success;
@@ -31,7 +31,7 @@ GLuint CreateProgram(const char* vertexShaderSrc, const char* fragmentShaderSrc)
 	if (!success)
 	{
 		glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
+		LOG("ERROR::SHADER::VERTEX::COMPILATION_FAILED %s\n", infoLog);
 		glDeleteShader(vertexShader);
 		return 0;
 	}
@@ -43,7 +43,7 @@ GLuint CreateProgram(const char* vertexShaderSrc, const char* fragmentShaderSrc)
 	if (!success)
 	{
 		glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
+		LOG("ERROR::SHADER::VERTEX::COMPILATION_FAILED %s\n", infoLog);
 		glDeleteShader(vertexShader); glDeleteShader(fragmentShader);
 		return 0;
 	}
@@ -72,8 +72,8 @@ bool LoadModel(tinygltf::Model& model, const char* filename)
 		res = loader.LoadASCIIFromFile(&model, &error, &warning, filename);
 	}
 
-	if (!warning.empty()) std::cout << "WARNING WHILE LOAD GLTF FILE: " << filename << " warning: " << warning << std::endl;
-	if (!error.empty()) std::cout << "FAILED TO LOAD GLTF FILE: " << filename << " error: " << error << std::endl;
+	if (!warning.empty()) LOG("WARNING WHILE LOAD GLTF FILE: %s warning: %s\n", filename, warning);
+	if (!error.empty()) LOG("FAILED TO LOAD GLTF FILE: %s error: %s\n", filename, error);
 
 
 	return res;

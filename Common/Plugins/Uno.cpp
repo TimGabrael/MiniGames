@@ -1,7 +1,8 @@
 #include "Uno.h"
 #include <string>
 #include "Graphics/Helper.h"
-#include <iostream>
+#include "logging.h" // REMINDER USE THIS !! USE THIS NOT <iostream> !!
+#include "Graphics/PbrRendering.h"
 
 PLUGIN_EXPORT_DEFINITION(UnoPlugin, "a3fV-6giK-10Eb-2rdT");
 
@@ -79,6 +80,8 @@ void UnoPlugin::Init(void* backendData)
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (const void*)0);
 
 	glBindVertexArray(0);
+
+	InitializePbrPipeline();
 
 	
 }

@@ -15,6 +15,8 @@ add_subdirectory(3rd-party/glad)
 include_directories(${GLAD_INCLUDE_DIRS})
 link_libraries(${GLAD_LIBRARIES})
 
+include_directories(3rd-party/glm)
+
 include_directories(Common)
 add_subdirectory(Common)
 

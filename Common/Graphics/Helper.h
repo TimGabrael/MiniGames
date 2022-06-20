@@ -12,3 +12,4 @@ void InitializeOpenGL();
 GLuint CreateProgram(const char* vertexShader, const char* fragmentShader);
 
 bool LoadModel(tinygltf::Model& model, const char* filename);
+
