@@ -17,10 +17,22 @@ struct PLUGIN_INFO
 #endif
 
 
-
-struct PB_InitData
+struct PB_MouseData
 {
-	int colorDepth;
+	int xPos;
+	int yPos;
+	int dx;
+	int dy;
+
+	bool lPressed = false;
+	bool rPressed = false;
+	bool mPressed = false;
+	bool lDown = false;
+	bool rDown = false;
+	bool mDown = false;
+	bool lUp = false;
+	bool rUp = false;
+	bool mUp = false;
 };
 
 
@@ -32,6 +44,8 @@ public:
 	virtual void Init(void* backendData) = 0;
 	virtual void Resize(void* backendData) = 0;
 	virtual void Render(void* backendData) = 0;
+
+	virtual void MouseCallback(const PB_MouseData* mData) = 0;
 
 	int sizeX, sizeY;
 	int framebufferX, framebufferY;

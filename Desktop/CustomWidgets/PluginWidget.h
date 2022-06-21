@@ -22,6 +22,14 @@ private:
 
 	void HandleTimer();
 
+
+	void mouseMoveEvent(QMouseEvent* event) override;
+	void mousePressEvent(QMouseEvent* event) override;
+	void mouseReleaseEvent(QMouseEvent* event) override;
+
+
+	PB_MouseData mouseData;
 	PluginClass* plugin = nullptr;
 	bool isInitialized = false;
+	bool hovered = false;
 };

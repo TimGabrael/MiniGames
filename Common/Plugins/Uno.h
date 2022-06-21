@@ -11,6 +11,7 @@ class UnoPlugin : public PluginClass
 	virtual void Resize(void* backendData) override;
 	virtual void Render(void* backendData) override;
 
+	virtual void MouseCallback(const PB_MouseData* mData) override;
 	bool initialized = false;
 };
 
