@@ -15,10 +15,21 @@ struct UBO
 	glm::mat4 view;
 	glm::vec3 camPos;
 };
+struct UBOParams
+{
+	glm::vec4 lightDir;
+	float exposure;
+	float gamma;
+	float prefilteredCubeMipLevels;
+	float scaleIBLAmbient;
+	float debugViewInputs;
+	float debugViewEquation;
+};
+
 void InitializePbrPipeline();
 
 // returns Internal Object
 void* CreateInternalPBRFromFile(const char* filename, float scale);
 void CleanUpInternal(void* internalObj);
 
-void DrawPBRModel(void* internalObj, GLuint UboUniform, GLuint environmentMap);
+void DrawPBRModel(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform, GLuint environmentMap);

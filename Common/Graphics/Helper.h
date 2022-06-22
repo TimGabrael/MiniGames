@@ -25,7 +25,6 @@ void DrawSkybox(GLuint skybox, const glm::mat4& viewMat, const glm::mat4& projMa
 
 struct Camera
 {
-	void SetPosition(float x, float y, float z);
 	void SetRotation(float yaw, float pitch, float roll);
 	void SetPerspective(float fov, float aspect, float znear, float zfar);
 
@@ -37,8 +36,8 @@ struct Camera
 
 	glm::mat4 perspective;
 	glm::mat4 view;
-private:
 	glm::vec3 pos = glm::vec3(0.0f, 0.0f, 0.0f);
+private:
 	glm::vec3 front = glm::vec3(1.0f, 0.0f, 0.0f);
 	glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
 	float yaw = 0.0f;

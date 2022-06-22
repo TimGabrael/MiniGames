@@ -154,7 +154,7 @@ uniform mat4 view;\n\
 \
 void main(){\
 	TexCoords = aPos;\
-	vec4 pos = projection * view * vec4(aPos, 1.0);\
+	vec4 pos = projection * view * vec4(aPos, 0.0);\
 	gl_Position = pos.xyww;\
 }";
 
@@ -406,10 +406,7 @@ void DrawSkybox(GLuint skybox, const glm::mat4& viewMat, const glm::mat4& projMa
 	glDepthFunc(GL_LESS);
 }
 
-void Camera::SetPosition(float x, float y, float z)
-{
-	pos.x = x; pos.y = y; pos.z = z;
-}
+
 void Camera::SetRotation(float yaw, float pitch, float roll)
 {
 	this->yaw = yaw; this->pitch = pitch; this->roll = roll;

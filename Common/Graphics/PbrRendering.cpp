@@ -7,6 +7,27 @@
 #define MAX_NUM_JOINTS 128u
 
 
+
+struct MaterialUniformData
+{
+	glm::vec4 baseColorFactor;
+	glm::vec4 emissiveFactor;
+	glm::vec4 diffuseFactor;
+	glm::vec4 specularFactor;
+	float workflow;
+	int baseColorTextureSet;
+	int physicalDescriptorTextureSet;
+	int normalTextureSet;
+	int occlusionTextureSet;
+	int emissiveTextureSet;
+	float metallicFactor;
+	float roughnessFactor;
+	float alphaMask;
+	float alphaMaskCutoff;
+};
+
+
+
 struct Node;
 struct BoundingBox {
 	glm::vec3 min;
@@ -71,6 +92,7 @@ struct Material
 	float roughnessFactor = 1.0f;
 	glm::vec4 baseColorFactor = { 1.0f, 1.0f, 1.0f, 1.0f };
 	glm::vec4 emissiveFactor = { 1.0f, 1.0f, 1.0f, 1.0f };
+	GLuint uniformBuffer;
 	GLuint baseColorTexture;
 	GLuint metallicRoughnessTexture;
 	GLuint normalTexture;
@@ -112,13 +134,14 @@ struct Primitive {
 
 struct Mesh {
 	Mesh(const glm::mat4& matrix) {
+
 		uniformBlock.matrix = matrix;
 		glGenBuffers(1, &uniformBuffer.handle);
 		glBindBuffer(GL_UNIFORM_BUFFER, uniformBuffer.handle);
 		glBufferData(GL_UNIFORM_BUFFER, sizeof(uniformBlock), &uniformBlock, GL_DYNAMIC_DRAW);
 
-		uniformBuffer.mapped = glMapBuffer(GL_UNIFORM_BUFFER, GL_READ_WRITE);
-		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+		// uniformBuffer.mapped = glMapBuffer(GL_UNIFORM_BUFFER, GL_READ_WRITE);
 	}
 	void SetBoundingBox(const glm::vec3& min, const glm::vec3& max) {
 		bb.min = min; bb.max = max; bb.valid = true;
@@ -144,13 +167,13 @@ struct Mesh {
 };
 
 struct Node {
-	Node* parent;
+	Node* parent = nullptr;
 	uint32_t index;
 	std::vector<Node*> children;
 	glm::mat4 matrix;
 	std::string name;
-	Mesh* mesh;
-	Skin* skin;
+	Mesh* mesh = nullptr;
+	Skin* skin = nullptr;
 	int32_t skinIndex = -1;
 	glm::vec3 translation{};
 	glm::vec3 scale{ 1.0f };
@@ -174,6 +197,8 @@ struct Node {
 	void update()
 	{
 		if (mesh) {
+			glBindBuffer(GL_UNIFORM_BUFFER, mesh->uniformBuffer.handle);
+			mesh->uniformBuffer.mapped = glMapBuffer(GL_UNIFORM_BUFFER, GL_READ_WRITE);
 			glm::mat4 m = getMatrix();
 			if (skin) {
 				mesh->uniformBlock.matrix = m;
@@ -190,7 +215,9 @@ struct Node {
 				memcpy(mesh->uniformBuffer.mapped, &mesh->uniformBlock, sizeof(mesh->uniformBlock));
 			}
 			else {
+				memset(mesh->uniformBuffer.mapped, 0, sizeof(mesh->uniformBlock));
 				memcpy(mesh->uniformBuffer.mapped, &m, sizeof(glm::mat4));
+				auto result = glUnmapBuffer(GL_UNIFORM_BUFFER);
 			}
 		}
 
@@ -234,6 +261,7 @@ struct Animation
 
 struct InternalPBR
 {
+	GLuint vao;
 	GLuint vertexBuffer;
 	struct Indices {
 		GLuint indexBuffer;
@@ -299,14 +327,13 @@ void LoadTextures(const tinygltf::Model& m, InternalPBR& pbr)
 		glGenTextures(1, &curTexture);
 		glBindTexture(GL_TEXTURE_2D, curTexture);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, 16);
-
 		if (tex.sampler != -1)
 		{
 			const tinygltf::Sampler& smpl = m.samplers.at(tex.sampler);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, smpl.wrapS);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, smpl.wrapT);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, smpl.minFilter);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, smpl.magFilter);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		}
 		else
 		{
@@ -318,7 +345,7 @@ void LoadTextures(const tinygltf::Model& m, InternalPBR& pbr)
 
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, img.width, img.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, img.image.data());
 		glGenerateMipmap(GL_TEXTURE_2D);
-		
+
 		if (deleteBuffer)
 		{
 			delete buffer;
@@ -410,6 +437,27 @@ void LoadMaterials(tinygltf::Model& m, InternalPBR& pbr)
 				}
 			}
 		}
+
+		glGenBuffers(1, &material.uniformBuffer);
+		glBindBuffer(GL_UNIFORM_BUFFER, material.uniformBuffer);
+		glBufferData(GL_UNIFORM_BUFFER, sizeof(MaterialUniformData), nullptr, GL_STATIC_DRAW);
+		MaterialUniformData* data = (MaterialUniformData*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
+		data->baseColorFactor = material.baseColorFactor;
+		data->emissiveFactor = material.emissiveFactor;
+		data->diffuseFactor = material.extension.diffuseFactor;
+		data->specularFactor = glm::vec4(material.extension.specularFactor, 0.0f);
+		data->workflow = 1.0f;
+		data->baseColorTextureSet = material.texCoordSets.baseColor;
+		data->physicalDescriptorTextureSet = material.pbrWorkflows.metallicRoughness ? material.texCoordSets.metallicRoughness :  material.texCoordSets.specularGlossiness;
+		data->normalTextureSet = material.texCoordSets.normal;
+		data->occlusionTextureSet = material.texCoordSets.occlusion;
+		data->emissiveTextureSet = material.texCoordSets.emissive;
+		data->metallicFactor = material.metallicFactor;
+		data->roughnessFactor = material.roughnessFactor;
+		data->alphaMask = material.alphaMode;
+		data->alphaMaskCutoff = material.alphaCutoff;
+		glUnmapBuffer(GL_UNIFORM_BUFFER);
+		
 
 		pbr.materials.push_back(material);
 	}
@@ -575,7 +623,7 @@ void LoadNode(InternalPBR& pbr, Node* parent, const tinygltf::Node& node, uint32
 						}
 						default:
 							// Not supported by spec
-							std::cerr << "Joint component type " << jointComponentType << " not supported!" << std::endl;
+							LOG("Joint component type %d not supported\n", jointComponentType);
 							break;
 						}
 					}
@@ -886,7 +934,6 @@ void* CreateInternalPBRFromFile(const char* filename, float scale)
 	{
 		GetNodeProps(model.nodes[scene.nodes[i]], model, vertexCount, indexCount);
 	}
-
 	loaderInfo.vertexBuffer = new Vertex[vertexCount];
 	loaderInfo.indexBuffer = new uint32_t[indexCount];
 	for (size_t i = 0; i < scene.nodes.size(); i++) {
@@ -912,11 +959,37 @@ void* CreateInternalPBRFromFile(const char* filename, float scale)
 	size_t indexBufferSize = indexCount * sizeof(uint32_t);
 	pbr.indices.count = indexCount;
 
+
+	glGenVertexArrays(1, &pbr.vao);
+	glBindVertexArray(pbr.vao);
+
 	glGenBuffers(1, &pbr.vertexBuffer);
 	glGenBuffers(1, &pbr.indices.indexBuffer);
-	
+
+	glBindBuffer(GL_ARRAY_BUFFER, pbr.vertexBuffer);
 	glBufferData(GL_ARRAY_BUFFER, vertexBufferSize, loaderInfo.vertexBuffer, GL_STATIC_DRAW);
+
+	
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
+	glEnableVertexAttribArray(2);
+	glEnableVertexAttribArray(3);
+	glEnableVertexAttribArray(4);
+	glEnableVertexAttribArray(5);
+	
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)0);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)(3 * sizeof(float)));
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)(6 * sizeof(float)));
+	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)(8 * sizeof(float)));
+	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)(10 * sizeof(float)));
+	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)(14 * sizeof(float)));
+
+
+	glBindVertexArray(0);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pbr.indices.indexBuffer);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexBufferSize, loaderInfo.indexBuffer, GL_STATIC_DRAW);
+
 
 	delete[] loaderInfo.vertexBuffer;
 	delete[] loaderInfo.indexBuffer;
@@ -992,7 +1065,7 @@ void CleanUpInternal(void* internalObj)
 
 
 
-const char* pbrVertexShader = "#version 450\n\
+const char* pbrVertexShader = "#version 440 core\n\
 \n\
 layout(location = 0) in vec3 inPos;\n\
 layout(location = 1) in vec3 inNormal;\n\
@@ -1037,7 +1110,7 @@ void main()\n\
 			inWeight0.y * node.jointMatrix[int(inJoint0.y)] +\n\
 			inWeight0.z * node.jointMatrix[int(inJoint0.z)] +\n\
 			inWeight0.w * node.jointMatrix[int(inJoint0.w)];\n\
-\n\
+	\n\
 		locPos = ubo.model * node.matrix * skinMat * vec4(inPos, 1.0);\n\
 		outNormal = normalize(transpose(inverse(mat3(ubo.model * node.matrix * skinMat))) * inNormal);\n\
 	}\n\
@@ -1053,7 +1126,7 @@ void main()\n\
 }";
 
 
-const char* pbrFragmentShader = "#version 450\n\
+const char* pbrFragmentShader = "#version 440 core\n\
 \n\
 layout(location = 0) in vec3 inWorldPos;\n\
 layout(location = 1) in vec3 inNormal;\n\
@@ -1445,6 +1518,7 @@ void main()\n\
 		}\n\
 	}\n\
 \n\
+	// outColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);\n\
 }";
 
 
@@ -1470,22 +1544,25 @@ enum GLTF_Textures
 
 struct OpenGlPipelineObjects
 {
-	GLuint vao;
 	GLuint shaderProgram;
+	GLuint brdfLutMap;
 	GLint UBOLoc; GLint UBONodeLoc; GLint UBOParamsLoc;
 	GLint MaterialLoc;
+	Material* currentBoundMaterial = nullptr;
 }g_pipeline;
+static constexpr size_t sd = sizeof(UBO);
 void InitializePbrPipeline()
 {
 	g_pipeline.shaderProgram = CreateProgram(pbrVertexShader, pbrFragmentShader);
 
-	glGenVertexArrays(1, &g_pipeline.vao);
-	glBindVertexArray(g_pipeline.vao);
-
 	g_pipeline.UBOLoc = glGetUniformBlockIndex(g_pipeline.shaderProgram, "UBO");
+	glUniformBlockBinding(g_pipeline.shaderProgram, g_pipeline.UBOLoc, g_pipeline.UBOLoc);
 	g_pipeline.UBONodeLoc = glGetUniformBlockIndex(g_pipeline.shaderProgram, "UBONode");
+	glUniformBlockBinding(g_pipeline.shaderProgram, g_pipeline.UBONodeLoc, g_pipeline.UBONodeLoc);
 	g_pipeline.UBOParamsLoc = glGetUniformBlockIndex(g_pipeline.shaderProgram, "UBOParams");
+	glUniformBlockBinding(g_pipeline.shaderProgram, g_pipeline.UBOParamsLoc, g_pipeline.UBOParamsLoc);
 	g_pipeline.MaterialLoc = glGetUniformBlockIndex(g_pipeline.shaderProgram, "Material");
+	glUniformBlockBinding(g_pipeline.shaderProgram, g_pipeline.MaterialLoc, g_pipeline.MaterialLoc);
 	std::cout << "UBO/UBONode/UBOParams/Material Locs: " << g_pipeline.UBOLoc << ", " << g_pipeline.UBONodeLoc << ", " << g_pipeline.UBOParamsLoc << ", " << g_pipeline.MaterialLoc << std::endl;
 
 	GLint curTexture = glGetUniformLocation(g_pipeline.shaderProgram, "samplerIrradiance");
@@ -1513,32 +1590,45 @@ void InitializePbrPipeline()
 	if (curTexture == -1) { LOG("failed to Get Texture Loaction of GLTF shader program\n"); }
 	glProgramUniform1i(g_pipeline.shaderProgram, curTexture, EMISSIVE_MAP);
 
-
-
-	glEnableVertexAttribArray(0);
-	glEnableVertexAttribArray(1);
-	glEnableVertexAttribArray(2);
-	glEnableVertexAttribArray(3);
-	glEnableVertexAttribArray(4);
-	glEnableVertexAttribArray(5);
-
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (const void*)0);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (const void*)(3 * sizeof(float)));
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (const void*)(6 * sizeof(float)));
-	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (const void*)(8 * sizeof(float)));
-	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (const void*)(10 * sizeof(float)));
-	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (const void*)(14 * sizeof(float)));
-
-	glBindVertexArray(0);
+	g_pipeline.brdfLutMap = GenerateBRDF_LUT(512);
 }
 
 
+void BindMaterial(Material* mat)
+{
+	glBindBuffer(GL_UNIFORM_BUFFER, mat->uniformBuffer);
+	glBindBufferBase(GL_UNIFORM_BUFFER, g_pipeline.MaterialLoc, mat->uniformBuffer);
+
+	glActiveTexture(GL_TEXTURE0 + GLTF_Textures::AO_MAP);
+	glBindTexture(GL_TEXTURE_2D, mat->occlusionTexture);
+
+	glActiveTexture(GL_TEXTURE0 + GLTF_Textures::COLOR_MAP);
+	glBindTexture(GL_TEXTURE_2D, mat->baseColorTexture);
+	
+	glActiveTexture(GL_TEXTURE0 + GLTF_Textures::EMISSIVE_MAP);
+	glBindTexture(GL_TEXTURE_2D, mat->emissiveTexture);
+
+	glActiveTexture(GL_TEXTURE0 + GLTF_Textures::IRRADIANCE);
+	glBindTexture(GL_TEXTURE_2D, mat->baseColorTexture);
+
+	glActiveTexture(GL_TEXTURE0 + GLTF_Textures::NORMAL_MAP);
+	glBindTexture(GL_TEXTURE_2D, mat->normalTexture);
+
+	glActiveTexture(GL_TEXTURE0 + GLTF_Textures::PHYSICAL_DESCRIPTOR_MAP);
+	//glBindTexture(GL_TEXTURE_2D, mat->metallicRoughnessTexture);
+	glBindTexture(GL_TEXTURE_2D, mat->extension.diffuseTexture);
+}
 void DrawNode(InternalPBR* realObj, Node* node)
 {	
 	if (node->mesh) {
-		glUniformBlockBinding(g_pipeline.shaderProgram, 1, node->mesh->uniformBuffer.handle);
+		glBindBufferRange(GL_UNIFORM_BUFFER, g_pipeline.UBONodeLoc, node->mesh->uniformBuffer.handle, 0, sizeof(Mesh::UniformBlock));
 		for (Primitive* primitive : node->mesh->primitives)
 		{
+			if (g_pipeline.currentBoundMaterial != &primitive->material)
+			{
+				BindMaterial(&primitive->material);
+				g_pipeline.currentBoundMaterial = &primitive->material;
+			}
 			glDrawElements(GL_TRIANGLES, primitive->indexCount, GL_UNSIGNED_INT, (const void*)(primitive->firstIndex * sizeof(uint32_t)));
 		}
 	}
@@ -1546,23 +1636,37 @@ void DrawNode(InternalPBR* realObj, Node* node)
 		DrawNode(realObj, child);
 	}
 }
-void DrawPBRModel(void* internalObj, GLuint UboUniform, GLuint environmentMap)
+void DrawPBRModel(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform, GLuint environmentMap)
 {
 	InternalPBR* realObj = (InternalPBR*)internalObj;
 
 	glUseProgram(g_pipeline.shaderProgram);
-	glBindVertexArray(g_pipeline.vao);
 
-	glBindBuffer(GL_ARRAY_BUFFER, realObj->vertexBuffer);
+	glBindVertexArray(realObj->vao);
+
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, realObj->indices.indexBuffer);
 
-	glUniformBlockBinding(g_pipeline.shaderProgram, 0, UboUniform);
+
+	//glBindBuffer(GL_UNIFORM_BUFFER, UboUniform);
+	glBindBufferRange(GL_UNIFORM_BUFFER, g_pipeline.UBOLoc, UboUniform, 0, sizeof(UBO));
+	//glBindBufferBase(GL_UNIFORM_BUFFER, g_pipeline.UBOLoc, UboUniform);
+
+	//glBindBuffer(GL_UNIFORM_BUFFER, UBOParamsUniform);
+	glBindBufferRange(GL_UNIFORM_BUFFER, g_pipeline.UBOParamsLoc, UBOParamsUniform, 0, sizeof(UBOParams));
+	//glBindBufferBase(GL_UNIFORM_BUFFER, g_pipeline.UBOParamsLoc, UBOParamsUniform);
+
+
+
+	glActiveTexture(GL_TEXTURE0 + GLTF_Textures::PREFILTERED_MAP);
+
 	glBindTexture(GL_TEXTURE_CUBE_MAP, environmentMap);
 
-	
+
+	glActiveTexture(GL_TEXTURE0 + GLTF_Textures::BRDF_LUT);
+	glBindTexture(GL_TEXTURE_2D, g_pipeline.brdfLutMap);
+
 	for (auto& node : realObj->nodes) {
 		DrawNode(realObj, node);
 	}
-
 
 }
