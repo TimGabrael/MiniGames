@@ -18,6 +18,131 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/string_cast.hpp>
 
+#include "UiRendering.h"
+#include "PbrRendering.h"
+
+
+
+
+const char* brdf_lutVertexShader = "#version 330 core\n\
+out vec2 UV;\
+void main()\
+{\
+	UV = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2);\
+	gl_Position = vec4(UV * 2.0f - 1.0f, 0.0f, 1.0f);\
+}";
+
+const char* brdf_lutFragmentShader = "#version 330 core\n\
+in vec2 UV;\n\
+out vec4 outColor;\n\
+const uint NUM_SAMPLES = 1024u;\n\
+\n\
+const float PI = 3.1415926536;\n\
+\n\
+float random(vec2 co)\n\
+{\n\
+	float a = 12.9898;\n\
+	float b = 78.233;\n\
+	float c = 43758.5453;\n\
+	float dt = dot(co.xy, vec2(a, b));\n\
+	float sn = mod(dt, 3.14);\n\
+	return fract(sin(sn) * c);\n\
+}\n\
+\n\
+vec2 hammersley2d(uint i, uint N)\n\
+{\n\
+	uint bits = (i << 16u) | (i >> 16u);\n\
+	bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);\n\
+	bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);\n\
+	bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);\n\
+	bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);\n\
+	float rdi = float(bits) * 2.3283064365386963e-10;\n\
+	return vec2(float(i) / float(N), rdi);\n\
+}\n\
+\n\
+vec3 importanceSample_GGX(vec2 Xi, float roughness, vec3 normal)\n\
+{\n\
+	float alpha = roughness * roughness;\n\
+	float phi = 2.0 * PI * Xi.x + random(normal.xz) * 0.1;\n\
+	float cosTheta = sqrt((1.0 - Xi.y) / (1.0 + (alpha * alpha - 1.0) * Xi.y));\n\
+	float sinTheta = sqrt(1.0 - cosTheta * cosTheta);\n\
+	vec3 H = vec3(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);\n\
+\n\
+	vec3 up = abs(normal.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);\n\
+	vec3 tangentX = normalize(cross(up, normal));\n\
+	vec3 tangentY = normalize(cross(normal, tangentX));\n\
+	return normalize(tangentX * H.x + tangentY * H.y + normal * H.z);\n\
+}\n\
+float G_SchlicksmithGGX(float dotNL, float dotNV, float roughness)\n\
+{\n\
+	float k = (roughness * roughness) / 2.0;\n\
+	float GL = dotNL / (dotNL * (1.0 - k) + k);\n\
+	float GV = dotNV / (dotNV * (1.0 - k) + k);\n\
+	return GL * GV;\n\
+}\n\
+\n\
+vec2 BRDF(float NoV, float roughness)\n\
+{\n\
+	const vec3 N = vec3(0.0, 0.0, 1.0);\n\
+	vec3 V = vec3(sqrt(1.0 - NoV * NoV), 0.0, NoV);\n\
+	vec2 LUT = vec2(0.0);\n\
+	for (uint i = 0u; i < NUM_SAMPLES; i++) {\n\
+		vec2 Xi = hammersley2d(i, NUM_SAMPLES);\n\
+		vec3 H = importanceSample_GGX(Xi, roughness, N);\n\
+		vec3 L = 2.0 * dot(V, H) * H - V;\n\
+		float dotNL = max(dot(N, L), 0.0);\n\
+		float dotNV = max(dot(N, V), 0.0);\n\
+		float dotVH = max(dot(V, H), 0.0);\n\
+		float dotNH = max(dot(H, N), 0.0);\n\
+		if (dotNL > 0.0) {\n\
+			float G = G_SchlicksmithGGX(dotNL, dotNV, roughness);\n\
+			float G_Vis = (G * dotVH) / (dotNH * dotNV);\n\
+			float Fc = pow(1.0 - dotVH, 5.0);\n\
+			LUT += vec2((1.0 - Fc) * G_Vis, Fc * G_Vis);\n\
+		}\n\
+	}\n\
+	return LUT / float(NUM_SAMPLES);\n\
+}\n\
+void main()\n\
+{\
+	outColor = vec4(BRDF(UV.s, 1.0 - UV.t), 0.0, 1.0);\
+}";
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 static const char* cubemapVS = "#version 330 core\n\
@@ -82,11 +207,14 @@ void InitializeOpenGL()
 {
 	gladLoadGL();
 
+	InitializePbrPipeline();
+	InitializeUiPipeline();
 
 	g_helper.cubemapProgram = CreateProgram(cubemapVS, cubemapFS);
 
 	g_helper.projIdx = glGetUniformLocation(g_helper.cubemapProgram, "projection");
 	g_helper.viewIdx = glGetUniformLocation(g_helper.cubemapProgram, "view");
+
 
 	glGenVertexArrays(1, &g_helper.skyboxVAO);
 	glGenBuffers(1, &g_helper.cubeVertexBuffer);
@@ -207,6 +335,59 @@ GLuint LoadCubemap(const std::vector<const char*>& faces)
 }
 
 
+GLuint GenerateBRDF_LUT(int dim)
+{
+	GLuint framebuffer;
+	glGenFramebuffers(1, &framebuffer);
+	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
+	GLuint brdfLut;
+	glGenTextures(1, &brdfLut);
+	glBindTexture(GL_TEXTURE_2D, brdfLut);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16, dim, dim, 0, GL_RGBA, GL_FLOAT, nullptr);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);	// not quite sure what i should use here
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);	// not quite sure what i should use here
+
+
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, 0);
+
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, brdfLut, 0);
+	GLenum drawBuffers = GL_COLOR_ATTACHMENT0;
+	glDrawBuffers(1, &drawBuffers);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+		LOG("FAILED TO CREATE FRAMEBUFFER OBJECT\n");
+		return 0;
+	}
+	GLuint shader = CreateProgram(brdf_lutVertexShader, brdf_lutFragmentShader);
+
+	glUseProgram(shader);
+	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+	glViewport(0, 0, dim, dim);
+
+
+
+
+	glDrawArrays(GL_TRIANGLES, 0, 3);
+
+	
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	glDeleteProgram(shader);
+	glDeleteFramebuffers(1, &framebuffer);
+
+
+	return brdfLut;
+}
+
+
+
+
+
+
 void DrawSkybox(GLuint skybox, const glm::mat4& viewMat, const glm::mat4& projMat)
 {
 	glDepthFunc(GL_LEQUAL);
@@ -216,7 +397,6 @@ void DrawSkybox(GLuint skybox, const glm::mat4& viewMat, const glm::mat4& projMa
 	glUniformMatrix4fv(g_helper.viewIdx, 1, false, (const GLfloat*)&viewMat);
 	glUniformMatrix4fv(g_helper.projIdx, 1, false, (const GLfloat*)&projMat);
 
-	
 
 	glBindVertexArray(g_helper.skyboxVAO);
 	glActiveTexture(GL_TEXTURE0);

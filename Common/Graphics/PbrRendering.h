@@ -15,10 +15,10 @@ struct UBO
 	glm::mat4 view;
 	glm::vec3 camPos;
 };
+void InitializePbrPipeline();
 
 // returns Internal Object
 void* CreateInternalPBRFromFile(const char* filename, float scale);
 void CleanUpInternal(void* internalObj);
 
-void InitializePbrPipeline();
 void DrawPBRModel(void* internalObj, GLuint UboUniform, GLuint environmentMap);

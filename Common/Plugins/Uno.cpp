@@ -3,6 +3,7 @@
 #include "Graphics/Helper.h"
 #include "logging.h" // REMINDER USE THIS !! USE THIS NOT <iostream> !!
 #include "Graphics/PbrRendering.h"
+#include "Graphics/UiRendering.h"
 
 PLUGIN_EXPORT_DEFINITION(UnoPlugin, "a3fV-6giK-10Eb-2rdT");
 
@@ -21,6 +22,7 @@ struct UnoGlobals
 	Camera playerCam;
 	UBO uniformData;
 	GLuint skybox;
+	GLuint brdfTexture;
 	void* gltfModel;
 }g_objs;
 
@@ -38,15 +40,17 @@ void UnoPlugin::Init(void* backendData)
 	g_objs.playerCam.UpdateViewMatrix();
 
 
-	g_objs.skybox = LoadCubemap({
-		"Assets/TestCubemap/right.jpg",
-		"Assets/TestCubemap/left.jpg",
-		"Assets/TestCubemap/top.jpg",
-		"Assets/TestCubemap/bottom.jpg",
-		"Assets/TestCubemap/front.jpg",
-		"Assets/TestCubemap/back.jpg" });
+	//g_objs.skybox = LoadCubemap({
+	//	"Assets/TestCubemap/right.jpg",
+	//	"Assets/TestCubemap/left.jpg",
+	//	"Assets/TestCubemap/top.jpg",
+	//	"Assets/TestCubemap/bottom.jpg",
+	//	"Assets/TestCubemap/front.jpg",
+	//	"Assets/TestCubemap/back.jpg" });
 
-	InitializePbrPipeline();
+
+	g_objs.brdfTexture = GenerateBRDF_LUT(512);
+
 	// g_objs.gltfModel = CreateInternalPBRFromFile("Assets/test.gltf", 10.0f);
 }
 
@@ -68,8 +72,13 @@ void UnoPlugin::Render(void* backendData)
 	//	DrawPBRModel(g_objs.gltfModel, g_objs.uniform, g_objs.environmentMap);
 
 
+	DebugDrawTexture(g_objs.brdfTexture);
 
-	DrawSkybox(g_objs.skybox, g_objs.playerCam.view, g_objs.playerCam.perspective);
+	//DrawSkybox(g_objs.skybox, g_objs.playerCam.view, g_objs.playerCam.perspective);
+
+
+	
+
 }
 
 

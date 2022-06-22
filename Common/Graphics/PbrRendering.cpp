@@ -1448,11 +1448,32 @@ void main()\n\
 }";
 
 
+// uniform samplerCube samplerIrradiance;
+// uniform samplerCube prefilteredMap; 
+// uniform sampler2D samplerBRDFLUT; 
+// uniform sampler2D colorMap;
+// uniform sampler2D physicalDescriptorMap; 
+// uniform sampler2D normalMap; 
+// uniform sampler2D aoMap; 
+// uniform sampler2D emissiveMap;
+enum GLTF_Textures
+{
+	IRRADIANCE,
+	PREFILTERED_MAP,
+	BRDF_LUT,
+	COLOR_MAP,
+	PHYSICAL_DESCRIPTOR_MAP,
+	NORMAL_MAP,
+	AO_MAP,
+	EMISSIVE_MAP,
+};
+
 struct OpenGlPipelineObjects
 {
 	GLuint vao;
 	GLuint shaderProgram;
 	GLint UBOLoc; GLint UBONodeLoc; GLint UBOParamsLoc;
+	GLint MaterialLoc;
 }g_pipeline;
 void InitializePbrPipeline()
 {
@@ -1462,11 +1483,38 @@ void InitializePbrPipeline()
 	glBindVertexArray(g_pipeline.vao);
 
 	g_pipeline.UBOLoc = glGetUniformBlockIndex(g_pipeline.shaderProgram, "UBO");
+	g_pipeline.UBONodeLoc = glGetUniformBlockIndex(g_pipeline.shaderProgram, "UBONode");
 	g_pipeline.UBOParamsLoc = glGetUniformBlockIndex(g_pipeline.shaderProgram, "UBOParams");
-	std::cout << "UBO/UBOParamsLocs: " << g_pipeline.UBOLoc << ", " << g_pipeline.UBOParamsLoc << std::endl;
+	g_pipeline.MaterialLoc = glGetUniformBlockIndex(g_pipeline.shaderProgram, "Material");
+	std::cout << "UBO/UBONode/UBOParams/Material Locs: " << g_pipeline.UBOLoc << ", " << g_pipeline.UBONodeLoc << ", " << g_pipeline.UBOParamsLoc << ", " << g_pipeline.MaterialLoc << std::endl;
+
+	GLint curTexture = glGetUniformLocation(g_pipeline.shaderProgram, "samplerIrradiance");
+	if (curTexture == -1) { LOG("failed to Get Texture Loaction of GLTF shader program\n"); }
+	glProgramUniform1i(g_pipeline.shaderProgram, curTexture, IRRADIANCE);
+	curTexture = glGetUniformLocation(g_pipeline.shaderProgram, "prefilteredMap");
+	if (curTexture == -1) { LOG("failed to Get Texture Loaction of GLTF shader program\n"); }
+	glProgramUniform1i(g_pipeline.shaderProgram, curTexture, PREFILTERED_MAP);
+	curTexture = glGetUniformLocation(g_pipeline.shaderProgram, "samplerBRDFLUT");
+	if (curTexture == -1) { LOG("failed to Get Texture Loaction of GLTF shader program\n"); }
+	glProgramUniform1i(g_pipeline.shaderProgram, curTexture, BRDF_LUT);
+	curTexture = glGetUniformLocation(g_pipeline.shaderProgram, "colorMap");
+	if (curTexture == -1) { LOG("failed to Get Texture Loaction of GLTF shader program\n"); }
+	glProgramUniform1i(g_pipeline.shaderProgram, curTexture, COLOR_MAP);
+	curTexture = glGetUniformLocation(g_pipeline.shaderProgram, "physicalDescriptorMap");
+	if (curTexture == -1) { LOG("failed to Get Texture Loaction of GLTF shader program\n"); }
+	glProgramUniform1i(g_pipeline.shaderProgram, curTexture, PHYSICAL_DESCRIPTOR_MAP);
+	curTexture = glGetUniformLocation(g_pipeline.shaderProgram, "normalMap");
+	if (curTexture == -1) { LOG("failed to Get Texture Loaction of GLTF shader program\n"); }
+	glProgramUniform1i(g_pipeline.shaderProgram, curTexture, NORMAL_MAP);
+	curTexture = glGetUniformLocation(g_pipeline.shaderProgram, "aoMap");
+	if (curTexture == -1) { LOG("failed to Get Texture Loaction of GLTF shader program\n"); }
+	glProgramUniform1i(g_pipeline.shaderProgram, curTexture, AO_MAP);
+	curTexture = glGetUniformLocation(g_pipeline.shaderProgram, "emissiveMap");
+	if (curTexture == -1) { LOG("failed to Get Texture Loaction of GLTF shader program\n"); }
+	glProgramUniform1i(g_pipeline.shaderProgram, curTexture, EMISSIVE_MAP);
 
 
-	
+
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
 	glEnableVertexAttribArray(2);

@@ -16,6 +16,7 @@ bool LoadModel(tinygltf::Model& model, const char* filename);
 
 GLuint LoadCubemap(const std::vector<const char*>& faces);
 
+GLuint GenerateBRDF_LUT(int dim);
 
 
 void DrawSkybox(GLuint skybox, const glm::mat4& viewMat, const glm::mat4& projMat);
