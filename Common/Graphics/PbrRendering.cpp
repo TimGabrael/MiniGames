@@ -445,9 +445,9 @@ void LoadMaterials(tinygltf::Model& m, InternalPBR& pbr)
 		data.diffuseFactor = material.extension.diffuseFactor;
 		data.specularFactor = glm::vec4(material.extension.specularFactor, 0.0f);
 		data.baseColorTextureSet = material.baseColorTexture ? material.texCoordSets.baseColor : -1;
-		data.normalTextureSet = material.texCoordSets.normal ? material.texCoordSets.normal : -1;
-		data.occlusionTextureSet = material.texCoordSets.occlusion ? material.texCoordSets.occlusion : -1;
-		data.emissiveTextureSet = material.texCoordSets.emissive ? material.texCoordSets.emissive : -1;
+		data.normalTextureSet = material.normalTexture ? material.texCoordSets.normal : -1;
+		data.occlusionTextureSet = material.occlusionTexture ? material.texCoordSets.occlusion : -1;
+		data.emissiveTextureSet = material.emissiveTexture ? material.texCoordSets.emissive : -1;
 		data.metallicFactor = material.metallicFactor;
 		data.roughnessFactor = material.roughnessFactor;
 		data.alphaMask = (float)(material.alphaMode == Material::ALPHAMODE_MASK);

@@ -87,8 +87,8 @@ void UnoPlugin::Init(void* backendData)
 		"Assets/TestCubemap/front.jpg",
 		"Assets/TestCubemap/back.jpg" });
 	
-	//g_objs.gltfModel = CreateInternalPBRFromFile("Assets/Helmet.gltf", 1.0f);
-	g_objs.gltfModel = CreateInternalPBRFromFile("Assets/BoxAnimated.glb", 1.0f);
+	g_objs.gltfModel = CreateInternalPBRFromFile("Assets/Helmet.gltf", 1.0f);
+	//g_objs.gltfModel = CreateInternalPBRFromFile("Assets/BoxAnimated.glb", 1.0f);
 }
 
 void UnoPlugin::Resize(void* backendData)
@@ -106,7 +106,7 @@ void UnoPlugin::Render(void* backendData)
 	float dt = std::chrono::duration<float>(now - prev).count();
 	prev = now;
 
-	UpdateAnimation(g_objs.gltfModel, 0, dt);
+	//UpdateAnimation(g_objs.gltfModel, 0, dt);
 
 	glViewport(0, 0, framebufferX, framebufferY);
 	glClearColor(0.0f, 0.4f, 0.4f, 1.0f);
