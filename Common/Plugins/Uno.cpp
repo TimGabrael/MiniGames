@@ -39,7 +39,7 @@ void UpdateUBOBuf()
 	if (data)
 	{
 		data->projection = g_objs.playerCam.perspective;
-		data->model = glm::rotate(glm::mat4(1.0f), -(float)M_PI/2.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+		data->model = glm::mat4(1.0f);// glm::rotate(glm::mat4(1.0f), -(float)M_PI / 2.0f, glm::vec3(1.0f, 0.0f, 0.0f));
 		data->view = g_objs.playerCam.view;
 		data->camPos = g_objs.playerCam.pos;
 	}
@@ -50,14 +50,11 @@ void UpdateUBOBuf()
 	glUnmapBuffer(GL_UNIFORM_BUFFER);
 }
 
-
 void UnoPlugin::Init(void* backendData)
 {
 	initialized = true;
 	InitializeOpenGL();
 	glEnable(GL_DEPTH_TEST);
-	// glEnable(GL_BLEND);
-	// glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	glGenBuffers(1, &g_objs.uboUniform);
 	glBindBuffer(GL_UNIFORM_BUFFER, g_objs.uboUniform);
@@ -75,7 +72,7 @@ void UnoPlugin::Init(void* backendData)
 	params.debugViewEquation = 0.0f;
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(UBOParams), &params, GL_STATIC_DRAW);
 
-	g_objs.playerCam.pos = { -1.5f, 0.8f, 0.0f };
+	g_objs.playerCam.pos = { 0.0f, 0.4f, -2.0f };
 
 
 
@@ -87,8 +84,8 @@ void UnoPlugin::Init(void* backendData)
 		"Assets/TestCubemap/front.jpg",
 		"Assets/TestCubemap/back.jpg" });
 	
-	g_objs.gltfModel = CreateInternalPBRFromFile("Assets/Helmet.gltf", 1.0f);
-	//g_objs.gltfModel = CreateInternalPBRFromFile("Assets/BoxAnimated.glb", 1.0f);
+	//g_objs.gltfModel = CreateInternalPBRFromFile("Assets/Helmet.gltf", 1.0f);
+	g_objs.gltfModel = CreateInternalPBRFromFile("Assets/BoxAnimated.glb", 1.0f);
 }
 
 void UnoPlugin::Resize(void* backendData)
@@ -106,7 +103,7 @@ void UnoPlugin::Render(void* backendData)
 	float dt = std::chrono::duration<float>(now - prev).count();
 	prev = now;
 
-	//UpdateAnimation(g_objs.gltfModel, 0, dt);
+	UpdateAnimation(g_objs.gltfModel, 0, dt);
 
 	glViewport(0, 0, framebufferX, framebufferY);
 	glClearColor(0.0f, 0.4f, 0.4f, 1.0f);
@@ -120,12 +117,15 @@ void UnoPlugin::Render(void* backendData)
 
 
 	if(g_objs.gltfModel)
-		DrawPBRModel(g_objs.gltfModel, g_objs.uboUniform, g_objs.uboParamsUniform, g_objs.skybox);
+		DrawPBRModel(g_objs.gltfModel, g_objs.uboUniform, g_objs.uboParamsUniform, g_objs.skybox, true);
 
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	if(g_objs.gltfModel)
+		DrawPBRModel(g_objs.gltfModel, g_objs.uboUniform, g_objs.uboParamsUniform, g_objs.skybox, false);
 	
 
-	
-
+	glDisable(GL_BLEND);
 	DrawSkybox(g_objs.skybox, g_objs.playerCam.view, g_objs.playerCam.perspective);
 }
 
@@ -146,6 +146,7 @@ void UnoPlugin::KeyDownCallback(Key k, bool isRepeat)
 		if (k == Key::Key_A)g_objs.playerCam.SetMovementDirection(Camera::DIRECTION::LEFT, true);
 		if (k == Key::Key_S)g_objs.playerCam.SetMovementDirection(Camera::DIRECTION::BACKWARD, true);
 		if (k == Key::Key_D)g_objs.playerCam.SetMovementDirection(Camera::DIRECTION::RIGHT, true);
+
 	}
 }
 void UnoPlugin::KeyUpCallback(Key k, bool isRepeat)

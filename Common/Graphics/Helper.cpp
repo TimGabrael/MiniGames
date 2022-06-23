@@ -1,9 +1,10 @@
 #include "Helper.h"
-#include <iostream>
 
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
+#define TINYGLTF_NOEXCEPTION
+#define JSON_NOEXCEPTION
 #include "tiny_gltf.h"
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
@@ -453,7 +454,7 @@ void Camera::Update()
 	glm::vec3 moveVec = sinf(moveAngle) * right * velocity + cosf(moveAngle) * front * velocity;
 	pos += moveVec * velocity;
 
-	view = glm::lookAt(pos, pos + front, up);
+	view = glm::lookAtRH(pos, pos + front, up);
 }
 
 void Camera::UpdateFromMouseMovement(float dx, float dy)

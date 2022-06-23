@@ -226,7 +226,12 @@ struct Node {
 	}
 	~Node()
 	{
-
+		if (mesh)delete mesh;
+		mesh = nullptr;
+		for (auto& child : children) {
+			delete child;
+			child = nullptr;
+		}
 	}
 };
 
@@ -376,7 +381,6 @@ void LoadMaterials(tinygltf::Model& m, InternalPBR& pbr)
 		}
 		if (mat.values.find("baseColorFactor") != mat.values.end()) {
 			material.baseColorFactor = glm::make_vec4(mat.values["baseColorFactor"].ColorFactor().data());
-			auto f = material.baseColorFactor; std::cout << f.r << ", " << f.g << ", " << f.b << ", " << f.a << std::endl;
 		}
 		if (mat.additionalValues.find("normalTexture") != mat.additionalValues.end()) {
 			material.normalTexture = pbr.textures[mat.additionalValues["normalTexture"].TextureIndex()];
@@ -510,7 +514,8 @@ void LoadNode(InternalPBR& pbr, Node* parent, const tinygltf::Node& node, uint32
 	}
 	glm::mat4 rotation = glm::mat4(1.0f);
 	if (node.rotation.size() == 4) {
-		glm::quat q = glm::make_quat(node.rotation.data());
+		const double* rot = node.rotation.data();
+		glm::quat q = glm::quat(-rot[3], rot[0], -rot[1], rot[2]);
 		newNode->rotation = glm::mat4(q);
 	}
 	glm::vec3 scale = glm::vec3(1.0f);
@@ -613,7 +618,7 @@ void LoadNode(InternalPBR& pbr, Node* parent, const tinygltf::Node& node, uint32
 
 				for (size_t v = 0; v < posAccessor.count; v++) {
 					Vertex& vert = loaderInfo.vertexBuffer[loaderInfo.vertexPos];
-					vert.pos = glm::vec4(glm::make_vec3(&bufferPos[v * posByteStride]), 1.0f);
+					vert.pos = glm::vec4(glm::make_vec3(&bufferPos[v * posByteStride]) * globalScale, 1.0f);
 					vert.normal = glm::normalize(glm::vec3(bufferNormals ? glm::make_vec3(&bufferNormals[v * normByteStride]) : glm::vec3(0.0f)));
 					vert.uv0 = bufferTexCoordSet0 ? glm::make_vec2(&bufferTexCoordSet0[v * uv0ByteStride]) : glm::vec3(0.0f);
 					vert.uv1 = bufferTexCoordSet1 ? glm::make_vec2(&bufferTexCoordSet1[v * uv1ByteStride]) : glm::vec3(0.0f);
@@ -1654,12 +1659,15 @@ void BindMaterial(Material* mat)
 	}
 	
 }
-void DrawNode(InternalPBR* realObj, Node* node)
+void DrawNode(InternalPBR* realObj, Node* node, bool drawOpaque)
 {	
 	if (node->mesh) {
 		glBindBufferRange(GL_UNIFORM_BUFFER, g_pipeline.UBONodeLoc, node->mesh->uniformBuffer.handle, 0, sizeof(Mesh::UniformBlock));
 		for (Primitive* primitive : node->mesh->primitives)
 		{
+			if (drawOpaque && primitive->material.alphaMode == Material::ALPHAMODE_BLEND) continue;
+			else if (!drawOpaque && primitive->material.alphaMode != Material::ALPHAMODE_BLEND) continue;
+
 			if (g_pipeline.currentBoundMaterial != &primitive->material)
 			{
 				BindMaterial(&primitive->material);
@@ -1669,10 +1677,10 @@ void DrawNode(InternalPBR* realObj, Node* node)
 		}
 	}
 	for (auto& child : node->children) {
-		DrawNode(realObj, child);
+		DrawNode(realObj, child, drawOpaque);
 	}
 }
-void DrawPBRModel(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform, GLuint environmentMap)
+void DrawPBRModel(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform, GLuint environmentMap, bool drawOpaque)
 {
 	g_pipeline.currentBoundMaterial = nullptr;
 
@@ -1703,7 +1711,7 @@ void DrawPBRModel(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform,
 	glBindTexture(GL_TEXTURE_2D, g_pipeline.brdfLutMap);
 
 	for (auto& node : realObj->nodes) {
-		DrawNode(realObj, node);
+		DrawNode(realObj, node, drawOpaque);
 	}
 
 }
@@ -1736,7 +1744,7 @@ void UpdateAnimation(void* internalObj, uint32_t index, float time)
 					switch (channel.path) {
 					case AnimationChannel::PathType::TRANSLATION: {
 						glm::vec4 trans = glm::mix(sampler.outputsVec4[i], sampler.outputsVec4[i + 1], u);
-						channel.node->translation = glm::vec3(trans);
+						channel.node->translation = -glm::vec3(trans);
 						break;
 					}
 					case AnimationChannel::PathType::SCALE: {
