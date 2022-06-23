@@ -4,6 +4,7 @@
 #include <qtimer.h>
 #include <qopenglcontext.h>
 #include <qopenglfunctions.h>
+#include <qnamespace.h>
 
 PluginWidget::PluginWidget(QWidget* parent, PluginClass* plClass) : QOpenGLWidget(parent), plugin(plClass)
 {
@@ -11,12 +12,13 @@ PluginWidget::PluginWidget(QWidget* parent, PluginClass* plClass) : QOpenGLWidge
 	fmt.setSwapInterval(0);
 	this->setFormat(fmt);
 	setMouseTracking(true);
-	
+	this->setFocusPolicy(Qt::FocusPolicy::StrongFocus);
 	connect(this, &QOpenGLWidget::frameSwapped, this, &PluginWidget::HandleTimer);
 }
 
 PluginWidget::~PluginWidget()
 {
+	
 }
 
 void PluginWidget::initializeGL()
@@ -94,4 +96,13 @@ void PluginWidget::mouseReleaseEvent(QMouseEvent* event)
 	else if (btn == Qt::MouseButton::MiddleButton) { mouseData.mPressed = false; mouseData.mUp = true; }
 
 	plugin->MouseCallback(&this->mouseData);
+}
+
+void PluginWidget::keyPressEvent(QKeyEvent* event)
+{
+	plugin->KeyDownCallback((Key)event->key(), event->isAutoRepeat());
+}
+void PluginWidget::keyReleaseEvent(QKeyEvent* event)
+{
+	plugin->KeyUpCallback((Key)event->key(), event->isAutoRepeat());
 }

@@ -21,6 +21,9 @@
 #include "UiRendering.h"
 #include "PbrRendering.h"
 
+#define _USE_MATH_DEFINES
+#include <math.h>
+
 
 
 
@@ -415,8 +418,41 @@ void Camera::SetPerspective(float fov, float aspect, float znear, float zfar)
 {
 	perspective = glm::perspective(glm::radians(fov), aspect, znear, zfar);
 }
-void Camera::UpdateViewMatrix()
+void Camera::Update()
 {
+	if (keyboardDirUsed)
+	{
+		bool anyActive = false;
+		for (int i = 0; i < 2; i++)
+		{
+			if (keyboardMoveDirs[i] != keyboardMoveDirs[i + 2]) {
+				anyActive = true;
+				break;
+			}
+		}
+		if (anyActive) velocity = std::min(velocity + 0.1f, maxVelocity);
+		else velocity = std::max(velocity - 0.1f, 0.0f);
+		if (keyboardMoveDirs[DIRECTION::FORWARD])
+		{
+			if (keyboardMoveDirs[DIRECTION::LEFT]) moveAngle = -M_PI / 4.0f;
+			else if (keyboardMoveDirs[DIRECTION::RIGHT]) moveAngle = M_PI / 4.0f;
+			else moveAngle = 0.0f;
+		}
+		else if (keyboardMoveDirs[DIRECTION::BACKWARD])
+		{
+			if (keyboardMoveDirs[DIRECTION::LEFT]) moveAngle = -3.0f * M_PI / 4.0f;
+			else if (keyboardMoveDirs[DIRECTION::RIGHT]) moveAngle = -5.0f * M_PI / 4.0f;
+			else moveAngle = -M_PI;
+		}
+		else if (keyboardMoveDirs[DIRECTION::LEFT]) moveAngle = -M_PI / 2.0f;
+		else moveAngle = M_PI / 2.0f;
+
+	}
+	glm::vec3 right = glm::cross(front, glm::normalize(up + front));
+	
+	glm::vec3 moveVec = sinf(moveAngle) * right * velocity + cosf(moveAngle) * front * velocity;
+	pos += moveVec * velocity;
+
 	view = glm::lookAt(pos, pos + front, up);
 }
 
@@ -434,6 +470,10 @@ void Camera::UpdateFromMouseMovement(float dx, float dy)
 	fr.y = sinf(glm::radians(pitch));
 	fr.z = sinf(glm::radians(yaw)) * cosf(glm::radians(pitch));
 	front = glm::normalize(fr);
+}
 
-	UpdateViewMatrix();
+void Camera::SetMovementDirection(DIRECTION dir, bool isActive)
+{
+	this->keyboardMoveDirs[dir] = isActive;
+	keyboardDirUsed = true;
 }

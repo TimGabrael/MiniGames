@@ -25,13 +25,20 @@ void DrawSkybox(GLuint skybox, const glm::mat4& viewMat, const glm::mat4& projMa
 
 struct Camera
 {
+	enum DIRECTION {
+		FORWARD,
+		LEFT,
+		BACKWARD,
+		RIGHT,
+	};
 	void SetRotation(float yaw, float pitch, float roll);
 	void SetPerspective(float fov, float aspect, float znear, float zfar);
 
-	void UpdateViewMatrix();	// to update ViewMatrix from current Camera state
+	void Update();
 
 	void UpdateFromMouseMovement(float dx, float dy);
-	
+
+	void SetMovementDirection(DIRECTION dir, bool isActive);
 
 
 	glm::mat4 perspective;
@@ -40,7 +47,13 @@ struct Camera
 private:
 	glm::vec3 front = glm::vec3(1.0f, 0.0f, 0.0f);
 	glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+	float moveAngle = 0.0f;
+	float velocity = 0.0f;
+
+	bool keyboardMoveDirs[4];	// forward, backward, left, right
+	bool keyboardDirUsed = false;
 	float yaw = 0.0f;
 	float pitch = 0.0f;
 	float roll = 0.0f;
+	static constexpr float maxVelocity = 0.4f;
 };

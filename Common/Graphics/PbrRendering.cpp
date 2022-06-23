@@ -90,14 +90,14 @@ struct Material
 	float alphaCutoff = 1.0f;
 	float metallicFactor = 1.0f;
 	float roughnessFactor = 1.0f;
-	glm::vec4 baseColorFactor = { 1.0f, 1.0f, 1.0f, 1.0f };
-	glm::vec4 emissiveFactor = { 1.0f, 1.0f, 1.0f, 1.0f };
-	GLuint uniformBuffer;
-	GLuint baseColorTexture;
-	GLuint metallicRoughnessTexture;
-	GLuint normalTexture;
-	GLuint occlusionTexture;
-	GLuint emissiveTexture;
+	glm::vec4 baseColorFactor = glm::vec4(1.0f);
+	glm::vec4 emissiveFactor = glm::vec4(1.0f);
+	GLuint uniformBuffer = 0;
+	GLuint baseColorTexture = 0;
+	GLuint metallicRoughnessTexture = 0;
+	GLuint normalTexture = 0;
+	GLuint occlusionTexture = 0;
+	GLuint emissiveTexture = 0;
 	struct TexCoorSets {
 		uint8_t baseColor = 0; 
 		uint8_t metallicRoughness = 0;
@@ -107,9 +107,9 @@ struct Material
 		uint8_t emissive = 0;
 	}texCoordSets;
 	struct Extension {
-		GLuint specularGlossinessTexture;
-		GLuint diffuseTexture;
-		glm::vec4 diffuseFactor = { 1.0f, 1.0f, 1.0f, 1.0f };
+		GLuint specularGlossinessTexture = 0;
+		GLuint diffuseTexture = 0;
+		glm::vec4 diffuseFactor = glm::vec4(1.0f);
 		glm::vec3 specularFactor = { 0.0f, 0.0f, 0.0f };
 	}extension;
 	struct PbrWorkflows {
@@ -140,8 +140,6 @@ struct Mesh {
 		glBindBuffer(GL_UNIFORM_BUFFER, uniformBuffer.handle);
 		glBufferData(GL_UNIFORM_BUFFER, sizeof(uniformBlock), &uniformBlock, GL_DYNAMIC_DRAW);
 
-
-		// uniformBuffer.mapped = glMapBuffer(GL_UNIFORM_BUFFER, GL_READ_WRITE);
 	}
 	void SetBoundingBox(const glm::vec3& min, const glm::vec3& max) {
 		bb.min = min; bb.max = max; bb.valid = true;
@@ -199,6 +197,7 @@ struct Node {
 		if (mesh) {
 			glBindBuffer(GL_UNIFORM_BUFFER, mesh->uniformBuffer.handle);
 			mesh->uniformBuffer.mapped = glMapBuffer(GL_UNIFORM_BUFFER, GL_READ_WRITE);
+			
 			glm::mat4 m = getMatrix();
 			if (skin) {
 				mesh->uniformBlock.matrix = m;
@@ -217,8 +216,8 @@ struct Node {
 			else {
 				memset(mesh->uniformBuffer.mapped, 0, sizeof(mesh->uniformBlock));
 				memcpy(mesh->uniformBuffer.mapped, &m, sizeof(glm::mat4));
-				auto result = glUnmapBuffer(GL_UNIFORM_BUFFER);
 			}
+			auto result = glUnmapBuffer(GL_UNIFORM_BUFFER);
 		}
 
 		for (auto& child : children) {
@@ -279,7 +278,7 @@ struct InternalPBR
 		glm::vec3 min = glm::vec3(FLT_MAX);
 		glm::vec3 max = glm::vec3(-FLT_MAX);
 	} dimensions;
-
+	float animationTime = 0.0f;
 
 };
 static constexpr size_t internalPBRSize = sizeof(InternalPBR);
@@ -376,8 +375,8 @@ void LoadMaterials(tinygltf::Model& m, InternalPBR& pbr)
 			material.metallicFactor = static_cast<float>(mat.values["metallicFactor"].Factor());
 		}
 		if (mat.values.find("baseColorFactor") != mat.values.end()) {
-			double* data = mat.values["baseColorFactor"].ColorFactor().data();
-			material.baseColorFactor = { data[0], data[1], data[2], data[3] };
+			material.baseColorFactor = glm::make_vec4(mat.values["baseColorFactor"].ColorFactor().data());
+			auto f = material.baseColorFactor; std::cout << f.r << ", " << f.g << ", " << f.b << ", " << f.a << std::endl;
 		}
 		if (mat.additionalValues.find("normalTexture") != mat.additionalValues.end()) {
 			material.normalTexture = pbr.textures[mat.additionalValues["normalTexture"].TextureIndex()];
@@ -405,8 +404,7 @@ void LoadMaterials(tinygltf::Model& m, InternalPBR& pbr)
 			material.alphaCutoff = static_cast<float>(mat.additionalValues["alphaCutoff"].Factor());
 		}
 		if (mat.additionalValues.find("emissiveFactor") != mat.additionalValues.end()) {
-			double* data = mat.additionalValues["emissiveFactor"].ColorFactor().data();
-			material.emissiveFactor = { data[0], data[1], data[2], 1.0 };
+			material.emissiveFactor = glm::vec4(glm::make_vec3(mat.additionalValues["emissiveFactor"].ColorFactor().data()), 1.0);
 		}
 
 		if (mat.extensions.find("KHR_materials_pbrSpecularGlossiness") != mat.extensions.end()) {
@@ -440,23 +438,35 @@ void LoadMaterials(tinygltf::Model& m, InternalPBR& pbr)
 
 		glGenBuffers(1, &material.uniformBuffer);
 		glBindBuffer(GL_UNIFORM_BUFFER, material.uniformBuffer);
-		glBufferData(GL_UNIFORM_BUFFER, sizeof(MaterialUniformData), nullptr, GL_STATIC_DRAW);
-		MaterialUniformData* data = (MaterialUniformData*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
-		data->baseColorFactor = material.baseColorFactor;
-		data->emissiveFactor = material.emissiveFactor;
-		data->diffuseFactor = material.extension.diffuseFactor;
-		data->specularFactor = glm::vec4(material.extension.specularFactor, 0.0f);
-		data->workflow = 1.0f;
-		data->baseColorTextureSet = material.texCoordSets.baseColor;
-		data->physicalDescriptorTextureSet = material.pbrWorkflows.metallicRoughness ? material.texCoordSets.metallicRoughness :  material.texCoordSets.specularGlossiness;
-		data->normalTextureSet = material.texCoordSets.normal;
-		data->occlusionTextureSet = material.texCoordSets.occlusion;
-		data->emissiveTextureSet = material.texCoordSets.emissive;
-		data->metallicFactor = material.metallicFactor;
-		data->roughnessFactor = material.roughnessFactor;
-		data->alphaMask = material.alphaMode;
-		data->alphaMaskCutoff = material.alphaCutoff;
-		glUnmapBuffer(GL_UNIFORM_BUFFER);
+		MaterialUniformData data;
+		memset(&data, 0, sizeof(MaterialUniformData));
+		data.baseColorFactor = material.baseColorFactor;
+		data.emissiveFactor = material.emissiveFactor;
+		data.diffuseFactor = material.extension.diffuseFactor;
+		data.specularFactor = glm::vec4(material.extension.specularFactor, 0.0f);
+		data.baseColorTextureSet = material.baseColorTexture ? material.texCoordSets.baseColor : -1;
+		data.normalTextureSet = material.texCoordSets.normal ? material.texCoordSets.normal : -1;
+		data.occlusionTextureSet = material.texCoordSets.occlusion ? material.texCoordSets.occlusion : -1;
+		data.emissiveTextureSet = material.texCoordSets.emissive ? material.texCoordSets.emissive : -1;
+		data.metallicFactor = material.metallicFactor;
+		data.roughnessFactor = material.roughnessFactor;
+		data.alphaMask = (float)(material.alphaMode == Material::ALPHAMODE_MASK);
+		data.alphaMaskCutoff = material.alphaCutoff;
+
+		if (material.pbrWorkflows.metallicRoughness)
+		{
+			data.workflow = 0.0f;
+			data.physicalDescriptorTextureSet = material.pbrWorkflows.metallicRoughness ? material.texCoordSets.metallicRoughness :  -1;
+		}
+		if (material.pbrWorkflows.specularGlossiness)
+		{
+			data.workflow = 1.0f;
+			data.physicalDescriptorTextureSet = material.extension.specularGlossinessTexture ? material.texCoordSets.specularGlossiness : -1;
+			data.baseColorTextureSet = material.extension.diffuseTexture ? material.texCoordSets.baseColor : -1;
+			data.specularFactor = glm::vec4(material.extension.specularFactor, 1.0f);
+		}
+		glBufferData(GL_UNIFORM_BUFFER, sizeof(MaterialUniformData), &data, GL_STATIC_DRAW);
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 		
 
 		pbr.materials.push_back(material);
@@ -1518,7 +1528,6 @@ void main()\n\
 		}\n\
 	}\n\
 \n\
-	// outColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);\n\
 }";
 
 
@@ -1546,6 +1555,7 @@ struct OpenGlPipelineObjects
 {
 	GLuint shaderProgram;
 	GLuint brdfLutMap;
+	GLuint defTex;
 	GLint UBOLoc; GLint UBONodeLoc; GLint UBOParamsLoc;
 	GLint MaterialLoc;
 	Material* currentBoundMaterial = nullptr;
@@ -1554,6 +1564,19 @@ static constexpr size_t sd = sizeof(UBO);
 void InitializePbrPipeline()
 {
 	g_pipeline.shaderProgram = CreateProgram(pbrVertexShader, pbrFragmentShader);
+
+	glGenTextures(1, &g_pipeline.defTex);
+	glBindTexture(GL_TEXTURE_2D, g_pipeline.defTex);
+	uint32_t defTexColorData[2];
+	memset(defTexColorData, 0xFF, 2 * sizeof(uint32_t));
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, defTexColorData);
+	
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
 
 	g_pipeline.UBOLoc = glGetUniformBlockIndex(g_pipeline.shaderProgram, "UBO");
 	glUniformBlockBinding(g_pipeline.shaderProgram, g_pipeline.UBOLoc, g_pipeline.UBOLoc);
@@ -1600,23 +1623,36 @@ void BindMaterial(Material* mat)
 	glBindBufferBase(GL_UNIFORM_BUFFER, g_pipeline.MaterialLoc, mat->uniformBuffer);
 
 	glActiveTexture(GL_TEXTURE0 + GLTF_Textures::AO_MAP);
-	glBindTexture(GL_TEXTURE_2D, mat->occlusionTexture);
-
-	glActiveTexture(GL_TEXTURE0 + GLTF_Textures::COLOR_MAP);
-	glBindTexture(GL_TEXTURE_2D, mat->baseColorTexture);
+	glBindTexture(GL_TEXTURE_2D, mat->occlusionTexture ? mat->occlusionTexture : g_pipeline.defTex);
 	
 	glActiveTexture(GL_TEXTURE0 + GLTF_Textures::EMISSIVE_MAP);
-	glBindTexture(GL_TEXTURE_2D, mat->emissiveTexture);
-
-	glActiveTexture(GL_TEXTURE0 + GLTF_Textures::IRRADIANCE);
-	glBindTexture(GL_TEXTURE_2D, mat->baseColorTexture);
+	glBindTexture(GL_TEXTURE_2D, mat->emissiveTexture ? mat->emissiveTexture : g_pipeline.defTex);
 
 	glActiveTexture(GL_TEXTURE0 + GLTF_Textures::NORMAL_MAP);
-	glBindTexture(GL_TEXTURE_2D, mat->normalTexture);
+	glBindTexture(GL_TEXTURE_2D, mat->normalTexture ? mat->normalTexture : g_pipeline.defTex);
 
-	glActiveTexture(GL_TEXTURE0 + GLTF_Textures::PHYSICAL_DESCRIPTOR_MAP);
-	//glBindTexture(GL_TEXTURE_2D, mat->metallicRoughnessTexture);
-	glBindTexture(GL_TEXTURE_2D, mat->extension.diffuseTexture);
+	if (mat->pbrWorkflows.metallicRoughness)
+	{
+		glActiveTexture(GL_TEXTURE0 + GLTF_Textures::COLOR_MAP);
+		glBindTexture(GL_TEXTURE_2D, mat->baseColorTexture ? mat->baseColorTexture : g_pipeline.defTex);
+
+		glActiveTexture(GL_TEXTURE0 + GLTF_Textures::PHYSICAL_DESCRIPTOR_MAP);
+		glBindTexture(GL_TEXTURE_2D, mat->metallicRoughnessTexture ? mat->metallicRoughnessTexture : g_pipeline.defTex);
+	}
+	else if (mat->pbrWorkflows.specularGlossiness)
+	{
+		glActiveTexture(GL_TEXTURE0 + GLTF_Textures::COLOR_MAP);
+		glBindTexture(GL_TEXTURE_2D, mat->extension.diffuseTexture ? mat->extension.diffuseTexture : g_pipeline.defTex);
+
+		glActiveTexture(GL_TEXTURE0 + GLTF_Textures::PHYSICAL_DESCRIPTOR_MAP);
+		glBindTexture(GL_TEXTURE_2D, mat->extension.specularGlossinessTexture ? mat->extension.specularGlossinessTexture : g_pipeline.defTex);
+	}
+	else
+	{
+		glActiveTexture(GL_TEXTURE0 + GLTF_Textures::COLOR_MAP);
+		glBindTexture(GL_TEXTURE_2D, g_pipeline.defTex);
+	}
+	
 }
 void DrawNode(InternalPBR* realObj, Node* node)
 {	
@@ -1638,6 +1674,8 @@ void DrawNode(InternalPBR* realObj, Node* node)
 }
 void DrawPBRModel(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform, GLuint environmentMap)
 {
+	g_pipeline.currentBoundMaterial = nullptr;
+
 	InternalPBR* realObj = (InternalPBR*)internalObj;
 
 	glUseProgram(g_pipeline.shaderProgram);
@@ -1646,19 +1684,18 @@ void DrawPBRModel(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform,
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, realObj->indices.indexBuffer);
 
-
-	//glBindBuffer(GL_UNIFORM_BUFFER, UboUniform);
 	glBindBufferRange(GL_UNIFORM_BUFFER, g_pipeline.UBOLoc, UboUniform, 0, sizeof(UBO));
-	//glBindBufferBase(GL_UNIFORM_BUFFER, g_pipeline.UBOLoc, UboUniform);
 
-	//glBindBuffer(GL_UNIFORM_BUFFER, UBOParamsUniform);
+
 	glBindBufferRange(GL_UNIFORM_BUFFER, g_pipeline.UBOParamsLoc, UBOParamsUniform, 0, sizeof(UBOParams));
-	//glBindBufferBase(GL_UNIFORM_BUFFER, g_pipeline.UBOParamsLoc, UBOParamsUniform);
+
 
 
 
 	glActiveTexture(GL_TEXTURE0 + GLTF_Textures::PREFILTERED_MAP);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, environmentMap);
 
+	glActiveTexture(GL_TEXTURE0 + GLTF_Textures::IRRADIANCE);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, environmentMap);
 
 
@@ -1669,4 +1706,73 @@ void DrawPBRModel(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform,
 		DrawNode(realObj, node);
 	}
 
+}
+
+void UpdateAnimation(void* internalObj, uint32_t index, float time)
+{
+	InternalPBR* realObj = (InternalPBR*)internalObj;
+	if (realObj->animations.empty()) {
+		LOG("NO ANIMATION AVAILABLE FOR GLTF MODEL\n");
+		return;
+	}
+	if (index > (realObj->animations.size() - 1)) {
+		LOG("ANIMATION INDEX OUT OF BOUND %d\n", index);
+		return;
+	}
+
+	Animation& animation = realObj->animations[index];
+	bool updated = false;
+	
+	for (auto& channel : animation.channels) {
+		AnimationSampler& sampler = animation.samplers[channel.samplerIndex];
+		if (sampler.inputs.size() > sampler.outputsVec4.size()) {
+			continue;
+		}
+
+		for (size_t i = 0; i < sampler.inputs.size() - 1; i++) {
+			if ((realObj->animationTime >= sampler.inputs[i]) && (realObj->animationTime <= sampler.inputs[i + 1])) {
+				float u = std::max(0.0f, realObj->animationTime - sampler.inputs[i]) / (sampler.inputs[i + 1] - sampler.inputs[i]);
+				if (u <= 1.0f) {
+					switch (channel.path) {
+					case AnimationChannel::PathType::TRANSLATION: {
+						glm::vec4 trans = glm::mix(sampler.outputsVec4[i], sampler.outputsVec4[i + 1], u);
+						channel.node->translation = glm::vec3(trans);
+						break;
+					}
+					case AnimationChannel::PathType::SCALE: {
+						glm::vec4 trans = glm::mix(sampler.outputsVec4[i], sampler.outputsVec4[i + 1], u);
+						channel.node->scale = glm::vec3(trans);
+						break;
+					}
+					case AnimationChannel::PathType::ROTATION: {
+						glm::quat q1;
+						q1.x = sampler.outputsVec4[i].x;
+						q1.y = sampler.outputsVec4[i].y;
+						q1.z = sampler.outputsVec4[i].z;
+						q1.w = sampler.outputsVec4[i].w;
+						glm::quat q2;
+						q2.x = sampler.outputsVec4[i + 1].x;
+						q2.y = sampler.outputsVec4[i + 1].y;
+						q2.z = sampler.outputsVec4[i + 1].z;
+						q2.w = sampler.outputsVec4[i + 1].w;
+						channel.node->rotation = glm::normalize(glm::slerp(q1, q2, u));
+						break;
+					}
+					}
+					updated = true;
+				}
+			}
+		}
+	}
+	if (updated) 
+	{
+		realObj->animationTime += time;
+		for (auto& node : realObj->nodes) {
+			node->update();
+		}
+	}
+	else 
+	{
+		realObj->animationTime = 0.0f;
+	}
 }

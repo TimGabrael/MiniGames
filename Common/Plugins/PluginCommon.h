@@ -1,5 +1,5 @@
 #pragma once
-
+#include "KeyboardKeys.h"
 
 struct PLUGIN_INFO
 {
@@ -46,6 +46,9 @@ public:
 	virtual void Render(void* backendData) = 0;
 
 	virtual void MouseCallback(const PB_MouseData* mData) = 0;
+
+	virtual void KeyDownCallback(Key k, bool isRepeat) = 0;
+	virtual void KeyUpCallback(Key k, bool isRepeat) = 0;
 
 	int sizeX, sizeY;
 	int framebufferX, framebufferY;

@@ -2,7 +2,7 @@
 #include <QWidget.h>
 #include <qopenglwidget.h>
 #include "../util/PluginLoader.h"
-
+#include <qevent.h>
 
 class PluginWidget : public QOpenGLWidget
 {
@@ -26,6 +26,9 @@ private:
 	void mouseMoveEvent(QMouseEvent* event) override;
 	void mousePressEvent(QMouseEvent* event) override;
 	void mouseReleaseEvent(QMouseEvent* event) override;
+
+	virtual void keyPressEvent(QKeyEvent* event) override;
+	virtual void keyReleaseEvent(QKeyEvent* event) override;
 
 
 	PB_MouseData mouseData;

@@ -4,6 +4,7 @@
 #include "logging.h" // REMINDER USE THIS !! USE THIS NOT <iostream> !!
 #include "Graphics/PbrRendering.h"
 #include "Graphics/UiRendering.h"
+#include <chrono>
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -55,6 +56,8 @@ void UnoPlugin::Init(void* backendData)
 	initialized = true;
 	InitializeOpenGL();
 	glEnable(GL_DEPTH_TEST);
+	// glEnable(GL_BLEND);
+	// glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	glGenBuffers(1, &g_objs.uboUniform);
 	glBindBuffer(GL_UNIFORM_BUFFER, g_objs.uboUniform);
@@ -64,18 +67,16 @@ void UnoPlugin::Init(void* backendData)
 	glBindBuffer(GL_UNIFORM_BUFFER, g_objs.uboParamsUniform);
 	UBOParams params;
 	params.lightDir = { 0.0f, -1.0f, 0.0f, 0.0f };
-	params.exposure = 10.0f;
-	params.gamma = 1.0f;
+	params.exposure = 4.5f;
+	params.gamma = 2.2f;
 	params.prefilteredCubeMipLevels = 1.0f;
 	params.scaleIBLAmbient = 1.0f;
 	params.debugViewInputs = 0.0f;
 	params.debugViewEquation = 0.0f;
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(UBOParams), &params, GL_STATIC_DRAW);
 
-
-
 	g_objs.playerCam.pos = { -1.5f, 0.8f, 0.0f };
-	g_objs.playerCam.UpdateViewMatrix();
+
 
 
 	g_objs.skybox = LoadCubemap({
@@ -86,29 +87,42 @@ void UnoPlugin::Init(void* backendData)
 		"Assets/TestCubemap/front.jpg",
 		"Assets/TestCubemap/back.jpg" });
 	
-	g_objs.gltfModel = CreateInternalPBRFromFile("Assets/test.gltf", 1.0f);
+	//g_objs.gltfModel = CreateInternalPBRFromFile("Assets/Helmet.gltf", 1.0f);
+	g_objs.gltfModel = CreateInternalPBRFromFile("Assets/BoxAnimated.glb", 1.0f);
 }
 
 void UnoPlugin::Resize(void* backendData)
 {
-	g_objs.playerCam.SetPerspective(90.0f, (float)this->sizeX / (float)this->sizeY, 0.1f, 256.0f);
-	UpdateUBOBuf();
+	if(sizeY && sizeX)
+		g_objs.playerCam.SetPerspective(90.0f, (float)this->sizeX / (float)this->sizeY, 0.1f, 256.0f);
 }
 void UnoPlugin::Render(void* backendData)
 {
+	if (!(sizeX && sizeY)) return;
+
+	static auto prev = std::chrono::high_resolution_clock::now();
+	auto now = std::chrono::high_resolution_clock::now();
+
+	float dt = std::chrono::duration<float>(now - prev).count();
+	prev = now;
+
+	UpdateAnimation(g_objs.gltfModel, 0, dt);
+
 	glViewport(0, 0, framebufferX, framebufferY);
 	glClearColor(0.0f, 0.4f, 0.4f, 1.0f);
 	glClearDepth(1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glDepthFunc(GL_LESS);
-
+	g_objs.playerCam.Update();
+	UpdateUBOBuf();
 
 
 
 	if(g_objs.gltfModel)
 		DrawPBRModel(g_objs.gltfModel, g_objs.uboUniform, g_objs.uboParamsUniform, g_objs.skybox);
 
+	
 
 	
 
@@ -121,7 +135,26 @@ void UnoPlugin::MouseCallback(const PB_MouseData* mData)
 {
 	if (mData->lPressed && (mData->dx || mData->dy))
 	{
-		g_objs.playerCam.UpdateFromMouseMovement(mData->dx, -mData->dy);
-		UpdateUBOBuf();
+		g_objs.playerCam.UpdateFromMouseMovement(-mData->dx, mData->dy);
+	}
+}
+void UnoPlugin::KeyDownCallback(Key k, bool isRepeat)
+{
+	if (!isRepeat)
+	{
+		if (k == Key::Key_W)g_objs.playerCam.SetMovementDirection(Camera::DIRECTION::FORWARD, true);
+		if (k == Key::Key_A)g_objs.playerCam.SetMovementDirection(Camera::DIRECTION::LEFT, true);
+		if (k == Key::Key_S)g_objs.playerCam.SetMovementDirection(Camera::DIRECTION::BACKWARD, true);
+		if (k == Key::Key_D)g_objs.playerCam.SetMovementDirection(Camera::DIRECTION::RIGHT, true);
+	}
+}
+void UnoPlugin::KeyUpCallback(Key k, bool isRepeat)
+{
+	if (!isRepeat)
+	{
+		if (k == Key::Key_W)g_objs.playerCam.SetMovementDirection(Camera::DIRECTION::FORWARD, false);
+		if (k == Key::Key_A)g_objs.playerCam.SetMovementDirection(Camera::DIRECTION::LEFT, false);
+		if (k == Key::Key_S)g_objs.playerCam.SetMovementDirection(Camera::DIRECTION::BACKWARD, false);
+		if (k == Key::Key_D)g_objs.playerCam.SetMovementDirection(Camera::DIRECTION::RIGHT, false);
 	}
 }

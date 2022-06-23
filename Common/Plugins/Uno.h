@@ -12,6 +12,10 @@ class UnoPlugin : public PluginClass
 	virtual void Render(void* backendData) override;
 
 	virtual void MouseCallback(const PB_MouseData* mData) override;
+	virtual void KeyDownCallback(Key k, bool isRepeat) override;
+	virtual void KeyUpCallback(Key k, bool isRepeat) override;
+
+
 	bool initialized = false;
 };
 
