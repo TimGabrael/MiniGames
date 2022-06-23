@@ -13,7 +13,7 @@ struct PLUGIN_INFO
 #include "emscripten.h"
 #define EXPORT EMSCRIPTEN_KEEPALIVE
 #else
-#define EXPORT
+#define EXPORT 
 #endif
 
 

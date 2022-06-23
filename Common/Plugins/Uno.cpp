@@ -14,7 +14,11 @@ PLUGIN_EXPORT_DEFINITION(UnoPlugin, "a3fV-6giK-10Eb-2rdT");
 PLUGIN_INFO UnoPlugin::GetPluginInfos()
 {
 	PLUGIN_INFO plugInfo;
+#ifdef _WIN32
 	memcpy(plugInfo.ID, _Plugin_Export_ID_Value, strnlen_s(_Plugin_Export_ID_Value, 19));
+#else
+	memcpy(plugInfo.ID, _Plugin_Export_ID_Value, strnlen(_Plugin_Export_ID_Value, 19));
+#endif
 	plugInfo.previewResource = nullptr;
 	return plugInfo;
 }
@@ -72,20 +76,21 @@ void UnoPlugin::Init(void* backendData)
 	params.debugViewEquation = 0.0f;
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(UBOParams), &params, GL_STATIC_DRAW);
 
-	g_objs.playerCam.pos = { 0.0f, 0.4f, -2.0f };
+	g_objs.playerCam.pos = { 0.0f, 0.4f, 2.0f };
 
 
 
-	g_objs.skybox = LoadCubemap({
-		"Assets/TestCubemap/right.jpg",
-		"Assets/TestCubemap/left.jpg",
-		"Assets/TestCubemap/top.jpg",
-		"Assets/TestCubemap/bottom.jpg",
-		"Assets/TestCubemap/front.jpg",
-		"Assets/TestCubemap/back.jpg" });
+	g_objs.skybox = LoadCubemap(
+		"Assets/CitySkybox/right.jpg",
+		"Assets/CitySkybox/left.jpg",
+		"Assets/CitySkybox/top.jpg",
+		"Assets/CitySkybox/bottom.jpg",
+		"Assets/CitySkybox/front.jpg",
+		"Assets/CitySkybox/back.jpg");
 	
-	//g_objs.gltfModel = CreateInternalPBRFromFile("Assets/Helmet.gltf", 1.0f);
-	g_objs.gltfModel = CreateInternalPBRFromFile("Assets/BoxAnimated.glb", 1.0f);
+	g_objs.gltfModel = CreateInternalPBRFromFile("Assets/Helmet.gltf", 1.0f);
+	//g_objs.gltfModel = CreateInternalPBRFromFile("Assets/BoomBoxWithAxes/glTF/BoomBoxWithAxes.gltf", 100.0f);
+	//g_objs.gltfModel = CreateInternalPBRFromFile("Assets/BoxAnimated.glb", 1.0f);
 }
 
 void UnoPlugin::Resize(void* backendData)
@@ -146,6 +151,10 @@ void UnoPlugin::KeyDownCallback(Key k, bool isRepeat)
 		if (k == Key::Key_A)g_objs.playerCam.SetMovementDirection(Camera::DIRECTION::LEFT, true);
 		if (k == Key::Key_S)g_objs.playerCam.SetMovementDirection(Camera::DIRECTION::BACKWARD, true);
 		if (k == Key::Key_D)g_objs.playerCam.SetMovementDirection(Camera::DIRECTION::RIGHT, true);
+
+		if (k == Key::Key_1)g_objs.playerCam.pos.x += 0.1f;
+		if (k == Key::Key_2)g_objs.playerCam.pos.y += 0.1f;
+		if (k == Key::Key_3)g_objs.playerCam.pos.z += 0.1f;
 
 	}
 }

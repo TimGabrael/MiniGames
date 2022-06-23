@@ -2,6 +2,7 @@
 #include "Helper.h"
 #include "../logging.h"
 #include <vector>
+#include <stdint.h>
 
 
 #define MAX_NUM_JOINTS 128u
@@ -119,7 +120,7 @@ struct Material
 
 };
 struct Primitive {
-	Primitive::Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t vertexCount, Material& material) : firstIndex(firstIndex), indexCount(indexCount), vertexCount(vertexCount), material(material) {
+	Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t vertexCount, Material& material) : firstIndex(firstIndex), indexCount(indexCount), vertexCount(vertexCount), material(material) {
 		hasIndices = indexCount > 0;
 	}
 	void SetBoundingBox(glm::vec3 min, glm::vec3 max)
@@ -134,7 +135,6 @@ struct Primitive {
 
 struct Mesh {
 	Mesh(const glm::mat4& matrix) {
-
 		uniformBlock.matrix = matrix;
 		glGenBuffers(1, &uniformBuffer.handle);
 		glBindBuffer(GL_UNIFORM_BUFFER, uniformBuffer.handle);
@@ -144,7 +144,7 @@ struct Mesh {
 	void SetBoundingBox(const glm::vec3& min, const glm::vec3& max) {
 		bb.min = min; bb.max = max; bb.valid = true;
 	}
-	Mesh::~Mesh() {
+	~Mesh() {
 		glDeleteBuffers(1, &uniformBuffer.handle);
 		for (Primitive* p : primitives)
 			delete p;
@@ -197,8 +197,12 @@ struct Node {
 		if (mesh) {
 			glBindBuffer(GL_UNIFORM_BUFFER, mesh->uniformBuffer.handle);
 			mesh->uniformBuffer.mapped = glMapBuffer(GL_UNIFORM_BUFFER, GL_READ_WRITE);
-			
-			glm::mat4 m = getMatrix();
+			glm::mat4 rot = glm::mat4(1.0f);
+			rot[0][0] = 1.0f;
+			rot[1][1] = -1.0f;
+			rot[2][2] = 1.0f;
+			rot[3][3] = 1.0f;
+			glm::mat4 m = rot * getMatrix();
 			if (skin) {
 				mesh->uniformBlock.matrix = m;
 				// Update join matrices
@@ -510,12 +514,12 @@ void LoadNode(InternalPBR& pbr, Node* parent, const tinygltf::Node& node, uint32
 	glm::vec3 translation = glm::vec3(0.0f);
 	if (node.translation.size() == 3) {
 		translation = glm::make_vec3(node.translation.data());
-		newNode->translation = translation;
+		newNode->translation = translation * globalScale;
 	}
 	glm::mat4 rotation = glm::mat4(1.0f);
 	if (node.rotation.size() == 4) {
 		const double* rot = node.rotation.data();
-		glm::quat q = glm::quat(-rot[3], rot[0], -rot[1], rot[2]);
+		glm::quat q = glm::quat(rot[3], rot[0], rot[1], rot[2]);
 		newNode->rotation = glm::mat4(q);
 	}
 	glm::vec3 scale = glm::vec3(1.0f);
@@ -689,7 +693,7 @@ void LoadNode(InternalPBR& pbr, Node* parent, const tinygltf::Node& node, uint32
 					break;
 				}
 				default:
-					std::cerr << "Index component type " << accessor.componentType << " not supported!" << std::endl;
+					LOG("Index component type %d not supported!\n", accessor.componentType);
 					return;
 				}
 			}
@@ -815,7 +819,7 @@ void LoadAnimations(InternalPBR& pbr, tinygltf::Model& model)
 					break;
 				}
 				default: {
-					std::cout << "unknown type" << std::endl;
+					LOG("unknown type\n");
 					break;
 				}
 				}
@@ -838,7 +842,7 @@ void LoadAnimations(InternalPBR& pbr, tinygltf::Model& model)
 				channel.path = AnimationChannel::PathType::SCALE;
 			}
 			if (source.target_path == "weights") {
-				std::cout << "weights not yet supported, skipping channel" << std::endl;
+				LOG("weights not yet supported, skipping channel\n");
 				continue;
 			}
 			channel.samplerIndex = source.sampler;
@@ -1591,7 +1595,7 @@ void InitializePbrPipeline()
 	glUniformBlockBinding(g_pipeline.shaderProgram, g_pipeline.UBOParamsLoc, g_pipeline.UBOParamsLoc);
 	g_pipeline.MaterialLoc = glGetUniformBlockIndex(g_pipeline.shaderProgram, "Material");
 	glUniformBlockBinding(g_pipeline.shaderProgram, g_pipeline.MaterialLoc, g_pipeline.MaterialLoc);
-	std::cout << "UBO/UBONode/UBOParams/Material Locs: " << g_pipeline.UBOLoc << ", " << g_pipeline.UBONodeLoc << ", " << g_pipeline.UBOParamsLoc << ", " << g_pipeline.MaterialLoc << std::endl;
+	//LOG("UBO/UBONode/UBOParams/Material Locs: %d, %d, %d, %d\n", g_pipeline.UBOLoc, g_pipeline.UBONodeLoc, g_pipeline.UBOParamsLoc, g_pipeline.MaterialLoc);
 
 	GLint curTexture = glGetUniformLocation(g_pipeline.shaderProgram, "samplerIrradiance");
 	if (curTexture == -1) { LOG("failed to Get Texture Loaction of GLTF shader program\n"); }
@@ -1744,7 +1748,7 @@ void UpdateAnimation(void* internalObj, uint32_t index, float time)
 					switch (channel.path) {
 					case AnimationChannel::PathType::TRANSLATION: {
 						glm::vec4 trans = glm::mix(sampler.outputsVec4[i], sampler.outputsVec4[i + 1], u);
-						channel.node->translation = -glm::vec3(trans);
+						channel.node->translation = glm::vec3(trans);
 						break;
 					}
 					case AnimationChannel::PathType::SCALE: {

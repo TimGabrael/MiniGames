@@ -19,4 +19,4 @@ class UnoPlugin : public PluginClass
 	bool initialized = false;
 };
 
-PLUGIN_EXPORTS(UnoPlugin);
+PLUGIN_EXPORTS();

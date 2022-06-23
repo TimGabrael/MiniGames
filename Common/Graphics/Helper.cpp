@@ -25,7 +25,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-
+constexpr float Camera::maxVelocity; // required for android build
 
 
 const char* brdf_lutVertexShader = "#version 330 core\n\
@@ -291,7 +291,12 @@ bool LoadModel(tinygltf::Model& model, const char* filename)
 	tinygltf::TinyGLTF loader;
 	std::string error; std::string warning;
 	bool res = false;
-	if (memcmp(filename + strnlen_s(filename, 250) - 4, ".glb", 4) == 0)
+#ifdef _WIN32
+	size_t dotIdx = strnlen_s(filename, 250);
+#else
+	size_t dotIdx = strlen(filename);
+#endif
+	if (memcmp(filename + dotIdx - 4, ".glb", 4) == 0)
 	{
 		res = loader.LoadBinaryFromFile(&model, &error, &warning, filename);
 	}
@@ -300,24 +305,26 @@ bool LoadModel(tinygltf::Model& model, const char* filename)
 		res = loader.LoadASCIIFromFile(&model, &error, &warning, filename);
 	}
 
-	if (!warning.empty()) LOG("WARNING WHILE LOAD GLTF FILE: %s warning: %s\n", filename, warning);
-	if (!error.empty()) LOG("FAILED TO LOAD GLTF FILE: %s error: %s\n", filename, error);
+	if (!warning.empty()) LOG("WARNING WHILE LOAD GLTF FILE: %s warning: %s\n", filename, warning.c_str());
+	if (!error.empty()) LOG("FAILED TO LOAD GLTF FILE: %s error: %s\n", filename, error.c_str());
 
 
 	return res;
 }
 
 
-GLuint LoadCubemap(const std::vector<const char*>& faces)
+
+GLuint LoadCubemap(const char* right, const char* left, const char* top, const char* bottom, const char* front, const char* back)
 {
+	const char* faces[6] = { right, left, top, bottom, front, back };
 	GLuint textureID;
 	glGenTextures(1, &textureID);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
 
-	int width = 0; int height = 0;int numChannels = 0;
-	for (uint32_t i = 0; i < faces.size(); i++)
+	int width = 0; int height = 0; int numChannels = 0;
+	for (uint32_t i = 0; i < 6; i++)
 	{
-		unsigned char* data = stbi_load(faces.at(i), &width, &height, &numChannels, 4);
+		unsigned char* data = stbi_load(faces[i], &width, &height, &numChannels, 4);
 		if (data)
 		{
 			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
@@ -325,10 +332,33 @@ GLuint LoadCubemap(const std::vector<const char*>& faces)
 		}
 		else
 		{
-			LOG("FAILED TO LOAD CUBEMAP: %s\n", faces.at(i));
+			LOG("FAILED TO LOAD CUBEMAP: %s\n", faces[i]);
 		}
 	}
 
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	return textureID;
+}
+GLuint LoadCubemap(const char* file)
+{
+	GLuint textureID;
+	glGenTextures(1, &textureID);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+	int width = 0; int height = 0; int numChannels = 0;
+	unsigned char* data = stbi_load(file, &width, &height, &numChannels, 4);
+	if (data)
+	{
+
+		stbi_image_free(data);
+	}
+	
+	
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -453,7 +483,6 @@ void Camera::Update()
 	
 	glm::vec3 moveVec = sinf(moveAngle) * right * velocity + cosf(moveAngle) * front * velocity;
 	pos += moveVec * velocity;
-
 	view = glm::lookAtRH(pos, pos + front, up);
 }
 
