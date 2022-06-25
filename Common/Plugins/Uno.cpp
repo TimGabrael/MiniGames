@@ -99,21 +99,19 @@ void UnoPlugin::Init(void* backendData)
 		"Assets/CitySkybox/front.jpg",
 		"Assets/CitySkybox/back.jpg");
 	
-	g_objs.gltfModel = CreateInternalPBRFromFile("Assets/Helmet.gltf", 1.0f);
-	//g_objs.gltfModel = CreateInternalPBRFromFile("Assets/BoxAnimated.glb", 1.0f);
+	//g_objs.gltfModel = CreateInternalPBRFromFile("Assets/Helmet.gltf", 1.0f);
+	g_objs.gltfModel = CreateInternalPBRFromFile("Assets/BoxAnimated.glb", 1.0f);
 
 
 	glDisable(GL_CULL_FACE);
-
-	if (sizeY != 0) {	// for android, as resize is never called
-		g_objs.playerCam.SetPerspective(90.0f, (float)this->sizeX / (float)this->sizeY, 0.1f, 256.0f);
-	}
 }
 
 void UnoPlugin::Resize(void* backendData)
 {
 	if(sizeY && sizeX)
 		g_objs.playerCam.SetPerspective(90.0f, (float)this->sizeX / (float)this->sizeY, 0.1f, 256.0f);
+	g_objs.playerCam.screenX = sizeX;
+	g_objs.playerCam.screenY = sizeY;
 }
 void UnoPlugin::Render(void* backendData)
 {
@@ -126,7 +124,7 @@ void UnoPlugin::Render(void* backendData)
 	float dt = std::chrono::duration<float>(now - prev).count();
 	prev = now;
 
-	//UpdateAnimation(g_objs.gltfModel, 0, dt);
+	UpdateAnimation(g_objs.gltfModel, 0, dt);
 	glViewport(0, 0, framebufferX, framebufferY);
 	glClearColor(1.0f, 0.4f, 0.4f, 1.0f);
 	glClearDepthf(1.0f);
@@ -185,4 +183,25 @@ void UnoPlugin::KeyUpCallback(Key k, bool isRepeat)
 		if (k == Key::Key_S)g_objs.playerCam.SetMovementDirection(Camera::DIRECTION::BACKWARD, false);
 		if (k == Key::Key_D)g_objs.playerCam.SetMovementDirection(Camera::DIRECTION::RIGHT, false);
 	}
+}
+
+void UnoPlugin::TouchDownCallback(int x, int y, int touchID)
+{
+	g_objs.playerCam.UpdateTouch(x, y, touchID, false);
+}
+void UnoPlugin::TouchUpCallback(int x, int y, int touchID)
+{
+	g_objs.playerCam.UpdateTouch(x, y, touchID, true);
+}
+void UnoPlugin::TouchMoveCallback(int x, int y, int dx, int dy, int touchID)
+{
+	g_objs.playerCam.UpdateTouchMove(x, y, dx, dy, touchID);
+}
+void UnoPlugin::CleanUp()
+{
+	glDeleteTextures(1, &g_objs.skybox);
+	glDeleteBuffers(1, &g_objs.uboParamsUniform);
+	glDeleteBuffers(1, &g_objs.uboUniform);
+
+	// ADD GLTF CLEANUP!!!
 }

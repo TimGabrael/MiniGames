@@ -45,10 +45,11 @@ PluginClass* loadedPlugin = nullptr;
 
 
 
-struct saved_state {
-    float angle;
+
+struct PointerData{
     int32_t x;
     int32_t y;
+    int ID;
 };
 JNIEnv* env = nullptr;
 struct engine {
@@ -59,13 +60,15 @@ struct engine {
     const ASensor* accelerometerSensor;
     ASensorEventQueue* sensorEventQueue;
 
+
+    std::vector<PointerData> activePointers;
+
     int animating;
     EGLDisplay display;
     EGLSurface surface;
     EGLContext context;
     int32_t width;
     int32_t height;
-    struct saved_state state;
     bool initialized = false;
 };
 
@@ -126,11 +129,10 @@ static int engine_init_display(struct engine* engine) {
     engine->surface = surface;
     engine->width = w;
     engine->height = h;
-    engine->state.angle = 0;
 
     if(loadedPlugin)
     {
-        LOG("WIDTH/HEIGHT: %d, %d\n", w, h);
+        LOG("CREATED EGL W/H: %d, %d\n", w, h);
         loadedPlugin->sizeX = w; loadedPlugin->sizeY = h;
         loadedPlugin->framebufferX = w; loadedPlugin->framebufferY = h;
     }
@@ -168,10 +170,91 @@ static void engine_term_display(struct engine* engine) {
 }
 static int32_t engine_handle_input(struct android_app* app, AInputEvent* event) {
     struct engine* engine = (struct engine*)app->userData;
-    if (AInputEvent_getType(event) == AINPUT_EVENT_TYPE_MOTION) {
-        engine->state.x = AMotionEvent_getX(event, 0);
-        engine->state.y = AMotionEvent_getY(event, 0);
-        return 1;
+    int eventType = AInputEvent_getType(event);
+    if (eventType == AINPUT_EVENT_TYPE_MOTION) {
+        const int numPointer = AMotionEvent_getPointerCount(event);
+        int action = AMotionEvent_getAction(event);
+
+        const int pointerIDX = (action & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK) >> (AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT);
+        action &= AMOTION_EVENT_ACTION_MASK;
+
+        if(numPointer > engine->activePointers.size())
+        {
+            int id = AMotionEvent_getPointerId(event, pointerIDX);
+            int xPos = AMotionEvent_getX(event, pointerIDX);
+            int yPos = AMotionEvent_getY(event, pointerIDX);
+            engine->activePointers.push_back({xPos, yPos, id}); // should be up event
+            auto& curPointer = engine->activePointers.at(engine->activePointers.size()-1);
+            curPointer.x = xPos; curPointer.y = yPos;
+            loadedPlugin->TouchDownCallback(xPos, yPos, id);
+        }
+        for(int i = 0; i < numPointer; i++)
+        {
+            PointerData* curPointer = nullptr;
+            const int pointerID = AMotionEvent_getPointerId(event, i);
+            for(int j = 0; j < engine->activePointers.size(); j++)
+            {
+                PointerData* curTest = &engine->activePointers.at(j);
+                if(curTest->ID == pointerID){
+                    curPointer = curTest;
+                    break;
+                }
+            }
+            if(curPointer && loadedPlugin) {
+                int xPos = AMotionEvent_getX(event, i);
+                int yPos = AMotionEvent_getY(event, i);
+
+                int dx = xPos - curPointer->x;
+                int dy = yPos - curPointer->y;
+                if (dx || dy) {
+                    curPointer->x = xPos;
+                    curPointer->y = yPos;
+                    loadedPlugin->TouchMoveCallback(xPos, yPos, dx, dy, pointerID);
+                }
+            }
+        }
+
+        if(numPointer < engine->activePointers.size()) {
+            for (int i = 0; i < engine->activePointers.size(); i++) {
+                auto &curPtr = engine->activePointers.at(i);
+                bool found = false;
+                for (int j = 0; j < numPointer; j++) {
+                    int pID = AMotionEvent_getPointerId(event, j);
+                    if (curPtr.ID == pID) found = true;
+                }
+                if (!found) {
+                    if (loadedPlugin)
+                        loadedPlugin->TouchUpCallback(curPtr.x, curPtr.y, curPtr.ID);
+
+                    engine->activePointers.erase(engine->activePointers.begin() + i);
+                    break;
+                }
+            }
+        }
+        else if(action == AMOTION_EVENT_ACTION_UP)
+        {
+            for (int i = 0; i < engine->activePointers.size(); i++) {
+                auto &curPtr = engine->activePointers.at(i);
+                bool found = false;
+                for (int j = 0; j < numPointer; j++) {
+                    int pID = AMotionEvent_getPointerId(event, j);
+                    if (curPtr.ID == pID) found = true;
+                }
+                if (found) {
+                    if (loadedPlugin)
+                        loadedPlugin->TouchUpCallback(curPtr.x, curPtr.y, curPtr.ID);
+
+                    engine->activePointers.erase(engine->activePointers.begin() + i);
+                    break;
+                }
+            }
+        }
+
+
+
+
+
+        return true;
     }
     return 0;
 }
@@ -179,9 +262,6 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd) {
     struct engine* engine = (struct engine*)app->userData;
     switch (cmd) {
         case APP_CMD_SAVE_STATE:
-            engine->app->savedState = malloc(sizeof(struct saved_state));
-            *((struct saved_state*)engine->app->savedState) = engine->state;
-            engine->app->savedStateSize = sizeof(struct saved_state);
             break;
         case APP_CMD_INIT_WINDOW:
             if (engine->app->window != NULL) {
@@ -189,8 +269,8 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd) {
                 engine_draw_frame(engine);
                 if(loadedPlugin) {
                     loadedPlugin->Init(engine->pAssetManager);
+                    loadedPlugin->Resize(nullptr);
                     engine->initialized = true;
-
                 }
             }
             break;
@@ -214,7 +294,6 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd) {
             engine_draw_frame(engine);
             break;
         case APP_CMD_DESTROY:
-            LOG("DESTROYING\n");
             break;
     }
 }
@@ -308,6 +387,7 @@ void android_main(struct android_app* state)
     state->userData = &engine;
     state->onAppCmd = engine_handle_cmd;
     state->onInputEvent = engine_handle_input;
+
     engine.app = state;
 
     engine.sensorManager = ASensorManager_getInstance();
@@ -320,7 +400,7 @@ void android_main(struct android_app* state)
 
 
     if (state->savedState != NULL) {
-        engine.state = *(struct saved_state*)state->savedState;
+        // engine.state = *(struct saved_state*)state->savedState;
     }
     engine.animating = 1;
 
@@ -349,10 +429,11 @@ void android_main(struct android_app* state)
                     ASensorEvent event;
                     while (ASensorEventQueue_getEvents(engine.sensorEventQueue,
                                                        &event, 1) > 0) {
-                        // LOG("accelerometer: x=%f y=%f z=%f\n", event.acceleration.x, event.acceleration.y, event.acceleration.z);
+                        //LOG("accelerometer: x=%f y=%f z=%f\n", event.acceleration.x, event.acceleration.y, event.acceleration.z);
                     }
                 }
             }
+
             if (state->destroyRequested != 0) {
                 engine_term_display(&engine);
                 return;

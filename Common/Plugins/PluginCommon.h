@@ -50,6 +50,12 @@ public:
 	virtual void KeyDownCallback(Key k, bool isRepeat) = 0;
 	virtual void KeyUpCallback(Key k, bool isRepeat) = 0;
 
+	virtual void TouchDownCallback(int x, int y, int touchID) = 0;
+	virtual void TouchUpCallback(int x, int y, int touchID) = 0;
+	virtual void TouchMoveCallback(int x, int y, int dx, int dy, int touchID) = 0;
+
+	virtual void CleanUp() = 0;
+
 	int sizeX, sizeY;
 	int framebufferX, framebufferY;
 };
