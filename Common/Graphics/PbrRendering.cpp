@@ -1130,15 +1130,12 @@ void CleanUpInternal(void* internalObj)
 
 
 
-
-
-const char* pbrVertexShader = "#version 310 es\n\
-#extension GL_EXT_shader_io_blocks : enable\n\
+const char* pbrVertexShader = "#version 300 es\n\
 \n\
 layout(location = 0) in vec3 inPos;\n\
-layout(location = 1) in vec3 inNormal;\n\
-layout(location = 2) in vec2 inUV0;\n\
-layout(location = 3) in vec2 inUV1;\n\
+layout(location = 1) in vec3 inVNormal;\n\
+layout(location = 2) in vec2 inVUV0;\n\
+layout(location = 3) in vec2 inVUV1;\n\
 layout(location = 4) in vec4 inJoint0;\n\
 layout(location = 5) in vec4 inWeight0;\n\
 \n\
@@ -1158,15 +1155,10 @@ uniform UBONode {\n\
 	float jointCount;\n\
 } node;\n\
 \n\
-layout(location = 0) out vec3 outWorldPos;\n\
-layout(location = 1) out vec3 outNormal;\n\
-layout(location = 2) out vec2 outUV0;\n\
-layout(location = 3) out vec2 outUV1;\n\
-\n\
-out gl_PerVertex\n\
-{\n\
-	vec4 gl_Position;\n\
-};\n\
+out vec3 inWorldPos;\n\
+out vec3 inNormal;\n\
+out vec2 inUV0;\n\
+out vec2 inUV1;\n\
 \n\
 void main()\n\
 {\n\
@@ -1180,27 +1172,27 @@ void main()\n\
 			inWeight0.w * node.jointMatrix[int(inJoint0.w)];\n\
 	\n\
 		locPos = ubo.model * node.matrix * skinMat * vec4(inPos, 1.0);\n\
-		outNormal = normalize(transpose(inverse(mat3(ubo.model * node.matrix * skinMat))) * inNormal);\n\
+		inNormal = normalize(transpose(inverse(mat3(ubo.model * node.matrix * skinMat))) * inVNormal);\n\
 	}\n\
 	else {\n\
 		locPos = ubo.model * node.matrix * vec4(inPos, 1.0);\n\
-		outNormal = normalize(transpose(inverse(mat3(ubo.model * node.matrix))) * inNormal);\n\
+		inNormal = normalize(transpose(inverse(mat3(ubo.model * node.matrix))) * inVNormal);\n\
 	}\n\
 	locPos.y = -locPos.y;\n\
-	outWorldPos = locPos.xyz / locPos.w;\n\
-	outUV0 = inUV0;\n\
-	outUV1 = inUV1;\n\
-	gl_Position = ubo.projection * ubo.view * vec4(outWorldPos, 1.0);\n\
+	inWorldPos = locPos.xyz / locPos.w;\n\
+	inUV0 = inVUV0;\n\
+	inUV1 = inVUV1;\n\
+	gl_Position = ubo.projection * ubo.view * vec4(inWorldPos, 1.0);\n\
 }";
 
 
-const char* pbrFragmentShader = "#version 310 es\n\
+const char* pbrFragmentShader = "#version 300 es\n\
 precision highp float;\n\
 \n\
-layout(location = 0) in vec3 inWorldPos;\n\
-layout(location = 1) in vec3 inNormal;\n\
-layout(location = 2) in vec2 inUV0;\n\
-layout(location = 3) in vec2 inUV1;\n\
+in vec3 inWorldPos;\n\
+in vec3 inNormal;\n\
+in vec2 inUV0;\n\
+in vec2 inUV1;\n\
 \n\
 \n\
 \n\
@@ -1250,7 +1242,7 @@ uniform Material {\n\
 	float alphaMaskCutoff;\n\
 } material;\n\
 \n\
-layout(location = 0) out vec4 outColor;\n\
+out vec4 outColor;\n\
 \n\
 \n\
 \n\
