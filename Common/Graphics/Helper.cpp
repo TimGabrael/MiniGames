@@ -1,15 +1,15 @@
 #include "Helper.h"
 
-#define TINYGLTF_IMPLEMENTATION
+
+
 #define STB_IMAGE_IMPLEMENTATION
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#define TINYGLTF_NOEXCEPTION
-#define JSON_NOEXCEPTION
-#include "tiny_gltf.h"
+#include "stb_image.h"
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
 #include "stb_image_resize.h"
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
 #include "../logging.h"
 
 #define GLM_FORCE_RADIANS
@@ -24,6 +24,8 @@
 
 #define _USE_MATH_DEFINES
 #include <math.h>
+
+#include "FileQuery.h"
 
 
 constexpr float Camera::maxVelocity; // required for android build
@@ -160,7 +162,7 @@ uniform mat4 view;\n\
 \
 void main(){\
 	TexCoords = aPos;\
-	vec4 pos = projection * view * vec4(aPos, 0.0);\
+	vec4 pos = projection * view * vec4(aPos, 0.0);\n\
 	gl_Position = pos.xyww;\
 }";
 
@@ -205,18 +207,31 @@ struct HelperGlobals
 	GLuint skyboxVAO;
 	GLint projIdx = 0;
 	GLint viewIdx = 0;
+	void* assetManager = nullptr;
 }g_helper;
 
+stbi_uc* stbi_load_wrapper(const char* file, int* width, int* height, int* numChannels, int req_comp)
+{
+	FileContent content = LoadFileContent(g_helper.assetManager, file);
+	if (!content.data)  return nullptr;
+	stbi_uc* retVal = stbi_load_from_memory(content.data, content.size, width, height, numChannels, req_comp);
+	delete[] content.data;
+	return retVal;
+}
 
 
 
-void InitializeOpenGL()
+void InitializeOpenGL(void* assetManager)
 {
 #ifndef ANDROID
 	gladLoadGL();
 #endif
-	InitializePbrPipeline();
+	g_helper.assetManager = assetManager;
+
+	
+	InitializePbrPipeline(assetManager);
 	InitializeUiPipeline();
+
 	
 	g_helper.cubemapProgram = CreateProgram(cubemapVS, cubemapFS);
 	
@@ -229,7 +244,10 @@ void InitializeOpenGL()
 	glBindBuffer(GL_ARRAY_BUFFER, g_helper.cubeVertexBuffer);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
 	
-	
+	glUseProgram(g_helper.cubemapProgram);
+	GLint curTexture = glGetUniformLocation(g_helper.cubemapProgram, "skybox");
+	glUniform1i(curTexture, 0);
+
 	glBindVertexArray(g_helper.skyboxVAO);
 	
 	glBindBuffer(GL_ARRAY_BUFFER, g_helper.cubeVertexBuffer);
@@ -239,6 +257,7 @@ void InitializeOpenGL()
 	
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glUseProgram(0);
 }
 
 GLuint CreateProgram(const char* vertexShaderSrc, const char* fragmentShaderSrc)
@@ -291,31 +310,6 @@ GLuint CreateProgram(const char* vertexShaderSrc, const char* fragmentShaderSrc)
 	return resultProgram;
 }
 
-bool LoadModel(tinygltf::Model& model, const char* filename)
-{
-	tinygltf::TinyGLTF loader;
-	std::string error; std::string warning;
-	bool res = false;
-#ifdef _WIN32
-	size_t dotIdx = strnlen_s(filename, 250);
-#else
-	size_t dotIdx = strlen(filename);
-#endif
-	if (memcmp(filename + dotIdx - 4, ".glb", 4) == 0)
-	{
-		res = loader.LoadBinaryFromFile(&model, &error, &warning, filename);
-	}
-	else
-	{
-		res = loader.LoadASCIIFromFile(&model, &error, &warning, filename);
-	}
-
-	if (!warning.empty()) LOG("WARNING WHILE LOAD GLTF FILE: %s warning: %s\n", filename, warning.c_str());
-	if (!error.empty()) LOG("FAILED TO LOAD GLTF FILE: %s error: %s\n", filename, error.c_str());
-
-
-	return res;
-}
 
 
 
@@ -329,7 +323,7 @@ GLuint LoadCubemap(const char* right, const char* left, const char* top, const c
 	int width = 0; int height = 0; int numChannels = 0;
 	for (uint32_t i = 0; i < 6; i++)
 	{
-		unsigned char* data = stbi_load(faces[i], &width, &height, &numChannels, 4);
+		unsigned char* data = stbi_load_wrapper(faces[i], &width, &height, &numChannels, 4);
 		if (data)
 		{
 			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
@@ -356,10 +350,10 @@ GLuint LoadCubemap(const char* file)
 	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
 
 	int width = 0; int height = 0; int numChannels = 0;
-	unsigned char* data = stbi_load(file, &width, &height, &numChannels, 4);
+	unsigned char* data = stbi_load_wrapper(file, &width, &height, &numChannels, 4);
+	
 	if (data)
 	{
-
 		stbi_image_free(data);
 	}
 	
@@ -437,12 +431,12 @@ void DrawSkybox(GLuint skybox, const glm::mat4& viewMat, const glm::mat4& projMa
 	glDepthFunc(GL_LEQUAL);
 	glUseProgram(g_helper.cubemapProgram);
 
-
 	glUniformMatrix4fv(g_helper.viewIdx, 1, false, (const GLfloat*)&viewMat);
 	glUniformMatrix4fv(g_helper.projIdx, 1, false, (const GLfloat*)&projMat);
 
 
 	glBindVertexArray(g_helper.skyboxVAO);
+	
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, skybox);
 	glDrawArrays(GL_TRIANGLES, 0, 36);

@@ -35,6 +35,15 @@ struct UnoGlobals
 }g_objs;
 
 
+void PrintGLMMatrix(const glm::mat4& m)
+{
+	LOG("%f, %f, %f, %f\n%f, %f, %f, %f\n%f, %f, %f, %f\n%f, %f, %f, %f\n",
+		m[0][0], m[1][0], m[2][0], m[3][0],
+		m[0][1], m[1][1], m[2][1], m[3][1],
+		m[0][2], m[1][2], m[2][2], m[3][2],
+		m[0][3], m[1][3], m[2][3], m[3][3]);
+}
+
 
 void UpdateUBOBuf()
 {
@@ -56,9 +65,9 @@ void UpdateUBOBuf()
 
 void UnoPlugin::Init(void* backendData)
 {
-	
 	initialized = true;
-	InitializeOpenGL();
+	this->backendData = backendData;
+	InitializeOpenGL(backendData);
 
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
@@ -82,16 +91,23 @@ void UnoPlugin::Init(void* backendData)
 	g_objs.gltfModel = nullptr;
 
 
-	//g_objs.skybox = LoadCubemap(
-	//	"Assets/CitySkybox/right.jpg",
-	//	"Assets/CitySkybox/left.jpg",
-	//	"Assets/CitySkybox/top.jpg",
-	//	"Assets/CitySkybox/bottom.jpg",
-	//	"Assets/CitySkybox/front.jpg",
-	//	"Assets/CitySkybox/back.jpg");
-	//
-	//g_objs.gltfModel = CreateInternalPBRFromFile("Assets/Helmet.gltf", 1.0f);
+	g_objs.skybox = LoadCubemap(
+		"Assets/CitySkybox/right.jpg",
+		"Assets/CitySkybox/left.jpg",
+		"Assets/CitySkybox/top.jpg",
+		"Assets/CitySkybox/bottom.jpg",
+		"Assets/CitySkybox/front.jpg",
+		"Assets/CitySkybox/back.jpg");
+	
+	g_objs.gltfModel = CreateInternalPBRFromFile("Assets/Helmet.gltf", 1.0f);
 	//g_objs.gltfModel = CreateInternalPBRFromFile("Assets/BoxAnimated.glb", 1.0f);
+
+
+	glDisable(GL_CULL_FACE);
+
+	if (sizeY != 0) {	// for android, as resize is never called
+		g_objs.playerCam.SetPerspective(90.0f, (float)this->sizeX / (float)this->sizeY, 0.1f, 256.0f);
+	}
 }
 
 void UnoPlugin::Resize(void* backendData)
@@ -112,7 +128,7 @@ void UnoPlugin::Render(void* backendData)
 
 	//UpdateAnimation(g_objs.gltfModel, 0, dt);
 	glViewport(0, 0, framebufferX, framebufferY);
-	glClearColor(0.0f, 0.4f, 0.4f, 1.0f);
+	glClearColor(1.0f, 0.4f, 0.4f, 1.0f);
 	glClearDepthf(1.0f);
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

@@ -50,6 +50,13 @@ android {
             include 'armeabi-v7a'
         }
     }
+    sourceSets {
+        main {
+            assets {
+                srcDirs 'src\\main\\assets'
+            }
+        }
+    }
 }
 
 

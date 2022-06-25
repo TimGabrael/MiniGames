@@ -27,7 +27,7 @@ struct UBOParams
 	float debugViewEquation;
 };
 
-void InitializePbrPipeline();
+void InitializePbrPipeline(void* assetManager);
 
 // returns Internal Object
 void* CreateInternalPBRFromFile(const char* filename, float scale);

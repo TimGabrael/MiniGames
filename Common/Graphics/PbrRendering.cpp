@@ -4,6 +4,50 @@
 #include <vector>
 #include <stdint.h>
 
+#define TINYGLTF_IMPLEMENTATION
+#define TINYGLTF_NOEXCEPTION
+#define JSON_NOEXCEPTION
+#ifdef ANDROID
+#define TINYGLTF_ANDROID_LOAD_FROM_ASSETS
+#endif
+#include "tiny_gltf.h"
+
+bool LoadModel(tinygltf::Model& model, const char* filename)
+{
+	tinygltf::TinyGLTF loader;
+	std::string error; std::string warning;
+	bool res = false;
+#ifdef _WIN32
+	size_t dotIdx = strnlen_s(filename, 250);
+#else
+	size_t dotIdx = strlen(filename);
+#endif
+	if (memcmp(filename + dotIdx - 4, ".glb", 4) == 0)
+	{
+		res = loader.LoadBinaryFromFile(&model, &error, &warning, filename);
+	}
+	else
+	{
+		res = loader.LoadASCIIFromFile(&model, &error, &warning, filename);
+	}
+
+	if (!warning.empty()) LOG("WARNING WHILE LOAD GLTF FILE: %s warning: %s\n", filename, warning.c_str());
+	if (!error.empty()) LOG("FAILED TO LOAD GLTF FILE: %s error: %s\n", filename, error.c_str());
+
+
+	return res;
+}
+
+
+
+
+
+
+
+
+
+
+
 
 #define MAX_NUM_JOINTS 128u
 
@@ -1577,8 +1621,11 @@ struct OpenGlPipelineObjects
 	Material* currentBoundMaterial = nullptr;
 }g_pipeline;
 static constexpr size_t sd = sizeof(UBO);
-void InitializePbrPipeline()
+void InitializePbrPipeline(void* assetManager)
 {
+#ifdef ANDROID
+	tinygltf::asset_manager = (AAssetManager*)assetManager;
+#endif
 	g_pipeline.shaderProgram = CreateProgram(pbrVertexShader, pbrFragmentShader);
 	glGenTextures(1, &g_pipeline.defTex);
 	glBindTexture(GL_TEXTURE_2D, g_pipeline.defTex);

@@ -1,19 +1,16 @@
 #pragma once
 
 #include "GLCompat.h"
-
-#include "tiny_gltf.h"
 #include "stb_truetype.h"
 #include "stb_image_resize.h"
 #include <vector>
 #include <glm/glm.hpp>
 
-void InitializeOpenGL();
+void InitializeOpenGL(void* assetManager);
 
 
 GLuint CreateProgram(const char* vertexShader, const char* fragmentShader);
 
-bool LoadModel(tinygltf::Model& model, const char* filename);
 
 GLuint LoadCubemap(const char* right, const char* left, const char* bottom, const char* top, const char* front, const char* back);
 GLuint LoadCubemap(const char* file);

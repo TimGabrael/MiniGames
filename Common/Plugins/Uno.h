@@ -15,7 +15,7 @@ class UnoPlugin : public PluginClass
 	virtual void KeyDownCallback(Key k, bool isRepeat) override;
 	virtual void KeyUpCallback(Key k, bool isRepeat) override;
 
-
+	void* backendData;	// AAssetManager* for android, else nullptr
 	bool initialized = false;
 };
 

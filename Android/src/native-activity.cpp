@@ -7,6 +7,9 @@
 #include <android/sensor.h>
 #include <string>
 
+#include <android/asset_manager.h>
+#include <android/asset_manager_jni.h>
+
 
 
 #include <dlfcn.h>
@@ -51,6 +54,7 @@ JNIEnv* env = nullptr;
 struct engine {
     struct android_app* app;
 
+    AAssetManager* pAssetManager;
     ASensorManager* sensorManager;
     const ASensor* accelerometerSensor;
     ASensorEventQueue* sensorEventQueue;
@@ -142,8 +146,6 @@ static void engine_draw_frame(struct engine* engine) {
     }
 
     if(loadedPlugin && engine->initialized) {
-        glClearColor(0.0f, 1.0f, 1.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
         loadedPlugin->Render(nullptr);
     }
     eglSwapBuffers(engine->display, engine->surface);
@@ -186,8 +188,9 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd) {
                 engine_init_display(engine);
                 engine_draw_frame(engine);
                 if(loadedPlugin) {
-                    loadedPlugin->Init(nullptr);
+                    loadedPlugin->Init(engine->pAssetManager);
                     engine->initialized = true;
+
                 }
             }
             break;
@@ -218,9 +221,6 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd) {
 
 bool GetStringParam(android_app* state, char paramBuffer[100])
 {
-    if(!env) {
-        state->activity->vm->AttachCurrentThread(&env, 0);
-    }
     jobject clazz = state->activity->clazz;
     jclass acl = env->GetObjectClass(clazz);
     jmethodID giid = env->GetMethodID(acl, "getIntent", "()Landroid/content/Intent;");
@@ -282,11 +282,23 @@ bool LaunchJavaActivity(android_app* state)
     return true;
 }
 
+void LoadAssetManager(engine* engine)
+{
+    jobject activity = engine->app->activity->clazz;
+    jclass activity_class = env->GetObjectClass(activity);
+    jmethodID getAssetID = env->GetMethodID(activity_class, "getAssets", "()Landroid/content/res/AssetManager;");
+    jobject assetManager = env->CallObjectMethod(activity, getAssetID);
+    jobject globalAssetManager = env->NewGlobalRef(assetManager);
+    engine->pAssetManager = AAssetManager_fromJava(env, globalAssetManager);
+}
 
 
 void android_main(struct android_app* state)
 {
     env = nullptr;
+    state->activity->vm->AttachCurrentThread(&env, 0);
+
+
     loadedPlugin = nullptr;
     struct engine engine;
     char buffer[100];
@@ -304,6 +316,9 @@ void android_main(struct android_app* state)
     engine.sensorEventQueue = ASensorManager_createEventQueue(engine.sensorManager,
                                                               state->looper, LOOPER_ID_USER, NULL, NULL);
 
+    LoadAssetManager(&engine);
+
+
     if (state->savedState != NULL) {
         engine.state = *(struct saved_state*)state->savedState;
     }
@@ -320,13 +335,12 @@ void android_main(struct android_app* state)
     }
 
 
-
     while(1)
     {
         int ident;
         int events;
         struct android_poll_source* source;
-        while ((ident = ALooper_pollAll(-1, NULL, &events, (void**)&source)) >= 0) {
+        while ((ident = ALooper_pollAll(engine.animating ? 0 : -1, NULL, &events, (void**)&source)) >= 0) {
             if (source != NULL) {
                 source->process(state, source);
             }
@@ -344,7 +358,9 @@ void android_main(struct android_app* state)
                 return;
             }
         }
-        //engine_draw_frame(&engine);
+        if (engine.animating) {
+            engine_draw_frame(&engine);
+        }
 
     }
 
