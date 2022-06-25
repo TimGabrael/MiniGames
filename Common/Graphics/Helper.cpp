@@ -25,10 +25,11 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
+
 constexpr float Camera::maxVelocity; // required for android build
 
 
-const char* brdf_lutVertexShader = "#version 330 core\n\
+const char* brdf_lutVertexShader = "#version 300 es\n\
 out vec2 UV;\
 void main()\
 {\
@@ -36,7 +37,8 @@ void main()\
 	gl_Position = vec4(UV * 2.0f - 1.0f, 0.0f, 1.0f);\
 }";
 
-const char* brdf_lutFragmentShader = "#version 330 core\n\
+const char* brdf_lutFragmentShader = "#version 300 es\n\
+precision highp float;\n\
 in vec2 UV;\n\
 out vec4 outColor;\n\
 const uint NUM_SAMPLES = 1024u;\n\
@@ -149,7 +151,7 @@ void main()\n\
 
 
 
-static const char* cubemapVS = "#version 330 core\n\
+static const char* cubemapVS = "#version 300 es\n\
 layout (location = 0) in vec3  aPos;\n\
 out vec3 TexCoords;\n\
 \
@@ -162,7 +164,8 @@ void main(){\
 	gl_Position = pos.xyww;\
 }";
 
-static const char* cubemapFS = "#version 330 core\n\
+static const char* cubemapFS = "#version 300 es\n\
+precision highp float;\n\
 out vec4 FragColor;\n\
 \
 in vec3 TexCoords;\n\
@@ -209,30 +212,31 @@ struct HelperGlobals
 
 void InitializeOpenGL()
 {
+#ifndef ANDROID
 	gladLoadGL();
-
+#endif
 	InitializePbrPipeline();
 	InitializeUiPipeline();
-
+	
 	g_helper.cubemapProgram = CreateProgram(cubemapVS, cubemapFS);
-
+	
 	g_helper.projIdx = glGetUniformLocation(g_helper.cubemapProgram, "projection");
 	g_helper.viewIdx = glGetUniformLocation(g_helper.cubemapProgram, "view");
-
-
+	
+	
 	glGenVertexArrays(1, &g_helper.skyboxVAO);
 	glGenBuffers(1, &g_helper.cubeVertexBuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, g_helper.cubeVertexBuffer);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
-
-
+	
+	
 	glBindVertexArray(g_helper.skyboxVAO);
-
+	
 	glBindBuffer(GL_ARRAY_BUFFER, g_helper.cubeVertexBuffer);
-
+	
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (const void*)0);
 	glEnableVertexAttribArray(0);
-
+	
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
@@ -244,6 +248,7 @@ GLuint CreateProgram(const char* vertexShaderSrc, const char* fragmentShaderSrc)
 	GLuint fragmentShader;
 	int  success;
 	char infoLog[512];
+	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	vertexShader = glCreateShader(GL_VERTEX_SHADER);
 	glShaderSource(vertexShader, 1, &vertexShaderSrc, NULL);
 	glCompileShader(vertexShader);
@@ -371,6 +376,7 @@ GLuint LoadCubemap(const char* file)
 
 GLuint GenerateBRDF_LUT(int dim)
 {
+	glDisable(GL_DEPTH_TEST);
 	GLuint framebuffer;
 	glGenFramebuffers(1, &framebuffer);
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
@@ -378,21 +384,27 @@ GLuint GenerateBRDF_LUT(int dim)
 	GLuint brdfLut;
 	glGenTextures(1, &brdfLut);
 	glBindTexture(GL_TEXTURE_2D, brdfLut);
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16, dim, dim, 0, GL_RGBA, GL_FLOAT, nullptr);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);	// not quite sure what i should use here
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);	// not quite sure what i should use here
+	
+#ifdef __glad_h_
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, dim, dim, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+#else
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, dim, dim, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+#endif
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	// not quite sure what i should use here
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);	// not quite sure what i should use here
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	
 
 
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, 0);
 
-	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, brdfLut, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, brdfLut, 0);
 	GLenum drawBuffers = GL_COLOR_ATTACHMENT0;
 	glDrawBuffers(1, &drawBuffers);
-
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-		LOG("FAILED TO CREATE FRAMEBUFFER OBJECT\n");
+	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	if (status != GL_FRAMEBUFFER_COMPLETE) {
+		LOG("FAILED TO CREATE FRAMEBUFFER OBJECT, STATUS: %d\n", status);
 		return 0;
 	}
 	GLuint shader = CreateProgram(brdf_lutVertexShader, brdf_lutFragmentShader);
@@ -406,13 +418,11 @@ GLuint GenerateBRDF_LUT(int dim)
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
-	
-
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	glDeleteProgram(shader);
 	glDeleteFramebuffers(1, &framebuffer);
-
+	glEnable(GL_DEPTH_TEST);
 
 	return brdfLut;
 }

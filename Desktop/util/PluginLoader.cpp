@@ -10,6 +10,7 @@
 #define SYM(handle, procName) (void*)GetProcAddress((HMODULE)handle, procName)
 #define FREE(handle) FreeLibrary((HMODULE)handle);
 #else
+#include <dlfcn.h>
 #define DYNAMIC_LIBRARY_EXTENSION ".so"
 #define LOAD(file) dlopen(file, RTLD_NOW)
 #define SYM(handle, procName) dlsym((void*)handle, procName)

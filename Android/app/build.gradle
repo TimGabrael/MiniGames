@@ -7,7 +7,7 @@ android {
 
     defaultConfig {
         applicationId "com.GabelStudio.MiniGames"
-        minSdk 16
+        minSdk 18
         targetSdk 31
         versionCode 1
         versionName "1.0"
@@ -36,10 +36,23 @@ android {
             version '3.18.1'
         }
     }
+
+
+
     buildFeatures {
         viewBinding true
     }
+
+    splits {
+        abi {
+            enable true
+            reset()
+            include 'armeabi-v7a'
+        }
+    }
 }
+
+
 
 dependencies {
 

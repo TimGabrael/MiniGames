@@ -196,7 +196,7 @@ struct Node {
 	{
 		if (mesh) {
 			glBindBuffer(GL_UNIFORM_BUFFER, mesh->uniformBuffer.handle);
-			mesh->uniformBuffer.mapped = glMapBuffer(GL_UNIFORM_BUFFER, GL_READ_WRITE);
+			mesh->uniformBuffer.mapped = glMapBufferRange(GL_UNIFORM_BUFFER, 0, sizeof(Mesh::UniformBlock), GL_MAP_WRITE_BIT);
 			glm::mat4 rot = glm::mat4(1.0f);
 			rot[0][0] = 1.0f;
 			rot[1][1] = -1.0f;
@@ -334,7 +334,9 @@ void LoadTextures(const tinygltf::Model& m, InternalPBR& pbr)
 		GLuint curTexture;
 		glGenTextures(1, &curTexture);
 		glBindTexture(GL_TEXTURE_2D, curTexture);
+#ifdef __glad_h_	// not using opengles
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, 16);
+#endif
 		if (tex.sampler != -1)
 		{
 			const tinygltf::Sampler& smpl = m.samplers.at(tex.sampler);
@@ -352,7 +354,9 @@ void LoadTextures(const tinygltf::Model& m, InternalPBR& pbr)
 		}
 
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, img.width, img.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, img.image.data());
-		glGenerateMipmap(GL_TEXTURE_2D);
+		glGenerateMipmap(GL_TEXTURE_2D);	// maybe i shouldn't, but for now it stays
+
+
 
 		if (deleteBuffer)
 		{
@@ -1084,7 +1088,8 @@ void CleanUpInternal(void* internalObj)
 
 
 
-const char* pbrVertexShader = "#version 440 core\n\
+const char* pbrVertexShader = "#version 310 es\n\
+#extension GL_EXT_shader_io_blocks : enable\n\
 \n\
 layout(location = 0) in vec3 inPos;\n\
 layout(location = 1) in vec3 inNormal;\n\
@@ -1145,7 +1150,8 @@ void main()\n\
 }";
 
 
-const char* pbrFragmentShader = "#version 440 core\n\
+const char* pbrFragmentShader = "#version 310 es\n\
+precision highp float;\n\
 \n\
 layout(location = 0) in vec3 inWorldPos;\n\
 layout(location = 1) in vec3 inNormal;\n\
@@ -1252,10 +1258,10 @@ vec4 SRGBtoLINEAR(vec4 srgbIn)\n\
 {\n\
 #ifdef MANUAL_SRGB\n\
 #ifdef SRGB_FAST_APPROXIMATION\n\
-	vec3 linOut = pow(srgbIn.xyz, vec3(2.2));\n\
+	vec3 linOut = pow(srgbIn.xyz, vec3(2.2f));\n\
 #else //SRGB_FAST_APPROXIMATION\n\
-	vec3 bLess = step(vec3(0.04045), srgbIn.xyz);\n\
-	vec3 linOut = mix(srgbIn.xyz / vec3(12.92), pow((srgbIn.xyz + vec3(0.055)) / vec3(1.055), vec3(2.4)), bLess);\n\
+	vec3 bLess = step(vec3(0.04045f), srgbIn.xyz);\n\
+	vec3 linOut = mix(srgbIn.xyz / vec3(12.92f), pow((srgbIn.xyz + vec3(0.055f)) / vec3(1.055f), vec3(2.4f)), bLess);\n\
 #endif //SRGB_FAST_APPROXIMATION\n\
 	return vec4(linOut, srgbIn.w);\n\
 #else //MANUAL_SRGB\n\
@@ -1266,7 +1272,7 @@ vec4 SRGBtoLINEAR(vec4 srgbIn)\n\
 vec3 getNormal()\n\
 {\n\
 \n\
-	vec3 tangentNormal = texture(normalMap, material.normalTextureSet == 0 ? inUV0 : inUV1).xyz * 2.0 - 1.0;\n\
+	vec3 tangentNormal = texture(normalMap, material.normalTextureSet == 0 ? inUV0 : inUV1).xyz * 2.0f - 1.0f;\n\
 \n\
 	vec3 q1 = dFdx(inWorldPos);\n\
 	vec3 q2 = dFdy(inWorldPos);\n\
@@ -1286,7 +1292,7 @@ vec3 getIBLContribution(PBRInfo pbrInputs, vec3 n, vec3 reflection)\n\
 {\n\
 	float lod = (pbrInputs.perceptualRoughness * uboParams.prefilteredCubeMipLevels);\n\
 	// retrieve a scale and bias to F0. See [1], Figure 3\n\
-	vec3 brdf = (texture(samplerBRDFLUT, vec2(pbrInputs.NdotV, 1.0 - pbrInputs.perceptualRoughness))).rgb;\n\
+	vec3 brdf = (texture(samplerBRDFLUT, vec2(pbrInputs.NdotV, 1.0f - pbrInputs.perceptualRoughness))).rgb;\n\
 	vec3 diffuseLight = SRGBtoLINEAR(tonemap(texture(samplerIrradiance, n))).rgb;\n\
 \n\
 	vec3 specularLight = SRGBtoLINEAR(tonemap(textureLod(prefilteredMap, reflection, lod))).rgb;\n\
@@ -1309,7 +1315,7 @@ vec3 diffuse(PBRInfo pbrInputs)\n\
 \n\
 vec3 specularReflection(PBRInfo pbrInputs)\n\
 {\n\
-	return pbrInputs.reflectance0 + (pbrInputs.reflectance90 - pbrInputs.reflectance0) * pow(clamp(1.0 - pbrInputs.VdotH, 0.0, 1.0), 5.0);\n\
+	return pbrInputs.reflectance0 + (pbrInputs.reflectance90 - pbrInputs.reflectance0) * pow(clamp(1.0f - pbrInputs.VdotH, 0.0f, 1.0f), 5.0f);\n\
 }\n\
 \n\
 float geometricOcclusion(PBRInfo pbrInputs)\n\
@@ -1318,8 +1324,8 @@ float geometricOcclusion(PBRInfo pbrInputs)\n\
 	float NdotV = pbrInputs.NdotV;\n\
 	float r = pbrInputs.alphaRoughness;\n\
 \n\
-	float attenuationL = 2.0 * NdotL / (NdotL + sqrt(r * r + (1.0 - r * r) * (NdotL * NdotL)));\n\
-	float attenuationV = 2.0 * NdotV / (NdotV + sqrt(r * r + (1.0 - r * r) * (NdotV * NdotV)));\n\
+	float attenuationL = 2.0f * NdotL / (NdotL + sqrt(r * r + (1.0f - r * r) * (NdotL * NdotL)));\n\
+	float attenuationV = 2.0f * NdotV / (NdotV + sqrt(r * r + (1.0f - r * r) * (NdotV * NdotV)));\n\
 	return attenuationL * attenuationV;\n\
 }\n\
 \n\
@@ -1331,16 +1337,16 @@ float microfacetDistribution(PBRInfo pbrInputs)\n\
 }\n\
 \n\
 float convertMetallic(vec3 diffuse, vec3 specular, float maxSpecular) {\n\
-	float perceivedDiffuse = sqrt(0.299 * diffuse.r * diffuse.r + 0.587 * diffuse.g * diffuse.g + 0.114 * diffuse.b * diffuse.b);\n\
-	float perceivedSpecular = sqrt(0.299 * specular.r * specular.r + 0.587 * specular.g * specular.g + 0.114 * specular.b * specular.b);\n\
+	float perceivedDiffuse = sqrt(0.299f * diffuse.r * diffuse.r + 0.587f * diffuse.g * diffuse.g + 0.114f * diffuse.b * diffuse.b);\n\
+	float perceivedSpecular = sqrt(0.299f * specular.r * specular.r + 0.587f * specular.g * specular.g + 0.114f * specular.b * specular.b);\n\
 	if (perceivedSpecular < c_MinRoughness) {\n\
 		return 0.0;\n\
 	}\n\
 	float a = c_MinRoughness;\n\
-	float b = perceivedDiffuse * (1.0 - maxSpecular) / (1.0 - c_MinRoughness) + perceivedSpecular - 2.0 * c_MinRoughness;\n\
+	float b = perceivedDiffuse * (1.0f - maxSpecular) / (1.0f - c_MinRoughness) + perceivedSpecular - 2.0f * c_MinRoughness;\n\
 	float c = c_MinRoughness - perceivedSpecular;\n\
-	float D = max(b * b - 4.0 * a * c, 0.0);\n\
-	return clamp((-b + sqrt(D)) / (2.0 * a), 0.0, 1.0);\n\
+	float D = max(b * b - 4.0 * a * c, 0.0f);\n\
+	return clamp((-b + sqrt(D)) / (2.0f * a), 0.0f, 1.0f);\n\
 }\n\
 \n\
 void main()\n\
@@ -1350,7 +1356,7 @@ void main()\n\
 	vec3 diffuseColor;\n\
 	vec4 baseColor;\n\
 \n\
-	vec3 f0 = vec3(0.04);\n\
+	vec3 f0 = vec3(0.04f);\n\
 \n\
 	if (material.alphaMask == 1.0f) {\n\
 		if (material.baseColorTextureSet > -1) {\n\
@@ -1412,13 +1418,13 @@ void main()\n\
 		// Convert metallic value from specular glossiness inputs\n\
 		metallic = convertMetallic(diffuse.rgb, specular, maxSpecular);\n\
 \n\
-		vec3 baseColorDiffusePart = diffuse.rgb * ((1.0 - maxSpecular) / (1 - c_MinRoughness) / max(1 - metallic, epsilon)) * material.diffuseFactor.rgb;\n\
-		vec3 baseColorSpecularPart = specular - (vec3(c_MinRoughness) * (1 - metallic) * (1 / max(metallic, epsilon))) * material.specularFactor.rgb;\n\
+		vec3 baseColorDiffusePart = diffuse.rgb * ((1.0f - maxSpecular) / (1.0f - c_MinRoughness) / max(1.0f - metallic, epsilon)) * material.diffuseFactor.rgb;\n\
+		vec3 baseColorSpecularPart = specular - (vec3(c_MinRoughness) * (1.0f - metallic) * (1.0f / max(metallic, epsilon))) * material.specularFactor.rgb;\n\
 		baseColor = vec4(mix(baseColorDiffusePart, baseColorSpecularPart, metallic * metallic), diffuse.a);\n\
 	}\n\
 \n\
-	diffuseColor = baseColor.rgb * (vec3(1.0) - f0);\n\
-	diffuseColor *= 1.0 - metallic;\n\
+	diffuseColor = baseColor.rgb * (vec3(1.0f) - f0);\n\
+	diffuseColor *= 1.0f - metallic;\n\
 \n\
 	float alphaRoughness = perceptualRoughness * perceptualRoughness;\n\
 \n\
@@ -1426,9 +1432,9 @@ void main()\n\
 \n\
 	float reflectance = max(max(specularColor.r, specularColor.g), specularColor.b);\n\
 \n\
-	float reflectance90 = clamp(reflectance * 25.0, 0.0, 1.0);\n\
+	float reflectance90 = clamp(reflectance * 25.0f, 0.0f, 1.0f);\n\
 	vec3 specularEnvironmentR0 = specularColor.rgb;\n\
-	vec3 specularEnvironmentR90 = vec3(1.0, 1.0, 1.0) * reflectance90;\n\
+	vec3 specularEnvironmentR90 = vec3(1.0f, 1.0f, 1.0f) * reflectance90;\n\
 \n\
 	vec3 n = (material.normalTextureSet > -1) ? getNormal() : normalize(inNormal);\n\
 	vec3 v = normalize(ubo.camPos - inWorldPos);    // Vector from surface point to camera\n\
@@ -1560,6 +1566,7 @@ enum GLTF_Textures
 	EMISSIVE_MAP,
 };
 
+
 struct OpenGlPipelineObjects
 {
 	GLuint shaderProgram;
@@ -1573,7 +1580,6 @@ static constexpr size_t sd = sizeof(UBO);
 void InitializePbrPipeline()
 {
 	g_pipeline.shaderProgram = CreateProgram(pbrVertexShader, pbrFragmentShader);
-
 	glGenTextures(1, &g_pipeline.defTex);
 	glBindTexture(GL_TEXTURE_2D, g_pipeline.defTex);
 	uint32_t defTexColorData[2];
@@ -1597,30 +1603,33 @@ void InitializePbrPipeline()
 	glUniformBlockBinding(g_pipeline.shaderProgram, g_pipeline.MaterialLoc, g_pipeline.MaterialLoc);
 	//LOG("UBO/UBONode/UBOParams/Material Locs: %d, %d, %d, %d\n", g_pipeline.UBOLoc, g_pipeline.UBONodeLoc, g_pipeline.UBOParamsLoc, g_pipeline.MaterialLoc);
 
+	glUseProgram(g_pipeline.shaderProgram);
 	GLint curTexture = glGetUniformLocation(g_pipeline.shaderProgram, "samplerIrradiance");
 	if (curTexture == -1) { LOG("failed to Get Texture Loaction of GLTF shader program\n"); }
-	glProgramUniform1i(g_pipeline.shaderProgram, curTexture, IRRADIANCE);
+	glUniform1i(curTexture, IRRADIANCE);
 	curTexture = glGetUniformLocation(g_pipeline.shaderProgram, "prefilteredMap");
 	if (curTexture == -1) { LOG("failed to Get Texture Loaction of GLTF shader program\n"); }
-	glProgramUniform1i(g_pipeline.shaderProgram, curTexture, PREFILTERED_MAP);
+	glUniform1i(curTexture, PREFILTERED_MAP);
 	curTexture = glGetUniformLocation(g_pipeline.shaderProgram, "samplerBRDFLUT");
 	if (curTexture == -1) { LOG("failed to Get Texture Loaction of GLTF shader program\n"); }
-	glProgramUniform1i(g_pipeline.shaderProgram, curTexture, BRDF_LUT);
+	glUniform1i(curTexture, BRDF_LUT);
 	curTexture = glGetUniformLocation(g_pipeline.shaderProgram, "colorMap");
 	if (curTexture == -1) { LOG("failed to Get Texture Loaction of GLTF shader program\n"); }
-	glProgramUniform1i(g_pipeline.shaderProgram, curTexture, COLOR_MAP);
+	glUniform1i(curTexture, COLOR_MAP);
 	curTexture = glGetUniformLocation(g_pipeline.shaderProgram, "physicalDescriptorMap");
 	if (curTexture == -1) { LOG("failed to Get Texture Loaction of GLTF shader program\n"); }
-	glProgramUniform1i(g_pipeline.shaderProgram, curTexture, PHYSICAL_DESCRIPTOR_MAP);
+	glUniform1i(curTexture, PHYSICAL_DESCRIPTOR_MAP);
 	curTexture = glGetUniformLocation(g_pipeline.shaderProgram, "normalMap");
 	if (curTexture == -1) { LOG("failed to Get Texture Loaction of GLTF shader program\n"); }
-	glProgramUniform1i(g_pipeline.shaderProgram, curTexture, NORMAL_MAP);
+	glUniform1i(curTexture, NORMAL_MAP);
 	curTexture = glGetUniformLocation(g_pipeline.shaderProgram, "aoMap");
 	if (curTexture == -1) { LOG("failed to Get Texture Loaction of GLTF shader program\n"); }
-	glProgramUniform1i(g_pipeline.shaderProgram, curTexture, AO_MAP);
+	glUniform1i(curTexture, AO_MAP);
 	curTexture = glGetUniformLocation(g_pipeline.shaderProgram, "emissiveMap");
 	if (curTexture == -1) { LOG("failed to Get Texture Loaction of GLTF shader program\n"); }
-	glProgramUniform1i(g_pipeline.shaderProgram, curTexture, EMISSIVE_MAP);
+	glUniform1i(curTexture, EMISSIVE_MAP);
+
+	glUseProgram(0);
 
 	g_pipeline.brdfLutMap = GenerateBRDF_LUT(512);
 }

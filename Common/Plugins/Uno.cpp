@@ -39,31 +39,33 @@ struct UnoGlobals
 void UpdateUBOBuf()
 {
 	glBindBuffer(GL_UNIFORM_BUFFER, g_objs.uboUniform);
-	UBO* data = (UBO*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
+	UBO* data = (UBO*)glMapBufferRange(GL_UNIFORM_BUFFER, 0, sizeof(UBO), GL_MAP_WRITE_BIT);
 	if (data)
 	{
 		data->projection = g_objs.playerCam.perspective;
-		data->model = glm::mat4(1.0f);// glm::rotate(glm::mat4(1.0f), -(float)M_PI / 2.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+		data->model = glm::mat4(1.0f);
 		data->view = g_objs.playerCam.view;
 		data->camPos = g_objs.playerCam.pos;
+		glUnmapBuffer(GL_UNIFORM_BUFFER);
 	}
 	else
 	{
-		LOG("FAILED TO MAP BUFFER\n");
+		LOG("FAILED TO MAP BUFFER, buf: %d\n", g_objs.uboUniform);
 	}
-	glUnmapBuffer(GL_UNIFORM_BUFFER);
 }
 
 void UnoPlugin::Init(void* backendData)
 {
+	
 	initialized = true;
 	InitializeOpenGL();
+
+	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
 
 	glGenBuffers(1, &g_objs.uboUniform);
 	glBindBuffer(GL_UNIFORM_BUFFER, g_objs.uboUniform);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(UBO), nullptr, GL_DYNAMIC_DRAW);
-
 	glGenBuffers(1, &g_objs.uboParamsUniform);
 	glBindBuffer(GL_UNIFORM_BUFFER, g_objs.uboParamsUniform);
 	UBOParams params;
@@ -77,19 +79,18 @@ void UnoPlugin::Init(void* backendData)
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(UBOParams), &params, GL_STATIC_DRAW);
 
 	g_objs.playerCam.pos = { 0.0f, 0.4f, 2.0f };
+	g_objs.gltfModel = nullptr;
 
 
-
-	g_objs.skybox = LoadCubemap(
-		"Assets/CitySkybox/right.jpg",
-		"Assets/CitySkybox/left.jpg",
-		"Assets/CitySkybox/top.jpg",
-		"Assets/CitySkybox/bottom.jpg",
-		"Assets/CitySkybox/front.jpg",
-		"Assets/CitySkybox/back.jpg");
-	
-	g_objs.gltfModel = CreateInternalPBRFromFile("Assets/Helmet.gltf", 1.0f);
-	//g_objs.gltfModel = CreateInternalPBRFromFile("Assets/BoomBoxWithAxes/glTF/BoomBoxWithAxes.gltf", 100.0f);
+	//g_objs.skybox = LoadCubemap(
+	//	"Assets/CitySkybox/right.jpg",
+	//	"Assets/CitySkybox/left.jpg",
+	//	"Assets/CitySkybox/top.jpg",
+	//	"Assets/CitySkybox/bottom.jpg",
+	//	"Assets/CitySkybox/front.jpg",
+	//	"Assets/CitySkybox/back.jpg");
+	//
+	//g_objs.gltfModel = CreateInternalPBRFromFile("Assets/Helmet.gltf", 1.0f);
 	//g_objs.gltfModel = CreateInternalPBRFromFile("Assets/BoxAnimated.glb", 1.0f);
 }
 
@@ -101,6 +102,7 @@ void UnoPlugin::Resize(void* backendData)
 void UnoPlugin::Render(void* backendData)
 {
 	if (!(sizeX && sizeY)) return;
+	
 
 	static auto prev = std::chrono::high_resolution_clock::now();
 	auto now = std::chrono::high_resolution_clock::now();
@@ -108,11 +110,11 @@ void UnoPlugin::Render(void* backendData)
 	float dt = std::chrono::duration<float>(now - prev).count();
 	prev = now;
 
-	UpdateAnimation(g_objs.gltfModel, 0, dt);
-
+	//UpdateAnimation(g_objs.gltfModel, 0, dt);
 	glViewport(0, 0, framebufferX, framebufferY);
 	glClearColor(0.0f, 0.4f, 0.4f, 1.0f);
-	glClearDepth(1.0f);
+	glClearDepthf(1.0f);
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glDepthFunc(GL_LESS);

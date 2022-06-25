@@ -2,7 +2,7 @@
 #include "Helper.h"
 #include "logging.h"
 
-static const char* uiVertexShader = "#version 330 core\n\
+static const char* uiVertexShader = "#version 300 es\n\
 \n\
 in vec2 pos;\
 in vec2 texPos;\
@@ -16,7 +16,8 @@ void main(){\
 }\
 ";
 
-static const char* uiFragmentShader = "#version 330 core\n\
+static const char* uiFragmentShader = "#version 300 es\n\
+precision highp float;\n\
 \n\
 in vec2 tPos;\
 in vec4 col;\
@@ -48,7 +49,7 @@ Vertex2D debugVertices[] = {
 void InitializeUiPipeline()
 {
 	g_ui.program = CreateProgram(uiVertexShader, uiFragmentShader);
-	glCreateVertexArrays(1, &g_ui.vao);
+	glGenVertexArrays(1, &g_ui.vao);
 	glGenBuffers(1, &g_ui.debugVertexBuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, g_ui.debugVertexBuffer);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(debugVertices), debugVertices, GL_STATIC_DRAW);

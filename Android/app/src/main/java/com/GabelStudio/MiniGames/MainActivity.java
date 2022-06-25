@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatDelegate;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.NativeActivity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
@@ -19,6 +20,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.GabelStudio.MiniGames.databinding.ActivityMainBinding;
+
+import java.lang.annotation.Native;
 
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
@@ -56,18 +59,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onClick(View view){
         Log.e("TAG", "onClick: HIER");
-        MessageServer(mainActivityHandler);
-        //SetLobbyActivity();
+        //MessageServer(mainActivityHandler);
+        SetLobbyActivity();
     }
 
 
     public void SetLobbyActivity()
     {
-        Message msg = new Message();
-        msg.obj = 10;
-        mainActivityHandler.sendMessage(msg);
-        // Intent intent = new Intent(MainActivity.this, LobbyActivity.class);
-        // startActivity(intent);
+        //Message msg = new Message();
+        //msg.obj = 10;
+        //mainActivityHandler.sendMessage(msg);
+        //Intent intent = new Intent(MainActivity.this, LobbyActivity.class);
+        Intent intent = new Intent(MainActivity.this, NativeActivity.class);
+        intent.putExtra("PLUGIN", "libUno.so");
+        startActivity(intent);
+
+
     }
 
     protected void onResume()
