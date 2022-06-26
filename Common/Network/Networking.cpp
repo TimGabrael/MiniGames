@@ -12,7 +12,7 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <arpa/inet.h>
-#define INVALID_SOCKET -1LL
+static constexpr uintptr_t INVALID_SOCKET = -1LL;
 typedef int SOCKET;
 #define ARRAYSIZE(arr) (sizeof(arr) / sizeof(arr[0]))
 #endif

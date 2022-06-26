@@ -224,7 +224,7 @@ stbi_uc* stbi_load_wrapper(const char* file, int* width, int* height, int* numCh
 
 void InitializeOpenGL(void* assetManager)
 {
-#ifndef ANDROID
+#if !defined(ANDROID) and !defined(EMSCRIPTEN)
 	gladLoadGL();
 #endif
 	g_helper.assetManager = assetManager;

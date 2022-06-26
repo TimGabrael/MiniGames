@@ -17,6 +17,22 @@ struct PLUGIN_INFO
 #endif
 
 
+enum PLATFORM_ID
+{
+	PLATFORM_ID_WINDOWS = 1,
+	PLATFORM_ID_LINUX = 1 << 1,
+	PLATFORM_ID_OSX = 1 << 2,
+
+	PLATFORM_ID_ANDROID = 1 << 3,
+	PLATFORM_ID_IOS = 1 << 4,
+
+	PLATFORM_ID_EMSCRIPTEN = 1 << 5,	// the black sheep of platforms
+
+	
+	PLATFORM_MASK_DESKTOP = PLATFORM_ID_WINDOWS | PLATFORM_ID_LINUX | PLATFORM_ID_OSX,
+	PLATFORM_MASK_MOBILE = PLATFORM_ID_ANDROID | PLATFORM_ID_IOS,
+};
+
 struct PB_MouseData
 {
 	int xPos;
@@ -41,7 +57,7 @@ class PluginClass
 {
 public:
 	virtual PLUGIN_INFO GetPluginInfos() = 0;
-	virtual void Init(void* backendData) = 0;
+	virtual void Init(void* backendData, PLATFORM_ID id) = 0;
 	virtual void Resize(void* backendData) = 0;
 	virtual void Render(void* backendData) = 0;
 

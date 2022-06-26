@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include <stddef.h>
 
 #define KEY_LEN 16
 #define KEY_EXP_LEN 176

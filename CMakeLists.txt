@@ -11,9 +11,11 @@ set(ADDITIONAL_SOURCES "")
 set(COMMON_SOURCES "")
 set(ADDITIONAL_LIBS "")
 
+if(NOT EMSCRIPTEN)
 add_subdirectory(3rd-party/glad)
 include_directories(${GLAD_INCLUDE_DIRS})
 link_libraries(${GLAD_LIBRARIES})
+endif()
 
 include_directories(3rd-party/glm)
 
@@ -23,7 +25,7 @@ add_subdirectory(Common)
 
 
 
-if(WIN32 OR (UNIX AND NOT ANDROID))
+if(WIN32 OR (UNIX AND NOT ANDROID AND NOT EMSCRIPTEN))
 	add_subdirectory(Server)
 
 	set(CMAKE_AUTOUIC ON)

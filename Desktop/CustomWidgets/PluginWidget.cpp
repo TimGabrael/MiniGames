@@ -1,4 +1,5 @@
 #include "PluginWidget.h"
+#include "Plugins/PluginCommon.h"
 #include <iostream>
 #include <qevent.h>
 #include <qtimer.h>
@@ -21,10 +22,18 @@ PluginWidget::~PluginWidget()
 	
 }
 
+
+#ifdef _WIN32
+#define _CURRENT_PLATFORM_ID PLATFORM_ID::PLATFORM_ID_WINDOWS
+#elif defined(OSX)
+#define _CURRENT_PLATFORM_ID PLATFORM_ID::PLATFORM_ID_OSX
+#else
+#define _CURRENT_PLATFORM_ID PLATFORM_ID::PLATFORM_ID_LINUX
+#endif
+
 void PluginWidget::initializeGL()
 {
-	plugin->Init(nullptr);
-
+	plugin->Init(nullptr, _CURRENT_PLATFORM_ID);
 	isInitialized = true;
 }
 

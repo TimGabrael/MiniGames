@@ -268,7 +268,7 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd) {
                 engine_init_display(engine);
                 engine_draw_frame(engine);
                 if(loadedPlugin) {
-                    loadedPlugin->Init(engine->pAssetManager);
+                    loadedPlugin->Init(engine->pAssetManager, PLATFORM_ID::PLATFORM_ID_ANDROID);
                     loadedPlugin->Resize(nullptr);
                     engine->initialized = true;
                 }

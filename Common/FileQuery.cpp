@@ -27,7 +27,7 @@ FileContent LoadFileContent(void* backendData, const char* filePath)
 #define READFILE(fptr, buf, size) fread_s(buf, size, 1, size, fptr);
 
 #else
-#define OPENFILE(ptr, file) ptr = fopen_s(file, "rb");
+#define OPENFILE(ptr, file) ptr = fopen(file, "rb");
 #define READFILE(fptr, buf, size) fread(buf, 1, size, fptr);
 #endif
 #include <fstream>

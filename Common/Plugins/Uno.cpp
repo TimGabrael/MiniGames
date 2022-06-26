@@ -63,7 +63,7 @@ void UpdateUBOBuf()
 	}
 }
 
-void UnoPlugin::Init(void* backendData)
+void UnoPlugin::Init(void* backendData, PLATFORM_ID id)
 {
 	initialized = true;
 	this->backendData = backendData;

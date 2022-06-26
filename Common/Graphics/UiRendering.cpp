@@ -4,9 +4,9 @@
 
 static const char* uiVertexShader = "#version 300 es\n\
 \n\
-in vec2 pos;\
-in vec2 texPos;\
-in vec4 color;\
+layout(location = 0) in vec2 pos;\n\
+layout(location = 1) in vec2 texPos;\n\
+layout(location = 2) in vec4 color;\n\
 out vec2 tPos;\
 out vec4 col;\
 void main(){\
@@ -24,15 +24,23 @@ in vec4 col;\
 uniform sampler2D tex;\
 out vec4 outCol;\
 void main(){\
-	outCol = vec4(texture(tex, tPos).rg, 0.0f,1.0f) * col;\
+	outCol = texture(tex, tPos).rgba * col;\
 }\
 ";
 
+
+struct StreamVertexBuffer
+{
+	GLuint buffer = 0;
+	void* mapped = nullptr;
+	int size = 0;
+};
 
 struct UiObjects {
 	GLuint program;
 	GLuint vao;
 	GLuint debugVertexBuffer;
+	StreamVertexBuffer streamBuffer;
 }g_ui;
 
 
@@ -50,6 +58,14 @@ void InitializeUiPipeline()
 {
 	g_ui.program = CreateProgram(uiVertexShader, uiFragmentShader);
 	glGenVertexArrays(1, &g_ui.vao);
+
+
+	glGenBuffers(1, &g_ui.streamBuffer.buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, g_ui.streamBuffer.buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	
+
+
 	glGenBuffers(1, &g_ui.debugVertexBuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, g_ui.debugVertexBuffer);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(debugVertices), debugVertices, GL_STATIC_DRAW);
