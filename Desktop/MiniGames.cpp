@@ -17,6 +17,13 @@
 #include "util/PluginLoader.h"
 #include "Frames/PluginFrame.h"
 
+#include "Audio/AudioBuffer.h"
+#include "Audio/WavFile.h"
+
+AudioBuffer<400000> testAudioBuffer;
+
+
+
 
 void StutterCallback(void* userData)
 {
@@ -29,7 +36,10 @@ int RenderCallback(void* userData, float* frames, int numberOfFrames)
     {
         // Perfect sine wave
         // frames[i] = sinf(curSample * M_PI * 440 * 2) * 0.1f;
-        // frames[i+1] = sinf(curSample * M_PI * 440 * 2) * 0.1f; 
+        // frames[i+1] = sinf(curSample * M_PI * 440 * 2) * 0.1f;
+        Data curData = testAudioBuffer.GetNext();
+        frames[i] = curData.channel1*1;
+        frames[i+1] = curData.channel2*1;
         curSample += SAMPLE_INV;
     }
     return numberOfFrames;
@@ -55,7 +65,10 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     audioDriver = nativeformat::driver::NFDriver::createNFDriver(nullptr, StutterCallback, RenderCallback, ErrorCallback,
         WillRenderCallback, DidRenderCallback, nativeformat::driver::OutputType::OutputTypeSoundCard);
     
-    // audioDriver->setPlaying(true);
+
+    
+
+    //audioDriver->setPlaying(true);
 
     QSizePolicy sizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     sizePolicy.setHorizontalStretch(0);

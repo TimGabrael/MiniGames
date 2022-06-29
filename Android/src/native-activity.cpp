@@ -33,6 +33,7 @@ PluginClass* TryLoadPlugin(const char* pluginName)
         FREE(handle);
         return nullptr;
     }
+
     PluginClass* resultPlugin = func();
     PLUGIN_INFO info = resultPlugin->GetPluginInfos();
     LOG("LOADED PLUGIN WITH INFO: %s", info.ID);
@@ -163,6 +164,7 @@ static void engine_term_display(struct engine* engine) {
         }
         eglTerminate(engine->display);
     }
+
     engine->animating = 0;
     engine->display = EGL_NO_DISPLAY;
     engine->context = EGL_NO_CONTEXT;
