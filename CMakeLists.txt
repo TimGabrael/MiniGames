@@ -15,13 +15,15 @@ if(NOT EMSCRIPTEN)
 add_subdirectory(3rd-party/glad)
 include_directories(${GLAD_INCLUDE_DIRS})
 link_libraries(${GLAD_LIBRARIES})
+add_subdirectory(3rd-party/NFDriver)
+include_directories(3rd-party/NFDriver/include)
+link_libraries(NFDriver)
 endif()
 
 include_directories(3rd-party/glm)
 
 include_directories(Common)
 add_subdirectory(Common)
-
 
 
 

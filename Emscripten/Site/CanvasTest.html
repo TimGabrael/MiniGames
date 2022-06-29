@@ -13,13 +13,9 @@
    
 
 
-
-
 <script>
     var Module = {
-    preRun: (function() {
-      instance.loadDynamicLibrary("Uno.wasm", { loadAsync: true, global: true, nodelete: true })
-    })(),
+    preRun: [],
     postRun: [],
     canvas: (function() {
       var canvas = document.getElementById('canvas');
@@ -31,6 +27,5 @@
 
 <script src="Wrapper.js">
 </script>
-
 
 </html>

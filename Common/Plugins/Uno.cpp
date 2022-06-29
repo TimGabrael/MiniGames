@@ -6,6 +6,9 @@
 #include "Graphics/UiRendering.h"
 #include <chrono>
 
+
+
+
 #define _USE_MATH_DEFINES
 #include <math.h>
 
@@ -48,19 +51,13 @@ void PrintGLMMatrix(const glm::mat4& m)
 void UpdateUBOBuf()
 {
 	glBindBuffer(GL_UNIFORM_BUFFER, g_objs.uboUniform);
-	UBO* data = (UBO*)glMapBufferRange(GL_UNIFORM_BUFFER, 0, sizeof(UBO), GL_MAP_WRITE_BIT);
-	if (data)
-	{
-		data->projection = g_objs.playerCam.perspective;
-		data->model = glm::mat4(1.0f);
-		data->view = g_objs.playerCam.view;
-		data->camPos = g_objs.playerCam.pos;
-		glUnmapBuffer(GL_UNIFORM_BUFFER);
-	}
-	else
-	{
-		LOG("FAILED TO MAP BUFFER, buf: %d\n", g_objs.uboUniform);
-	}
+	UBO ubos;
+	ubos.camPos = g_objs.playerCam.pos;
+	ubos.view = g_objs.playerCam.view;
+	ubos.model = glm::mat4(1.0f);
+	ubos.projection = g_objs.playerCam.perspective;
+
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(UBO), &ubos, GL_DYNAMIC_DRAW);
 }
 
 void UnoPlugin::Init(void* backendData, PLATFORM_ID id)
@@ -78,7 +75,7 @@ void UnoPlugin::Init(void* backendData, PLATFORM_ID id)
 	glGenBuffers(1, &g_objs.uboParamsUniform);
 	glBindBuffer(GL_UNIFORM_BUFFER, g_objs.uboParamsUniform);
 	UBOParams params;
-	params.lightDir = { 0.0f, -1.0f, 0.0f, 0.0f };
+	params.lightDir = { 0.0f, -1.0f, 0.0f, 1.0f };
 	params.exposure = 4.5f;
 	params.gamma = 2.2f;
 	params.prefilteredCubeMipLevels = 1.0f;
@@ -117,7 +114,6 @@ void UnoPlugin::Render(void* backendData)
 {
 	if (!(sizeX && sizeY)) return;
 	
-
 	static auto prev = std::chrono::high_resolution_clock::now();
 	auto now = std::chrono::high_resolution_clock::now();
 
@@ -136,7 +132,7 @@ void UnoPlugin::Render(void* backendData)
 	UpdateUBOBuf();
 
 
-
+	glDisable(GL_BLEND);
 	if(g_objs.gltfModel)
 		DrawPBRModel(g_objs.gltfModel, g_objs.uboUniform, g_objs.uboParamsUniform, g_objs.skybox, true);
 
@@ -146,8 +142,13 @@ void UnoPlugin::Render(void* backendData)
 		DrawPBRModel(g_objs.gltfModel, g_objs.uboUniform, g_objs.uboParamsUniform, g_objs.skybox, false);
 	
 
+
 	glDisable(GL_BLEND);
 	DrawSkybox(g_objs.skybox, g_objs.playerCam.view, g_objs.playerCam.perspective);
+
+
+	glEnable(GL_BLEND);
+	DrawUI();
 }
 
 

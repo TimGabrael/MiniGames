@@ -7,3 +7,6 @@
 [submodule "3rd-party/glfw"]
 	path = 3rd-party/glfw
 	url = https://github.com/glfw/glfw
+[submodule "3rd-party/NFDriver"]
+	path = 3rd-party/NFDriver
+	url = https://github.com/spotify/NFDriver

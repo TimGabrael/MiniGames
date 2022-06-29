@@ -198,7 +198,6 @@ struct Mesh {
 	BoundingBox aabb;
 	struct UniformBuffer {
 		GLuint handle;
-		void* mapped;
 	}uniformBuffer;
 	struct UniformBlock {
 		glm::mat4 matrix;
@@ -240,32 +239,32 @@ struct Node {
 	{
 		if (mesh) {
 			glBindBuffer(GL_UNIFORM_BUFFER, mesh->uniformBuffer.handle);
-			mesh->uniformBuffer.mapped = glMapBufferRange(GL_UNIFORM_BUFFER, 0, sizeof(Mesh::UniformBlock), GL_MAP_WRITE_BIT);
-			glm::mat4 rot = glm::mat4(1.0f);
-			rot[0][0] = 1.0f;
-			rot[1][1] = -1.0f;
-			rot[2][2] = 1.0f;
-			rot[3][3] = 1.0f;
-			glm::mat4 m = rot * getMatrix();
-			if (skin) {
-				mesh->uniformBlock.matrix = m;
-				// Update join matrices
-				glm::mat4 inverseTransform = glm::inverse(m);
-				size_t numJoints = std::min((uint32_t)skin->joints.size(), MAX_NUM_JOINTS);
-				for (size_t i = 0; i < numJoints; i++) {
-					Node* jointNode = skin->joints[i];
-					glm::mat4 jointMat = jointNode->getMatrix() * skin->inverseBindMatrices[i];
-					jointMat = inverseTransform * jointMat;
-					mesh->uniformBlock.jointMatrix[i] = jointMat;
+			void* mapped = glMapBufferRange(GL_UNIFORM_BUFFER, 0, sizeof(Mesh::UniformBlock), GL_MAP_WRITE_BIT| GL_MAP_INVALIDATE_BUFFER_BIT);
+			if (mapped)
+			{
+				glm::mat4 rot = glm::mat4(1.0f);
+				rot[1][1] = -1.0f;
+				glm::mat4 m = rot * getMatrix();
+				if (skin) {
+					mesh->uniformBlock.matrix = m;
+					// Update join matrices
+					glm::mat4 inverseTransform = glm::inverse(m);
+					size_t numJoints = std::min((uint32_t)skin->joints.size(), MAX_NUM_JOINTS);
+					for (size_t i = 0; i < numJoints; i++) {
+						Node* jointNode = skin->joints[i];
+						glm::mat4 jointMat = jointNode->getMatrix() * skin->inverseBindMatrices[i];
+						jointMat = inverseTransform * jointMat;
+						mesh->uniformBlock.jointMatrix[i] = jointMat;
+					}
+					mesh->uniformBlock.jointcount = (float)numJoints;
+					memcpy(mapped, &mesh->uniformBlock, sizeof(Mesh::UniformBlock));
 				}
-				mesh->uniformBlock.jointcount = (float)numJoints;
-				memcpy(mesh->uniformBuffer.mapped, &mesh->uniformBlock, sizeof(mesh->uniformBlock));
+				else {
+					memset(mapped, 0, sizeof(Mesh::UniformBlock));
+					memcpy(mapped, &m, sizeof(glm::mat4));
+				}
+				auto result = glUnmapBuffer(GL_UNIFORM_BUFFER);
 			}
-			else {
-				memset(mesh->uniformBuffer.mapped, 0, sizeof(mesh->uniformBlock));
-				memcpy(mesh->uniformBuffer.mapped, &m, sizeof(glm::mat4));
-			}
-			auto result = glUnmapBuffer(GL_UNIFORM_BUFFER);
 		}
 
 		for (auto& child : children) {

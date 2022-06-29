@@ -2,12 +2,11 @@ cmake_minimum_required(VERSION 3.4)
 
 set(COMMON_SOURCES ${COMMON_SOURCES} ${CMAKE_CURRENT_LIST_DIR}/Network/Networking.cpp ${CMAKE_CURRENT_LIST_DIR}/Network/Networking.h ${CMAKE_CURRENT_LIST_DIR}/Network/Cryptography.cpp ${CMAKE_CURRENT_LIST_DIR}/Graphics/Helper.h PARENT_SCOPE)
 
+add_library(Uno SHARED ${CMAKE_CURRENT_LIST_DIR}/Graphics/Helper.cpp ${CMAKE_CURRENT_LIST_DIR}/Plugins/Uno.cpp   "Graphics/PbrRendering.h" "Graphics/PbrRendering.cpp" "Graphics/UiRendering.h" "Graphics/UiRendering.cpp" "Plugins/KeyboardKeys.h" "Graphics/GLCompat.h" "Graphics/GLCompat.cpp" "FileQuery.h" "FileQuery.cpp" "Graphics/Simple3DRendering.cpp")
+
+
 if(EMSCRIPTEN)
-add_executable(Uno ${CMAKE_CURRENT_LIST_DIR}/Graphics/Helper.cpp ${CMAKE_CURRENT_LIST_DIR}/Plugins/Uno.cpp   "Graphics/PbrRendering.h" "Graphics/PbrRendering.cpp" "Graphics/UiRendering.h" "Graphics/UiRendering.cpp" "Plugins/KeyboardKeys.h" "Graphics/GLCompat.h" "Graphics/GLCompat.cpp" "FileQuery.h" "FileQuery.cpp")
-set_target_properties(Uno PROPERTIES COMPILE_FLAGS "-sSIDE_MODULE=1")
-set_target_properties(Uno PROPERTIES LINK_FLAGS "-sSIDE_MODULE=1 -s WASM=1 -s FULL_ES3=1 -s USE_GLFW=3 --preload-file ../../../bin/Assets/@Assets/")
-else()
-add_library(Uno SHARED ${CMAKE_CURRENT_LIST_DIR}/Graphics/Helper.cpp ${CMAKE_CURRENT_LIST_DIR}/Plugins/Uno.cpp   "Graphics/PbrRendering.h" "Graphics/PbrRendering.cpp" "Graphics/UiRendering.h" "Graphics/UiRendering.cpp" "Plugins/KeyboardKeys.h" "Graphics/GLCompat.h" "Graphics/GLCompat.cpp" "FileQuery.h" "FileQuery.cpp")
+set_target_properties(Uno PROPERTIES LINK_FLAGS "-s FULL_ES3=1 -s USE_GLFW=3")
 endif()
 
 if(WIN32)

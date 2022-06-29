@@ -1,7 +1,8 @@
 #include "emscripten.h"
 #include "emscripten/html5.h"
 #include "GLFW/glfw3.h"
-
+#include "Plugins/PluginCommon.h"
+#include "logging.h"
 
 #include <stdio.h>
 #include <dlfcn.h>
@@ -9,40 +10,48 @@
 
 GLFWwindow* window = nullptr;
 
+PluginClass* loadedPlugin = nullptr;
+
+extern "C" PluginClass* GetPlugin();
 
 
-void TestPluginLoading()
-{
-    void* module = dlopen("Uno.wasm", RTLD_NOW);
-    printf("Module: %p\n", module);
-    module = dlopen("Uno.js", RTLD_NOW);
-    printf("Module: %p\n", module);
-}
+
 
 void mainLoop() {
-    // Clear the screen with a color
-    glClearColor(1.0f, 1.0f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
 
-    // Swap the buffers of the window
+    loadedPlugin->Render(nullptr);
+
     glfwSwapBuffers(window);
-
-    // Poll for the events
     glfwPollEvents();
 }
 
 
+
+
+
+
+
 int main()
 {  
-    printf("MAIN WIRD AUFGERUFEN\n");
-    TestPluginLoading();
-
     glfwInit();
+    loadedPlugin = GetPlugin();
+    LOG("loadedPlugin: %s\n", loadedPlugin->GetPluginInfos().ID);
     
-    window = glfwCreateWindow(640, 480, "Test Window", 0, 0);
+    int sizeX = 640;
+    int sizeY = 480;
+    window = glfwCreateWindow(sizeX, sizeY, "Test Window", 0, 0);
     glfwMakeContextCurrent(window);
 
 
+    loadedPlugin->Init(nullptr, PLATFORM_ID::PLATFORM_ID_EMSCRIPTEN);
+    loadedPlugin->sizeX = sizeX;
+    loadedPlugin->sizeY = sizeY;
+    loadedPlugin->framebufferX = sizeX;
+    loadedPlugin->framebufferY = sizeY;
+    loadedPlugin->Resize(nullptr);
+
+
+    
 
     emscripten_set_main_loop(&mainLoop, 0, 1);
    

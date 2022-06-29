@@ -18,6 +18,32 @@
 #include "Frames/PluginFrame.h"
 
 
+void StutterCallback(void* userData)
+{
+}
+int RenderCallback(void* userData, float* frames, int numberOfFrames)
+{
+    static double curSample = 0;
+    static constexpr double SAMPLE_INV = 1.0 / 44100.0;
+    for (int i = 0; i < numberOfFrames * 2; i+=2)
+    {
+        // Perfect sine wave
+        // frames[i] = sinf(curSample * M_PI * 440 * 2) * 0.1f;
+        // frames[i+1] = sinf(curSample * M_PI * 440 * 2) * 0.1f; 
+        curSample += SAMPLE_INV;
+    }
+    return numberOfFrames;
+}
+void ErrorCallback(void* userData, const char* errorMessage, int errorCode) 
+{
+}
+void WillRenderCallback(void* userData)
+{
+}
+void DidRenderCallback(void* userData)
+{
+}
+
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
 {
 #ifdef _WIN32
@@ -25,6 +51,11 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
 #endif
     QPalette pal(0xD0D0D0, 0x404040, 0x606060, 0x202020, 0x505050, 0xD0D0D0, 0x202020);
     this->setPalette(pal);
+
+    audioDriver = nativeformat::driver::NFDriver::createNFDriver(nullptr, StutterCallback, RenderCallback, ErrorCallback,
+        WillRenderCallback, DidRenderCallback, nativeformat::driver::OutputType::OutputTypeSoundCard);
+    
+    // audioDriver->setPlaying(true);
 
     QSizePolicy sizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     sizePolicy.setHorizontalStretch(0);
