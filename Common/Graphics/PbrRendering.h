@@ -34,4 +34,5 @@ void* CreateInternalPBRFromFile(const char* filename, float scale);
 void CleanUpInternal(void* internalObj);
 
 void DrawPBRModel(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform, GLuint environmentMap, bool drawOpaque);
+void DrawPBRModelNode(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform, GLuint environmentMap, int nodeIdx, bool drawOpaque);
 void UpdateAnimation(void* internalObj, uint32_t index, float time);

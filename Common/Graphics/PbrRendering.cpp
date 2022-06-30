@@ -1764,7 +1764,32 @@ void DrawPBRModel(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform,
 	for (auto& node : realObj->nodes) {
 		DrawNode(realObj, node, drawOpaque);
 	}
+}
+void DrawPBRModelNode(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform, GLuint environmentMap, int nodeIdx, bool drawOpaque)
+{
+	g_pipeline.currentBoundMaterial = nullptr;
+	InternalPBR* realObj = (InternalPBR*)internalObj;
+	if (realObj->nodes.size() <= nodeIdx) return;
 
+	glUseProgram(g_pipeline.shaderProgram);
+	glBindVertexArray(realObj->vao);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, realObj->indices.indexBuffer);
+	glBindBufferRange(GL_UNIFORM_BUFFER, g_pipeline.UBOLoc, UboUniform, 0, sizeof(UBO));
+
+	glBindBufferRange(GL_UNIFORM_BUFFER, g_pipeline.UBOParamsLoc, UBOParamsUniform, 0, sizeof(UBOParams));
+
+
+	glActiveTexture(GL_TEXTURE0 + GLTF_Textures::PREFILTERED_MAP);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, environmentMap);
+
+	glActiveTexture(GL_TEXTURE0 + GLTF_Textures::IRRADIANCE);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, environmentMap);
+
+
+	glActiveTexture(GL_TEXTURE0 + GLTF_Textures::BRDF_LUT);
+	glBindTexture(GL_TEXTURE_2D, g_pipeline.brdfLutMap);
+
+	DrawNode(realObj, realObj->nodes.at(nodeIdx), drawOpaque);
 }
 
 void UpdateAnimation(void* internalObj, uint32_t index, float time)

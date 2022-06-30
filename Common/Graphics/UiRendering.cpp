@@ -94,6 +94,7 @@ void AddVerticesToBuffer(Vertex2D* verts, int numVerts, GLuint boundTexture, boo
 			glBufferData(GL_ARRAY_BUFFER, sb.size, newData, GL_DYNAMIC_DRAW);
 			delete[] newData;
 			sb.mapped = (unsigned char*)glMapBufferRange(GL_ARRAY_BUFFER, 0, sb.size, GL_MAP_WRITE_BIT | GL_MAP_READ_BIT);
+			return;
 		}
 		else
 		{
@@ -102,7 +103,6 @@ void AddVerticesToBuffer(Vertex2D* verts, int numVerts, GLuint boundTexture, boo
 			glBufferData(GL_ARRAY_BUFFER, sb.size, nullptr, GL_DYNAMIC_DRAW);
 			sb.mapped = (unsigned char*)glMapBufferRange(GL_ARRAY_BUFFER, 0, sb.size, GL_MAP_WRITE_BIT | GL_MAP_READ_BIT);
 		}
-		return;
 	}
 	if(!sb.mapped)
 	{
@@ -170,11 +170,16 @@ void DrawUI()
 {
 	if (g_ui.streamBuffer.instructions.empty()) return;
 
+	if (g_ui.streamBuffer.mapped) {
+		glBindBuffer(GL_ARRAY_BUFFER, g_ui.streamBuffer.buffer);
+		glUnmapBuffer(GL_ARRAY_BUFFER);
+		g_ui.streamBuffer.mapped = nullptr;
+	}
+
 	glDisable(GL_DEPTH_TEST);
 	glUseProgram(g_ui.program);
 	glBindVertexArray(g_ui.streamBuffer.vao);
 
-	glUnmapBuffer(GL_ARRAY_BUFFER);
 	
 	int curIdx = 0;
 	GLuint curBoundTex = g_ui.streamBuffer.instructions.at(0).boundTexture;

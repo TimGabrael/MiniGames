@@ -53,7 +53,7 @@ void WillRenderCallback(void* userData)
 void DidRenderCallback(void* userData)
 {
 }
-
+#include <fstream>
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
 {
 #ifdef _WIN32
@@ -64,8 +64,6 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
 
     audioDriver = nativeformat::driver::NFDriver::createNFDriver(nullptr, StutterCallback, RenderCallback, ErrorCallback,
         WillRenderCallback, DidRenderCallback, nativeformat::driver::OutputType::OutputTypeSoundCard);
-    
-
     
 
     //audioDriver->setPlaying(true);

@@ -5,7 +5,7 @@
 #include "Graphics/PbrRendering.h"
 #include "Graphics/UiRendering.h"
 #include <chrono>
-
+#include "Card.h"
 
 
 
@@ -65,6 +65,7 @@ void UnoPlugin::Init(void* backendData, PLATFORM_ID id)
 	initialized = true;
 	this->backendData = backendData;
 	InitializeOpenGL(backendData);
+	InitializeCardPipeline(backendData);
 
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
@@ -99,8 +100,16 @@ void UnoPlugin::Init(void* backendData, PLATFORM_ID id)
 	//g_objs.gltfModel = CreateInternalPBRFromFile("Assets/Helmet.gltf", 1.0f);
 	g_objs.gltfModel = CreateInternalPBRFromFile("Assets/BoxAnimated.glb", 1.0f);
 
+	
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+	glFrontFace(GL_CCW);
 
-	glDisable(GL_CULL_FACE);
+	AddCard(CARD_ID::CARD_ID_BLANK, CARD_ID::CARD_ID_YELLOW_0, glm::translate(glm::mat4(1.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
+	AddCard(CARD_ID::CARD_ID_BLANK, CARD_ID::CARD_ID_YELLOW_0, glm::translate(glm::mat4(1.0f), glm::vec3(1.1f, 0.0f, 0.01f)));
+	AddCard(CARD_ID::CARD_ID_BLANK, CARD_ID::CARD_ID_YELLOW_0, glm::translate(glm::mat4(1.0f), glm::vec3(1.2f, 0.0f, 0.02f)));
+	AddCard(CARD_ID::CARD_ID_BLANK, CARD_ID::CARD_ID_YELLOW_0, glm::translate(glm::mat4(1.0f), glm::vec3(1.3f, 0.0f, 0.03f)));
+	AddCard(CARD_ID::CARD_ID_BLANK, CARD_ID::CARD_ID_YELLOW_0, glm::translate(glm::mat4(1.0f), glm::vec3(1.4f, 0.0f, 0.04f)));
 }
 
 void UnoPlugin::Resize(void* backendData)
@@ -120,7 +129,6 @@ void UnoPlugin::Render(void* backendData)
 	float dt = std::chrono::duration<float>(now - prev).count();
 	prev = now;
 
-	UpdateAnimation(g_objs.gltfModel, 0, dt);
 	glViewport(0, 0, framebufferX, framebufferY);
 	glClearColor(1.0f, 0.4f, 0.4f, 1.0f);
 	glClearDepthf(1.0f);
@@ -132,23 +140,32 @@ void UnoPlugin::Render(void* backendData)
 	UpdateUBOBuf();
 
 
+
+
 	glDisable(GL_BLEND);
-	if(g_objs.gltfModel)
+	if (g_objs.gltfModel)
+	{
+		UpdateAnimation(g_objs.gltfModel, 0, dt);
 		DrawPBRModel(g_objs.gltfModel, g_objs.uboUniform, g_objs.uboParamsUniform, g_objs.skybox, true);
-
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	if(g_objs.gltfModel)
-		DrawPBRModel(g_objs.gltfModel, g_objs.uboUniform, g_objs.uboParamsUniform, g_objs.skybox, false);
-	
-
-
-	glDisable(GL_BLEND);
+	}
 	DrawSkybox(g_objs.skybox, g_objs.playerCam.view, g_objs.playerCam.perspective);
 
 
+
 	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glDisable(GL_DEPTH_TEST);
+
+
+	if(g_objs.gltfModel)
+		DrawPBRModel(g_objs.gltfModel, g_objs.uboUniform, g_objs.uboParamsUniform, g_objs.skybox, false);
+
+
+
+	DrawCards(g_objs.playerCam.perspective, g_objs.playerCam.view);
 	DrawUI();
+
+	glEnable(GL_DEPTH_TEST);
 }
 
 

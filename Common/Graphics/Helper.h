@@ -1,6 +1,7 @@
 #pragma once
 
 #include "GLCompat.h"
+#include "stb_image.h"
 #include "stb_truetype.h"
 #include "stb_image_resize.h"
 #include <vector>

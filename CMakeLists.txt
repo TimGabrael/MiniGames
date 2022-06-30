@@ -11,6 +11,7 @@ set(ADDITIONAL_SOURCES "")
 set(COMMON_SOURCES "")
 set(ADDITIONAL_LIBS "")
 
+
 if(NOT EMSCRIPTEN)
 add_subdirectory(3rd-party/glad)
 include_directories(${GLAD_INCLUDE_DIRS})
