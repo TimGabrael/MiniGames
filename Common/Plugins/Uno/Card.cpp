@@ -34,7 +34,6 @@ uniform sampler2D tex;\
 out vec4 outCol;\
 void main(){\
 	vec4 c = texture(tex, tPos);\n\
-	//if(c.a < 0.8f) discard;\n\
 	outCol = c;\
 }\
 ";

@@ -21,6 +21,7 @@
 
 #include "UiRendering.h"
 #include "PbrRendering.h"
+#include "Simple3DRendering.h"
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -239,6 +240,7 @@ void InitializeOpenGL(void* assetManager)
 	
 	InitializePbrPipeline(assetManager);
 	InitializeUiPipeline();
+	InitializeSimple3DPipeline();
 
 	
 	g_helper.cubemapProgram = CreateProgram(cubemapVS, cubemapFS);
@@ -266,6 +268,15 @@ void InitializeOpenGL(void* assetManager)
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glUseProgram(0);
+}
+void CleanUpOpenGL()
+{
+	CleanUpPbrPipeline();
+	CleanUpUiPipeline();
+	CleanUpSimple3DPipeline();
+	glDeleteBuffers(1, &g_helper.cubeVertexBuffer);
+	glDeleteProgram(g_helper.cubemapProgram);
+	glDeleteVertexArrays(1, &g_helper.skyboxVAO);
 }
 
 GLuint CreateProgram(const char* vertexShaderSrc, const char* fragmentShaderSrc)

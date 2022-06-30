@@ -153,7 +153,16 @@ void InitializeUiPipeline()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 }
-
+void CleanUpUiPipeline()
+{
+	if (g_ui.streamBuffer.mapped) {
+		glBindBuffer(GL_ARRAY_BUFFER, g_ui.streamBuffer.buffer);
+		glUnmapBuffer(GL_ARRAY_BUFFER);
+	}
+	glDeleteBuffers(1, &g_ui.streamBuffer.buffer);
+	glDeleteTextures(1, &g_ui.standardTexture);
+	glDeleteProgram(g_ui.program);
+}
 
 
 void DrawQuad(const glm::vec2& tl, const glm::vec2& br, uint32_t color)

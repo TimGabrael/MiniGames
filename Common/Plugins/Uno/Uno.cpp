@@ -6,6 +6,7 @@
 #include "Graphics/UiRendering.h"
 #include <chrono>
 #include "Card.h"
+#include "Graphics/Simple3DRendering.h"
 
 
 
@@ -34,6 +35,7 @@ struct UnoGlobals
 	GLuint uboUniform;
 	GLuint uboParamsUniform;
 	GLuint skybox;
+	S3DCombinedBuffer platform;
 	void* gltfModel;
 }g_objs;
 
@@ -60,12 +62,31 @@ void UpdateUBOBuf()
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(UBO), &ubos, GL_DYNAMIC_DRAW);
 }
 
+
+
+
+#define ALLOW_FREEMOVEMENT
 void UnoPlugin::Init(void* backendData, PLATFORM_ID id)
 {
 	initialized = true;
 	this->backendData = backendData;
 	InitializeOpenGL(backendData);
 	InitializeCardPipeline(backendData);
+
+	static constexpr float cubeSize = 2.0f;
+	static constexpr float cubeHeight = 1.0f;
+	SVertex3D cubeVertices[4] = {
+		{{-cubeSize, 0.0f, -cubeSize}, {0.0f, 0.0f}, 0xFF402040},
+		{{ cubeSize, 0.0f, -cubeSize}, {0.0f, 0.0f}, 0xFF406040},
+		{{ cubeSize, 0.0f,  cubeSize}, {0.0f, 0.0f}, 0xFF402040},
+		{{-cubeSize, 0.0f,  cubeSize}, {0.0f, 0.0f}, 0xFF406040},
+	};
+	uint32_t cubeIndices[] = {
+		0,3,2,2,1,0,
+	};
+	g_objs.platform = S3DGenerateBuffer(cubeVertices, sizeof(cubeVertices)/sizeof(SVertex3D), cubeIndices, sizeof(cubeIndices)/sizeof(uint32_t));
+
+
 
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
@@ -85,7 +106,8 @@ void UnoPlugin::Init(void* backendData, PLATFORM_ID id)
 	params.debugViewEquation = 0.0f;
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(UBOParams), &params, GL_STATIC_DRAW);
 
-	g_objs.playerCam.pos = { 0.0f, 0.4f, 2.0f };
+	g_objs.playerCam.pos = { 0.0f, 1.4f, 2.0f };
+	g_objs.playerCam.SetRotation(0.0f, -0.5f, 0.0f);
 	g_objs.gltfModel = nullptr;
 
 
@@ -143,6 +165,9 @@ void UnoPlugin::Render(void* backendData)
 
 
 	glDisable(GL_BLEND);
+
+	DrawSimple3D(g_objs.platform, g_objs.playerCam.perspective, g_objs.playerCam.view);
+
 	if (g_objs.gltfModel)
 	{
 		UpdateAnimation(g_objs.gltfModel, 0, dt);
@@ -172,28 +197,28 @@ void UnoPlugin::Render(void* backendData)
 
 void UnoPlugin::MouseCallback(const PB_MouseData* mData)
 {
+#ifdef ALLOW_FREEMOVEMENT
 	if (mData->lPressed && (mData->dx || mData->dy))
 	{
 		g_objs.playerCam.UpdateFromMouseMovement(-mData->dx, mData->dy);
 	}
+#endif
 }
 void UnoPlugin::KeyDownCallback(Key k, bool isRepeat)
 {
+#ifdef ALLOW_FREEMOVEMENT
 	if (!isRepeat)
 	{
 		if (k == Key::Key_W)g_objs.playerCam.SetMovementDirection(Camera::DIRECTION::FORWARD, true);
 		if (k == Key::Key_A)g_objs.playerCam.SetMovementDirection(Camera::DIRECTION::LEFT, true);
 		if (k == Key::Key_S)g_objs.playerCam.SetMovementDirection(Camera::DIRECTION::BACKWARD, true);
 		if (k == Key::Key_D)g_objs.playerCam.SetMovementDirection(Camera::DIRECTION::RIGHT, true);
-
-		if (k == Key::Key_1)g_objs.playerCam.pos.x += 0.1f;
-		if (k == Key::Key_2)g_objs.playerCam.pos.y += 0.1f;
-		if (k == Key::Key_3)g_objs.playerCam.pos.z += 0.1f;
-
 	}
+#endif
 }
 void UnoPlugin::KeyUpCallback(Key k, bool isRepeat)
 {
+#ifdef ALLOW_FREEMOVEMENT
 	if (!isRepeat)
 	{
 		if (k == Key::Key_W)g_objs.playerCam.SetMovementDirection(Camera::DIRECTION::FORWARD, false);
@@ -201,25 +226,41 @@ void UnoPlugin::KeyUpCallback(Key k, bool isRepeat)
 		if (k == Key::Key_S)g_objs.playerCam.SetMovementDirection(Camera::DIRECTION::BACKWARD, false);
 		if (k == Key::Key_D)g_objs.playerCam.SetMovementDirection(Camera::DIRECTION::RIGHT, false);
 	}
+#endif
 }
 
 void UnoPlugin::TouchDownCallback(int x, int y, int touchID)
 {
+#ifdef ALLOW_FREEMOVEMENT
 	g_objs.playerCam.UpdateTouch(x, y, touchID, false);
+#endif
 }
 void UnoPlugin::TouchUpCallback(int x, int y, int touchID)
 {
+#ifdef ALLOW_FREEMOVEMENT
 	g_objs.playerCam.UpdateTouch(x, y, touchID, true);
+#endif
 }
 void UnoPlugin::TouchMoveCallback(int x, int y, int dx, int dy, int touchID)
 {
+#ifdef ALLOW_FREEMOVEMENT
 	g_objs.playerCam.UpdateTouchMove(x, y, dx, dy, touchID);
+#endif
 }
 void UnoPlugin::CleanUp()
 {
 	glDeleteTextures(1, &g_objs.skybox);
 	glDeleteBuffers(1, &g_objs.uboParamsUniform);
 	glDeleteBuffers(1, &g_objs.uboUniform);
+
+	if (g_objs.gltfModel)
+	{
+		CleanUpInternal(g_objs.gltfModel);
+		g_objs.gltfModel = nullptr;
+	}
+
+	CleanUpOpenGL();
+
 
 	// ADD GLTF CLEANUP!!!
 }

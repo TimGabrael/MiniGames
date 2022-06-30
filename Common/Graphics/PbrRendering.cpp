@@ -1065,6 +1065,23 @@ void* CreateInternalPBRFromFile(const char* filename, float scale)
 void CleanUpInternal(void* internalObj)
 {
 	InternalPBR* realObj = (InternalPBR*)internalObj;
+
+	glDeleteVertexArrays(1, &realObj->vao);
+	glDeleteBuffers(1, &realObj->vertexBuffer);
+	glDeleteBuffers(1, &realObj->indices.indexBuffer);
+	for (auto& t : realObj->textures) {
+		glDeleteTextures(1, &t);
+	}
+	for (auto& n : realObj->nodes)
+	{
+		delete n;
+	}
+	for (auto& nl : realObj->linearNodes)
+	{
+		delete nl;
+	}
+	
+
 	delete realObj;
 }
 
@@ -1670,6 +1687,14 @@ void InitializePbrPipeline(void* assetManager)
 	glUseProgram(0);
 
 	g_pipeline.brdfLutMap = GenerateBRDF_LUT(512);
+}
+void CleanUpPbrPipeline()
+{
+	glDeleteTextures(1, &g_pipeline.brdfLutMap);
+	glDeleteTextures(1, &g_pipeline.defTex);
+	glDeleteProgram(g_pipeline.shaderProgram);
+	g_pipeline.brdfLutMap = 0; g_pipeline.defTex = 0; g_pipeline.shaderProgram = 0;
+	g_pipeline.currentBoundMaterial = nullptr;
 }
 
 

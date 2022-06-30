@@ -11,6 +11,7 @@ struct Vertex2D
 };
 
 void InitializeUiPipeline();
+void CleanUpUiPipeline();
 
 void DrawQuad(const glm::vec2& tl, const glm::vec2& br, uint32_t color);
 

@@ -28,6 +28,7 @@ struct UBOParams
 };
 
 void InitializePbrPipeline(void* assetManager);
+void CleanUpPbrPipeline();
 
 // returns Internal Object
 void* CreateInternalPBRFromFile(const char* filename, float scale);

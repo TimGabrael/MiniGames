@@ -8,6 +8,7 @@
 #include <glm/glm.hpp>
 
 void InitializeOpenGL(void* assetManager);
+void CleanUpOpenGL();
 
 
 GLuint CreateProgram(const char* vertexShader, const char* fragmentShader);
