@@ -28,3 +28,5 @@ void AddCard(CARD_ID back, CARD_ID front, const glm::mat4& transform);
 void ClearCards();
 
 void DrawCards(const glm::mat4& proj, const glm::mat4& view);
+
+bool HitTest(const glm::mat4& model, const glm::vec3& camPos, const glm::vec3& mouseRay);

@@ -19,12 +19,12 @@ struct UBO
 struct UBOParams
 {
 	glm::vec4 lightDir;
-	float exposure;
-	float gamma;
-	float prefilteredCubeMipLevels;
-	float scaleIBLAmbient;
-	float debugViewInputs;
-	float debugViewEquation;
+	float exposure = 4.5f;
+	float gamma = 2.2f;
+	float prefilteredCubeMipLevels = 1.0f;
+	float scaleIBLAmbient = 1.0f;
+	float debugViewInputs = 0.0f;
+	float debugViewEquation = 0.0f;
 };
 
 void InitializePbrPipeline(void* assetManager);

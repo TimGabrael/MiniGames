@@ -19,22 +19,31 @@ layout(location = 2) in mat4 instanceMatrix;\n\
 layout(location = 6) in vec2 texOffset;\n\
 uniform mat4 projection;\n\
 uniform mat4 view;\n\
+out vec3 outNormal;\
 out vec2 tPos;\
 void main(){\
 	gl_Position = projection * view * instanceMatrix * vec4(pos, 0.0f, 1.0f);\
 	tPos = texPos + texOffset;\
+	outNormal = (instanceMatrix * vec4(0.0f, 0.0f, 1.0f, 0.0f)).xyz;\
 }\
 ";
 
 static const char* cardFragmentShader = "#version 300 es\n\
 precision highp float;\n\
 \n\
+in vec3 outNormal;\
 in vec2 tPos;\
 uniform sampler2D tex;\
 out vec4 outCol;\
+const vec3 lPos = vec3(0.0f, 1.0f, 2.0f);\
+const vec3 lDir = vec3(0.0f, -1.0f, 0.0f);\
+const vec3 lDif = vec3(0.2f, 0.2f, 0.2f);\
+const vec3 fSpe = vec3(0.8f, 0.8f, 0.8f);\
 void main(){\
 	vec4 c = texture(tex, tPos);\n\
-	outCol = c;\
+	vec3 norm = normalize(outNormal);\
+	float diff = min(max(dot(norm, lDir), 0.0), 0.8);\
+	outCol = vec4((diff+lDif) * c.xyz, c.w);\n\
 }\
 ";
 
@@ -82,8 +91,10 @@ struct CardPipeline
 	CardBuffers bufs;
 	CardUniforms unis;
 
-}g_cards;
+	float width_half = 0.0f;
+	float height_half = 0.0f;
 
+}g_cards;
 
 
 void InitializeCardPipeline(void* assetManager)
@@ -135,18 +146,18 @@ void InitializeCardPipeline(void* assetManager)
 
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
-
+	g_cards.width_half = 0.5f;
+	g_cards.height_half = cardHeight;
 	CardVertex vert[6] = {
-		{{-0.5f, -cardHeight}, {CARD_STEP_SIZEX, CARD_STEP_SIZEY}},
-		{{-0.5f, cardHeight}, {CARD_STEP_SIZEX, 0.0f}},
-		{{0.5f, cardHeight}, {0.0f, 0.0f}},
-		{{0.5f, cardHeight}, {0.0f, 0.0f}},
-		{{0.5f, -cardHeight}, {0.0f, CARD_STEP_SIZEY}},
-		{{-0.5f, -cardHeight}, {CARD_STEP_SIZEX, CARD_STEP_SIZEY}},
+		{{-0.5f, -cardHeight}, {CARD_STEP_SIZEX, CARD_STEP_SIZEY}},	// br
+		{{-0.5f, cardHeight}, {CARD_STEP_SIZEX, 0.0f}},				// tr
+		{{0.5f, cardHeight}, {0.0f, 0.0f}},							// tl
+		{{0.5f, cardHeight}, {0.0f, 0.0f}},							// tl
+		{{0.5f, -cardHeight}, {0.0f, CARD_STEP_SIZEY}},				// bl
+		{{-0.5f, -cardHeight}, {CARD_STEP_SIZEX, CARD_STEP_SIZEY}},	// br
 	};
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vert), vert, GL_STATIC_DRAW);
 
-	
 	
 	glBindBuffer(GL_ARRAY_BUFFER, g_cards.bufs.streamBuffer);
 	InstanceData data;
@@ -253,4 +264,30 @@ void DrawCards(const glm::mat4& proj, const glm::mat4& view)
 	glDrawArraysInstanced(GL_TRIANGLES, 0, 6, g_cards.bufs.numInstances);
 
 	glBindVertexArray(0);
+}
+
+bool HitTest(const glm::mat4& model, const glm::vec3& camPos, const glm::vec3& mouseRay)
+{
+	glm::vec3 normal = model * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);
+	glm::vec3 tangent1 = model * glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
+	glm::vec3 tangent2 = model * glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+	glm::vec3 center = model * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+	
+	float rayDot = glm::dot(mouseRay, normal);
+	if (rayDot == 0.0f) return false;	// the ray is parallel to the plane
+	float interSectionTime = glm::dot((center - camPos), normal) / rayDot;
+	if (interSectionTime < 0.0f) return false;
+	
+	glm::vec3 planePos = camPos + mouseRay * interSectionTime;
+
+	float dx = glm::dot(tangent1, planePos);
+	float dy = glm::dot(tangent2, planePos);
+	if (-g_cards.width_half < dx && dx < g_cards.width_half)
+	{
+		if (-g_cards.height_half < dy && dy < g_cards.height_half)
+		{
+			return true;
+		}
+	}
+	return false;
 }

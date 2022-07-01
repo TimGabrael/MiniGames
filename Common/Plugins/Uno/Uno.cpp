@@ -1,6 +1,7 @@
 #include "Uno.h"
 #include <string>
 #include "Graphics/Helper.h"
+#include "Graphics/Camera.h"
 #include "logging.h" // REMINDER USE THIS !! USE THIS NOT <iostream> !!
 #include "Graphics/PbrRendering.h"
 #include "Graphics/UiRendering.h"
@@ -27,16 +28,40 @@ PLUGIN_INFO UnoPlugin::GetPluginInfos()
 	return plugInfo;
 }
 
+static float g_cardScale = 0.4f;
+struct CardInfo
+{
+	CARD_ID back; CARD_ID front;
+	glm::mat4 transform;
+};
+struct CardHand
+{
+	std::vector<CardInfo> cards;
+	void GenTransformations()
+	{
+		glm::mat4 std = glm::rotate(glm::mat4(1.0f), glm::radians(-40.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(g_cardScale));
+		for (int i = 0; i < cards.size(); i++)
+		{
+			auto& c = cards.at(i);
+			c.transform = glm::translate(glm::mat4(1.0f), glm::vec3((-0.8f + i * 0.4f) * g_cardScale, 0.8f, 2.0f)) * std;
+		}
+	}
+	void Draw()
+	{
+		for (auto& m : cards) {
+			AddCard(m.back, m.front, m.transform);
+		}
+	}
+};
+
 
 
 struct UnoGlobals
 {
 	Camera playerCam;
-	GLuint uboUniform;
-	GLuint uboParamsUniform;
 	GLuint skybox;
 	S3DCombinedBuffer platform;
-	void* gltfModel;
+	CardHand client;
 }g_objs;
 
 
@@ -50,18 +75,6 @@ void PrintGLMMatrix(const glm::mat4& m)
 }
 
 
-void UpdateUBOBuf()
-{
-	glBindBuffer(GL_UNIFORM_BUFFER, g_objs.uboUniform);
-	UBO ubos;
-	ubos.camPos = g_objs.playerCam.pos;
-	ubos.view = g_objs.playerCam.view;
-	ubos.model = glm::mat4(1.0f);
-	ubos.projection = g_objs.playerCam.perspective;
-
-	glBufferData(GL_UNIFORM_BUFFER, sizeof(UBO), &ubos, GL_DYNAMIC_DRAW);
-}
-
 
 
 
@@ -73,42 +86,23 @@ void UnoPlugin::Init(void* backendData, PLATFORM_ID id)
 	InitializeOpenGL(backendData);
 	InitializeCardPipeline(backendData);
 
-	static constexpr float cubeSize = 2.0f;
-	static constexpr float cubeHeight = 1.0f;
-	SVertex3D cubeVertices[4] = {
+	static constexpr float cubeSize = 4.0f;
+	SVertex3D platformVertices[4] = {
 		{{-cubeSize, 0.0f, -cubeSize}, {0.0f, 0.0f}, 0xFF402040},
 		{{ cubeSize, 0.0f, -cubeSize}, {0.0f, 0.0f}, 0xFF406040},
 		{{ cubeSize, 0.0f,  cubeSize}, {0.0f, 0.0f}, 0xFF402040},
 		{{-cubeSize, 0.0f,  cubeSize}, {0.0f, 0.0f}, 0xFF406040},
 	};
-	uint32_t cubeIndices[] = {
+	uint32_t platformIndices[] = {
 		0,3,2,2,1,0,
 	};
-	g_objs.platform = S3DGenerateBuffer(cubeVertices, sizeof(cubeVertices)/sizeof(SVertex3D), cubeIndices, sizeof(cubeIndices)/sizeof(uint32_t));
+	g_objs.platform = S3DGenerateBuffer(platformVertices, sizeof(platformVertices)/sizeof(SVertex3D), platformIndices, sizeof(platformIndices)/sizeof(uint32_t));
 
 
 
-	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-	glEnable(GL_DEPTH_TEST);
 
-	glGenBuffers(1, &g_objs.uboUniform);
-	glBindBuffer(GL_UNIFORM_BUFFER, g_objs.uboUniform);
-	glBufferData(GL_UNIFORM_BUFFER, sizeof(UBO), nullptr, GL_DYNAMIC_DRAW);
-	glGenBuffers(1, &g_objs.uboParamsUniform);
-	glBindBuffer(GL_UNIFORM_BUFFER, g_objs.uboParamsUniform);
-	UBOParams params;
-	params.lightDir = { 0.0f, -1.0f, 0.0f, 1.0f };
-	params.exposure = 4.5f;
-	params.gamma = 2.2f;
-	params.prefilteredCubeMipLevels = 1.0f;
-	params.scaleIBLAmbient = 1.0f;
-	params.debugViewInputs = 0.0f;
-	params.debugViewEquation = 0.0f;
-	glBufferData(GL_UNIFORM_BUFFER, sizeof(UBOParams), &params, GL_STATIC_DRAW);
-
-	g_objs.playerCam.pos = { 0.0f, 1.4f, 2.0f };
-	g_objs.playerCam.SetRotation(0.0f, -0.5f, 0.0f);
-	g_objs.gltfModel = nullptr;
+	g_objs.playerCam.pos = { 0.0f, 1.6f, 2.0f };
+	g_objs.playerCam.SetRotation(-90.0f, -40.0f, 0.0f);
 
 
 	g_objs.skybox = LoadCubemap(
@@ -118,20 +112,14 @@ void UnoPlugin::Init(void* backendData, PLATFORM_ID id)
 		"Assets/CitySkybox/bottom.jpg",
 		"Assets/CitySkybox/front.jpg",
 		"Assets/CitySkybox/back.jpg");
-	
-	//g_objs.gltfModel = CreateInternalPBRFromFile("Assets/Helmet.gltf", 1.0f);
-	g_objs.gltfModel = CreateInternalPBRFromFile("Assets/BoxAnimated.glb", 1.0f);
 
-	
+	AddCard(CARD_ID::CARD_ID_BLANK, CARD_ID::CARD_ID_ADD_4, glm::mat4(1.0f));
+
+	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CCW);
-
-	AddCard(CARD_ID::CARD_ID_BLANK, CARD_ID::CARD_ID_YELLOW_0, glm::translate(glm::mat4(1.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
-	AddCard(CARD_ID::CARD_ID_BLANK, CARD_ID::CARD_ID_YELLOW_0, glm::translate(glm::mat4(1.0f), glm::vec3(1.1f, 0.0f, 0.01f)));
-	AddCard(CARD_ID::CARD_ID_BLANK, CARD_ID::CARD_ID_YELLOW_0, glm::translate(glm::mat4(1.0f), glm::vec3(1.2f, 0.0f, 0.02f)));
-	AddCard(CARD_ID::CARD_ID_BLANK, CARD_ID::CARD_ID_YELLOW_0, glm::translate(glm::mat4(1.0f), glm::vec3(1.3f, 0.0f, 0.03f)));
-	AddCard(CARD_ID::CARD_ID_BLANK, CARD_ID::CARD_ID_YELLOW_0, glm::translate(glm::mat4(1.0f), glm::vec3(1.4f, 0.0f, 0.04f)));
 }
 
 void UnoPlugin::Resize(void* backendData)
@@ -159,8 +147,17 @@ void UnoPlugin::Render(void* backendData)
 
 	glDepthFunc(GL_LESS);
 	g_objs.playerCam.Update();
-	UpdateUBOBuf();
 
+	HitTest(glm::mat4(1.0f), g_objs.playerCam.pos, g_objs.playerCam.mouseRay);
+
+	//ClearCards();
+	//glm::mat4 scaleMat = glm::scale(glm::mat4(1.0f), glm::vec3(0.2f));
+	//glm::mat4 rot = glm::rotate(glm::mat4(1.0f), glm::radians(-40.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	//AddCard(CARD_ID::CARD_ID_BLANK, CARD_ID::CARD_ID_YELLOW_0, glm::translate(glm::mat4(1.0f), glm::vec3(-0.8f * 0.2f, 0.8f, 2.0f)) * rot * scaleMat);
+	//AddCard(CARD_ID::CARD_ID_BLANK, CARD_ID::CARD_ID_YELLOW_1, glm::translate(glm::mat4(1.0f), glm::vec3(-0.4f * 0.2f, 0.8f, 2.0f)) * rot * scaleMat);
+	//AddCard(CARD_ID::CARD_ID_BLANK, CARD_ID::CARD_ID_YELLOW_2, glm::translate(glm::mat4(1.0f), glm::vec3( 0.0f * 0.2f, 0.8f, 2.0f)) * rot * scaleMat);
+	//AddCard(CARD_ID::CARD_ID_BLANK, CARD_ID::CARD_ID_YELLOW_3, glm::translate(glm::mat4(1.0f), glm::vec3( 0.4f * 0.2f, 0.8f, 2.0f)) * rot * scaleMat);
+	//AddCard(CARD_ID::CARD_ID_BLANK, CARD_ID::CARD_ID_YELLOW_4, glm::translate(glm::mat4(1.0f), glm::vec3( 0.8f * 0.2f, 0.8f, 2.0f)) * rot * scaleMat);
 
 
 
@@ -168,11 +165,6 @@ void UnoPlugin::Render(void* backendData)
 
 	DrawSimple3D(g_objs.platform, g_objs.playerCam.perspective, g_objs.playerCam.view);
 
-	if (g_objs.gltfModel)
-	{
-		UpdateAnimation(g_objs.gltfModel, 0, dt);
-		DrawPBRModel(g_objs.gltfModel, g_objs.uboUniform, g_objs.uboParamsUniform, g_objs.skybox, true);
-	}
 	DrawSkybox(g_objs.skybox, g_objs.playerCam.view, g_objs.playerCam.perspective);
 
 
@@ -180,10 +172,6 @@ void UnoPlugin::Render(void* backendData)
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glDisable(GL_DEPTH_TEST);
-
-
-	if(g_objs.gltfModel)
-		DrawPBRModel(g_objs.gltfModel, g_objs.uboUniform, g_objs.uboParamsUniform, g_objs.skybox, false);
 
 
 
@@ -203,6 +191,8 @@ void UnoPlugin::MouseCallback(const PB_MouseData* mData)
 		g_objs.playerCam.UpdateFromMouseMovement(-mData->dx, mData->dy);
 	}
 #endif
+	auto& ray = g_objs.playerCam.mouseRay;
+	ray = g_objs.playerCam.ScreenToWorld(mData->xPos, mData->yPos);
 }
 void UnoPlugin::KeyDownCallback(Key k, bool isRepeat)
 {
@@ -225,6 +215,7 @@ void UnoPlugin::KeyUpCallback(Key k, bool isRepeat)
 		if (k == Key::Key_A)g_objs.playerCam.SetMovementDirection(Camera::DIRECTION::LEFT, false);
 		if (k == Key::Key_S)g_objs.playerCam.SetMovementDirection(Camera::DIRECTION::BACKWARD, false);
 		if (k == Key::Key_D)g_objs.playerCam.SetMovementDirection(Camera::DIRECTION::RIGHT, false);
+
 	}
 #endif
 }
@@ -250,15 +241,6 @@ void UnoPlugin::TouchMoveCallback(int x, int y, int dx, int dy, int touchID)
 void UnoPlugin::CleanUp()
 {
 	glDeleteTextures(1, &g_objs.skybox);
-	glDeleteBuffers(1, &g_objs.uboParamsUniform);
-	glDeleteBuffers(1, &g_objs.uboUniform);
-
-	if (g_objs.gltfModel)
-	{
-		CleanUpInternal(g_objs.gltfModel);
-		g_objs.gltfModel = nullptr;
-	}
-
 	CleanUpOpenGL();
 
 
