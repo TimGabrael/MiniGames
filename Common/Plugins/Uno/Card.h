@@ -24,7 +24,7 @@ enum CARD_ID
 
 void InitializeCardPipeline(void* assetManager);
 
-void AddCard(CARD_ID back, CARD_ID front, const glm::mat4& transform);
+void RendererAddCard(CARD_ID back, CARD_ID front, const glm::mat4& transform);
 void ClearCards();
 
 void DrawCards(const glm::mat4& proj, const glm::mat4& view);

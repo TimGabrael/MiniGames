@@ -10,6 +10,8 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
+#include "logging.h"
+
 constexpr float Camera::maxVelocity;		// required for android build
 constexpr float Camera::joystickTurnSpeed; // required for android build
 
@@ -26,12 +28,14 @@ void Camera::SetRotation(float yaw, float pitch, float roll)
 }
 void Camera::SetPerspective(float fov, float aspect, float znear, float zfar)
 {
+	this->nearClipping = znear; this->farClipping = zfar;
+	this->aspectRatio = aspect; this->fieldOfView = fov;
 	perspective = glm::perspective(glm::radians(fov), aspect, znear, zfar);
 }
 void Camera::Update()
 {
 	glm::vec3 moveVec = { 0.0f, 0.0f, 0.0f };
-	glm::vec3 right = glm::cross(front, glm::normalize(up + front));
+	glm::vec3 right = glm::normalize(glm::cross(front, up));
 	if (keyboardDirUsed)
 	{
 		bool anyActive = false;
@@ -173,6 +177,28 @@ void Camera::SetMovementDirection(DIRECTION dir, bool isActive)
 glm::vec3 Camera::GetFront() const
 {
 	return front;
+}
+glm::vec3 Camera::GetRealUp() const
+{
+	float upPitch = pitch + 90.0f;
+	glm::vec3 realUp;
+	realUp.x = cosf(glm::radians(yaw)) * cosf(glm::radians(upPitch));
+	realUp.y = sinf(glm::radians(upPitch));
+	realUp.z = sinf(glm::radians(yaw)) * cosf(glm::radians(upPitch));
+	return realUp;
+}
+glm::vec3 Camera::GetRight() const
+{
+	return glm::normalize(glm::cross(front, up));
+}
+float Camera::GetYaw() const
+{
+	return yaw;
+}
+glm::vec2 Camera::GetFrustrumSquare(float distance) const
+{
+	float heightCut = 2.0f * tanf(glm::radians(fieldOfView) / 2.0f) * distance;
+	return glm::vec2(heightCut * aspectRatio, heightCut);
 }
 glm::vec3 Camera::ScreenToWorld(float x, float y) const
 {

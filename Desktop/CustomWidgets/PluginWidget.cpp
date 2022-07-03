@@ -70,7 +70,7 @@ void PluginWidget::HandleTimer()
 void PluginWidget::mouseMoveEvent(QMouseEvent* event)
 {
 	QPoint pos = event->pos();
-	memset(&mouseData.lDown, 0, 6);
+	memset(&mouseData.lPressed, 0, 6);
 	if (!hovered)
 	{
 		hovered = true;
@@ -87,7 +87,7 @@ void PluginWidget::mouseMoveEvent(QMouseEvent* event)
 void PluginWidget::mousePressEvent(QMouseEvent* event)
 {
 	mouseData.dx = 0;mouseData.dy = 0;
-	memset(&mouseData.lDown, 0, 6);
+	memset(&mouseData.lPressed, 0, 6);
 	Qt::MouseButton btn = event->button();
 	if (btn == Qt::MouseButton::LeftButton) { mouseData.lPressed = true; mouseData.lDown = true; }
 	else if (btn == Qt::MouseButton::RightButton) { mouseData.rPressed = true; mouseData.rDown = true; }
@@ -98,11 +98,11 @@ void PluginWidget::mousePressEvent(QMouseEvent* event)
 void PluginWidget::mouseReleaseEvent(QMouseEvent* event)
 {
 	mouseData.dx = 0; mouseData.dy = 0;
-	memset(&mouseData.lDown, 0, 6);
+	memset(&mouseData.lPressed, 0, 6);
 	Qt::MouseButton btn = event->button();
-	if (btn == Qt::MouseButton::LeftButton) { mouseData.lPressed = false; mouseData.lUp = true; }
-	else if (btn == Qt::MouseButton::RightButton) { mouseData.rPressed = false; mouseData.rUp = true; }
-	else if (btn == Qt::MouseButton::MiddleButton) { mouseData.mPressed = false; mouseData.mUp = true; }
+	if (btn == Qt::MouseButton::LeftButton) { mouseData.lDown = false; mouseData.lUp = true; }
+	else if (btn == Qt::MouseButton::RightButton) { mouseData.rDown = false; mouseData.rUp = true; }
+	else if (btn == Qt::MouseButton::MiddleButton) { mouseData.mDown = false; mouseData.mUp = true; }
 
 	plugin->MouseCallback(&this->mouseData);
 }

@@ -31,20 +31,31 @@ struct Camera
 	void SetMovementDirection(DIRECTION dir, bool isActive);
 
 	glm::vec3 GetFront() const;
+	glm::vec3 GetRealUp() const;	// independent of the up vector used in the transformations
+	glm::vec3 GetRight() const;
+
+	float GetYaw() const;
+	glm::vec2 GetFrustrumSquare(float distance) const;
 
 	glm::vec3 ScreenToWorld(float x, float y) const;
 
 	glm::mat4 perspective;
 	glm::mat4 view;
 	glm::vec3 mouseRay;
+	glm::vec3 prevMouseRay;
 	glm::vec3 pos = glm::vec3(0.0f, 0.0f, 0.0f);
 	int screenX, screenY;
 private:
+
 	glm::vec3 front = glm::vec3(0.0f, 0.0f, -1.0f);
 	glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
 	float moveAngle = 0.0f;
 	float velocity = 0.0f;
 
+	float nearClipping = 0.0f;
+	float farClipping = 0.0f;
+	float aspectRatio = 0.0f;
+	float fieldOfView = 0.0f;
 
 	TouchJoystickData touch[2];
 

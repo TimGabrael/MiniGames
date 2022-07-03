@@ -43,7 +43,7 @@ void main(){\
 	vec4 c = texture(tex, tPos);\n\
 	vec3 norm = normalize(outNormal);\
 	float diff = min(max(dot(norm, lDir), 0.0), 0.8);\
-	outCol = vec4((diff+lDif) * c.xyz, c.w);\n\
+	outCol = vec4((diff+lDif) * c.rgb, c.a);\n\
 }\
 ";
 
@@ -194,7 +194,7 @@ void InitializeCardPipeline(void* assetManager)
 	glBindVertexArray(0);
 }
 
-void AddCard(CARD_ID back, CARD_ID front, const glm::mat4& transform)
+void RendererAddCard(CARD_ID back, CARD_ID front, const glm::mat4& transform)
 {
 	static constexpr int numReserved = 100;
 
@@ -268,11 +268,18 @@ void DrawCards(const glm::mat4& proj, const glm::mat4& view)
 
 bool HitTest(const glm::mat4& model, const glm::vec3& camPos, const glm::vec3& mouseRay)
 {
-	glm::vec3 normal = model * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);
+	glm::vec3 normal = glm::normalize(model * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f));
 	glm::vec3 tangent1 = model * glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
 	glm::vec3 tangent2 = model * glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+
+	float scaledWidth_half = sqrtf(glm::dot(tangent1, tangent1)) * g_cards.width_half;
+	float scaledHeight_half = sqrtf(glm::dot(tangent2, tangent2)) * g_cards.height_half;
+	tangent1 = glm::normalize(tangent1);
+	tangent2 = glm::normalize(tangent2);
+
 	glm::vec3 center = model * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-	
+
+
 	float rayDot = glm::dot(mouseRay, normal);
 	if (rayDot == 0.0f) return false;	// the ray is parallel to the plane
 	float interSectionTime = glm::dot((center - camPos), normal) / rayDot;
@@ -280,11 +287,14 @@ bool HitTest(const glm::mat4& model, const glm::vec3& camPos, const glm::vec3& m
 	
 	glm::vec3 planePos = camPos + mouseRay * interSectionTime;
 
-	float dx = glm::dot(tangent1, planePos);
-	float dy = glm::dot(tangent2, planePos);
-	if (-g_cards.width_half < dx && dx < g_cards.width_half)
+	float dx = glm::dot(tangent1, planePos) - glm::dot(tangent1, center);
+	float dy = glm::dot(tangent2, planePos) - glm::dot(tangent2, center);
+
+	
+
+	if (-scaledWidth_half < dx && dx < scaledWidth_half)
 	{
-		if (-g_cards.height_half < dy && dy < g_cards.height_half)
+		if (-scaledHeight_half < dy && dy < scaledHeight_half)
 		{
 			return true;
 		}

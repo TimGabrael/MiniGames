@@ -40,12 +40,12 @@ struct PB_MouseData
 	int dx;
 	int dy;
 
-	bool lPressed = false;
-	bool rPressed = false;
-	bool mPressed = false;
 	bool lDown = false;
 	bool rDown = false;
 	bool mDown = false;
+	bool lPressed = false;
+	bool rPressed = false;
+	bool mPressed = false;
 	bool lUp = false;
 	bool rUp = false;
 	bool mUp = false;
