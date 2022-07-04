@@ -3,6 +3,7 @@
 #include <vector>
 #include "Graphics/Camera.h"
 #include "Animator.h"
+#include "Pointer.h"
 
 static float g_cardScale = 0.3f;
 static constexpr float g_cardMinDiff = 0.25f;
@@ -29,6 +30,12 @@ enum CARD_ID
 	NUM_AVAILABLE_CARDS,
 };
 
+enum CARD_EFFECT
+{
+	CARD_EFFECT_BLUR,
+	NUM_EFFECTS,
+};
+
 enum CARD_ANIMATIONS
 {
 	ANIM_PLAY_CARD,		// throw a card on the board
@@ -41,6 +48,7 @@ enum CARD_ANIMATIONS
 void InitializeCardPipeline(void* assetManager);
 
 void RendererAddCard(CARD_ID back, CARD_ID front, const glm::mat4& transform);
+void RendererAddEffect(CARD_EFFECT effect, const glm::mat4& transform, uint32_t col);
 void ClearCards();
 
 void DrawCards(const glm::mat4& proj, const glm::mat4& view);
@@ -57,6 +65,28 @@ bool CardSort(CARD_ID low, CARD_ID high);
 
 // color refrence card is used for black cards, (user choice)
 bool CardIsPlayable(CARD_ID topCard, CARD_ID playing, CARD_ID colorRefrenceCard);
+
+uint32_t GetCardColorFromID(CARD_ID id);
+
+
+
+
+struct ColorPicker
+{
+	static constexpr float o = 0.01f;
+	static constexpr float ho = 0.0f;
+	static constexpr float r = 0.4f;
+	static constexpr float hr = 0.4f + o * 2.8f;
+
+	int hoveredColor = 0;
+	int pressedColor= false;	// partially selected a color
+	float hoverTimer = 0.0f;
+	bool isCurrentlyHovered = false;
+	CARD_ID GetSelected(int mx, int my, int screenX, int screenY, bool pressed, bool released);
+	void Draw(float aspectRatio, float dt);
+};
+
+
 
 
 
@@ -85,9 +115,14 @@ struct CardStack
 {
 	static constexpr float dy = 0.003f;
 	std::vector<CardInfo> cards;
+	CARD_ID blackColorID;
+	
+	float topAnim = 0.0f;
+	bool countDown = false;
+
 	void Draw();
 	void AddToStack(CARD_ID card, const glm::mat4& mat);
-	CARD_ID GetTop() const;
+	CARD_ID GetTop(CARD_ID& blackColorRef) const;
 };
 struct CardHand
 {
@@ -97,8 +132,6 @@ struct CardHand
 	}
 	std::vector<CardInfo> cards;
 	int highlightedCardIdx = -1;
-
-
 	// used when the number of cards on hand are overflowing the visible capacity
 	float maxWidth = 0.0f;
 	float wideCardsStart = -1.0f;
@@ -107,6 +140,11 @@ struct CardHand
 	int mouseSelectedCard = -1;
 
 	int handID = 0;
+
+	
+	CARD_ID choosenCardColor = CARD_ID_RED_2;
+	bool choosingCardColor = false;
+
 	bool mouseAttached = false;
 
 	bool needRegen = false;
@@ -115,7 +153,7 @@ struct CardHand
 	int AddTemp(const Camera& cam, CARD_ID id);
 	void PlayCard(const CardStack& stack, CardsInAnimation& anim, int cardIdx);
 	void FetchCard(const Camera& cam, const CardStack& stack, CardDeck& deck, CardsInAnimation& anim);
-	void Update(const CardStack& stack, CardsInAnimation& anim, const Camera& cam, int mouseDx, bool mousePressed, bool mouseReleased, bool allowInput);
+	void Update(CardStack& stack, CardsInAnimation& anim, ColorPicker& picker, const Camera& cam, const Pointer& p, bool allowInput);
 	void GenTransformations(const Camera& cam);
 	void Draw(const Camera& cam);
 };
@@ -143,3 +181,8 @@ struct CardsInAnimation
 	void Update(std::vector<CardHand>& hands, CardStack& stack, float dt);
 	void OnFinish(std::vector<CardHand>& hands, CardStack& stack, const glm::mat4& transform, CARD_ID id, CARD_ANIMATIONS type, int handID, int transitionID);
 };
+
+
+
+
+

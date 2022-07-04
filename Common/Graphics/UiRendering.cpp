@@ -81,16 +81,17 @@ void AddVerticesToBuffer(Vertex2D* verts, int numVerts, GLuint boundTexture, boo
 	if (sb.writeIdx + addingSize >= sb.size)
 	{
 		const int increaseSize = (addingSize / sizeSteps + 1) * sizeSteps;
+		const int newSize = std::max(sb.size + increaseSize, sb.writeIdx + increaseSize);
 		if (sb.mapped)
 		{
-			uint8_t* newData = new uint8_t[sb.size + increaseSize];
+			uint8_t* newData = new uint8_t[newSize];
 			memcpy(newData, sb.mapped, sb.size);
-			memcpy(newData + sb.size, verts, addingSize);
+			memcpy(newData + sb.writeIdx, verts, addingSize);
 			
 			glBindBuffer(GL_ARRAY_BUFFER, sb.buffer);
 			glUnmapBuffer(GL_ARRAY_BUFFER);
 
-			sb.size = sb.size + increaseSize;
+			sb.size = newSize;
 			glBufferData(GL_ARRAY_BUFFER, sb.size, newData, GL_DYNAMIC_DRAW);
 			delete[] newData;
 			sb.mapped = (unsigned char*)glMapBufferRange(GL_ARRAY_BUFFER, 0, sb.size, GL_MAP_WRITE_BIT | GL_MAP_READ_BIT);
@@ -98,7 +99,7 @@ void AddVerticesToBuffer(Vertex2D* verts, int numVerts, GLuint boundTexture, boo
 		}
 		else
 		{
-			sb.size = sb.size + increaseSize;
+			sb.size = newSize;
 			glBindBuffer(GL_ARRAY_BUFFER, sb.buffer);
 			glBufferData(GL_ARRAY_BUFFER, sb.size, nullptr, GL_DYNAMIC_DRAW);
 			sb.mapped = (unsigned char*)glMapBufferRange(GL_ARRAY_BUFFER, 0, sb.size, GL_MAP_WRITE_BIT | GL_MAP_READ_BIT);
@@ -173,7 +174,34 @@ void DrawQuad(const glm::vec2& tl, const glm::vec2& br, uint32_t color)
 	};
 	AddVerticesToBuffer(preQuad, 6, g_ui.standardTexture, true);
 }
+void DrawCircle(const glm::vec2& center, const glm::vec2& rad, float angleStart, float fillAngle, uint32_t color, int samples)
+{
+	const float dA = fillAngle / (float)(samples-1);
+	Vertex2D* verts = new Vertex2D[samples * 3];
 
+	int curIdx = 0;
+	for (int i = 0; i < samples-1; i++)
+	{
+		const float angle = dA * i + angleStart;
+		const float pangle = dA * (i+1) + angleStart;
+		
+		const glm::vec2 ppos = { center.x + rad.x * sinf(angle), center.y + rad.y * cosf(angle) };
+		const glm::vec2 pos = { center.x + rad.x * sinf(pangle), center.y + rad.y * cosf(pangle) };
+
+		verts[curIdx].pos = center;
+		verts[curIdx].color = color;
+		curIdx++;
+		verts[curIdx].pos = pos;
+		verts[curIdx].color = color;
+		curIdx++;
+		verts[curIdx].pos = ppos;
+		verts[curIdx].color = color;
+		curIdx++;
+	}
+
+	AddVerticesToBuffer(verts, 3 * samples, g_ui.standardTexture, true);
+	delete[] verts;
+}
 
 void DrawUI()
 {
@@ -183,6 +211,7 @@ void DrawUI()
 		glBindBuffer(GL_ARRAY_BUFFER, g_ui.streamBuffer.buffer);
 		glUnmapBuffer(GL_ARRAY_BUFFER);
 		g_ui.streamBuffer.mapped = nullptr;
+		g_ui.streamBuffer.writeIdx = 0;
 	}
 
 	glDisable(GL_DEPTH_TEST);

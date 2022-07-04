@@ -11,6 +11,7 @@
 #include "Graphics/Simple3DRendering.h"
 #include "../InputStates.h"
 #include "Animator.h"
+#include "Pointer.h"
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -48,9 +49,11 @@ struct UnoGlobals
 	CardHand* client;
 	std::vector<CardHand> hands;
 	MouseState ms;
+	Pointer p;
 	CardStack stack;
 	CardsInAnimation anims;
 	CardDeck deck;
+	ColorPicker picker;
 
 }g_objs;
 
@@ -120,6 +123,7 @@ void UnoPlugin::Resize(void* backendData)
 	g_objs.playerCam.screenX = sizeX;
 	g_objs.playerCam.screenY = sizeY;
 }
+ColorPicker picker;
 void UnoPlugin::Render(void* backendData)
 {
 	if (!(sizeX && sizeY)) return;
@@ -139,8 +143,17 @@ void UnoPlugin::Render(void* backendData)
 	glDepthFunc(GL_LESS);
 	g_objs.playerCam.Update();
 
-	g_objs.client->Update(g_objs.stack, g_objs.anims, g_objs.playerCam, g_objs.ms.dx, g_objs.ms.butns[MouseState::BTN_LEFT].Pressed(), g_objs.ms.butns[MouseState::BTN_LEFT].Released(), g_objs.anims.list.empty());
 
+	auto& ray = g_objs.playerCam.mouseRay;
+	ray = g_objs.playerCam.ScreenToWorld(g_objs.p.x, g_objs.p.y);
+
+
+
+	g_objs.client->Update(g_objs.stack, g_objs.anims, g_objs.picker, g_objs.playerCam, g_objs.p, g_objs.anims.list.empty());
+
+	if (g_objs.client->choosingCardColor) {
+		g_objs.picker.Draw((float)g_objs.playerCam.screenX / (float)g_objs.playerCam.screenY, dt);
+	}
 
 
 	{ // render all cards
@@ -148,6 +161,7 @@ void UnoPlugin::Render(void* backendData)
 		g_objs.deck.Draw();
 		g_objs.stack.Draw();
 		g_objs.anims.Update(g_objs.hands, g_objs.stack, dt);
+		
 		g_objs.client->Draw(g_objs.playerCam);
 	}
 	glDisable(GL_BLEND);
@@ -170,6 +184,7 @@ void UnoPlugin::Render(void* backendData)
 	glEnable(GL_DEPTH_TEST);
 
 	g_objs.ms.FrameEnd();
+	g_objs.p.EndFrame();
 }
 
 
@@ -183,8 +198,12 @@ void UnoPlugin::MouseCallback(const PB_MouseData* mData)
 	}
 #endif
 	g_objs.ms.SetFromPBState(mData);
-	auto& ray = g_objs.playerCam.mouseRay;
-	ray = g_objs.playerCam.ScreenToWorld(mData->xPos, mData->yPos);
+	// auto& ray = g_objs.playerCam.mouseRay;
+	// ray = g_objs.playerCam.ScreenToWorld(mData->xPos, mData->yPos);
+	
+	g_objs.p.FillFromMouse(mData);
+	
+
 }
 void UnoPlugin::KeyDownCallback(Key k, bool isRepeat)
 {
@@ -217,20 +236,21 @@ void UnoPlugin::TouchDownCallback(int x, int y, int touchID)
 #ifdef ALLOW_FREEMOVEMENT
 	g_objs.playerCam.UpdateTouch(x, y, touchID, false);
 #endif
-	auto& ray = g_objs.playerCam.mouseRay;
-	ray = g_objs.playerCam.ScreenToWorld(x, y);
+	g_objs.p.OnTouchDown(x, y, touchID);
 }
 void UnoPlugin::TouchUpCallback(int x, int y, int touchID)
 {
 #ifdef ALLOW_FREEMOVEMENT
 	g_objs.playerCam.UpdateTouch(x, y, touchID, true);
 #endif
+	g_objs.p.OnTouchUp(x, y, touchID);
 }
 void UnoPlugin::TouchMoveCallback(int x, int y, int dx, int dy, int touchID)
 {
 #ifdef ALLOW_FREEMOVEMENT
 	g_objs.playerCam.UpdateTouchMove(x, y, dx, dy, touchID);
 #endif
+	g_objs.p.OnTouchMove(x, y, dx, dy, touchID);
 }
 void UnoPlugin::CleanUp()
 {

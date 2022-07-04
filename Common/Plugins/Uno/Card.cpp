@@ -7,10 +7,30 @@
 #include <glm/matrix.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <algorithm>
+#include "Graphics/UiRendering.h"
 
 // this is related to the UNO_DECK.png
-static constexpr float CARD_STEP_SIZEX = 1.0f / 14.0f;
-static constexpr float CARD_STEP_SIZEY = 1.0f / 4.0f;
+
+static constexpr float IMAGE_SIZE_X = 1681.0f;
+static constexpr float IMAGE_SIZE_Y = 944.0f;
+
+static constexpr float CARD_SIZE_X = 120.0f;
+static constexpr float CARD_SIZE_Y = 180.0f;
+
+static constexpr float CARD_HEIGHT_HALF = 180.0f / 120.0f * 0.5f;
+
+
+static constexpr float CARD_EFFECT_START_Y = 724.0f;
+//static constexpr float CARD_EFFECT_X = 160.0f;
+static constexpr float CARD_EFFECT_X = 160.0f;
+static constexpr float CARD_EFFECT_Y = 219.0f;
+
+static constexpr float CARD_STEP_SIZEX = CARD_SIZE_X / IMAGE_SIZE_X;
+static constexpr float CARD_STEP_SIZEY = CARD_SIZE_Y / IMAGE_SIZE_Y;
+
+static constexpr float CARD_EFFECT_SIZEX = CARD_EFFECT_X / IMAGE_SIZE_X;
+static constexpr float CARD_EFFECT_SIZEY = CARD_EFFECT_Y / IMAGE_SIZE_Y;
+
 
 static const char* cardVertexShader = "#version 300 es\n\
 \n\
@@ -18,14 +38,18 @@ layout(location = 0) in vec2 pos;\n\
 layout(location = 1) in vec2 texPos;\n\
 layout(location = 2) in mat4 instanceMatrix;\n\
 layout(location = 6) in vec2 texOffset;\n\
+layout(location = 7) in vec2 texSize;\n\
+layout(location = 8) in vec4 addColor;\n\
 uniform mat4 projection;\n\
 uniform mat4 view;\n\
 out vec3 outNormal;\
 out vec2 tPos;\
+out vec4 addCol;\
 void main(){\
 	gl_Position = projection * view * instanceMatrix * vec4(pos, 0.0f, 1.0f);\
-	tPos = texPos + texOffset;\
+	tPos = texPos * texSize + texOffset;\
 	outNormal = (instanceMatrix * vec4(0.0f, 0.0f, 1.0f, 0.0f)).xyz;\
+	addCol = addColor;\
 }\
 ";
 
@@ -34,6 +58,7 @@ precision highp float;\n\
 \n\
 in vec3 outNormal;\
 in vec2 tPos;\
+in vec4 addCol;\
 uniform sampler2D tex;\
 out vec4 outCol;\
 const vec3 lPos = vec3(0.0f, 1.0f, 2.0f);\
@@ -41,7 +66,7 @@ const vec3 lDir = vec3(0.0f, -1.0f, 0.0f);\
 const vec3 lDif = vec3(0.2f, 0.2f, 0.2f);\
 const vec3 fSpe = vec3(0.8f, 0.8f, 0.8f);\
 void main(){\
-	vec4 c = texture(tex, tPos);\n\
+	vec4 c = texture(tex, tPos) * addCol;\n\
 	vec3 norm = normalize(outNormal);\
 	float diff = min(max(dot(norm, lDir), 0.0), 0.8);\
 	outCol = vec4((diff+lDif) * c.rgb, c.a);\n\
@@ -55,6 +80,12 @@ glm::vec2 CardIDToTextureIndex(CARD_ID id)
 	const int yPos = id / 14;
 	return { CARD_STEP_SIZEX * xPos, CARD_STEP_SIZEY * yPos };
 }
+glm::vec2 CardEffectToTextureIndex(CARD_EFFECT eff)
+{
+	const int xPos = eff % 1;
+
+	return { CARD_EFFECT_SIZEX * xPos, CARD_EFFECT_START_Y / IMAGE_SIZE_Y };
+}
 
 struct CardVertex
 {
@@ -65,7 +96,10 @@ struct InstanceData
 {
 	glm::mat4 mat;
 	glm::vec2 tOff;
+	glm::vec2 tSz;
+	uint32_t col;
 };
+static constexpr size_t instSize = sizeof(InstanceData);
 
 struct CardBuffers
 {
@@ -123,7 +157,7 @@ void InitializeCardPipeline(void* assetManager)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-		cardHeight = (height * CARD_STEP_SIZEY / (width * CARD_STEP_SIZEX)) / 2.0f;
+		cardHeight = CARD_HEIGHT_HALF;
 
 
 
@@ -148,14 +182,14 @@ void InitializeCardPipeline(void* assetManager)
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
 	g_cards.width_half = 0.5f;
-	g_cards.height_half = cardHeight;
+	g_cards.height_half = CARD_HEIGHT_HALF;
 	CardVertex vert[6] = {
-		{{-0.5f, -cardHeight}, {CARD_STEP_SIZEX, CARD_STEP_SIZEY}},	// br
-		{{-0.5f, cardHeight}, {CARD_STEP_SIZEX, 0.0f}},				// tr
-		{{0.5f, cardHeight}, {0.0f, 0.0f}},							// tl
-		{{0.5f, cardHeight}, {0.0f, 0.0f}},							// tl
-		{{0.5f, -cardHeight}, {0.0f, CARD_STEP_SIZEY}},				// bl
-		{{-0.5f, -cardHeight}, {CARD_STEP_SIZEX, CARD_STEP_SIZEY}},	// br
+		{{-0.5f, -cardHeight}, {1.0f, 1.0f}},	// br
+		{{-0.5f, cardHeight}, {1.0f, 0.0f}},	// tr
+		{{0.5f, cardHeight}, {0.0f, 0.0f}},		// tl
+		{{0.5f, cardHeight}, {0.0f, 0.0f}},		// tl
+		{{0.5f, -cardHeight}, {0.0f, 1.0f}},	// bl
+		{{-0.5f, -cardHeight}, {1.0f, 1.0f}},	// br
 	};
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vert), vert, GL_STATIC_DRAW);
 
@@ -172,18 +206,24 @@ void InitializeCardPipeline(void* assetManager)
 	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(InstanceData), (void*)(2 * vec4Size));
 	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(InstanceData), (void*)(3 * vec4Size));
 	glVertexAttribPointer(6, 2, GL_FLOAT, GL_FALSE, sizeof(InstanceData), (void*)(offsetof(InstanceData, tOff)));
+	glVertexAttribPointer(7, 2, GL_FLOAT, GL_FALSE, sizeof(InstanceData), (void*)(offsetof(InstanceData, tSz)));
+	glVertexAttribPointer(8, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(InstanceData), (void*)(offsetof(InstanceData, col)));
 	
 	glEnableVertexAttribArray(2);
 	glEnableVertexAttribArray(3);
 	glEnableVertexAttribArray(4);
 	glEnableVertexAttribArray(5);
 	glEnableVertexAttribArray(6);
+	glEnableVertexAttribArray(7);
+	glEnableVertexAttribArray(8);
 
 	glVertexAttribDivisor(2, 1);
 	glVertexAttribDivisor(3, 1);
 	glVertexAttribDivisor(4, 1);
 	glVertexAttribDivisor(5, 1);
 	glVertexAttribDivisor(6, 1);
+	glVertexAttribDivisor(7, 1);
+	glVertexAttribDivisor(8, 1);
 	
 
 
@@ -205,8 +245,12 @@ void RendererAddCard(CARD_ID back, CARD_ID front, const glm::mat4& transform)
 	InstanceData data[2];
 	data[0].mat = transform * glm::rotate(glm::mat4(1.0f), 3.14159f, glm::vec3(0.0f, 1.0f, 0.0f));
 	data[0].tOff = CardIDToTextureIndex(front);
+	data[0].tSz = glm::vec2(CARD_STEP_SIZEX, CARD_STEP_SIZEY);
+	data[0].col = 0xFFFFFFFF;
 	data[1].mat = transform * glm::mat4(1.0f);
 	data[1].tOff = CardIDToTextureIndex(back);
+	data[1].tSz = glm::vec2(CARD_STEP_SIZEX, CARD_STEP_SIZEY);
+	data[1].col = 0xFFFFFFFF;
 
 	if (b.avSize <= b.numInstances)
 	{
@@ -239,6 +283,59 @@ void RendererAddCard(CARD_ID back, CARD_ID front, const glm::mat4& transform)
 		b.mapped = (unsigned char*)glMapBufferRange(GL_ARRAY_BUFFER, 0, b.avSize * sizeof(InstanceData), GL_MAP_WRITE_BIT | GL_MAP_READ_BIT);
 	}
 	memcpy(b.mapped + (b.numInstances-2) * sizeof(InstanceData), &data, sizeof(InstanceData) * 2);
+}
+void RendererAddEffect(CARD_EFFECT effect, const glm::mat4& transform, uint32_t col)
+{
+	static constexpr int numReserved = 100;
+
+	auto& b = g_cards.bufs;
+	b.numInstances += 2;
+
+
+	const glm::vec2 effPos = CardEffectToTextureIndex(effect);
+
+	InstanceData data[2];
+	data[0].mat = transform * glm::rotate(glm::mat4(1.0f), 3.14159f, glm::vec3(0.0f, 1.0f, 0.0f));
+	data[0].tOff = effPos;
+	data[0].tSz = glm::vec2(CARD_EFFECT_SIZEX, CARD_EFFECT_SIZEY);
+	data[0].col = col;
+	data[1].mat = transform;
+	data[1].tOff = effPos;
+	data[1].tSz = data[0].tSz;
+	data[1].col = col;
+
+
+	if (b.avSize <= b.numInstances)
+	{
+		b.avSize = (b.avSize + b.numInstances + numReserved);
+		if (b.mapped)
+		{
+			uint8_t* newData = new uint8_t[b.avSize * sizeof(InstanceData)];
+			memcpy(newData, b.mapped, (b.numInstances - 2) * sizeof(InstanceData));
+			memcpy(newData + (b.numInstances - 2) * sizeof(InstanceData), &data, sizeof(InstanceData) * 2);
+
+			glBindBuffer(GL_ARRAY_BUFFER, b.streamBuffer);
+			glUnmapBuffer(GL_ARRAY_BUFFER);
+
+			glBufferData(GL_ARRAY_BUFFER, b.avSize * sizeof(InstanceData), newData, GL_DYNAMIC_DRAW);
+
+			delete[] newData;
+			b.mapped = (unsigned char*)glMapBufferRange(GL_ARRAY_BUFFER, 0, b.avSize * sizeof(InstanceData), GL_MAP_WRITE_BIT | GL_MAP_READ_BIT);
+			return;
+		}
+		else
+		{
+			glBindBuffer(GL_ARRAY_BUFFER, b.streamBuffer);
+			glBufferData(GL_ARRAY_BUFFER, b.avSize * sizeof(InstanceData), nullptr, GL_DYNAMIC_DRAW);
+			b.mapped = (unsigned char*)glMapBufferRange(GL_ARRAY_BUFFER, 0, b.avSize * sizeof(InstanceData), GL_MAP_WRITE_BIT | GL_MAP_READ_BIT);
+		}
+	}
+	if (!b.mapped)
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, b.streamBuffer);
+		b.mapped = (unsigned char*)glMapBufferRange(GL_ARRAY_BUFFER, 0, b.avSize * sizeof(InstanceData), GL_MAP_WRITE_BIT | GL_MAP_READ_BIT);
+	}
+	memcpy(b.mapped + (b.numInstances - 2) * sizeof(InstanceData), &data, sizeof(InstanceData) * 2);
 }
 void ClearCards()
 {
@@ -364,6 +461,141 @@ bool CardIsPlayable(CARD_ID topCard, CARD_ID playing, CARD_ID colorRefrenceCard)
 }
 
 
+uint32_t GetCardColorFromID(CARD_ID id)
+{
+	const int colorID = id / 14;
+	if (colorID == 0) return 0xFF0000FF;
+	else if (colorID == 1) return 0xFF00FFFF;
+	else if (colorID == 2) return 0xFF00FF00;
+	else if (colorID == 3) return 0xFFFF0000;
+	return 0xFFFFFFFF;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+CARD_ID ColorPicker::GetSelected(int mx, int my, int screenX, int screenY, bool pressed, bool released)
+{
+	const float mX = 2.0f * ((float)mx / (float)screenX) - 1.0f;
+	const float mY = 1.0f - 2.0f * ((float)my / (float)screenY);
+	const float aspectRatio = (float)screenX / (float)screenY;
+
+	const float oa = aspectRatio * o;
+	const float r_2 = (r + o) * (r + o);
+	const float ra_2 = aspectRatio * aspectRatio * r_2;
+
+
+	const float ellipseHitEq = mX * mX / r_2 + mY * mY / ra_2;
+
+	CARD_ID output = CARD_ID_BLANK;
+
+	if (ellipseHitEq < 1.0f)
+	{
+		if (mX > 0.0f && mY > 0.0f)			// region red
+		{
+			this->hoveredColor = 0;
+		}
+		else if (mX > 0.0f && mY < 0.0f)	// region yellow
+		{
+			this->hoveredColor = 1;
+
+		}
+		else if (mX < 0.0f && mY < 0.0f)	// region green
+		{
+			this->hoveredColor = 2;
+		}
+		else								// region blue 
+		{
+			this->hoveredColor = 3;
+		}
+		if (pressed) pressedColor = hoveredColor;
+		if (released && pressedColor != -1 && pressedColor == hoveredColor) {
+			if (pressedColor == 0) output = CARD_ID_RED_2;
+			else if (pressedColor == 1) output = CARD_ID_YELLOW_2;
+			else if (pressedColor == 2) output = CARD_ID_GREEN_2;
+			else if (pressedColor == 3) output = CARD_ID_BLUE_2;
+		}
+		isCurrentlyHovered = true;
+	}
+	else
+	{
+		if (pressed) pressedColor = -1;
+		isCurrentlyHovered = false;
+	}
+
+	return output;
+}
+void ColorPicker::Draw(float aspectRatio, float dt)
+{
+	static constexpr float hoverAnimDuration = 0.4f;
+	static constexpr int numSamples = 16;
+
+	const float hoa = aspectRatio * ho;
+	const float oa = aspectRatio * o;
+	const float ra = aspectRatio * r;
+	const float hra = aspectRatio * hr;
+
+	const uint32_t alpha = 0x60;
+	const uint32_t hAlpha = 0xB0;
+
+	if (isCurrentlyHovered) hoverTimer = std::min(hoverTimer + dt, hoverAnimDuration);
+	else hoverTimer = std::max(hoverTimer - dt, 0.0f);
+
+
+	const float interpol = hoverTimer / hoverAnimDuration;
+	const uint32_t ia = InterpolateInteger(alpha, hAlpha, interpol) << 24;
+	const float io = InterpolateFloat(o, ho, interpol);
+	const float ioa = InterpolateFloat(oa, hoa, interpol);
+	const float ir = InterpolateFloat(r, hr, interpol);
+	const float ira = InterpolateFloat(ra, hra, interpol);
+
+
+	if(hoveredColor == 0) DrawCircle({ io, ioa }, { ir, ira }, glm::radians(0.0f), glm::radians(90.0f), ia | 0x0000FF, numSamples);			// red
+	else DrawCircle({ o, oa}, { r, ra },		glm::radians(0.0f),   glm::radians(90.0f), 0x600000FF, numSamples);							// red
+
+	if(hoveredColor == 1) DrawCircle({ io, -ioa }, { ir, ira }, glm::radians(90.0f), glm::radians(90.0f), ia | 0x00FFFF, numSamples);		// yellow
+	else DrawCircle({ o, -oa}, { r, ra },	glm::radians(90.0f),  glm::radians(90.0f), 0x6000FFFF, numSamples);								// yellow
+
+	if(hoveredColor == 2) DrawCircle({ -io, -ioa }, { ir, ira }, glm::radians(180.0f), glm::radians(90.0f), ia | 0x00FF00, numSamples);		// green
+	else DrawCircle({ -o, -oa}, { r, ra },	glm::radians(180.0f), glm::radians(90.0f), 0x6000FF00, numSamples);								// green
+
+	if(hoveredColor == 3) DrawCircle({ -io, ioa }, { ir, ira }, glm::radians(270.0f), glm::radians(90.0f), ia | 0xFF0000, numSamples);		// blue
+	else DrawCircle({ -o, oa}, { r, ra },	glm::radians(270.0f), glm::radians(90.0f), 0x60FF0000, numSamples);								// blue
+}
+
+
+
+
+
+
 
 void CardDeck::Draw()
 {
@@ -385,8 +617,25 @@ CARD_ID CardDeck::PullCard()
 
 void CardStack::Draw()
 {
-	for (auto& c : cards)
+	for (int i = 0; i < cards.size(); i++)
 	{
+		auto& c = cards.at(i);
+		if ((i == cards.size() - 1) && (c.front == CARD_ID::CARD_ID_ADD_4 || c.front == CARD_ID::CARD_ID_CHOOSE_COLOR) && (blackColorID != CARD_ID::CARD_ID_BLANK && blackColorID))
+		{
+			if (countDown)
+			{
+				topAnim = std::max(topAnim - 0.02f, 0.0f);
+				if (topAnim == 0.0f) countDown = false;
+			}
+			else
+			{
+				topAnim = std::min(topAnim + 0.02f, 1.0f);
+				if (topAnim == 1.0f) countDown = true;
+			}
+			const float s = 1.3f + 0.4f * topAnim;
+			const uint32_t col = GetCardColorFromID(this->blackColorID);
+			RendererAddEffect(CARD_EFFECT_BLUR, c.transform * glm::scale(glm::mat4(1.0f), glm::vec3(s, s-0.1f, s)), col);
+		}
 		RendererAddCard(c.back, c.front, c.transform);
 	}
 }
@@ -407,10 +656,13 @@ void CardStack::AddToStack(CARD_ID card, const glm::mat4& mat)
 		cards.emplace_back(CARD_ID::CARD_ID_BLANK, card, mat, 0.0f, true);
 	}
 }
-CARD_ID CardStack::GetTop() const
+CARD_ID CardStack::GetTop(CARD_ID& blackColorRef) const
 {
 	if (cards.empty()) return CARD_ID_BLANK;
-	return cards.at(cards.size() - 1).front;
+
+	CARD_ID top = cards.at(cards.size() - 1).front;
+	if (top == CARD_ID::CARD_ID_ADD_4 || top == CARD_ID::CARD_ID_CHOOSE_COLOR) blackColorRef = blackColorID;
+	return top;
 }
 
 
@@ -453,11 +705,19 @@ int CardHand::AddTemp(const Camera& cam, CARD_ID id)
 }
 void CardHand::PlayCard(const CardStack& stack, CardsInAnimation& anim, int cardIdx)
 {
-	CARD_ID top = stack.GetTop();
+	CARD_ID blackColRef;
+	CARD_ID top = stack.GetTop(blackColRef);
 
-	if (CardIsPlayable(top, cards.at(cardIdx).front, CARD_ID::CARD_ID_BLANK))
+	if (CardIsPlayable(top, cards.at(cardIdx).front, blackColRef))
 	{
-		anim.AddAnim(stack, cards.at(cardIdx), handID, CARD_ANIMATIONS::ANIM_PLAY_CARD);
+		auto& c = cards.at(cardIdx);
+		anim.AddAnim(stack, c, handID, CARD_ANIMATIONS::ANIM_PLAY_CARD);
+		
+		if (c.front == CARD_ID::CARD_ID_ADD_4 || c.front == CARD_ID::CARD_ID_CHOOSE_COLOR)
+		{
+			this->choosingCardColor = true;
+		}
+
 		cards.erase(cards.begin() + cardIdx);
 	}
 	else
@@ -471,7 +731,7 @@ void CardHand::FetchCard(const Camera& cam, const CardStack& stack, CardDeck& de
 	int idx = AddTemp(cam, card);
 	anim.AddAnim(stack, cards.at(idx), handID, CARD_ANIMATIONS::ANIM_FETCH_CARD);
 }
-void CardHand::Update(const CardStack& stack, CardsInAnimation& anim, const Camera& cam, int mouseDx, bool mousePressed, bool mouseReleased, bool allowInput)
+void CardHand::Update(CardStack& stack, CardsInAnimation& anim, ColorPicker& picker, const Camera& cam, const Pointer& p, bool allowInput)
 {
 	needRegen = true;
 	if (needRegen) GenTransformations(cam);
@@ -481,11 +741,15 @@ void CardHand::Update(const CardStack& stack, CardsInAnimation& anim, const Came
 	
 	if (mouseAttached) {
 		static constexpr float pixelStepSize = 0.01f;
-		wideCardsStart += pixelStepSize * mouseDx;
+		wideCardsStart += pixelStepSize * p.dx;
+		if (abs(p.dx) != 0)
+		{
+			mouseSelectedCard = -1;
+		}
 	}
 	int oldMouseSelectedCard = mouseSelectedCard;
 	bool wasReleased = false;
-	if (mouseReleased) {
+	if (p.Released()) {
 		wasReleased = true;
 		mouseAttached = false;
 		mouseSelectedCard = -1;
@@ -498,7 +762,7 @@ void CardHand::Update(const CardStack& stack, CardsInAnimation& anim, const Came
 		{
 			hitIdx = i;
 			highlightedCardIdx = hitIdx;
-			if (mousePressed) {
+			if (p.Pressed()) {
 				mouseSelectedCard = hitIdx;
 				mouseAttached = true;
 			}
@@ -506,7 +770,18 @@ void CardHand::Update(const CardStack& stack, CardsInAnimation& anim, const Came
 		}
 	}
 
-	if (allowInput)
+	if (choosingCardColor)
+	{
+		CARD_ID id = picker.GetSelected(p.x, p.y, cam.screenX, cam.screenY, p.Pressed(), p.Released());
+		if (id != CARD_ID_BLANK)
+		{
+			choosenCardColor = id;
+			stack.blackColorID = id;
+			// update the game state to go to the next player here!
+			choosingCardColor = false;
+		}
+	}
+	else if (allowInput)
 	{
 		if (wasReleased && oldMouseSelectedCard == hitIdx && hitIdx != -1)
 		{
@@ -610,13 +885,31 @@ void CardHand::GenTransformations(const Camera& cam)
 }
 void CardHand::Draw(const Camera& cam)
 {
+	static float idx = 0.0f;
+	static bool countDown = false;
 	if (needRegen) GenTransformations(cam);
-	for (auto& c : cards) {
+
+	if (countDown) idx = std::max(idx - 0.02f, 0.0f);
+	else idx = std::min(idx + 0.02f, 1.0f);
+	
+	if (idx == 0.0f) countDown = false;
+	else if (idx == 1.0f) countDown = true;
+	
+	for (int i = 0; i < cards.size(); i++) {
+		auto& c = cards.at(i);
+
 		if (!c.visible) {
 			continue;	// don't draw temporary cards
 		}
+		if (i == highlightedCardIdx)
+		{
+			float scale = 1.3f + 0.1f * idx;
+			glm::mat4 s = glm::scale(glm::mat4(1.0f), glm::vec3(scale, scale - 0.1f, scale));
+			RendererAddEffect(CARD_EFFECT::CARD_EFFECT_BLUR, c.transform * s, 0xFF00D7FF);
+		}
 		RendererAddCard(c.back, c.front, c.transform);
 	}
+	
 }
 
 
@@ -724,7 +1017,7 @@ void CardsInAnimation::OnFinish(std::vector<CardHand>& hands, CardStack& stack, 
 	if (hand) {
 		for (auto& c : hand->cards)
 		{
-			if (c.transitionID == transitionID)
+			if (!c.visible && c.transitionID == transitionID)
 			{
 				if (type == CARD_ANIMATIONS::ANIM_FETCH_CARD) {
 					c.visible = true;
