@@ -6,10 +6,11 @@
 #include "Graphics/PbrRendering.h"
 #include "Graphics/UiRendering.h"
 #include <chrono>
+#include <algorithm>
 #include "Card.h"
 #include "Graphics/Simple3DRendering.h"
 #include "../InputStates.h"
-
+#include "Animator.h"
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -39,207 +40,26 @@ void PrintGLMMatrix(const glm::mat4& m)
 
 
 
-
-glm::vec3 GetCamFront();glm::vec3 GetCamPos();glm::vec3 GetCamUp();glm::vec3 GetCamRight(); float GetCamYaw();
-glm::vec3 GetMouseRay(); glm::vec2 GetCamClippingPlaneDimensions(float dist); bool IsMousePressed(); bool IsMouseReleased();
-int GetMouseDeltaX();
-
-static float g_cardScale = 0.3f;
-static constexpr float g_cardMinDiff = 0.25f;
-struct CardInfo
-{
-	CardInfo(CARD_ID back, CARD_ID front, const glm::mat4& mat, float hov) : back(back),front(front),transform(mat),hoverCounter(hov) {};
-	CARD_ID back; CARD_ID front;
-	glm::mat4 transform;
-	float hoverCounter = 0.0f;
-};
-struct CardHand
-{
-	std::vector<CardInfo> cards;
-	int highlightedCardIdx = -1;
-
-
-	// used when the number of cards on hand are overflowing the visible capacity
-	float maxWidth = 0.0f;
-	float wideCardsStart = -1.0f;
-	
-	int mouseSelectedCard = -1;
-	bool mouseAttached = false;
-
-	bool needRegen = false;
-	void Add(CARD_ID id)
-	{
-		if (wideCardsStart >= 0.0f) wideCardsStart += g_cardMinDiff * 0.5f;
-
-		cards.emplace_back(CARD_ID::CARD_ID_BLANK, id, glm::mat4(1.0f), 0.0f);
-		
-
-		needRegen = true;
-	}
-	void PlayCard(int cardIdx)
-	{
-		LOG("PLAYING CARD AT INDEX: %d\n", cardIdx);
-	}
-	void Update()
-	{
-		needRegen = true;
-		if (needRegen) GenTransformations();
-		glm::vec3 cp = GetCamPos();
-		glm::vec3 mRay = GetMouseRay();
-
-		if (mouseAttached) {
-			static constexpr float pixelStepSize = 0.01f;
-			wideCardsStart += pixelStepSize * GetMouseDeltaX();
-		}
-		int oldMouseSelectedCard = mouseSelectedCard;
-		bool wasReleased = false;
-		if (IsMouseReleased()) {
-			wasReleased = true;
-			mouseAttached = false;
-			mouseSelectedCard = -1;
-		}
-		int hitIdx = -1;
-		for (int i = cards.size() - 1; i >= 0; i--)
-		{
-			auto& c = cards.at(i);
-			if (hitIdx == -1 && HitTest(c.transform, cp, mRay))
-			{
-				hitIdx = i;
-				highlightedCardIdx = hitIdx;
-				if (IsMousePressed()) {
-					mouseSelectedCard = hitIdx;
-					mouseAttached = true;
-				}
-				break;
-			}
-		}
-		if (wasReleased && oldMouseSelectedCard == hitIdx)
-		{
-			PlayCard(oldMouseSelectedCard);
-		}
-
-		if (highlightedCardIdx != -1)
-		{
-			for (int i = 0; i < cards.size(); i++)
-			{
-				auto& c = cards.at(i);
-				if (i == highlightedCardIdx)
-				{
-					c.hoverCounter = std::min(c.hoverCounter + 0.1f, 1.0f);
-				}
-				else
-				{
-					c.hoverCounter = std::max(c.hoverCounter - 0.1f, 0.0f);
-				}
-			}
-		}
-
-	}
-	void GenTransformations()
-	{
-		static constexpr float maxDiff = 0.8f;
-		if (!needRegen || cards.empty()) return;
-		const glm::vec2 frustrum = GetCamClippingPlaneDimensions(1.0f);
-		maxWidth = frustrum.x * 1.2f;
-
-
-		glm::vec3 camUp = GetCamUp();
-		glm::vec3 baseTranslate = GetCamPos() + GetCamFront() + camUp * -1.f;
-		glm::vec3 right = GetCamRight();
-		float camYaw = GetCamYaw() + 90.0f;
-		glm::mat4 frontFaceingRotation = glm::rotate(glm::mat4(1.0f), glm::radians(camYaw), glm::vec3(0.0f, -1.0f, 0.0f));
-		glm::mat4 std = glm::translate(glm::mat4(1.0f), baseTranslate) * glm::rotate(glm::mat4(1.0f), glm::radians(-40.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * frontFaceingRotation * glm::scale(glm::mat4(1.0f), glm::vec3(g_cardScale));
-		
-		int numCards = cards.size();
-		
-		float distBetween = std::min(std::max(maxWidth * 2.0f / (float)cards.size(), g_cardMinDiff), maxDiff);
-
-		if (distBetween * numCards > maxWidth * 2.0f)
-		{
-			if (wideCardsStart < 0.0f) wideCardsStart = 0.0f;
-			const float smallWidth = 0.125f * maxWidth;
-			const float bigWidth = 7.0f / 4.0f * maxWidth;
-			const float xOff = maxWidth;
-
-			const float unchangedSize = distBetween * numCards;
-			if (wideCardsStart > unchangedSize - bigWidth - smallWidth) wideCardsStart = unchangedSize - bigWidth - smallWidth;
-			const float sigma1 = wideCardsStart;
-			const float sigma2 = unchangedSize - (wideCardsStart + bigWidth);
-			
-			
-			const int numCardsInSigma1 = (int)(sigma1 / g_cardMinDiff);
-			const int numCardsInSigma2 = (int)(sigma2 / g_cardMinDiff);
-
-			const float distSigma1 = std::min(smallWidth * g_cardMinDiff / sigma1, g_cardMinDiff);	// the real distance between sigma1 elements
-			const float distSigma2 = std::min(smallWidth * g_cardMinDiff / sigma2, g_cardMinDiff);	// the real distance between sigma2 elements
-
-			float curScale = -xOff;	// overall start of the whole thing
-			for (int i = 0; i < numCardsInSigma1 && i < numCards; i++)
-			{
-				auto& c = cards.at(i);
-				c.transform = glm::translate(glm::mat4(1.0f), right * curScale * g_cardScale + camUp * 0.2f * c.hoverCounter) * std;
-				curScale += distSigma1;
-			}
-			int idx = numCardsInSigma1;
-			const float bigEnd = -xOff + smallWidth + bigWidth;
-			while (curScale < bigEnd && idx < numCards)
-			{
-				auto& c = cards.at(idx);
-				c.transform = glm::translate(glm::mat4(1.0f), right * curScale * g_cardScale + camUp * 0.2f * c.hoverCounter) * std;
-				curScale += g_cardMinDiff;
-				idx++;
-			}
-
-			for (int i = idx; i < numCards; i++)
-			{
-				auto& c = cards.at(i);
-				c.transform = glm::translate(glm::mat4(1.0f), right * curScale * g_cardScale + camUp * 0.2f * c.hoverCounter) * std;
-				curScale += distSigma2;
-			}
-		}
-		else
-		{
-			wideCardsStart = distBetween * numCards / 2;
-			float start = -distBetween * numCards / 2;
-			if ((numCards % 2) == 1) start += distBetween / 2.0f;
-			for (int i = 0; i < cards.size(); i++)
-			{
-				auto& c = cards.at(i);
-				float scale = (start + i * distBetween) * g_cardScale;
-				c.transform = glm::translate(glm::mat4(1.0f), right * scale + camUp * 0.2f * c.hoverCounter) * std;
-			}
-		}
-		needRegen = false;
-	}
-	void Draw()
-	{
-		ClearCards();
-		if (needRegen) GenTransformations();
-		for (auto& c : cards) {
-			RendererAddCard(c.back, c.front, c.transform);
-		}
-	}
-};
-
-
-
 struct UnoGlobals
 {
 	Camera playerCam;
 	GLuint skybox;
 	S3DCombinedBuffer platform;
-	CardHand client;
+	CardHand* client;
+	std::vector<CardHand> hands;
 	MouseState ms;
+	CardStack stack;
+	CardsInAnimation anims;
+	CardDeck deck;
 
 }g_objs;
-glm::vec3 GetCamFront() { return g_objs.playerCam.GetFront(); } glm::vec3 GetCamPos() { return g_objs.playerCam.pos; }
-glm::vec3 GetCamUp() { return g_objs.playerCam.GetRealUp(); } glm::vec3 GetCamRight() { return g_objs.playerCam.GetRight(); }
-float GetCamYaw() { return g_objs.playerCam.GetYaw(); }
-glm::vec3 GetMouseRay() { return g_objs.playerCam.mouseRay; }
-glm::vec2 GetCamClippingPlaneDimensions(float dist) { return g_objs.playerCam.GetFrustrumSquare(dist); }
-bool IsMousePressed() { return g_objs.ms.butns[MouseState::BUTTONS::BTN_LEFT].Pressed(); }
-bool IsMouseReleased() { return g_objs.ms.butns[MouseState::BUTTONS::BTN_LEFT].Released(); }
-int GetMouseDeltaX() { return g_objs.ms.dx; }
+
+
+
+
+
+
+
 
 
 
@@ -278,15 +98,19 @@ void UnoPlugin::Init(void* backendData, PLATFORM_ID id)
 		"Assets/CitySkybox/front.jpg",
 		"Assets/CitySkybox/back.jpg");
 
-
-	g_objs.client.Add(CARD_ID::CARD_ID_ADD_4);
+	g_objs.hands.emplace_back(-1);
+	g_objs.client = &g_objs.hands.at(0);
+	g_objs.client->Add(CARD_ID::CARD_ID_ADD_4);
 
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
-	glEnable(GL_MULTISAMPLE);
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CCW);
+
+#ifndef ANDROID
+	glEnable(GL_MULTISAMPLE);
+#endif
 }
 
 void UnoPlugin::Resize(void* backendData)
@@ -315,12 +139,17 @@ void UnoPlugin::Render(void* backendData)
 	glDepthFunc(GL_LESS);
 	g_objs.playerCam.Update();
 
-	g_objs.client.Update();
+	g_objs.client->Update(g_objs.stack, g_objs.anims, g_objs.playerCam, g_objs.ms.dx, g_objs.ms.butns[MouseState::BTN_LEFT].Pressed(), g_objs.ms.butns[MouseState::BTN_LEFT].Released(), g_objs.anims.list.empty());
 
 
 
-
-	g_objs.client.Draw();
+	{ // render all cards
+		ClearCards();
+		g_objs.deck.Draw();
+		g_objs.stack.Draw();
+		g_objs.anims.Update(g_objs.hands, g_objs.stack, dt);
+		g_objs.client->Draw(g_objs.playerCam);
+	}
 	glDisable(GL_BLEND);
 
 	DrawSimple3D(g_objs.platform, g_objs.playerCam.perspective, g_objs.playerCam.view);
@@ -348,7 +177,7 @@ void UnoPlugin::Render(void* backendData)
 void UnoPlugin::MouseCallback(const PB_MouseData* mData)
 {
 #ifdef ALLOW_FREEMOVEMENT
-	if (mData->lPressed && (mData->dx || mData->dy))
+	if (mData->lDown && (mData->dx || mData->dy))
 	{
 		g_objs.playerCam.UpdateFromMouseMovement(-mData->dx, mData->dy);
 	}
@@ -368,7 +197,7 @@ void UnoPlugin::KeyDownCallback(Key k, bool isRepeat)
 		if (k == Key::Key_D)g_objs.playerCam.SetMovementDirection(Camera::DIRECTION::RIGHT, true);
 	}
 #endif
-	if (k == Key::Key_0) g_objs.client.Add((CARD_ID)(rand() % (int)CARD_ID::CARD_ID_YELLOW_SWAP));
+	if (k == Key::Key_0) g_objs.client->FetchCard(g_objs.playerCam, g_objs.stack, g_objs.deck, g_objs.anims);
 }
 void UnoPlugin::KeyUpCallback(Key k, bool isRepeat)
 {
@@ -409,5 +238,4 @@ void UnoPlugin::CleanUp()
 	CleanUpOpenGL();
 
 
-	// ADD GLTF CLEANUP!!!
 }

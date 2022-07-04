@@ -6,6 +6,7 @@
 #include "logging.h"
 #include <glm/matrix.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <algorithm>
 
 // this is related to the UNO_DECK.png
 static constexpr float CARD_STEP_SIZEX = 1.0f / 14.0f;
@@ -300,4 +301,439 @@ bool HitTest(const glm::mat4& model, const glm::vec3& camPos, const glm::vec3& m
 		}
 	}
 	return false;
+}
+
+// use exact order of webiste
+std::vector<CARD_ID> GenerateDeck()
+{
+	return {
+		CARD_ID::CARD_ID_RED_0, CARD_ID::CARD_ID_RED_1, CARD_ID::CARD_ID_RED_2, CARD_ID::CARD_ID_RED_3, CARD_ID::CARD_ID_RED_4, CARD_ID::CARD_ID_RED_5, CARD_ID::CARD_ID_RED_6, 
+		CARD_ID::CARD_ID_RED_7, CARD_ID::CARD_ID_RED_8, CARD_ID::CARD_ID_RED_9, CARD_ID::CARD_ID_RED_PAUSE, CARD_ID::CARD_ID_RED_SWAP, CARD_ID::CARD_ID_RED_ADD, CARD_ID::CARD_ID_CHOOSE_COLOR,
+
+		CARD_ID::CARD_ID_YELLOW_0, CARD_ID::CARD_ID_YELLOW_1, CARD_ID::CARD_ID_YELLOW_2, CARD_ID::CARD_ID_YELLOW_3, CARD_ID::CARD_ID_YELLOW_4, CARD_ID::CARD_ID_YELLOW_5, CARD_ID::CARD_ID_YELLOW_6,
+		CARD_ID::CARD_ID_YELLOW_7, CARD_ID::CARD_ID_YELLOW_8, CARD_ID::CARD_ID_YELLOW_9, CARD_ID::CARD_ID_YELLOW_PAUSE, CARD_ID::CARD_ID_YELLOW_SWAP, CARD_ID::CARD_ID_YELLOW_ADD, CARD_ID::CARD_ID_CHOOSE_COLOR,
+
+		CARD_ID::CARD_ID_BLUE_0, CARD_ID::CARD_ID_BLUE_1, CARD_ID::CARD_ID_BLUE_2, CARD_ID::CARD_ID_BLUE_3, CARD_ID::CARD_ID_BLUE_4, CARD_ID::CARD_ID_BLUE_5, CARD_ID::CARD_ID_BLUE_6,
+		CARD_ID::CARD_ID_BLUE_7, CARD_ID::CARD_ID_BLUE_8, CARD_ID::CARD_ID_BLUE_9, CARD_ID::CARD_ID_BLUE_PAUSE, CARD_ID::CARD_ID_BLUE_SWAP, CARD_ID::CARD_ID_BLUE_ADD, CARD_ID::CARD_ID_CHOOSE_COLOR,
+
+		CARD_ID::CARD_ID_GREEN_0, CARD_ID::CARD_ID_GREEN_1, CARD_ID::CARD_ID_GREEN_2, CARD_ID::CARD_ID_GREEN_3, CARD_ID::CARD_ID_GREEN_4, CARD_ID::CARD_ID_GREEN_5, CARD_ID::CARD_ID_GREEN_6,
+		CARD_ID::CARD_ID_GREEN_7, CARD_ID::CARD_ID_GREEN_8, CARD_ID::CARD_ID_GREEN_9, CARD_ID::CARD_ID_GREEN_PAUSE, CARD_ID::CARD_ID_GREEN_SWAP, CARD_ID::CARD_ID_GREEN_ADD, CARD_ID::CARD_ID_CHOOSE_COLOR,
+
+
+		CARD_ID::CARD_ID_RED_1, CARD_ID::CARD_ID_RED_2, CARD_ID::CARD_ID_RED_3, CARD_ID::CARD_ID_RED_4, CARD_ID::CARD_ID_RED_5, CARD_ID::CARD_ID_RED_6,
+		CARD_ID::CARD_ID_RED_7, CARD_ID::CARD_ID_RED_8, CARD_ID::CARD_ID_RED_9, CARD_ID::CARD_ID_RED_PAUSE, CARD_ID::CARD_ID_RED_SWAP, CARD_ID::CARD_ID_RED_ADD, CARD_ID::CARD_ID_ADD_4,
+
+		CARD_ID::CARD_ID_YELLOW_1, CARD_ID::CARD_ID_YELLOW_2, CARD_ID::CARD_ID_YELLOW_3, CARD_ID::CARD_ID_YELLOW_4, CARD_ID::CARD_ID_YELLOW_5, CARD_ID::CARD_ID_YELLOW_6,
+		CARD_ID::CARD_ID_YELLOW_7, CARD_ID::CARD_ID_YELLOW_8, CARD_ID::CARD_ID_YELLOW_9, CARD_ID::CARD_ID_YELLOW_PAUSE, CARD_ID::CARD_ID_YELLOW_SWAP, CARD_ID::CARD_ID_YELLOW_ADD, CARD_ID::CARD_ID_ADD_4,
+
+		CARD_ID::CARD_ID_BLUE_1, CARD_ID::CARD_ID_BLUE_2, CARD_ID::CARD_ID_BLUE_3, CARD_ID::CARD_ID_BLUE_4, CARD_ID::CARD_ID_BLUE_5, CARD_ID::CARD_ID_BLUE_6,
+		CARD_ID::CARD_ID_BLUE_7, CARD_ID::CARD_ID_BLUE_8, CARD_ID::CARD_ID_BLUE_9, CARD_ID::CARD_ID_BLUE_PAUSE, CARD_ID::CARD_ID_BLUE_SWAP, CARD_ID::CARD_ID_BLUE_ADD, CARD_ID::CARD_ID_ADD_4,
+
+		CARD_ID::CARD_ID_GREEN_1, CARD_ID::CARD_ID_GREEN_2, CARD_ID::CARD_ID_GREEN_3, CARD_ID::CARD_ID_GREEN_4, CARD_ID::CARD_ID_GREEN_5, CARD_ID::CARD_ID_GREEN_6,
+		CARD_ID::CARD_ID_GREEN_7, CARD_ID::CARD_ID_GREEN_8, CARD_ID::CARD_ID_GREEN_9, CARD_ID::CARD_ID_GREEN_PAUSE, CARD_ID::CARD_ID_GREEN_SWAP, CARD_ID::CARD_ID_GREEN_ADD, CARD_ID::CARD_ID_ADD_4,
+	};
+}
+
+bool CardSort(CARD_ID low, CARD_ID high)
+{
+	return low < high;
+}
+
+
+bool CardIsPlayable(CARD_ID topCard, CARD_ID playing, CARD_ID colorRefrenceCard)
+{
+	if (topCard == CARD_ID::CARD_ID_BLANK || topCard == CARD_ID::CARD_ID_BLANK2) return true;
+
+	int colorIDTop = topCard / 14;
+	int colorIDPlay = playing / 14;
+	int colorIDRef = colorRefrenceCard / 14;
+
+	int numIDTop = topCard % 14;
+	int numIDPlay = playing % 14;
+
+	if (topCard == CARD_ID::CARD_ID_ADD_4 || topCard == CARD_ID::CARD_ID_CHOOSE_COLOR) {
+		if (colorIDRef == colorIDPlay) return true;
+		return false;
+	}
+	else if (playing == CARD_ID::CARD_ID_ADD_4 || playing == CARD_ID::CARD_ID_CHOOSE_COLOR)
+	{
+		return true;
+	}
+
+	return ((colorIDTop == colorIDPlay) || (numIDTop == numIDPlay));
+}
+
+
+
+void CardDeck::Draw()
+{
+	glm::mat4 baseTransform = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(g_cardScale, g_cardScale, g_cardScale));
+	for (int i = 0; i < numCards; i++)
+	{
+		glm::mat4 mat = glm::translate(glm::mat4(1.0f), glm::vec3(dx, i * dy, 0)) * baseTransform;
+		RendererAddCard(CARD_ID_BLANK, CARD_ID_BLANK, mat);
+	}
+}
+CARD_ID CardDeck::PullCard()
+{
+	if (deck.empty()) deck = GenerateDeck();
+	int randIdx = rand() % deck.size();
+	CARD_ID res = deck.at(randIdx);
+	deck.erase(deck.begin() + randIdx);
+	return res;
+}
+
+void CardStack::Draw()
+{
+	for (auto& c : cards)
+	{
+		RendererAddCard(c.back, c.front, c.transform);
+	}
+}
+void CardStack::AddToStack(CARD_ID card, const glm::mat4& mat)
+{
+	if (cards.size() > 10)
+	{
+		for (int i = 0; i < cards.size() - 1; i++)
+		{
+			cards.at(i) = cards.at(i + 1);
+		}
+		auto& ad = cards.at(cards.size() - 1);
+		ad.front = card;
+		ad.hoverCounter = 0.0f; ad.transform = mat; ad.visible = true;
+	}
+	else
+	{
+		cards.emplace_back(CARD_ID::CARD_ID_BLANK, card, mat, 0.0f, true);
+	}
+}
+CARD_ID CardStack::GetTop() const
+{
+	if (cards.empty()) return CARD_ID_BLANK;
+	return cards.at(cards.size() - 1).front;
+}
+
+
+
+void CardHand::Add(CARD_ID id)
+{
+	if (wideCardsStart >= 0.0f) wideCardsStart += g_cardMinDiff * 0.5f;
+
+	cards.emplace_back(CARD_ID::CARD_ID_BLANK, id, glm::mat4(1.0f), 0.0f, true);
+
+	std::sort(cards.begin(), cards.end(), [](CardInfo& i1, CardInfo& i2) {
+		return CardSort(i1.front, i2.front);
+		});
+
+	needRegen = true;
+}
+int CardHand::AddTemp(const Camera& cam, CARD_ID id)
+{
+	if (wideCardsStart >= 0.0f) wideCardsStart += g_cardMinDiff * 0.5f;
+
+	cards.emplace_back(CARD_ID::CARD_ID_BLANK, id, glm::mat4(1.0f), -1.0f, false);
+	std::sort(cards.begin(), cards.end(), [](CardInfo& i1, CardInfo& i2) {
+		return CardSort(i1.front, i2.front);
+		});
+	int idx = 0;
+	for (int i = 0; i < cards.size(); i++)
+	{
+		if (cards.at(i).hoverCounter < 0.0f)
+		{
+			idx = i;
+			cards.at(i).hoverCounter = 0.0f;
+			cards.at(i).transitionID = currentAssignedAnimID;
+			currentAssignedAnimID++;
+			break;
+		}
+	}
+	needRegen = true;
+	GenTransformations(cam);
+	return idx;
+}
+void CardHand::PlayCard(const CardStack& stack, CardsInAnimation& anim, int cardIdx)
+{
+	CARD_ID top = stack.GetTop();
+
+	if (CardIsPlayable(top, cards.at(cardIdx).front, CARD_ID::CARD_ID_BLANK))
+	{
+		anim.AddAnim(stack, cards.at(cardIdx), handID, CARD_ANIMATIONS::ANIM_PLAY_CARD);
+		cards.erase(cards.begin() + cardIdx);
+	}
+	else
+	{
+		//LOG("CAN'T PLAY CARD\n");
+	}
+}
+void CardHand::FetchCard(const Camera& cam, const CardStack& stack, CardDeck& deck, CardsInAnimation& anim)
+{
+	CARD_ID card = deck.PullCard();
+	int idx = AddTemp(cam, card);
+	anim.AddAnim(stack, cards.at(idx), handID, CARD_ANIMATIONS::ANIM_FETCH_CARD);
+}
+void CardHand::Update(const CardStack& stack, CardsInAnimation& anim, const Camera& cam, int mouseDx, bool mousePressed, bool mouseReleased, bool allowInput)
+{
+	needRegen = true;
+	if (needRegen) GenTransformations(cam);
+	glm::vec3 cp = cam.pos;
+	glm::vec3 mRay = cam.mouseRay;
+
+	
+	if (mouseAttached) {
+		static constexpr float pixelStepSize = 0.01f;
+		wideCardsStart += pixelStepSize * mouseDx;
+	}
+	int oldMouseSelectedCard = mouseSelectedCard;
+	bool wasReleased = false;
+	if (mouseReleased) {
+		wasReleased = true;
+		mouseAttached = false;
+		mouseSelectedCard = -1;
+	}
+	int hitIdx = -1;
+	for (int i = cards.size() - 1; i >= 0; i--)
+	{
+		auto& c = cards.at(i);
+		if (hitIdx == -1 && HitTest(c.transform, cp, mRay))
+		{
+			hitIdx = i;
+			highlightedCardIdx = hitIdx;
+			if (mousePressed) {
+				mouseSelectedCard = hitIdx;
+				mouseAttached = true;
+			}
+			break;
+		}
+	}
+
+	if (allowInput)
+	{
+		if (wasReleased && oldMouseSelectedCard == hitIdx && hitIdx != -1)
+		{
+			PlayCard(stack, anim, oldMouseSelectedCard);
+		}
+	}
+
+	if (highlightedCardIdx != -1)
+	{
+		for (int i = 0; i < cards.size(); i++)
+		{
+			auto& c = cards.at(i);
+			if (i == highlightedCardIdx)
+			{
+				c.hoverCounter = std::min(c.hoverCounter + 0.1f, 1.0f);
+			}
+			else
+			{
+				c.hoverCounter = std::max(c.hoverCounter - 0.1f, 0.0f);
+			}
+		}
+	}
+
+}
+void CardHand::GenTransformations(const Camera& cam)
+{
+	static constexpr float maxDiff = 0.8f;
+	if (!needRegen || cards.empty()) return;
+	const glm::vec2 frustrum = cam.GetFrustrumSquare(1.0f);
+	maxWidth = frustrum.x * 1.2f;
+
+
+	glm::vec3 camUp = cam.GetRealUp();
+	glm::vec3 baseTranslate = cam.pos + cam.GetFront() + camUp * -1.f;
+	glm::vec3 right = cam.GetRight();
+	float camYaw = cam.GetYaw() + 90.0f;
+	glm::mat4 frontFaceingRotation = glm::rotate(glm::mat4(1.0f), glm::radians(camYaw), glm::vec3(0.0f, -1.0f, 0.0f));
+	glm::mat4 std = glm::translate(glm::mat4(1.0f), baseTranslate) * glm::rotate(glm::mat4(1.0f), glm::radians(-40.0f), right) * frontFaceingRotation * glm::scale(glm::mat4(1.0f), glm::vec3(g_cardScale));
+
+	int numCards = cards.size();
+
+	float distBetween = std::min(std::max(maxWidth * 2.0f / (float)cards.size(), g_cardMinDiff), maxDiff);
+
+	if (distBetween * numCards > maxWidth * 2.0f)
+	{
+		if (wideCardsStart < 0.0f) wideCardsStart = 0.0f;
+		const float smallWidth = 0.125f * maxWidth;
+		const float bigWidth = 7.0f / 4.0f * maxWidth;
+		const float xOff = maxWidth;
+
+		const float unchangedSize = distBetween * numCards;
+		if (wideCardsStart > unchangedSize - bigWidth - smallWidth) wideCardsStart = unchangedSize - bigWidth - smallWidth;
+		const float sigma1 = wideCardsStart;
+		const float sigma2 = unchangedSize - (wideCardsStart + bigWidth);
+
+
+		const int numCardsInSigma1 = (int)(sigma1 / g_cardMinDiff);
+		const int numCardsInSigma2 = (int)(sigma2 / g_cardMinDiff);
+
+		const float distSigma1 = std::min(smallWidth * g_cardMinDiff / sigma1, g_cardMinDiff);	// the real distance between sigma1 elements
+		const float distSigma2 = std::min(smallWidth * g_cardMinDiff / sigma2, g_cardMinDiff);	// the real distance between sigma2 elements
+
+		float curScale = -xOff;	// overall start of the whole thing
+		for (int i = 0; i < numCardsInSigma1 && i < numCards; i++)
+		{
+			auto& c = cards.at(i);
+			c.transform = glm::translate(glm::mat4(1.0f), right * curScale * g_cardScale + camUp * 0.2f * c.hoverCounter) * std;
+			curScale += distSigma1;
+		}
+		int idx = numCardsInSigma1;
+		const float bigEnd = -xOff + smallWidth + bigWidth;
+		while (curScale < bigEnd && idx < numCards)
+		{
+			auto& c = cards.at(idx);
+			c.transform = glm::translate(glm::mat4(1.0f), right * curScale * g_cardScale + camUp * 0.2f * c.hoverCounter) * std;
+			curScale += g_cardMinDiff;
+			idx++;
+		}
+
+		for (int i = idx; i < numCards; i++)
+		{
+			auto& c = cards.at(i);
+			c.transform = glm::translate(glm::mat4(1.0f), right * curScale * g_cardScale + camUp * 0.2f * c.hoverCounter) * std;
+			curScale += distSigma2;
+		}
+	}
+	else
+	{
+		wideCardsStart = distBetween * numCards / 2;
+		float start = -distBetween * numCards / 2;
+		if ((numCards % 2) == 1) start += distBetween / 2.0f;
+		for (int i = 0; i < cards.size(); i++)
+		{
+			auto& c = cards.at(i);
+			float scale = (start + i * distBetween) * g_cardScale;
+			c.transform = glm::translate(glm::mat4(1.0f), right * scale + camUp * 0.2f * c.hoverCounter) * std;
+		}
+	}
+
+	needRegen = false;
+}
+void CardHand::Draw(const Camera& cam)
+{
+	if (needRegen) GenTransformations(cam);
+	for (auto& c : cards) {
+		if (!c.visible) {
+			continue;	// don't draw temporary cards
+		}
+		RendererAddCard(c.back, c.front, c.transform);
+	}
+}
+
+
+
+
+
+
+
+
+AnimatedCard::AnimatedCard(const CardStack& stack, CARD_ID front, const glm::vec3& pos, float yaw, float pitch, float roll, float dur, CARD_ANIMATIONS a, int cardID, int handID) {
+	back = CARD_ID_BLANK; this->front = front; anim.AddState(pos, yaw, pitch, roll, AnimationType::ANIMATION_LINEAR, dur); this->cardID = cardID; this->handID = handID;
+	if (a == ANIM_PLAY_CARD) {
+		AddStackAnimation(stack);
+	}
+	else if (a == ANIM_FETCH_CARD)
+	{
+		AddDeckAnimation();
+	}
+}
+AnimatedCard::AnimatedCard(const CardStack& stack, CARD_ID front, const glm::mat4& mat, float dur, CARD_ANIMATIONS a, int cardID, int handID)
+{
+	back = CARD_ID_BLANK; this->front = front; anim.AddState(mat, AnimationType::ANIMATION_LINEAR, dur); this->cardID = cardID; this->handID = handID;
+	if (a == ANIM_PLAY_CARD) {
+		AddStackAnimation(stack);
+	}
+	else if (a == ANIM_FETCH_CARD)
+	{
+		AddDeckAnimation();
+	}
+}
+void AnimatedCard::AddStackAnimation(const CardStack& stack)
+{
+	type = CARD_ANIMATIONS::ANIM_PLAY_CARD;
+	if (anim.states.empty()) return;// first state should be set already
+	auto& s = anim.states.at(0);
+	glm::vec3 startPos = s.transform * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+
+	float startYaw = glm::degrees((glm::vec4(0.0f, 1.0f, 0.0f, 0.0f) * s.transform).y);
+	float startPitch = glm::degrees((glm::vec4(1.0f, 0.0f, 0.0f, 0.0f) * s.transform).x);
+	float startRoll = glm::degrees((glm::vec4(0.0f, 0.0f, 1.0f, 0.0f) * s.transform).z);
+	glm::vec3 endPos = glm::vec3(0.0f, CardStack::dy * stack.cards.size(), 0.0f);
+
+	float endYaw = (rand() % 360) * 1.0f;	// 0° -> 360°
+	float endPitch = -90.0f;
+	float endRoll = 0.0f;
+
+	glm::vec3 middlePos = (endPos + startPos) / 2.0f + glm::vec3(0.0f, 0.4f, 0.0f);
+
+	float middleYaw = (endYaw - startYaw) / 2.0f;
+	float middlePitch = (endPitch - startPitch) / 2.0f;
+	float middleRoll = (endRoll - startRoll) / 2.0f;
+
+	anim.AddState(middlePos, middleYaw, middlePitch, middleRoll, AnimationType::ANIMATION_LINEAR, 0.15f);
+	anim.AddState(endPos, endYaw, endPitch, endRoll, AnimationType::ANIMATION_LINEAR, 0.3f);
+}
+void AnimatedCard::AddDeckAnimation()
+{
+	type = CARD_ANIMATIONS::ANIM_FETCH_CARD;
+	if (anim.states.empty()) return;
+	anim.AddState(glm::vec3(CardDeck::dx, CardDeck::topY, 0.0f), 0.0f, 90.0f, 0.0f, AnimationType::ANIMATION_LINEAR, 0.0f);
+	std::swap(anim.states.at(0), anim.states.at(1));
+	anim.states.at(1).duration = 0.4f;
+}
+
+
+
+void CardsInAnimation::AddAnim(const CardStack& stack, const CardInfo& info, int handID, CARD_ANIMATIONS id)
+{
+	const float inv_scale = 1.0f / g_cardScale;
+	list.emplace_back(stack, info.front, glm::scale(info.transform, glm::vec3(inv_scale)), 0.0f, id, info.transitionID, handID);
+}
+void CardsInAnimation::Update(std::vector<CardHand>& hands, CardStack& stack, float dt)
+{
+	bool anyTrue = false;
+	for (auto& a : list)
+	{
+		glm::mat4 curTransform = a.anim.GetTransform(dt, a.done) * glm::scale(glm::mat4(1.0f), glm::vec3(g_cardScale));
+		glm::vec3 pos = curTransform * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+		RendererAddCard(a.back, a.front, curTransform);
+		if (a.done) anyTrue = true;
+	}
+	if (anyTrue)
+	{
+		std::vector<AnimatedCard> newList;
+		for (auto& a : list)
+		{
+			if (!a.done) newList.push_back(a);
+			else
+			{
+				OnFinish(hands, stack, a.anim.currentTransform, a.front, a.type, a.handID, a.cardID);
+			}
+		}
+		list = std::move(newList);
+	}
+}
+
+void CardsInAnimation::OnFinish(std::vector<CardHand>& hands, CardStack& stack, const glm::mat4& transform, CARD_ID id, CARD_ANIMATIONS type, int handID, int transitionID)
+{
+	CardHand* hand = nullptr;
+	for (auto& h : hands)
+	{
+		if (h.handID == handID) hand = &h;
+	}
+
+	if (hand) {
+		for (auto& c : hand->cards)
+		{
+			if (c.transitionID == transitionID)
+			{
+				if (type == CARD_ANIMATIONS::ANIM_FETCH_CARD) {
+					c.visible = true;
+				}
+				return;
+			}
+		}
+	}
+	if (type == CARD_ANIMATIONS::ANIM_PLAY_CARD) {
+		stack.AddToStack(id, transform * glm::scale(glm::mat4(1.0f), glm::vec3(g_cardScale)));
+	}
 }
