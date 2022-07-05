@@ -6,7 +6,7 @@
 #include "Pointer.h"
 
 static float g_cardScale = 0.3f;
-static constexpr float g_cardMinDiff = 0.25f;
+static constexpr float g_cardMinDiff = 0.35f;
 
 enum CARD_ID
 {

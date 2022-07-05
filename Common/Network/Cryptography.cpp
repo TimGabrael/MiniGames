@@ -269,3 +269,257 @@ void CryptoContext::DecryptBuffer(uint8_t* buf, size_t length)
 		InvCipher((state*)(buf + i * BLOCK_LEN), this->key);
 	}
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// 128-BIT VERSION
+/* P =  2^128-159 = 0xffffffffffffffffffffffffffffff61 (The biggest 128bit prime) */
+static const uint128_t u128P = { 0xffffffffffffff61ULL, 0xffffffffffffffffULL };
+static const uint128_t u128INVERT_P = { 159 };
+static const uint128_t u128G = { 27 };
+bool u128_IsZero(const uint128_t val)
+{
+	return (val.low == 0 && val.high == 0);
+}
+bool u128_IsOdd(const uint128_t val)
+{
+	return (val.low & 1);
+}
+void u128_LeftShift(uint128_t* val)
+{
+	uint64_t t = (val->low >> 63) & 1;
+	val->high = (val->high << 1) | t;
+	val->low = (val->low << 1);
+}
+void u128_RightShift(uint128_t* val)
+{
+	uint64_t t = (val->high & 1) << 63;
+	val->high = val->high >> 1;
+	val->low = (val->low >> 1) | t;
+}
+int u128_Compare(const uint128_t v1, const uint128_t v2)
+{
+	if (v1.high > v2.high) return 1;
+	else if (v1.high == v2.high) {
+		if (v1.low > v2.low) return 1;
+		else if (v1.low == v2.low) return 0;
+		else return -1;
+	}
+	else return -1;
+}
+void u128_Add(uint128_t* res, const uint128_t a, const uint128_t b)
+{
+	uint64_t overflow = 0;
+	uint64_t low = a.low + b.low;
+	if (low < a.low || low < b.low) overflow = 1;
+	res->low = low;
+	res->high = a.high + b.high + overflow;
+}
+void u128_Add_L(uint128_t* res, const uint128_t a, const uint64_t b)
+{
+	uint64_t overflow = 0;
+	uint64_t low = a.low + b;
+	if (low < a.low || low < b) overflow = 1;
+	res->low = low; res->high = a.high + overflow;
+}
+void u128_Sub(uint128_t* res, const uint128_t a, const uint128_t b)
+{
+	uint128_t invert_b;
+	invert_b.low = ~b.low;
+	invert_b.high = ~b.high;
+	u128_Add_L(&invert_b, invert_b, 1);
+	u128_Add(res, a, invert_b);
+}
+void u128_MultiplyModulateP(uint128_t* res, uint128_t a, uint128_t b)
+{
+	uint128_t t;
+	uint128_t double_a;
+	uint128_t P_a;
+	res->low = res->high = 0;
+	while (!u128_IsZero(b))
+	{
+		if (u128_IsOdd(b)) {
+			u128_Sub(&t, u128P, a);
+			if (u128_Compare(*res, t) >= 0) u128_Sub(res, *res, t);
+			else u128_Add(res, *res, a);
+		}
+		double_a = a;
+		u128_LeftShift(&double_a);
+		u128_Sub(&P_a, u128P, a);
+		if (u128_Compare(a, P_a) >= 0) u128_Add(&a, double_a, u128INVERT_P);
+		else a = double_a;
+		u128_RightShift(&b);
+	}
+}
+void u128_ExponentiateModulateP_R(uint128_t* res, const uint128_t a, const uint128_t b)
+{
+	uint128_t t; uint128_t half_b = b;
+	if (b.high == 0 && b.low == 1) {
+		*res = a; return;
+	}
+	u128_RightShift(&half_b);
+	u128_ExponentiateModulateP_R(&t, a, half_b);
+	u128_MultiplyModulateP(&t, t, t);
+	if (u128_IsOdd(b)) u128_MultiplyModulateP(&t, t, a);
+	*res = t;
+}
+void u128_ExponentiateModulateP(uint128_t* res, uint128_t a, uint128_t b)
+{
+	if (u128_Compare(a, u128P) > 0) u128_Sub(&a, a, u128P);
+	u128_ExponentiateModulateP_R(res, a, b);
+}
+
+
+
+
+// 256-BIT VERSION
+/* P =  2^256 - 189 = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff43 (The biggest 256bit prime) */
+static const uint256_t u256P = { 0xffffffffffffff43ULL, 0xffffffffffffffffULL, 0xffffffffffffffffULL, 0xffffffffffffffffULL };
+static const uint256_t u256INVERT_P = { 189 };
+static const uint256_t u256G = { 27 };
+
+bool u256_IsZero(const uint256_t val)
+{
+	return (u128_IsZero(val.low) && u128_IsZero(val.high));
+}
+bool u256_IsOdd(const uint256_t val)
+{
+	return (val.low.low & 1);
+}
+void u256_LeftShift(uint256_t* val)
+{
+	uint64_t t = (val->low.high >> 63) & 1;
+	u128_LeftShift(&val->high);
+	val->high.low |= t;
+	u128_LeftShift(&val->low);
+}
+void u256_RightShift(uint256_t* val)
+{
+	uint64_t t = (val->high.low & 1) << 63;
+	u128_RightShift(&val->high);
+	u128_RightShift(&val->low);
+	val->low.high |= t;
+}
+int u256_Compare(const uint256_t v1, const uint256_t v2)
+{
+	const int compResultHigh = u128_Compare(v1.high, v2.high);
+	if (compResultHigh > 0) return 1;
+	else if (compResultHigh == 0) {
+		const int compResultLow = u128_Compare(v1.low, v2.low);
+		if (compResultLow > 0) return 1;
+		else if (compResultLow == 0) return 0;
+		else return -1;
+	}
+	else return -1;
+}
+void u256_Add(uint256_t* res, const uint256_t a, const uint256_t b)
+{
+	uint128_t overflow = { 0, 0 };
+	uint128_t low;
+	u128_Add(&low, a.low, b.low);
+	if (u128_Compare(low, a.low) < 0 || u128_Compare(low, b.low) < 0) overflow.low = 1;
+	res->low = low;
+	u128_Add(&res->high, a.high, b.high);
+	u128_Add(&res->high, res->high, overflow);
+}
+void u256_Add_L(uint256_t* res, const uint256_t a, const uint128_t b)
+{
+	uint128_t overflow = { 0, 0 };
+	uint128_t low;
+	u128_Add(&low, a.low, b);
+	if (u128_Compare(low, a.low) < 0 || u128_Compare(low, b) < 0) overflow.low = 1;
+
+	res->low = low;
+	u128_Add(&res->high, a.high, overflow);
+}
+void u256_Sub(uint256_t* res, const uint256_t a, const uint256_t b)
+{
+	uint256_t invert_b;
+	invert_b.low.low = ~b.low.low;
+	invert_b.low.high = ~b.low.high;
+	invert_b.high.low = ~b.high.low;
+	invert_b.high.high = ~b.high.high;
+	u256_Add_L(&invert_b, invert_b, { 1 });
+	u256_Add(res, a, invert_b);
+}
+void u256_MultiplyModulateP(uint256_t* res, uint256_t a, uint256_t b)
+{
+	uint256_t t;
+	uint256_t double_a;
+	uint256_t P_a;
+	res->low.low = res->low.high = res->high.low = res->high.high = 0;
+	while (!u256_IsZero(b))
+	{
+		if (u256_IsOdd(b)) {
+			u256_Sub(&t, u256P, a);
+			if (u256_Compare(*res, t) >= 0) u256_Sub(res, *res, t);
+			else u256_Add(res, *res, a);
+		}
+		double_a = a;
+		u256_LeftShift(&double_a);
+		u256_Sub(&P_a, u256P, a);
+		if (u256_Compare(a, P_a) >= 0) u256_Add(&a, double_a, u256INVERT_P);
+		else a = double_a;
+		u256_RightShift(&b);
+	}
+}
+void u256_ExponentiateModulateP_R(uint256_t* res, const uint256_t a, const uint256_t b)
+{
+	uint256_t t; uint256_t half_b = b;
+	if (b.high.high == 0 && b.high.low == 0 && b.low.high == 0 && b.low.low == 1) {
+		*res = a; return;
+	}
+	u256_RightShift(&half_b);
+	u256_ExponentiateModulateP_R(&t, a, half_b);
+	u256_MultiplyModulateP(&t, t, t);
+	if (u256_IsOdd(b)) u256_MultiplyModulateP(&t, t, a);
+	*res = t;
+}
+void u256_ExponentiateModulateP(uint256_t* res, uint256_t a, uint256_t b)
+{
+	if (u256_Compare(a, u256P) > 0) u256_Sub(&a, a, u256P);
+	u256_ExponentiateModulateP_R(res, a, b);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+void GenKeyPairU128(uint128_t* publicKey, uint128_t* privateKey)
+{
+	for (int i = 0; i < 16; i++) privateKey->byte[i] = rand();
+	u128_ExponentiateModulateP(publicKey, u128G, *privateKey);
+}
+
+void GenSharedSecretU128(uint128_t* sharedSecret, const uint128_t privateKey, const uint128_t publicKey)
+{
+	u128_ExponentiateModulateP(sharedSecret, publicKey, privateKey);
+}
+void GenKeyPairU256(uint256_t* publicKey, uint256_t* privateKey)
+{
+	for (int i = 0; i < 32; i++) privateKey->byte[i] = rand();
+	u256_ExponentiateModulateP(publicKey, u256G, *privateKey);
+}
+
+void GenSharedSecretU256(uint256_t* sharedSecret, const uint256_t privateKey, const uint256_t publicKey)
+{
+	u256_ExponentiateModulateP(sharedSecret, publicKey, privateKey);
+}

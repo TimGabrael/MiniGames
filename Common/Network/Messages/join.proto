@@ -1,0 +1,10 @@
+sytanx = "proto2";
+
+package Base;
+
+message Join
+{
+	string name = 1;
+
+	
+}

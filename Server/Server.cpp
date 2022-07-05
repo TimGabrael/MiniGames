@@ -4,8 +4,8 @@
 
 void PacketCB(void* userData, Packet* packet)
 {
-	TestPacket* pack = (TestPacket*)packet->body.data();
-	std::cout << "pack: " << pack->buf << std::endl;
+	// uint8_t* pack = (uint8_t*)packet->body.data();
+	// std::cout << "pack: " << pack->buf << std::endl;
 }
 
 int main()

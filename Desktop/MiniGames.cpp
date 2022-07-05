@@ -79,9 +79,10 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     this->resize(1200, 800);
 
     auto app = MainApplication::GetInstance();
-    //app->socket.Connect(DEBUG_IP, DEBUG_PORT);
-    //TestPacket pack("Hallo Ich Bins");
-    //app->socket.SendPacket(&pack);
+    app->socket.Connect(DEBUG_IP, DEBUG_PORT);
+
+    // TestPacket pack("Hallo Ich Bins");
+    // app->socket.SendPacket(&pack);
 
     LoadAllPlugins();
 

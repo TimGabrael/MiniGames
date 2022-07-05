@@ -119,10 +119,6 @@ void MainMenuFrame::OnCreateClick()
     main->layout()->removeWidget(this);
     delete this;
 
-    auto app = MainApplication::GetInstance();
-    TestPacket pack("Hallo Ich Bins aus der funktion");
-    app->socket.SendPacket(&pack);
-
 
     LobbyFrame* lobby = new LobbyFrame(main);
 }

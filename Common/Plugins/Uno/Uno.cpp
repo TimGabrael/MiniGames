@@ -76,10 +76,10 @@ void UnoPlugin::Init(void* backendData, PLATFORM_ID id)
 
 	static constexpr float cubeSize = 4.0f;
 	SVertex3D platformVertices[4] = {
-		{{-cubeSize, 0.0f, -cubeSize}, {0.0f, 0.0f}, 0xFF402040},
-		{{ cubeSize, 0.0f, -cubeSize}, {0.0f, 0.0f}, 0xFF406040},
-		{{ cubeSize, 0.0f,  cubeSize}, {0.0f, 0.0f}, 0xFF402040},
-		{{-cubeSize, 0.0f,  cubeSize}, {0.0f, 0.0f}, 0xFF406040},
+		{{-cubeSize, 0.0f, -cubeSize}, {0.0f, 0.0f}, 0xFF000090},
+		{{ cubeSize, 0.0f, -cubeSize}, {0.0f, 0.0f}, 0xFF900000},
+		{{ cubeSize, 0.0f,  cubeSize}, {0.0f, 0.0f}, 0xFF009000},
+		{{-cubeSize, 0.0f,  cubeSize}, {0.0f, 0.0f}, 0xFF009090},
 	};
 	uint32_t platformIndices[] = {
 		0,3,2,2,1,0,

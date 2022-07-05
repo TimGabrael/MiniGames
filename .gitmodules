@@ -10,3 +10,6 @@
 [submodule "3rd-party/NFDriver"]
 	path = 3rd-party/NFDriver
 	url = https://github.com/spotify/NFDriver
+[submodule "3rd-party/protobuf"]
+	path = 3rd-party/protobuf
+	url = https://github.com/protocolbuffers/protobuf

@@ -11,6 +11,17 @@ set(ADDITIONAL_SOURCES "")
 set(COMMON_SOURCES "")
 set(ADDITIONAL_LIBS "")
 
+set(protobuf_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(protobuf_BUILD_LIBPROTOC ON CACHE BOOL "" FORCE)
+set(protobuf_BUILD_PROTOC_BINARIES OFF CACHE BOOL "" FORCE)
+set(protobuf_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(protobuf_DISABLE_RTTI ON CACHE BOOL "" FORCE)
+set(protobuf_INSTALL OFF CACHE BOOL "" FORCE)
+
+add_subdirectory(3rd-party/protobuf)
+link_libraries(libprotobuf libprotobuf-lite libprotoc)
+
+
 
 if(NOT EMSCRIPTEN)
 add_subdirectory(3rd-party/glad)
