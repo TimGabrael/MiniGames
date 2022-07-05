@@ -54,7 +54,19 @@ void WillRenderCallback(void* userData)
 void DidRenderCallback(void* userData)
 {
 }
-#include <fstream>
+
+
+void PacketCB(void* userData, Packet* pack)
+{
+    TCPSocket* sock = (TCPSocket*)userData;
+
+    LOG("GOT A MESSAGE FROM THE SERVER\n");
+
+}
+
+
+
+
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
 {
 #ifdef _WIN32
@@ -65,7 +77,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
 
     audioDriver = nativeformat::driver::NFDriver::createNFDriver(nullptr, StutterCallback, RenderCallback, ErrorCallback,
         WillRenderCallback, DidRenderCallback, nativeformat::driver::OutputType::OutputTypeSoundCard);
-    
+
 
     //audioDriver->setPlaying(true);
 
@@ -79,10 +91,10 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     this->resize(1200, 800);
 
     auto app = MainApplication::GetInstance();
-    app->socket.Connect(DEBUG_IP, DEBUG_PORT);
-
-    // TestPacket pack("Hallo Ich Bins");
-    // app->socket.SendPacket(&pack);
+    NetError err = app->socket.Connect(DEBUG_IP, DEBUG_PORT);
+    if (err == NetError::OK) {
+        app->socket.SetPacketCallback(PacketCB, (void*)&app->socket);
+    }
 
     LoadAllPlugins();
 
@@ -98,6 +110,9 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
 
 MainWindow::~MainWindow()
 {
+    auto app = MainApplication::GetInstance();
+    app->socket.Disconnect();
+    
 }
 
 

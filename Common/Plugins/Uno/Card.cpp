@@ -21,7 +21,6 @@ static constexpr float CARD_HEIGHT_HALF = 180.0f / 120.0f * 0.5f;
 
 
 static constexpr float CARD_EFFECT_START_Y = 724.0f;
-//static constexpr float CARD_EFFECT_X = 160.0f;
 static constexpr float CARD_EFFECT_X = 160.0f;
 static constexpr float CARD_EFFECT_Y = 219.0f;
 

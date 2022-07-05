@@ -1,5 +1,19 @@
 #include "Cryptography.h"
 #include <string>
+#include <random>
+
+template<typename T>
+void PrintKey(const T& k)
+{
+	static constexpr uint32_t num64 = sizeof(T) / 8;
+	const uint64_t* k64 = (uint64_t*)k.byte;
+	for (uint32_t i = 0; i < num64; i++)
+	{
+		LOG("%016llX ", k64[i]);
+	}
+	LOG("\n");
+}
+
 
 #define Nb 4
 #define Nk 4        // The number of 32 bit words in a key.
@@ -256,14 +270,30 @@ void CryptoContext::InitContext(const uint8_t key[KEY_LEN])
 void CryptoContext::EncryptBuffer(uint8_t* buf, size_t length)
 {
 	const size_t _block_len = length / BLOCK_LEN;
+	const size_t mod = length % BLOCK_LEN;
 	for(size_t i = 0; i < _block_len; i++)
 	{
 		Cipher((state*)(buf + i * BLOCK_LEN), this->key);
+	}
+	if (mod != 0)
+	{
+		if (length >= BLOCK_LEN)
+		{
+			Cipher((state*)(buf + length - BLOCK_LEN), this->key);
+		}
 	}
 }
 void CryptoContext::DecryptBuffer(uint8_t* buf, size_t length)
 {
 	const size_t _block_len = length / BLOCK_LEN;
+	const size_t mod = length % BLOCK_LEN;
+	if(mod != 0)
+	{
+		if (length >= BLOCK_LEN)
+		{
+			InvCipher((state*)(buf + length - BLOCK_LEN), this->key);
+		}
+	}
 	for (size_t i = 0; i < _block_len; i++)
 	{
 		InvCipher((state*)(buf + i * BLOCK_LEN), this->key);
@@ -281,7 +311,13 @@ void CryptoContext::DecryptBuffer(uint8_t* buf, size_t length)
 
 
 
-
+void GenerateComplement(uint64_t* result, const uint64_t* input, uint64_t size64)
+{
+	for (uint64_t i = 0; i < size64; i++)
+	{
+		result[i] = ~input[i];
+	}
+}
 
 // 128-BIT VERSION
 /* P =  2^128-159 = 0xffffffffffffffffffffffffffffff61 (The biggest 128bit prime) */
@@ -495,31 +531,558 @@ void u256_ExponentiateModulateP(uint256_t* res, uint256_t a, uint256_t b)
 
 
 
+// 512-BIT VERSION
+static const uint512_t u512P =        { 0x81cde7a5ff6742e9ULL, 0xdc93b6bb9b12db12ULL, 0x145dff4ca5721cbeULL,
+0x1e94b44d2bc26bc2ULL, 0x918925b0b3e4e7eaULL, 0x6b2f712e3f2742c9ULL, 0xac3a19a62b1cf8edULL, 0xe1a70311f8ac6dc8ULL };
+static const uint512_t u512INVERT_P = { 0x7e32185a0098bd17ULL, 0x236c494464ed24edULL, 0xeba200b35a8de341ULL,
+0xe16b4bb2d43d943dULL, 0x6e76da4f4c1b1815ULL, 0x94d08ed1c0d8bd36ULL, 0x53c5e659d4e30712ULL, 0x1e58fcee07539237ULL };
+static const uint512_t u512G = { 27 };
+
+bool u512_IsZero(const uint512_t val)
+{
+	return (u256_IsZero(val.low) && u256_IsZero(val.high));
+}
+bool u512_IsOdd(const uint512_t val)
+{
+	return (val.low.low.low & 1);
+}
+void u512_LeftShift(uint512_t* val)
+{
+	uint64_t t = (val->low.high.high >> 63) & 1;
+	u256_LeftShift(&val->high);
+	val->high.low.low |= t;
+	u256_LeftShift(&val->low);
+}
+void u512_RightShift(uint512_t* val)
+{
+	uint64_t t = (val->high.low.low & 1) << 63;
+	u256_RightShift(&val->high);
+	u256_RightShift(&val->low);
+	val->low.high.high |= t;
+}
+int u512_Compare(const uint512_t v1, const uint512_t v2)
+{
+	const int compResultHigh = u256_Compare(v1.high, v2.high);
+	if (compResultHigh > 0) return 1;
+	else if (compResultHigh == 0) {
+		const int compResultLow = u256_Compare(v1.low, v2.low);
+		if (compResultLow > 0) return 1;
+		else if (compResultLow == 0) return 0;
+		else return -1;
+	}
+	else return -1;
+}
+void u512_Add(uint512_t* res, const uint512_t a, const uint512_t b)
+{
+	uint256_t overflow = { 0 };
+	uint256_t low;
+	u256_Add(&low, a.low, b.low);
+	if (u256_Compare(low, a.low) < 0 || u256_Compare(low, b.low) < 0) { overflow.low.low = 1; }
+
+	res->low = low;
+	u256_Add(&res->high, a.high, b.high);
+	u256_Add(&res->high, res->high, overflow);
+}
+void u512_Add_L(uint512_t* res, const uint512_t a, const uint256_t b)
+{
+	uint256_t overflow = { 0 };
+	uint256_t low;
+	u256_Add(&low, a.low, b);
+	if (u256_Compare(low, a.low) < 0 || u256_Compare(low, b) < 0) overflow.low.low = 1;
+
+	res->low = low;
+	u256_Add(&res->high, a.high, overflow);
+}
+void u512_Sub(uint512_t* res, const uint512_t a, const uint512_t b)
+{
+	uint512_t invert_b;
+	GenerateComplement((uint64_t*)&invert_b.byte, (const uint64_t*)b.byte, 8);
+	u512_Add_L(&invert_b, invert_b, { 1 });
+	u512_Add(res, a, invert_b);
+}
+void u512_MultiplyModulateP(uint512_t* res, uint512_t a, uint512_t b)
+{
+	uint512_t t;
+	uint512_t double_a;
+	uint512_t P_a;
+	memset(res->byte, 0, sizeof(uint512_t));
+	while (!u512_IsZero(b))
+	{
+		if (u512_IsOdd(b)) {
+			u512_Sub(&t, u512P, a);
+			if (u512_Compare(*res, t) >= 0) u512_Sub(res, *res, t);
+			else u512_Add(res, *res, a);
+		}
+		double_a = a;
+		u512_LeftShift(&double_a);
+		u512_Sub(&P_a, u512P, a);
+		if (u512_Compare(a, P_a) >= 0) u512_Add(&a, double_a, u512INVERT_P);
+		else a = double_a;
+		u512_RightShift(&b);
+	}
+}
+void u512_ExponentiateModulateP_R(uint512_t* res, const uint512_t a, const uint512_t b)
+{
+	static uint512_t one = { 1 };
+	uint512_t t; uint512_t half_b = b; 
+
+	if (u512_Compare(b, one) == 0) {
+		*res = a; return;
+	}
+	u512_RightShift(&half_b);
+	u512_ExponentiateModulateP_R(&t, a, half_b);
+	u512_MultiplyModulateP(&t, t, t);
+	if (u512_IsOdd(b)) u512_MultiplyModulateP(&t, t, a);
+	*res = t;
+}
+void u512_ExponentiateModulateP(uint512_t* res, uint512_t a, uint512_t b)
+{
+	if (u512_Compare(a, u512P) > 0) u512_Sub(&a, a, u512P);
+	u512_ExponentiateModulateP_R(res, a, b);
+}
+
+
+
+
+// 1024-BIT VERSION
+static const uint1024_t u1024P = { 0x3761772ce0ca9e77ULL, 0x785e0f4405eae608ULL, 0xe01cfabed74ed729ULL, 0x16a2b6ffde879696ULL, 0x88a9a9a349c7e5e7ULL, 0xe22b0f7d900f6dbbULL, 0x7c27ddc4bf7e2698ULL,
+0x84c74121837fdfd3ULL, 0x2d1b1aa94f7ce437ULL, 0x04cb89be6a3de189ULL, 0x1b251d404f8560cdULL, 0xdc97d21dc9d2ac1bULL, 0x839bd8aaadddacdfULL, 0x8958d4e088f6d127ULL, 0x2492525604131cacULL, 0x9d0d7c2b06b29d5cULL };
+static const uint1024_t u1024INVERT_P = { 0xc89e88d31f356189ULL, 0x87a1f0bbfa1519f7ULL, 0x1fe3054128b128d6ULL, 0xe95d490021786969ULL, 0x7756565cb6381a18ULL, 0x1dd4f0826ff09244ULL, 0x83d8223b4081d967ULL,
+0x7b38bede7c80202cULL, 0xd2e4e556b0831bc8ULL, 0xfb34764195c21e76ULL, 0xe4dae2bfb07a9f32ULL, 0x23682de2362d53e4ULL, 0x7c64275552225320ULL, 0x76a72b1f77092ed8ULL, 0xdb6dada9fbece353ULL, 0x62f283d4f94d62a3ULL };
+static const uint1024_t u1024G = { 27 };
+
+bool u1024_IsZero(const uint1024_t val)
+{
+	return (u512_IsZero(val.low) && u512_IsZero(val.high));
+}
+bool u1024_IsOdd(const uint1024_t val)
+{
+	return (val.low.low.low.low & 1);
+}
+void u1024_LeftShift(uint1024_t* val)
+{
+	uint64_t t = (val->low.high.high.high >> 63) & 1;
+	u512_LeftShift(&val->high);
+	val->high.low.low.low |= t;
+	u512_LeftShift(&val->low);
+}
+void u1024_RightShift(uint1024_t* val)
+{
+	uint64_t t = (val->high.low.low.low & 1) << 63;
+	u512_RightShift(&val->high);
+	u512_RightShift(&val->low);
+	val->low.high.high.high |= t;
+}
+int u1024_Compare(const uint1024_t v1, const uint1024_t v2)
+{
+	const int compResultHigh = u512_Compare(v1.high, v2.high);
+	if (compResultHigh > 0) return 1;
+	else if (compResultHigh == 0) {
+		const int compResultLow = u512_Compare(v1.low, v2.low);
+		if (compResultLow > 0) return 1;
+		else if (compResultLow == 0) return 0;
+		else return -1;
+	}
+	else return -1;
+}
+void u1024_Add(uint1024_t* res, const uint1024_t a, const uint1024_t b)
+{
+	uint512_t overflow = { 0, 0 };
+	uint512_t low;
+	u512_Add(&low, a.low, b.low);
+	if (u512_Compare(low, a.low) < 0 || u512_Compare(low, b.low) < 0) overflow.low.low.low = 1;
+	res->low = low;
+	u512_Add(&res->high, a.high, b.high);
+	u512_Add(&res->high, res->high, overflow);
+}
+void u1024_Add_L(uint1024_t* res, const uint1024_t a, const uint512_t b)
+{
+	uint512_t overflow = { 0, 0 };
+	uint512_t low;
+	u512_Add(&low, a.low, b);
+	if (u512_Compare(low, a.low) < 0 || u512_Compare(low, b) < 0) overflow.low.low.low = 1;
+
+	res->low = low;
+	u512_Add(&res->high, a.high, overflow);
+}
+void u1024_Sub(uint1024_t* res, const uint1024_t a, const uint1024_t b)
+{
+	uint1024_t invert_b;
+	GenerateComplement((uint64_t*)invert_b.byte, (const uint64_t*)b.byte, 16);
+	u1024_Add_L(&invert_b, invert_b, { 1 });
+	u1024_Add(res, a, invert_b);
+}
+void u1024_MultiplyModulateP(uint1024_t* res, uint1024_t a, uint1024_t b)
+{
+	uint1024_t t;
+	uint1024_t double_a;
+	uint1024_t P_a;
+	memset(res->byte, 0, sizeof(uint1024_t));
+	while (!u1024_IsZero(b))
+	{
+		if (u1024_IsOdd(b)) {
+			u1024_Sub(&t, u1024P, a);
+			if (u1024_Compare(*res, t) >= 0) u1024_Sub(res, *res, t);
+			else u1024_Add(res, *res, a);
+		}
+		double_a = a;
+		u1024_LeftShift(&double_a);
+		u1024_Sub(&P_a, u1024P, a);
+		if (u1024_Compare(a, P_a) >= 0) u1024_Add(&a, double_a, u1024INVERT_P);
+		else a = double_a;
+		u1024_RightShift(&b);
+	}
+}
+void u1024_ExponentiateModulateP_R(uint1024_t* res, const uint1024_t a, const uint1024_t b)
+{
+	static uint1024_t one = { 1 };
+	uint1024_t t; uint1024_t half_b = b; 
+
+	if (u1024_Compare(b, one) == 0) {
+		*res = a; return;
+	}
+	u1024_RightShift(&half_b);
+	u1024_ExponentiateModulateP_R(&t, a, half_b);
+	u1024_MultiplyModulateP(&t, t, t);
+	if (u1024_IsOdd(b)) u1024_MultiplyModulateP(&t, t, a);
+	*res = t;
+}
+void u1024_ExponentiateModulateP(uint1024_t* res, uint1024_t a, uint1024_t b)
+{
+	if (u1024_Compare(a, u1024P) > 0) u1024_Sub(&a, a, u1024P);
+	u1024_ExponentiateModulateP_R(res, a, b);
+}
+
+
+
+
+
+// 2048-BIT VERSION
+static const uint2048_t u2048P = { 0x5252e727f8fb4f8bULL, 0x0337999422336008ULL, 0x4a95ab581b570c02ULL, 0x9731e59922cce108ULL, 0x6b7557e98635e6f2ULL, 0x6c81780641d1be66ULL, 0x06412be3b0a6a399ULL,
+0x1127415ec1bd860aULL, 0x2e25cd677d696d17ULL, 0x38da29ed1fcb30ecULL, 0x6e7618bd93f483d0ULL, 0xe95c4a6b815e80c9ULL, 0xe5e9d8798bc024edULL, 0xdc4937977646c8a5ULL, 0x5d603c761fd8b3eeULL, 0x5c2e9fde473615e2ULL,
+0x2eb1fdab2c555122ULL, 0x6d792ae043b4fdccULL, 0x37b89c490ebcece4ULL, 0x80eaddebcaa38dcdULL, 0x958127ed38cd95acULL, 0x5d61b358be81f493ULL, 0xa63dfbb61898e3aeULL, 0xad5dfb45de33ad2cULL, 0x882c7c38cf1cc536ULL,
+0xc6647c3929a73ca4ULL, 0x24f534ca37ff94d3ULL, 0xd8c2642da1692627ULL, 0xb92d2124c98933e1ULL, 0x91566616a643a4a7ULL, 0xc2c253d7a3604e82ULL, 0xb6dfbded19a21ef4ULL };
+static const uint2048_t u2048INVERT_P = { 0xadad18d80704b075ULL, 0xfcc8666bddcc9ff7ULL, 0xb56a54a7e4a8f3fdULL, 0x68ce1a66dd331ef7ULL, 0x948aa81679ca190dULL, 0x937e87f9be2e4199ULL, 0xf9bed41c4f595c66ULL,
+0xeed8bea13e4279f5ULL, 0xd1da3298829692e8ULL, 0xc725d612e034cf13ULL, 0x9189e7426c0b7c2fULL, 0x16a3b5947ea17f36ULL, 0x1a162786743fdb12ULL, 0x23b6c86889b9375aULL, 0xa29fc389e0274c11ULL, 0xa3d16021b8c9ea1dULL,
+0xd14e0254d3aaaeddULL, 0x9286d51fbc4b0233ULL, 0xc84763b6f143131bULL, 0x7f152214355c7232ULL, 0x6a7ed812c7326a53ULL, 0xa29e4ca7417e0b6cULL, 0x59c20449e7671c51ULL, 0x52a204ba21cc52d3ULL, 0x77d383c730e33ac9ULL,
+0x399b83c6d658c35bULL, 0xdb0acb35c8006b2cULL, 0x273d9bd25e96d9d8ULL, 0x46d2dedb3676cc1eULL, 0x6ea999e959bc5b58ULL, 0x3d3dac285c9fb17dULL, 0x49204212e65de10bULL };
+static const uint2048_t u2048G = { 27 };
+
+bool u2048_IsZero(const uint2048_t val)
+{
+	return (u1024_IsZero(val.low) && u1024_IsZero(val.high));
+}
+bool u2048_IsOdd(const uint2048_t val)
+{
+	return (val.low.low.low.low.low & 1);
+}
+void u2048_LeftShift(uint2048_t* val)
+{
+	uint64_t t = (val->low.high.high.high.high >> 63) & 1;
+	u1024_LeftShift(&val->high);
+	val->high.low.low.low.low |= t;
+	u1024_LeftShift(&val->low);
+}
+void u2048_RightShift(uint2048_t* val)
+{
+	uint64_t t = (val->high.low.low.low.low & 1) << 63;
+	u1024_RightShift(&val->high);
+	u1024_RightShift(&val->low);
+	val->low.high.high.high.high |= t;
+}
+int u2048_Compare(const uint2048_t v1, const uint2048_t v2)
+{
+	const int compResultHigh = u1024_Compare(v1.high, v2.high);
+	if (compResultHigh > 0) return 1;
+	else if (compResultHigh == 0) {
+		const int compResultLow = u1024_Compare(v1.low, v2.low);
+		if (compResultLow > 0) return 1;
+		else if (compResultLow == 0) return 0;
+		else return -1;
+	}
+	else return -1;
+}
+void u2048_Add(uint2048_t* res, const uint2048_t a, const uint2048_t b)
+{
+	uint1024_t overflow = { 0, 0 };
+	uint1024_t low;
+	u1024_Add(&low, a.low, b.low);
+	if (u1024_Compare(low, a.low) < 0 || u1024_Compare(low, b.low) < 0) overflow.low.low.low.low = 1;
+	res->low = low;
+	u1024_Add(&res->high, a.high, b.high);
+	u1024_Add(&res->high, res->high, overflow);
+}
+void u2048_Add_L(uint2048_t* res, const uint2048_t a, const uint1024_t b)
+{
+	uint1024_t overflow = { 0, 0 };
+	uint1024_t low;
+	u1024_Add(&low, a.low, b);
+	if (u1024_Compare(low, a.low) < 0 || u1024_Compare(low, b) < 0) overflow.low.low.low.low = 1;
+
+	res->low = low;
+	u1024_Add(&res->high, a.high, overflow);
+}
+void u2048_Sub(uint2048_t* res, const uint2048_t a, const uint2048_t b)
+{
+	uint2048_t invert_b;
+	GenerateComplement((uint64_t*)invert_b.byte, (const uint64_t*)b.byte, 32);
+	u2048_Add_L(&invert_b, invert_b, { 1 });
+	u2048_Add(res, a, invert_b);
+}
+void u2048_MultiplyModulateP(uint2048_t* res, uint2048_t a, uint2048_t b)
+{
+	uint2048_t t;
+	uint2048_t double_a;
+	uint2048_t P_a;
+	memset(res->byte, 0, sizeof(uint2048_t));
+	while (!u2048_IsZero(b))
+	{
+		if (u2048_IsOdd(b)) {
+			u2048_Sub(&t, u2048P, a);
+			if (u2048_Compare(*res, t) >= 0) u2048_Sub(res, *res, t);
+			else u2048_Add(res, *res, a);
+		}
+		double_a = a;
+		u2048_LeftShift(&double_a);
+		u2048_Sub(&P_a, u2048P, a);
+		if (u2048_Compare(a, P_a) >= 0) u2048_Add(&a, double_a, u2048INVERT_P);
+		else a = double_a;
+		u2048_RightShift(&b);
+	}
+}
+void u2048_ExponentiateModulateP_R(uint2048_t* res, const uint2048_t a, const uint2048_t b)
+{
+	struct _funcData {
+		uint2048_t t;
+		uint2048_t half_b;
+	};
+
+	uint2048_t t; uint2048_t half_b = b;
+	static uint2048_t one = { 1 };
+
+	if (u2048_Compare(b, one) == 0) {
+		*res = a; return;
+	}
+	u2048_RightShift(&half_b);
+	u2048_ExponentiateModulateP_R(&t, a, half_b);
+	u2048_MultiplyModulateP(&t, t, t);
+	if (u2048_IsOdd(b)) u2048_MultiplyModulateP(&t, t, a);
+	*res = t;
+}
+void u2048_ExponentiateModulateP(uint2048_t* res, uint2048_t a, uint2048_t b)
+{
+	if (u2048_Compare(a, u2048P) > 0) u2048_Sub(&a, a, u2048P);
+	u2048_ExponentiateModulateP_R(res, a, b);
+}
+
+
+
+
+// 4096-BIT VERSION
+static const uint4096_t u4096P = { 0xc5658c6b87d9a301ULL, 0x1f964b8a6a3a69a1ULL, 0x3291e2370230f950ULL, 0xa072301cf497e45aULL, 0xde3faf86da3f424bULL, 0x8b29ff4e668b77caULL, 0x31ba7ebfb9bb3d14ULL,
+0xfdc2b715d68475a9ULL, 0xff3905a10d5b59a8ULL, 0xbd55af0659ac1d22ULL, 0xc9ea6b824d360f7eULL, 0xfd09d4ee2e919ad6ULL, 0x1a29f199e99d3f90ULL, 0xe0b72697c4692f80ULL, 0xa404a42e03a7299aULL, 0x6fddfadfb613461aULL,
+0xdc9c7b7f90f7e430ULL, 0x87f072904da4a9cdULL, 0x0aaf3f80e7dcfbe0ULL, 0x9f097645c237cb10ULL, 0x89f26fda07fa41e2ULL, 0xf48667062f50700eULL, 0xe1f07d3621fd9851ULL, 0xad540ffd47746d1dULL, 0x7d6b991dbffcd837ULL,
+0x2d05df4d10b74736ULL, 0x2b29288147988ef2ULL, 0x558e498e973fbf14ULL, 0x0550abad52b62c8eULL, 0x933e2696c60d8b54ULL, 0xeb281c33fa985808ULL, 0x6307d7a7190b90d7ULL, 0x67b3a55a03369544ULL, 0xb0a7ad19aaf881d1ULL,
+0xed0eaa152afa14e4ULL, 0xb325eb33117a3053ULL, 0xa06f91126943d6c0ULL, 0xbd47f5dfa27b15a3ULL, 0x9122c5798dcb8753ULL, 0xad919e1348ffcae8ULL, 0xa022b9bae9c462c8ULL, 0xcfa1cb4dd0421f23ULL, 0xf0140af3d7594cb2ULL,
+0xcc48586cd296d1d0ULL, 0x5f4d80cea6e8f793ULL, 0xa172f63576198b0aULL, 0xb90ae2f8dd8ee5ffULL, 0xdf22adbe4aef8964ULL, 0xe9e4e46509b9b50eULL, 0x80ed1e21e3142544ULL, 0x79242b0baa659175ULL, 0x03ddb725cba28e6bULL,
+0x81e0365cc482a1a7ULL, 0xcae91d107ab352afULL, 0x77a9bd84bc2bdd46ULL, 0x2166e03b1b64ac82ULL, 0x951fe5962896c73dULL, 0x8b40c3a8ab8f6f6cULL, 0xea8142a8f80fa684ULL, 0xb1281ebe048cd866ULL, 0xdd58ff7f247a40f1ULL,
+0xd92d0e0d826d35d4ULL, 0x52f2a05cf5d6cba5ULL, 0xd52ad85d026b5257ULL };
+static const uint4096_t u4096INVERT_P = { 0x3a9a739478265cffULL, 0xe069b47595c5965eULL, 0xcd6e1dc8fdcf06afULL, 0x5f8dcfe30b681ba5ULL, 0x21c0507925c0bdb4ULL, 0x74d600b199748835ULL, 0xce4581404644c2ebULL,
+0x023d48ea297b8a56ULL, 0x00c6fa5ef2a4a657ULL, 0x42aa50f9a653e2ddULL, 0x3615947db2c9f081ULL, 0x02f62b11d16e6529ULL, 0xe5d60e661662c06fULL, 0x1f48d9683b96d07fULL, 0x5bfb5bd1fc58d665ULL, 0x9022052049ecb9e5ULL,
+0x236384806f081bcfULL, 0x780f8d6fb25b5632ULL, 0xf550c07f1823041fULL, 0x60f689ba3dc834efULL, 0x760d9025f805be1dULL, 0x0b7998f9d0af8ff1ULL, 0x1e0f82c9de0267aeULL, 0x52abf002b88b92e2ULL, 0x829466e2400327c8ULL,
+0xd2fa20b2ef48b8c9ULL, 0xd4d6d77eb867710dULL, 0xaa71b67168c040ebULL, 0xfaaf5452ad49d371ULL, 0x6cc1d96939f274abULL, 0x14d7e3cc0567a7f7ULL, 0x9cf82858e6f46f28ULL, 0x984c5aa5fcc96abbULL, 0x4f5852e655077e2eULL,
+0x12f155ead505eb1bULL, 0x4cda14ccee85cfacULL, 0x5f906eed96bc293fULL, 0x42b80a205d84ea5cULL, 0x6edd3a86723478acULL, 0x526e61ecb7003517ULL, 0x5fdd4645163b9d37ULL, 0x305e34b22fbde0dcULL, 0x0febf50c28a6b34dULL,
+0x33b7a7932d692e2fULL, 0xa0b27f315917086cULL, 0x5e8d09ca89e674f5ULL, 0x46f51d0722711a00ULL, 0x20dd5241b510769bULL, 0x161b1b9af6464af1ULL, 0x7f12e1de1cebdabbULL, 0x86dbd4f4559a6e8aULL, 0xfc2248da345d7194ULL,
+0x7e1fc9a33b7d5e58ULL, 0x3516e2ef854cad50ULL, 0x8856427b43d422b9ULL, 0xde991fc4e49b537dULL, 0x6ae01a69d76938c2ULL, 0x74bf3c5754709093ULL, 0x157ebd5707f0597bULL, 0x4ed7e141fb732799ULL, 0x22a70080db85bf0eULL,
+0x26d2f1f27d92ca2bULL, 0xad0d5fa30a29345aULL, 0x2ad527a2fd94ada8ULL };
+
+static const uint4096_t u4096G = { 27 };
+
+bool u4096_IsZero(const uint4096_t val)
+{
+	return (u2048_IsZero(val.low) && u2048_IsZero(val.high));
+}
+bool u4096_IsOdd(const uint4096_t val)
+{
+	return (val.low.low.low.low.low.low & 1);
+}
+void u4096_LeftShift(uint4096_t* val)
+{
+	uint64_t t = (val->low.high.high.high.high.high >> 63) & 1;
+	u2048_LeftShift(&val->high);
+	val->high.low.low.low.low.low |= t;
+	u2048_LeftShift(&val->low);
+}
+void u4096_RightShift(uint4096_t* val)
+{
+	uint64_t t = (val->high.low.low.low.low.low & 1) << 63;
+	u2048_RightShift(&val->high);
+	u2048_RightShift(&val->low);
+	val->low.high.high.high.high.high |= t;
+}
+int u4096_Compare(const uint4096_t v1, const uint4096_t v2)
+{
+	const int compResultHigh = u2048_Compare(v1.high, v2.high);
+	if (compResultHigh > 0) return 1;
+	else if (compResultHigh == 0) {
+		const int compResultLow = u2048_Compare(v1.low, v2.low);
+		if (compResultLow > 0) return 1;
+		else if (compResultLow == 0) return 0;
+		else return -1;
+	}
+	else return -1;
+}
+void u4096_Add(uint4096_t* res, const uint4096_t a, const uint4096_t b)
+{
+	uint2048_t overflow = { 0, 0 };
+	uint2048_t low;
+	u2048_Add(&low, a.low, b.low);
+	if (u2048_Compare(low, a.low) < 0 || u2048_Compare(low, b.low) < 0) overflow.low.low.low.low.low = 1;
+	res->low = low;
+	u2048_Add(&res->high, a.high, b.high);
+	u2048_Add(&res->high, res->high, overflow);
+}
+void u4096_Add_L(uint4096_t* res, const uint4096_t a, const uint2048_t b)
+{
+	uint2048_t overflow = { 0, 0 };
+	uint2048_t low;
+	u2048_Add(&low, a.low, b);
+	if (u2048_Compare(low, a.low) < 0 || u2048_Compare(low, b) < 0) overflow.low.low.low.low.low = 1;
+
+	res->low = low;
+	u2048_Add(&res->high, a.high, overflow);
+}
+void u4096_Sub(uint4096_t* res, const uint4096_t a, const uint4096_t b)
+{
+	uint4096_t invert_b;
+	GenerateComplement((uint64_t*)invert_b.byte, (const uint64_t*)b.byte, 64);
+	u4096_Add_L(&invert_b, invert_b, { 1 });
+	u4096_Add(res, a, invert_b);
+}
+void u4096_MultiplyModulateP(uint4096_t* res, uint4096_t a, uint4096_t b)
+{
+	uint4096_t t;
+	uint4096_t double_a;
+	uint4096_t P_a;
+	memset(res->byte, 0, sizeof(uint4096_t));
+	while (!u4096_IsZero(b))
+	{
+		if (u4096_IsOdd(b)) {
+			u4096_Sub(&t, u4096P, a);
+			if (u4096_Compare(*res, t) >= 0) u4096_Sub(res, *res, t);
+			else u4096_Add(res, *res, a);
+		}
+		double_a = a;
+		u4096_LeftShift(&double_a);
+		u4096_Sub(&P_a, u4096P, a);
+		if (u4096_Compare(a, P_a) >= 0) u4096_Add(&a, double_a, u4096INVERT_P);
+		else a = double_a;
+		u4096_RightShift(&b);
+	}
+}
+void u4096_ExponentiateModulateP_R(uint4096_t* res, const uint4096_t a, const uint4096_t b)
+{
+	uint4096_t t; uint4096_t half_b = b; 
+	static uint4096_t one = { 1 };
+
+	if (u4096_Compare(b, one) == 0) {
+		*res = a; return;
+	}
+	u4096_RightShift(&half_b);
+	u4096_ExponentiateModulateP_R(&t, a, half_b);
+	u4096_MultiplyModulateP(&t, t, t);
+	if (u4096_IsOdd(b)) u4096_MultiplyModulateP(&t, t, a);
+	*res = t;
+}
+void u4096_ExponentiateModulateP(uint4096_t* res, uint4096_t a, uint4096_t b)
+{
+	if (u4096_Compare(a, u4096P) > 0) u4096_Sub(&a, a, u4096P);
+	u4096_ExponentiateModulateP_R(res, a, b);
+}
 
 
 
 
 
 
+
+
+
+
+
+
+
+
+
+
+uint8_t GenerateRandomNumber()
+{
+	std::random_device dev;
+	std::mt19937 rng(dev());
+	std::uniform_int_distribution<std::mt19937::result_type> dist(0, 0xFF);
+	return dist(rng);
+}
 
 
 void GenKeyPairU128(uint128_t* publicKey, uint128_t* privateKey)
 {
-	for (int i = 0; i < 16; i++) privateKey->byte[i] = rand();
+	for (int i = 0; i < 16; i++) privateKey->byte[i] = GenerateRandomNumber();
 	u128_ExponentiateModulateP(publicKey, u128G, *privateKey);
 }
-
 void GenSharedSecretU128(uint128_t* sharedSecret, const uint128_t privateKey, const uint128_t publicKey)
 {
 	u128_ExponentiateModulateP(sharedSecret, publicKey, privateKey);
 }
+
 void GenKeyPairU256(uint256_t* publicKey, uint256_t* privateKey)
 {
-	for (int i = 0; i < 32; i++) privateKey->byte[i] = rand();
+	for (int i = 0; i < 32; i++) privateKey->byte[i] = GenerateRandomNumber();
 	u256_ExponentiateModulateP(publicKey, u256G, *privateKey);
 }
-
 void GenSharedSecretU256(uint256_t* sharedSecret, const uint256_t privateKey, const uint256_t publicKey)
 {
 	u256_ExponentiateModulateP(sharedSecret, publicKey, privateKey);
 }
+
+
+void GenKeyPairU512(uint512_t* publicKey, uint512_t* privateKey)
+{
+	for (int i = 0; i < 64; i++) privateKey->byte[i] = GenerateRandomNumber();
+	u512_ExponentiateModulateP(publicKey, u512G, *privateKey);
+}
+void GenSharedSecretU512(uint512_t* sharedSecret, const uint512_t privateKey, const uint512_t publicKey)
+{
+	u512_ExponentiateModulateP(sharedSecret, publicKey, privateKey);
+}
+void GenKeyPairU1024(uint1024_t* publicKey, uint1024_t* privateKey)
+{
+	for (int i = 0; i < 128; i++) privateKey->byte[i] = GenerateRandomNumber();
+	u1024_ExponentiateModulateP(publicKey, u1024G, *privateKey);
+}
+void GenSharedSecretU1024(uint1024_t* sharedSecret, const uint1024_t privateKey, const uint1024_t publicKey)
+{
+	u1024_ExponentiateModulateP(sharedSecret, publicKey, privateKey);
+}
+
+
+
+void GenKeyPairU2048(uint2048_t* publicKey, uint2048_t* privateKey)
+{
+	for (int i = 0; i < 256; i++) privateKey->byte[i] = GenerateRandomNumber();
+	u2048_ExponentiateModulateP(publicKey, u2048G, *privateKey);
+}
+void GenSharedSecretU2048(uint2048_t* sharedSecret, const uint2048_t privateKey, const uint2048_t publicKey)
+{
+	u2048_ExponentiateModulateP(sharedSecret, publicKey, privateKey);
+}
+
+void GenKeyPairU4096(uint4096_t* publicKey, uint4096_t* privateKey)
+{
+	for (int i = 0; i < 512; i++) privateKey->byte[i] = GenerateRandomNumber();
+	u4096_ExponentiateModulateP(publicKey, u4096G, *privateKey);
+}
+void GenSharedSecretU4096(uint4096_t* sharedSecret, const uint4096_t privateKey, const uint4096_t publicKey)
+{
+	u4096_ExponentiateModulateP(sharedSecret, publicKey, privateKey);
+}
+
