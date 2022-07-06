@@ -20,6 +20,8 @@
 #include "Audio/AudioBuffer.h"
 #include "Audio/WavFile.h"
 
+#include "Network/Messages/join.pb.h"
+
 
 AudioBuffer<400000> testAudioBuffer;
 
@@ -94,12 +96,20 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     NetError err = app->socket.Connect(DEBUG_IP, DEBUG_PORT);
     if (err == NetError::OK) {
         app->socket.SetPacketCallback(PacketCB, (void*)&app->socket);
+
+        Base::Join joinServerMsg;
+        joinServerMsg.set_name("Test Name");
+        joinServerMsg.set_serverid("Test Server ID");
+        joinServerMsg.set_id("Test ID or whatever");
+        std::string str = joinServerMsg.SerializeAsString();
+        app->socket.SendData(PacketID::JOIN, str.size(), (const uint8_t*)str.data());
+
     }
 
     LoadAllPlugins();
 
     auto& pl = GetPlugins();
-    if (!pl.empty()) {
+    if (!pl.empty() && false) {
         PluginFrame* f = new PluginFrame(this, pl.at(0));
     }
     else

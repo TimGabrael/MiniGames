@@ -21,6 +21,7 @@ enum class PacketID
 {
 	HANDSHAKE = 0,
 	CHECK = 1,
+	JOIN = 2,
 
 };
 
