@@ -65,6 +65,29 @@ bool SendDataToSocket(SOCKET sock, PacketID id, uint32_t size, const uint8_t* da
 	}
 	return true;
 }
+bool SendDataToSocket(SOCKET sock, const PacketHeader& header, const uint8_t* data, uint32_t dataSize)
+{
+	if (sock == INVALID_SOCKET) return false;
+	{
+		uint32_t sendBytes = 0;
+		while (sendBytes < sizeof(PacketHeader))
+		{
+			uint32_t temp = send(sock, ((const char*)&header) + sendBytes, sizeof(PacketHeader) - sendBytes, 0);
+			if (temp == -1) return false;
+			sendBytes += temp;
+		}
+	}
+	{
+		uint32_t sendBytes = 0;
+		while (dataSize > sendBytes)
+		{
+			uint32_t temp = send(sock, (const char*)data + sendBytes, dataSize - sendBytes, 0);
+			if (temp == -1) return false;
+			sendBytes += temp;
+		}
+	}
+	return true;
+}
 
 
 
@@ -235,9 +258,10 @@ void Connection::SendData(PacketID id, size_t size, const void* data)
 {
 	uint8_t* packData = new uint8_t[size];
 	memcpy(packData, data, size);
+	PacketHeader pack(id, size);
 	ctx.EncryptBuffer(packData, size);
-
-	SendDataToSocket(socket, id, size, packData);
+	ctx.EncryptBuffer((uint8_t*)&pack, sizeof(PacketHeader));
+	SendDataToSocket(socket, pack, packData, size);
 
 	delete[] packData;
 }
@@ -336,13 +360,7 @@ void TCPSocket::SetPacketCallback(ClientPacketCallback cb, void* userData)
 }
 void TCPSocket::SendData(PacketID id, uint32_t size, const uint8_t* data)
 {
-	uint8_t* sendData = new uint8_t[size];
-	memcpy(sendData, data, size);
-	this->serverConn.ctx.EncryptBuffer(sendData, size);
-
-	SendDataToSocket(sock, id, size, sendData);
-
-	delete[] sendData;
+	this->serverConn.SendData(id, size, (const void*)data);
 }
 void TCPSocket::SendDataUnencrypted(PacketID id, uint32_t size, const uint8_t* data)
 {
@@ -360,6 +378,8 @@ void TCPSocket::SocketListenFunc(void* client, struct Connection* conn)
 			if (s->disconnectCB) s->disconnectCB(s->userDataDisconnectCB, s, &s->serverConn);
 			s->running = false; return;
 		}
+		conn->ctx.DecryptBuffer((uint8_t*)&cur->header, sizeof(PacketHeader));
+
 		err = ReadBody(conn->socket, cur);
 		if (err != NetError::OK)
 		{
@@ -391,6 +411,7 @@ void TCPServerSocket::TCPServerListenToClient(void* server, Connection* conn)
 			s->RemoveClient(conn->socket);
 			return;
 		}
+		conn->ctx.DecryptBuffer((uint8_t*)&cur->header, sizeof(PacketHeader));
 		err = ReadBody(conn->socket, cur);
 		if (err != NetError::OK)
 		{

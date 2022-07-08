@@ -69,8 +69,14 @@ void PacketCB(void* userData, Packet* pack)
     }
     else if (pack->header.type == (uint32_t)PacketID::JOIN)
     {
-        LOG("GOT A JOIN MESSAGE\n");
-        
+        Base::JoinResponse j;
+        if (j.error() == Base::SERVER_ROOM_JOIN_INFO::ROOM_JOIN_OK)
+        {
+            j.ParseFromArray(pack->body.data(), pack->body.size());
+            j.info().client().name();
+
+            LOG("GOT A JOIN MESSAGE\n");
+        }
     }
 
     // LOG("GOT A MESSAGE FROM THE SERVER\n");
