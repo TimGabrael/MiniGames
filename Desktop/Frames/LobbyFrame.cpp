@@ -1,4 +1,5 @@
 #include  "LobbyFrame.h"
+#include "logging.h"
 #include <qscrollarea.h>
 #include <qpushbutton.h>
 #include <QtWidgets/QHBoxLayout>
@@ -13,7 +14,11 @@
 
 #include "../Widgets/Header.h"
 #include <qevent.h>
-#include <iostream>
+
+#include "../util/PluginLoader.h"
+#include "../UtilFuncs.h"
+#include "PluginFrame.h"
+
 
 constexpr QSize gamePopUpSize = { 400, 300 };
 class GameInfo : public QWidget
@@ -35,6 +40,11 @@ public:
 	}
 
 private:
+
+	LobbyFrame* GetLobbyFrame()
+	{
+		return (LobbyFrame*)this->parentWidget()->parentWidget();	// this->ContentWidget->LobbyFrame
+	}
 
 	virtual void paintEvent(QPaintEvent* e) override
 	{
@@ -101,6 +111,7 @@ private:
 			voteCount++;
 			anim.Start();
 			update();
+			GetLobbyFrame()->StartPlugin(0);
 		}
 	}
 	virtual void mouseDoubleClickEvent(QMouseEvent* e) override
@@ -239,4 +250,17 @@ LobbyFrame::LobbyFrame(QMainWindow* parent) : QWidget(parent)
 LobbyFrame::~LobbyFrame()
 {
 
+}
+
+
+void LobbyFrame::StartPlugin(int idx)
+{
+	QMainWindow* main = GetMainWindow(this);
+	main->layout()->removeWidget(this);
+	delete this;
+
+	auto& pl = GetPlugins();
+	if (idx < pl.size()) {
+		PluginFrame* f = new PluginFrame(main, pl.at(idx));
+	}
 }

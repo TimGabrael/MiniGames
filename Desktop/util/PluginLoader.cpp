@@ -1,6 +1,6 @@
 #include "PluginLoader.h"
 #include <filesystem>
-#include <iostream>
+#include "logging.h"
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -35,14 +35,17 @@ void LoadAllPlugins()
 		if (f.is_regular_file() && f.path().has_extension() && f.path().extension() == DYNAMIC_LIBRARY_EXTENSION) {
 			std::string file = f.path().string();
 			void* outModule = LOAD(file.c_str());
-			PluginCreateFunction plugFunc = (PluginCreateFunction)SYM(outModule, "GetPlugin");
-			if (plugFunc)
+			if (outModule)
 			{
-				plug.push_back(plugFunc());
-			}
-			else
-			{
-				FREE(outModule);
+				PluginCreateFunction plugFunc = (PluginCreateFunction)SYM(outModule, "GetPlugin");
+				if (plugFunc)
+				{
+					plug.push_back(plugFunc());
+				}
+				else
+				{
+					FREE(outModule);
+				}
 			}
 		}
 	}

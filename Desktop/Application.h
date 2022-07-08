@@ -1,6 +1,7 @@
 #pragma once
 #include <qapplication>
 #include "CommonCollection.h"
+#include "Plugins/PluginCommon.h"
 
 class MainApplication : public QApplication
 {
@@ -9,11 +10,14 @@ public:
 	~MainApplication();
 
 
+
+	ApplicationData appData;
 	TCPSocket socket;
 	QWidget* backgroundWidget = nullptr;
 
 	QString username;
 	QString lobbyname;
+	bool isConnected = false;
 
 	bool fullscreen;
 

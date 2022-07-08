@@ -6,6 +6,7 @@
 #include <qopenglcontext.h>
 #include <qopenglfunctions.h>
 #include <qnamespace.h>
+#include "../MiniGames.h"
 
 PluginWidget::PluginWidget(QWidget* parent, PluginClass* plClass) : QOpenGLWidget(parent), plugin(plClass)
 {
@@ -33,7 +34,9 @@ PluginWidget::~PluginWidget()
 
 void PluginWidget::initializeGL()
 {
-	plugin->Init(nullptr, _CURRENT_PLATFORM_ID);
+	MainApplication* app = MainApplication::GetInstance();
+	app->appData.platform = _CURRENT_PLATFORM_ID;
+	plugin->Init(&app->appData);
 	isInitialized = true;
 }
 
@@ -41,14 +44,17 @@ void PluginWidget::resizeGL(int w, int h)
 {
 	plugin->sizeX = w; plugin->sizeY = h;
 	plugin->framebufferX = w; plugin->framebufferY = h;
-	
-	plugin->Resize(nullptr);
+
+	MainApplication* app = MainApplication::GetInstance();
+	plugin->Resize(&app->appData);
 }
 
 void PluginWidget::paintGL()
 {
 	if(hovered) hovered = underMouse();
-	plugin->Render(nullptr);
+
+	MainApplication* app = MainApplication::GetInstance();
+	plugin->Render(&app->appData);
 }
 
 void PluginWidget::resizeEvent(QResizeEvent* event)

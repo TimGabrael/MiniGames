@@ -1,5 +1,7 @@
 #pragma once
 #include "KeyboardKeys.h"
+#include <string>
+#include <vector>
 
 struct PLUGIN_INFO
 {
@@ -16,7 +18,7 @@ struct PLUGIN_INFO
 #define EXPORT 
 #endif
 
-
+struct TCPSocket;
 enum PLATFORM_ID
 {
 	PLATFORM_ID_WINDOWS = 1,
@@ -32,6 +34,22 @@ enum PLATFORM_ID
 	PLATFORM_MASK_DESKTOP = PLATFORM_ID_WINDOWS | PLATFORM_ID_LINUX | PLATFORM_ID_OSX,
 	PLATFORM_MASK_MOBILE = PLATFORM_ID_ANDROID | PLATFORM_ID_IOS,
 };
+
+struct ClientData
+{
+	std::string name;
+	uint32_t groupMask;
+};
+
+struct ApplicationData
+{
+	PLATFORM_ID platform;
+	std::vector<ClientData> players;
+	ClientData localPlayer;
+	void* assetManager;
+	TCPSocket* socket;
+};
+
 
 struct PB_MouseData
 {
@@ -57,9 +75,9 @@ class PluginClass
 {
 public:
 	virtual PLUGIN_INFO GetPluginInfos() = 0;
-	virtual void Init(void* backendData, PLATFORM_ID id) = 0;
-	virtual void Resize(void* backendData) = 0;
-	virtual void Render(void* backendData) = 0;
+	virtual void Init(ApplicationData* data) = 0;
+	virtual void Resize(ApplicationData* data) = 0;
+	virtual void Render(ApplicationData* data) = 0;
 
 	virtual void MouseCallback(const PB_MouseData* mData) = 0;
 

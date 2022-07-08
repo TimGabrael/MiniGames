@@ -1,10 +1,53 @@
-syntax = "proto2";
+syntax = "proto3";
+import "ClientInfo.proto";
 
 package Base;
 
-message Join
+
+message Info
 {
-	required string name = 1;
-	required string serverID = 2;
-	optional string ID = 3;
+	ClientInfo client = 1;
+	string serverID = 2;
+	repeated string availablePlugins = 3;
+}
+
+enum SERVER_ROOM_JOIN_INFO
+{
+	ROOM_JOIN_OK = 0;
+	ROOM_JOIN_UNAVAILABLE = 1;
+	ROOM_JOIN_NO_SHARED = 2;		// if no plugins are shared with the room
+	ROOM_JOIN_NAME_COLLISION = 3;	// name already used
+}
+enum SERVER_ROOM_CREATE_INFO
+{
+	ROOM_CREATE_OK = 0;
+	ROOM_CREATE_COLLISION = 1;	// serverID already used
+}
+
+
+message JoinRequest
+{
+	Info info  = 1;
+	optional bytes ID = 3;
+	
+}
+
+message CreateRequest
+{
+	Info info = 1;
+}
+
+
+message JoinResponse
+{
+	SERVER_ROOM_JOIN_INFO error = 1;
+	Info info  = 2;
+	bytes ID = 3;
+}
+
+message CreateResponse
+{
+	SERVER_ROOM_CREATE_INFO error = 1;
+	Info info = 2;
+	bytes ID = 3;
 }

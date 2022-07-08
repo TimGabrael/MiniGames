@@ -12,7 +12,7 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <arpa/inet.h>
-static constexpr uintptr_t INVALID_SOCKET = -1LL;
+static constexpr int INVALID_SOCKET = ~(0LL);
 typedef int SOCKET;
 #define ARRAYSIZE(arr) (sizeof(arr) / sizeof(arr[0]))
 #endif
@@ -42,23 +42,27 @@ bool SendDataToSocket(SOCKET sock, PacketID id, uint32_t size, const uint8_t* da
 {
 	if (sock == INVALID_SOCKET) return false;
 
-	const uint32_t sz = sizeof(PacketHeader) + size;
-	uint8_t* sendStream = new uint8_t[sz];
-	PacketHeader* head = (PacketHeader*)sendStream; head->size = size; head->type = (uint32_t)id;
-	memcpy(sendStream + sizeof(PacketHeader), data, size);
-	uint32_t sendBytes = 0;
-	while (sendBytes < size)
+	// send header
 	{
-		uint32_t temp = send(sock, (const char*)sendStream, sz, 0);
-		if (temp == -1)
+		PacketHeader head(id, size);
+		uint32_t sendBytes = 0;
+		while (sendBytes < sizeof(PacketHeader))
 		{
-
-			delete[] sendStream;
-			return false;
+			uint32_t temp = send(sock, ((const char*)&head) + sendBytes, sizeof(PacketHeader) - sendBytes, 0);
+			if (temp == -1) return false;
+			sendBytes += temp;
 		}
-		sendBytes += temp;
 	}
-	delete[] sendStream;
+	// send body
+	{
+		uint32_t sendBytes = 0;
+		while (size > sendBytes)
+		{
+			uint32_t temp = send(sock, (const char*)data + sendBytes, size - sendBytes, 0);
+			if (temp == -1) return false;
+			sendBytes += temp;
+		}
+	}
 	return true;
 }
 
@@ -207,19 +211,39 @@ Connection::Connection(uintptr_t sock, ConnectionFunc socketCallback, void* obj)
 }
 Connection::Connection(uintptr_t sock, ConnectionFunc socketCallback, void* obj, const ukey_t& key)
 {
-	socket = sock;
-	SetCryptoKey(key);
-	listener = std::thread(socketCallback, obj, this);
+	Init(sock, socketCallback, obj, key);
+}
+Connection::~Connection()
+{
+	if(socket != INVALID_SOCKET) closesocket(socket);
+	socket = INVALID_SOCKET;
+	if (listener.get_id() == std::this_thread::get_id())
+	{
+		listener.detach();
+	}
+	else
+	{
+		if (listener.joinable()) listener.join();
+	}
 }
 void Connection::Init(uintptr_t sock, ConnectionFunc socketCallback, void* obj, const ukey_t& key)
 {
 	socket = sock; SetCryptoKey(key);
 	listener = std::thread(socketCallback, obj, this);
 }
+void Connection::SendData(PacketID id, size_t size, const void* data)
+{
+	uint8_t* packData = new uint8_t[size];
+	memcpy(packData, data, size);
+	ctx.EncryptBuffer(packData, size);
+
+	SendDataToSocket(socket, id, size, packData);
+
+	delete[] packData;
+}
 void Connection::SetCryptoKey(const ukey_t& k)
 {
-	sharedSecret = k;
-	this->ctx.InitContext(sharedSecret.byte);
+	this->ctx.InitContext(k.byte);
 }
 TCPSocket::TCPSocket()
 {
@@ -233,12 +257,10 @@ NetError TCPSocket::Connect(const char* host, const char* port)
 
 	int res = connect(sock, info->ai_addr, (int)info->ai_addrlen);
 
-
 	if (res != 0)
 	{
 		LOG("Connection Failed ErrorCode: %d\n", errno);
 		closesocket(sock);
-
 		sock = INVALID_SOCKET;
 		CleanUp();
 		return NetError::E_CONNECT;
@@ -304,9 +326,13 @@ void TCPSocket::Disconnect()
 	this->running = false;
 	if (serverConn.listener.joinable()) serverConn.listener.join();
 }
-void TCPSocket::SetPacketCallback(PacketCallback cb, void* userData)
+void TCPSocket::SetDisconnectCallback(ClientDisconnectCallback cb, void* userData)
 {
-	this->packCb = cb; this->uData = userData;
+	this->disconnectCB = cb; this->userDataDisconnectCB = userData;
+}
+void TCPSocket::SetPacketCallback(ClientPacketCallback cb, void* userData)
+{
+	this->packCb = cb; this->userDataPacketCB = userData;
 }
 void TCPSocket::SendData(PacketID id, uint32_t size, const uint8_t* data)
 {
@@ -331,18 +357,21 @@ void TCPSocket::SocketListenFunc(void* client, struct Connection* conn)
 		NetError err = ReadHeader(conn->socket, cur);
 		if (err != NetError::OK)
 		{
+			if (s->disconnectCB) s->disconnectCB(s->userDataDisconnectCB, s, &s->serverConn);
 			s->running = false; return;
 		}
 		err = ReadBody(conn->socket, cur);
 		if (err != NetError::OK)
 		{
+			if (s->disconnectCB) s->disconnectCB(s->userDataDisconnectCB, s, &s->serverConn);
 			s->running = false; return;
 		}
 		// the packet is finished at this point.
 		conn->ctx.DecryptBuffer((uint8_t*)cur->body.data(), cur->header.size);
 		if (s->packCb)
-			s->packCb(s->uData, cur);
+			s->packCb(s->userDataPacketCB, cur);
 	}
+	if (s->disconnectCB) s->disconnectCB(s->userDataDisconnectCB, s, &s->serverConn);
 }
 
 
@@ -359,19 +388,19 @@ void TCPServerSocket::TCPServerListenToClient(void* server, Connection* conn)
 		NetError err = ReadHeader(conn->socket, cur);
 		if (err != NetError::OK)
 		{
-			s->RemoveInListener(conn->socket);
+			s->RemoveClient(conn->socket);
 			return;
 		}
 		err = ReadBody(conn->socket, cur);
 		if (err != NetError::OK)
 		{
-			s->RemoveInListener(conn->socket);
+			s->RemoveClient(conn->socket);
 			return;
 		}
 		// the packet is finished at this point.
 		conn->ctx.DecryptBuffer((uint8_t*)cur->body.data(), cur->header.size);
 		if (s->packetCallback)
-			s->packetCallback(s->userData, cur);
+			s->packetCallback(s->userDataPacketCB, conn, cur);
 	}
 }
 NetError TCPServerSocket::Create(const char* host, const char* port)
@@ -472,16 +501,31 @@ NetError TCPServerSocket::AcceptConnection()
 	}
 	return NetError::OK;
 }
-void TCPServerSocket::SetPacketCallback(PacketCallback cb, void* data)
+void TCPServerSocket::SetConnectCallback(ConnectCallback cb, void* userData)
+{
+	this->connectCallback = cb;
+	this->userDataConnectCB = userData;
+}
+void TCPServerSocket::SetPacketCallback(ServerPacketCallback cb, void* data)
 {
 	this->packetCallback = cb;
-	this->userData = data;
+	this->userDataPacketCB = data;
+}
+void TCPServerSocket::SetDisconnectCallback(DisconnectCallback cb, void* userData)
+{
+	this->disconnectCallback = cb;
+	this->userDataDisconnectCB = userData;
 }
 void TCPServerSocket::AddClient(uintptr_t connSocket, const ukey_t& key)
 {
 	clientMut.lock();
-	clients.emplace_back(connSocket, TCPServerListenToClient, this, key);
+	const uint32_t clientIdx = clients.size();
+	clients.emplace_back(new Connection(connSocket, TCPServerListenToClient, this, key));
+	Connection* conn = clients.at(clientIdx);
 	clientMut.unlock();
+
+	if (this->connectCallback)
+		this->connectCallback(this->userDataConnectCB, this, conn);
 }
 void TCPServerSocket::RemoveClient(uintptr_t connSocket)
 {
@@ -489,11 +533,12 @@ void TCPServerSocket::RemoveClient(uintptr_t connSocket)
 	for (size_t i = 0; i < clients.size(); i++)
 	{
 		auto& client = clients.at(i);
-		if (client.socket == connSocket)
+		if (client->socket == connSocket)
 		{
-			closesocket(client.socket);
-			if (client.listener.joinable()) client.listener.join();
-			
+			if (this->disconnectCallback)
+				this->disconnectCallback(this->userDataDisconnectCB, this, client);
+
+			delete clients.at(i);
 			clients.erase(clients.begin() + i);
 			break;
 		}
@@ -506,28 +551,11 @@ void TCPServerSocket::RemoveClientAtIdx(size_t idx)
 	if (idx < clients.size())
 	{
 		auto& client = clients.at(idx);
-		
-		closesocket(client.socket);
-		if (client.listener.joinable()) client.listener.join();
+		if (this->disconnectCallback)
+			this->disconnectCallback(this->userDataDisconnectCB, this, client);
 
+		delete clients.at(idx);
 		clients.erase(clients.begin() + idx);
-	}
-	clientMut.unlock();
-}
-
-void TCPServerSocket::RemoveInListener(uintptr_t connSocket)
-{
-	clientMut.lock();
-	for (size_t i = 0; i < clients.size(); i++)
-	{
-		auto& client = clients.at(i);
-		if (client.socket == connSocket)
-		{
-			closesocket(client.socket);
-			client.listener.detach();	// needs to be detached, as the destructor trys to join the thread
-			clients.erase(clients.begin() + i);
-			break;
-		}
 	}
 	clientMut.unlock();
 }
@@ -538,20 +566,29 @@ void TCPServerSocket::RemoveAll()
 		RemoveClientAtIdx(0);
 	}
 }
-void TCPServerSocket::SendData(uint32_t clientIdx, PacketID id, size_t size, const uint8_t* data)
+void TCPServerSocket::RemoveClient(Connection* conn)
 {
 	clientMut.lock();
-	if (clientIdx < clients.size())
+	for (size_t i = 0; i < clients.size(); i++)
 	{
-		auto& c = clients.at(clientIdx);
-		uint8_t* packData = new uint8_t[size];
-		memcpy(packData, data, size);
-		c.ctx.EncryptBuffer(packData, size);
-
-		SendDataToSocket(c.socket, id, size, packData);
-
-		delete[] packData;
+		auto* client = clients.at(i);
+		if (client == conn)
+		{
+			if (this->disconnectCallback)
+				this->disconnectCallback(this->userDataDisconnectCB, this, client);
+			delete client;
+			clients.erase(clients.begin() + i);
+		}
 	}
 	clientMut.unlock();
 }
 
+
+std::string GetIPAddress(uintptr_t socket)
+{
+	sockaddr_in addrInfo; int nameLen;
+	getsockname(socket, (sockaddr*)&addrInfo, &nameLen);
+	char* ipAddr = inet_ntoa(addrInfo.sin_addr);
+	std::string res = ipAddr;
+	return res;
+}

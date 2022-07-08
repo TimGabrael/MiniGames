@@ -5,6 +5,9 @@
 #include <mutex>
 #include "Cryptography.h"
 
+// ADMIN/CREATOR OF THE ROOM
+#define ADMIN_GROUP_MASK (1 << 31)
+
 enum class NetError
 {
 	OK,
@@ -22,16 +25,21 @@ enum class PacketID
 	HANDSHAKE = 0,
 	CHECK = 1,
 	JOIN = 2,
+	CREATE = 3,
+	SYNC_REQUEST = 4,	// these need to be seperate as the server can ask the Admin for the current SYNC data
+	SYNC_RESPONSE = 5,	// these need to be seperate as the server can ask the Admin for the current SYNC data
 
 };
 
 struct PacketHeader
 {
-	PacketHeader() { type = 0; size = 0; }
-	constexpr PacketHeader(uint32_t t, uint32_t sz) : type(t), size(sz) { }
-	constexpr PacketHeader(PacketID t, uint32_t sz) : type((uint32_t)t), size(sz) { }
+	PacketHeader() { type = 0; size = 0; group = 0x0; additionalData = 0; }
+	constexpr PacketHeader(uint32_t t, uint32_t sz) : type(t), size(sz), group(0x0), additionalData(0) { }
+	constexpr PacketHeader(PacketID t, uint32_t sz) : type((uint32_t)t), size(sz), group(0x0), additionalData(0) { }
 	uint32_t type;
 	uint32_t size;
+	uint32_t group;
+	uint32_t additionalData;
 };
 struct Packet
 {
@@ -87,9 +95,14 @@ static constexpr KeyGenSharedFunc GenSharedSecret = GenSharedSecretU4096;
 
 
 
-
+struct TCPSocket;
+struct TCPServerSocket;
 typedef void(*ConnectionFunc)(void* obj, struct Connection* conn);
-typedef void(*PacketCallback)(void* userData, Packet* pack);
+typedef void(*ClientPacketCallback)(void* userData, Packet* pack);
+typedef void(*ServerPacketCallback)(void* userData, Connection* conn, Packet* pack);
+typedef void(*ConnectCallback)(void* userData, TCPServerSocket* sock, Connection* conn);
+typedef void(*DisconnectCallback)(void* userData, TCPServerSocket* sock, Connection* removed);
+typedef void(*ClientDisconnectCallback)(void* userData, TCPSocket* sock, Connection* removed);
 
 struct Connection
 {
@@ -98,10 +111,11 @@ struct Connection
 	Connection(uintptr_t sock, ConnectionFunc socketCallback);
 	Connection(uintptr_t sock, ConnectionFunc socketCallback, void* obj);
 	Connection(uintptr_t sock, ConnectionFunc socketCallback, void* obj, const ukey_t& key);
+	~Connection();
 
 	void Init(uintptr_t sock, ConnectionFunc socketCallback, void* obj, const ukey_t& key);
 
-
+	void SendData(PacketID id, size_t size, const void* data);
 
 	void SetCryptoKey(const ukey_t& k);
 
@@ -109,7 +123,6 @@ struct Connection
 	uintptr_t socket;
 	std::thread listener;
 	Packet storedPacket;
-	ukey_t sharedSecret;
 };
 
 class TCPSocket
@@ -120,7 +133,8 @@ public:
 	NetError Connect(const char* host, const char* port);
 	void Disconnect();
 
-	void SetPacketCallback(PacketCallback cb, void* userData = nullptr);
+	void SetPacketCallback(ClientPacketCallback cb, void* userData = nullptr);
+	void SetDisconnectCallback(ClientDisconnectCallback cb, void* userData = nullptr);
 
 	void SendData(PacketID id, uint32_t size, const uint8_t* data);
 
@@ -128,8 +142,10 @@ private:
 	void SendDataUnencrypted(PacketID id, uint32_t size, const uint8_t* data);
 	static void SocketListenFunc(void* obj, struct Connection* conn);
 	uintptr_t sock;
-	PacketCallback packCb = nullptr;
-	void* uData = nullptr;
+	ClientPacketCallback packCb = nullptr;
+	void* userDataPacketCB = nullptr;
+	ClientDisconnectCallback disconnectCB = nullptr;
+	void* userDataDisconnectCB = nullptr;
 	Connection serverConn;
 	ukey_t privateKey;
 	ukey_t publicKey;
@@ -143,14 +159,15 @@ public:
 	NetError Create(const char* host, const char* port);
 	NetError AcceptConnection();
 
-	void SetPacketCallback(PacketCallback cb, void* userData = nullptr);
+	void SetConnectCallback(ConnectCallback cb, void* userData = nullptr);
+	void SetPacketCallback(ServerPacketCallback cb, void* userData = nullptr);
+	void SetDisconnectCallback(DisconnectCallback cb, void* userData = nullptr);
 
 	void RemoveAll();
 
-	void SendData(uint32_t clientIdx, PacketID id, size_t size, const uint8_t* data);
+	void RemoveClient(Connection* conn);
 
 	static void TCPServerListenToClient(void* server, Connection* conn);
-
 private:
 
 
@@ -158,15 +175,19 @@ private:
 	void RemoveClient(uintptr_t connSocket);
 	void RemoveClientAtIdx(size_t idx);
 
-	void RemoveInListener(uintptr_t connSocket);
 
-	PacketCallback packetCallback;
-	void* userData;
+	ServerPacketCallback packetCallback;
+	void* userDataPacketCB;
+	ConnectCallback connectCallback;
+	void* userDataConnectCB;
+	DisconnectCallback disconnectCallback;
+	void* userDataDisconnectCB;
 	uintptr_t sock;
 	std::mutex clientMut;
-	std::vector<Connection> clients;
+	std::vector<Connection*> clients;
 	ukey_t privateKey;
 	ukey_t publicKey;
 	bool running;
 };
 
+std::string GetIPAddress(uintptr_t socket);

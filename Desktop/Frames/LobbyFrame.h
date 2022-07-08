@@ -8,6 +8,8 @@ public:
 	LobbyFrame(QMainWindow* parent);
 	~LobbyFrame();
 
+	void StartPlugin(int idx);
 private:
 	QWidget* playerScrollContent = nullptr;
+	
 };

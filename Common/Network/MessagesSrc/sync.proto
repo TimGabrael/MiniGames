@@ -1,0 +1,16 @@
+syntax = "proto3";
+import "ClientInfo.proto";
+
+package Base;
+
+
+
+
+message SyncResponse
+{
+	string serverID = 1;
+	bytes ID = 2;
+	repeated ClientInfo connectedClients = 3;
+	repeated string availablePlugins = 4;
+	optional bytes pluginState = 5;		// this should be handled in the plugin
+}

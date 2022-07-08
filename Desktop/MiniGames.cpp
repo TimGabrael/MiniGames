@@ -38,14 +38,14 @@ int RenderCallback(void* userData, float* frames, int numberOfFrames)
     for (int i = 0; i < numberOfFrames * 2; i+=2)
     {
         // Perfect sine wave
-        // frames[i] = sinf(curSample * M_PI * 440 * 2) * 0.1f;
-        // frames[i+1] = sinf(curSample * M_PI * 440 * 2) * 0.1f;
-        Data curData = testAudioBuffer.GetNext();
-        frames[i] = curData.channel1*1;
-        frames[i+1] = curData.channel2*1;
-        curSample += SAMPLE_INV;
+        //frames[i] = sinf(curSample * M_PI * 440 * 2) * 0.1f;
+        //frames[i+1] = sinf(curSample * M_PI * 440 * 2) * 0.1f;
+        //curSample += SAMPLE_INV;
+        //Data curData = testAudioBuffer.GetNext();
+        //frames[i] = curData.channel1*1;
+        //frames[i+1] = curData.channel2*1;
     }
-    return numberOfFrames;
+    return 0;
 }
 void ErrorCallback(void* userData, const char* errorMessage, int errorCode) 
 {
@@ -62,7 +62,18 @@ void PacketCB(void* userData, Packet* pack)
 {
     TCPSocket* sock = (TCPSocket*)userData;
 
-    LOG("GOT A MESSAGE FROM THE SERVER\n");
+    if (pack->header.type == (uint32_t)PacketID::SYNC_RESPONSE)
+    {
+        
+        
+    }
+    else if (pack->header.type == (uint32_t)PacketID::JOIN)
+    {
+        LOG("GOT A JOIN MESSAGE\n");
+        
+    }
+
+    // LOG("GOT A MESSAGE FROM THE SERVER\n");
 
 }
 
@@ -80,7 +91,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     audioDriver = nativeformat::driver::NFDriver::createNFDriver(nullptr, StutterCallback, RenderCallback, ErrorCallback,
         WillRenderCallback, DidRenderCallback, nativeformat::driver::OutputType::OutputTypeSoundCard);
 
-
+    
     //audioDriver->setPlaying(true);
 
     QSizePolicy sizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -94,16 +105,19 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
 
     auto app = MainApplication::GetInstance();
     NetError err = app->socket.Connect(DEBUG_IP, DEBUG_PORT);
+    app->isConnected = (err == NetError::OK) ? true : false;
     if (err == NetError::OK) {
         app->socket.SetPacketCallback(PacketCB, (void*)&app->socket);
 
-        Base::Join joinServerMsg;
-        joinServerMsg.set_name("Test Name");
-        joinServerMsg.set_serverid("Test Server ID");
-        joinServerMsg.set_id("Test ID or whatever");
-        std::string str = joinServerMsg.SerializeAsString();
-        app->socket.SendData(PacketID::JOIN, str.size(), (const uint8_t*)str.data());
+        
+        Base::JoinRequest req;
+        req.mutable_info()->mutable_client()->set_name("Test Name");
+        req.mutable_info()->set_serverid("Test Server");
+        req.mutable_info()->add_availableplugins("Test Plugin");
+        
 
+        std::string serialized = req.SerializeAsString();
+        app->socket.SendData(PacketID::JOIN, serialized.size(), (const uint8_t*)serialized.data());
     }
 
     LoadAllPlugins();

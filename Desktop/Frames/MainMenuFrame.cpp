@@ -5,6 +5,10 @@
 #include "LobbyFrame.h"
 #include "CommonCollection.h"
 #include "../Application.h"
+#include "qmessagebox.h"
+#include "qtooltip.h"
+#include "../CustomWidgets/InfoPopup.h"
+#include <future>
 
 
 
@@ -105,6 +109,21 @@ MainMenuFrame::MainMenuFrame(QMainWindow* MainWindow) : QWidget(MainWindow)
     connect(createBtn, &QPushButton::clicked, this, &MainMenuFrame::OnCreateClick);
     connect(settingsBtn, &QPushButton::clicked, this, &MainMenuFrame::OnSettingsClick);
     connect(exitBtn, &QPushButton::clicked, this, &MainMenuFrame::OnExitClick);
+
+    auto function = []() {
+        MainApplication* app = MainApplication::GetInstance();
+        NetError err = app->socket.Connect(DEBUG_IP, DEBUG_PORT);
+        app->isConnected = (err == NetError::OK) ? true : false;
+        if (!app->isConnected)
+        {
+            // POP UP MESSAGE FAILED TO CONNECT TO SERVER
+            //LOG("COULD NOT ESTABLISH A CONNECTION TO THE SERVER: %p\n", wnd);
+            //auto rect = wnd->geometry();
+            //InfoPopup* popUp = new InfoPopup(wnd, "TestContent", QPoint(rect.width() / 2, rect.height() - 100), 40, 0xFFFFFFFF, 100000);
+            //LOG("HIERBINICHSF\n");
+        }
+    };
+
     MainWindow->setCentralWidget(this);
 }
 MainMenuFrame::~MainMenuFrame()
@@ -113,14 +132,38 @@ MainMenuFrame::~MainMenuFrame()
 
 
 
+std::future<void> fut;
 void MainMenuFrame::OnCreateClick()
 {
-    QMainWindow* main = (QMainWindow*)parentWidget();
-    main->layout()->removeWidget(this);
-    delete this;
+    if (fut.valid() && fut._Is_ready()) fut.get();
+    if (!fut.valid())
+    {
+        fut = std::async([this]() {
+            MainApplication* app = MainApplication::GetInstance();
+            if (!app->isConnected)
+            {
+                NetError err = app->socket.Connect(DEBUG_IP, DEBUG_PORT);
+                app->isConnected = (err == NetError::OK) ? true : false;
+                if (!app->isConnected)
+                {
+                    QTimer::singleShot(0, this, [this]() {
+                        MainApplication* app = MainApplication::GetInstance();
+                        QMainWindow* main = (QMainWindow*)parentWidget();
+                        auto rect = main->geometry();
+                        InfoPopup* popUp = new InfoPopup(main, "FAILED TO CONNECT TO SERVER", QPoint(rect.width() / 2, rect.height() - 100), 40, 0xFFFF0000, 10000);
+                        });
+                    return;
+                }
+            }
+            QTimer::singleShot(0, this, [this]() {
+                QMainWindow* main = (QMainWindow*)parentWidget();
+                main->layout()->removeWidget(this);
+                delete this;
 
-
-    LobbyFrame* lobby = new LobbyFrame(main);
+                LobbyFrame* lobby = new LobbyFrame(main);
+                });
+            });
+    }
 }
 void MainMenuFrame::OnSettingsClick()
 {

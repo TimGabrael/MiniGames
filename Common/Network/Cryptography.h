@@ -74,6 +74,7 @@ void GenSharedSecretU512(uint512_t* sharedSecret, const uint512_t privateKey, co
 void GenKeyPairU1024(uint1024_t* publicKey, uint1024_t* privateKey);
 void GenSharedSecretU1024(uint1024_t* sharedSecret, const uint1024_t privateKey, const uint1024_t publicKey);
 
+// STACK OVERFLOW GUARANTEED
 void GenKeyPairU2048(uint2048_t* publicKey, uint2048_t* privateKey);
 void GenSharedSecretU2048(uint2048_t* sharedSecret, const uint2048_t privateKey, const uint2048_t publicKey);
 void GenKeyPairU4096(uint4096_t* publicKey, uint4096_t* privateKey);

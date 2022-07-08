@@ -24,8 +24,6 @@ void ConnectToServer()
 
     }
     else {
-        TestPacket test("Moin von Android");
-        sock.SendPacket(&test);
     }
     jvm->DetachCurrentThread();
 }

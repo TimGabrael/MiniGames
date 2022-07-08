@@ -67,12 +67,12 @@ struct UnoGlobals
 
 
 //#define ALLOW_FREEMOVEMENT
-void UnoPlugin::Init(void* backendData, PLATFORM_ID id)
+void UnoPlugin::Init(ApplicationData* data)
 {
 	initialized = true;
-	this->backendData = backendData;
-	InitializeOpenGL(backendData);
-	InitializeCardPipeline(backendData);
+	this->backendData = data;
+	InitializeOpenGL(data->assetManager);
+	InitializeCardPipeline(data->assetManager);
 
 	static constexpr float cubeSize = 4.0f;
 	SVertex3D platformVertices[4] = {
@@ -85,9 +85,6 @@ void UnoPlugin::Init(void* backendData, PLATFORM_ID id)
 		0,3,2,2,1,0,
 	};
 	g_objs.platform = S3DGenerateBuffer(platformVertices, sizeof(platformVertices)/sizeof(SVertex3D), platformIndices, sizeof(platformIndices)/sizeof(uint32_t));
-
-
-
 
 	g_objs.playerCam.pos = { 0.0f, 1.6f, 2.0f };
 	g_objs.playerCam.SetRotation(-90.0f, -40.0f, 0.0f);
@@ -111,12 +108,13 @@ void UnoPlugin::Init(void* backendData, PLATFORM_ID id)
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CCW);
 
+
 #ifndef ANDROID
 	glEnable(GL_MULTISAMPLE);
 #endif
 }
 
-void UnoPlugin::Resize(void* backendData)
+void UnoPlugin::Resize(ApplicationData* data)
 {
 	if(sizeY && sizeX)
 		g_objs.playerCam.SetPerspective(90.0f, (float)this->sizeX / (float)this->sizeY, 0.1f, 256.0f);
@@ -124,7 +122,7 @@ void UnoPlugin::Resize(void* backendData)
 	g_objs.playerCam.screenY = sizeY;
 }
 ColorPicker picker;
-void UnoPlugin::Render(void* backendData)
+void UnoPlugin::Render(ApplicationData* data)
 {
 	if (!(sizeX && sizeY)) return;
 	

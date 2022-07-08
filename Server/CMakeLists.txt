@@ -1,6 +1,6 @@
 
 
-add_executable(Server Server.cpp ${COMMON_SOURCES})
+add_executable(Server Server.cpp ${COMMON_SOURCES} "Room.h" "Room.cpp")
 target_include_directories(Server PUBLIC ${CMAKE_SOURCE_DIR}/Common)
 target_link_libraries(Server PRIVATE ws2_32.lib)
 
