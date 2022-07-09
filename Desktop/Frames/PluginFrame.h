@@ -8,9 +8,10 @@
 class PluginFrame : public QWidget
 {
 public:
-	PluginFrame(QMainWindow* parent, PluginClass* plClass);
+	PluginFrame(QMainWindow* parent);
 	~PluginFrame();
 
 
+	static PluginClass* activePlugin;
 private:
 };

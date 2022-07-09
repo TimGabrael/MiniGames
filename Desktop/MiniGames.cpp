@@ -1,5 +1,8 @@
 #include "MiniGames.h"
 
+#include "Network/Networking.h"
+#include "NFDriver/NFDriver.h"
+
 #ifdef _WIN32
 #include "DarkModeUtil.h"
 #include <Windows.h>
@@ -12,6 +15,10 @@
 
 #include "CustomWidgets/CustomButton.h"
 #include "Frames/MainMenuFrame.h"
+#include "Frames/LobbyFrame.h"
+#include "Frames/PluginFrame.h"
+#include "Frames/SettingsFrame.h"
+
 #include "CommonCollection.h"
 #include "Application.h"
 #include "util/PluginLoader.h"
@@ -21,6 +28,9 @@
 #include "Audio/WavFile.h"
 
 #include "Network/Messages/join.pb.h"
+#include <qwindow.h>
+#include <qtimer.h>
+#include <qthread.h>
 
 
 AudioBuffer<400000> testAudioBuffer;
@@ -69,11 +79,14 @@ void PacketCB(void* userData, Packet* pack)
     }
     else if (pack->header.type == (uint32_t)PacketID::JOIN)
     {
+        MainApplication* app = MainApplication::GetInstance();
         Base::JoinResponse j;
+        j.ParseFromArray(pack->body.data(), pack->body.size());
         if (j.error() == Base::SERVER_ROOM_JOIN_INFO::ROOM_JOIN_OK)
         {
-            j.ParseFromArray(pack->body.data(), pack->body.size());
-            j.info().client().name();
+            app->appData.localPlayer.name = j.info().client().name();
+            app->appData.localPlayer.groupMask = j.info().client().listengroup();
+            app->appData.roomName = j.info().serverid();
 
             LOG("GOT A JOIN MESSAGE\n");
         }
@@ -125,16 +138,18 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
         std::string serialized = req.SerializeAsString();
         app->socket.SendData(PacketID::JOIN, serialized.size(), (const uint8_t*)serialized.data());
     }
+    app->mainWindow = this;
 
     LoadAllPlugins();
 
     auto& pl = GetPlugins();
     if (!pl.empty() && false) {
-        PluginFrame* f = new PluginFrame(this, pl.at(0));
+        PluginFrame::activePlugin = pl.at(0);
+        PluginFrame* f = new PluginFrame(this);
     }
     else
     {
-        MainMenuFrame* f = new MainMenuFrame(this);
+        SetState(MAIN_WINDOW_STATE::STATE_MENU);
     }
 }
 
@@ -143,6 +158,74 @@ MainWindow::~MainWindow()
     auto app = MainApplication::GetInstance();
     app->socket.Disconnect();
     
+}
+
+
+
+void MainWindow::SetState(MAIN_WINDOW_STATE s)
+{
+    if (this->state == s) return;
+    state = s;
+    if (this->thread() == QThread::currentThread())
+    {
+        InternalSetState(s);
+    }
+    else
+    {
+        QTimer::singleShot(0, [&]() { InternalSetState(s); });
+    }
+    if (stackPtr < 16)
+    {
+        stateStack[stackPtr] = s;
+        stackPtr++;
+    }
+    else
+    {
+        stackPtr = 16;
+        for (uint8_t i = 0; i < 15; i++) stateStack[i] = stateStack[i+1];
+        stateStack[stackPtr - 1] = s;
+    }
+
+}
+void MainWindow::SetPreviousState()
+{
+    if (stackPtr > 1)
+    {
+        stackPtr--;
+        stateStack[stackPtr] = stateStack[stackPtr-1];
+        state = stateStack[stackPtr];
+        InternalSetState(state);
+    }
+}
+MAIN_WINDOW_STATE MainWindow::GetState()
+{
+    return state;
+}
+
+void MainWindow::InternalSetState(MAIN_WINDOW_STATE state)
+{
+    setCentralWidget(nullptr);
+    this->state = state;
+    switch (state)
+    {
+    case MAIN_WINDOW_STATE::STATE_MENU:
+        new MainMenuFrame(this);
+        break;
+    case MAIN_WINDOW_STATE::STATE_LOBBY:
+        new LobbyFrame(this);
+        break;
+    case MAIN_WINDOW_STATE::STATE_SETTINGS:
+        new SettingsFrame(this);
+        break;
+    case MAIN_WINDOW_STATE::STATE_PLUGIN:
+        new PluginFrame(this);
+        break;
+
+
+    case MAIN_WINDOW_STATE::STATE_INVALID:
+    default:
+        break;
+    }
 }
 
 

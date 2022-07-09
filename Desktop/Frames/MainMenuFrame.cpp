@@ -9,7 +9,7 @@
 #include "qtooltip.h"
 #include "../CustomWidgets/InfoPopup.h"
 #include <future>
-
+#include "../UtilFuncs.h"
 
 
 MainMenuFrame::MainMenuFrame(QMainWindow* MainWindow) : QWidget(MainWindow)
@@ -140,38 +140,31 @@ void MainMenuFrame::OnCreateClick()
     {
         fut = std::async([this]() {
             MainApplication* app = MainApplication::GetInstance();
+            MainWindow* main = (MainWindow*)GetMainWindow();
             if (!app->isConnected)
             {
                 NetError err = app->socket.Connect(DEBUG_IP, DEBUG_PORT);
                 app->isConnected = (err == NetError::OK) ? true : false;
                 if (!app->isConnected)
                 {
-                    QTimer::singleShot(0, this, [this]() {
+                    QTimer::singleShot(0, main, [main]() {
                         MainApplication* app = MainApplication::GetInstance();
-                        QMainWindow* main = (QMainWindow*)parentWidget();
                         auto rect = main->geometry();
                         InfoPopup* popUp = new InfoPopup(main, "FAILED TO CONNECT TO SERVER", QPoint(rect.width() / 2, rect.height() - 100), 40, 0xFFFF0000, 10000);
                         });
                     return;
                 }
             }
-            QTimer::singleShot(0, this, [this]() {
-                QMainWindow* main = (QMainWindow*)parentWidget();
-                main->layout()->removeWidget(this);
-                delete this;
-
-                LobbyFrame* lobby = new LobbyFrame(main);
+            QTimer::singleShot(0, main, [main]() {
+                main->SetState(MAIN_WINDOW_STATE::STATE_LOBBY);
                 });
             });
     }
 }
 void MainMenuFrame::OnSettingsClick()
 {
-    QMainWindow* main = (QMainWindow*)parentWidget();
-    main->layout()->removeWidget(this);
-    delete this;
-
-    SettingsFrame* settings = new SettingsFrame(main);
+    MainWindow* main = (MainWindow*)GetMainWindow();
+    main->SetState(MAIN_WINDOW_STATE::STATE_SETTINGS);
 }
 void MainMenuFrame::OnExitClick()
 {

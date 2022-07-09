@@ -13,13 +13,10 @@ public:
 	void Create();
 
 
-	static SettingsFrame* GetInstance();
 private:
 	
 	void OnFullSceen();
 	
 	
 	struct CustomCheckBox* fullscreen;
-
-	static SettingsFrame* instance;
 };

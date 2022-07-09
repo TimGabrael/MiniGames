@@ -2,7 +2,10 @@
 #include <qapplication>
 #include "CommonCollection.h"
 #include "Plugins/PluginCommon.h"
+#undef max
+#undef min
 
+class MainWindow;
 class MainApplication : public QApplication
 {
 public:
@@ -14,9 +17,8 @@ public:
 	ApplicationData appData;
 	TCPSocket socket;
 	QWidget* backgroundWidget = nullptr;
+	MainWindow* mainWindow = nullptr;
 
-	QString username;
-	QString lobbyname;
 	bool isConnected = false;
 
 	bool fullscreen;

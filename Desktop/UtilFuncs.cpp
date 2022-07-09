@@ -10,6 +10,7 @@
 #include <qopenglcontext.h>
 #include <qopenglcontext_platform.h>
 #include <qopenglfunctions.h>
+#include "MiniGames.h"
 
 
 QColor AlphaBlend(const QColor& top, const QColor& bottom, float topalpha)
@@ -46,74 +47,21 @@ QIcon LoadSvgWithColor(const QString& path, const QColor& c, const QSize& sz)
 	return QIcon(pix);
 }
 
-QMainWindow* GetMainWindow(QWidget* wdgt)
+MainWindow* GetMainWindow()
+{
+	MainApplication* app = MainApplication::GetInstance();
+	return app->mainWindow;
+}
+
+MainWindow* GetMainWindowOfWidget(QWidget* wdgt)
 {
 	QWidget* main = (QWidget*)wdgt->parentWidget();
-	if (!main) return (QMainWindow*)wdgt;
+	if (!main) return (MainWindow*)wdgt;
 	QWidget* mainparent = main;
 	while (mainparent)
 	{
 		main = mainparent;
 		mainparent = main->parentWidget();
 	}
-	return (QMainWindow*)main;
-}
-QMainWindow* OverdrawMainWindow(QWidget* wdgt)
-{
-	QMainWindow* main = GetMainWindow(wdgt);
-	for (int i = 0; i < main->layout()->count(); i++)
-	{
-		QLayoutItem* childWidget = main->layout()->takeAt(0);
-		
-		if (childWidget->widget())
-		{
-			MainApplication::GetInstance()->backgroundWidget = childWidget->widget();
-			MainApplication::GetInstance()->backgroundWidget->setVisible(false);
-			break;
-		}
-		
-	}
-	return main;
-}
-QMainWindow* DeleteAndShowBehind(QWidget* wdgt)
-{
-	QMainWindow* main = GetMainWindow(wdgt);
-	QWidget* bg = MainApplication::GetInstance()->backgroundWidget;
-	if (bg)
-	{
-		bg->setVisible(true);
-		for (int i = 0; i < main->layout()->count(); i++)
-		{
-			QLayoutItem* item = main->layout()->itemAt(i);
-			if (item && item->widget())
-			{
-				if (item->widget() == bg) {
-					return main;
-				}
-			}
-		}
-		main->setCentralWidget(bg);
-	}
-	return main;
-}
-QMainWindow* BlankMainWindow(QWidget* wdgt)
-{
-	QMainWindow* main = GetMainWindow(wdgt);
-	QLayoutItem* item = nullptr;
-	QWidget* bg = MainApplication::GetInstance()->backgroundWidget;
-	if (main->layout())
-	{
-		while ((item = main->layout()->takeAt(0)) != nullptr)
-		{
-			QWidget* cur = item->widget();
-			if (cur)
-			{
-				if (cur == bg) MainApplication::GetInstance()->backgroundWidget = nullptr;
-				main->layout()->removeWidget(cur);
-				cur->deleteLater();
-				delete item;
-			}
-		}
-	}
-	return main;
+	return (MainWindow*)main;
 }

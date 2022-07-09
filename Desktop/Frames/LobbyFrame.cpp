@@ -18,6 +18,7 @@
 #include "../util/PluginLoader.h"
 #include "../UtilFuncs.h"
 #include "PluginFrame.h"
+#include "../MiniGames.h"
 
 
 constexpr QSize gamePopUpSize = { 400, 300 };
@@ -255,12 +256,14 @@ LobbyFrame::~LobbyFrame()
 
 void LobbyFrame::StartPlugin(int idx)
 {
-	QMainWindow* main = GetMainWindow(this);
+	MainWindow* main = (MainWindow*)GetMainWindow();
 	main->layout()->removeWidget(this);
 	delete this;
 
 	auto& pl = GetPlugins();
 	if (idx < pl.size()) {
-		PluginFrame* f = new PluginFrame(main, pl.at(idx));
+		PluginFrame::activePlugin = pl.at(idx);
+		main->SetState(MAIN_WINDOW_STATE::STATE_PLUGIN);
+		// PluginFrame* f = new PluginFrame(main, pl.at(idx));
 	}
 }

@@ -10,18 +10,14 @@
 #include <qevent.h>
 #include <iostream>
 
-SettingsFrame* SettingsFrame::instance;
 SettingsFrame::SettingsFrame(QMainWindow* parent) : QWidget(parent)
 {
-	instance = this;
-	
 	Create();
 
 	parent->setCentralWidget(this);
 }
 SettingsFrame::~SettingsFrame()
 {
-	instance = nullptr;
 }
 void SettingsFrame::Create()
 {
@@ -60,13 +56,9 @@ void SettingsFrame::Create()
 	connect(fullscreen, &QCheckBox::stateChanged, this, &SettingsFrame::OnFullSceen);
 	this->setLayout(vertical_layout);
 }
-SettingsFrame* SettingsFrame::GetInstance()
-{
-	return instance;
-}
 void SettingsFrame::OnFullSceen()
 {
-	QMainWindow* main = GetMainWindow(this);
+	QMainWindow* main = GetMainWindow();
 	if (fullscreen->isChecked())
 	{
 		main->showFullScreen();

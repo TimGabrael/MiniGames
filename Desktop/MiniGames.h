@@ -2,10 +2,18 @@
 
 #include <QMainWindow>
 #include "Application.h"
-#include "Network/Networking.h"
-#include "NFDriver/NFDriver.h"
 
 
+enum class MAIN_WINDOW_STATE
+{
+    STATE_MENU,
+    STATE_LOBBY,
+    STATE_SETTINGS,
+    STATE_PLUGIN,
+    STATE_INVALID,
+};
+
+namespace nativeformat { namespace driver { class NFDriver; }; };
 class MainWindow : public QMainWindow
 {
 
@@ -14,5 +22,18 @@ public:
     ~MainWindow();
 
 
+    void SetState(MAIN_WINDOW_STATE state);
+    void SetPreviousState();
+    MAIN_WINDOW_STATE GetState();
+
+
+private:
+
+    void InternalSetState(MAIN_WINDOW_STATE state);
+
+    static constexpr uint32_t MAX_STACK_SIZE = 16;
+    MAIN_WINDOW_STATE state;
+    MAIN_WINDOW_STATE stateStack[MAX_STACK_SIZE];
+    uint8_t stackPtr;
     nativeformat::driver::NFDriver* audioDriver;
 };

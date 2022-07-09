@@ -18,12 +18,12 @@
 #include <iostream>
 #include "../Application.h"
 #include <qevent.h>
-
+#include "../MiniGames.h"
 
 
 HeaderWidget::HeaderWidget(QWidget* parent, const QColor& stylebg, const QColor& stylehighlight, const QString& headline) : QWidget(parent)
 {	
-	QMainWindow* mainWindow = GetMainWindow(parent);
+	QMainWindow* mainWindow = GetMainWindow();
 
 	QPalette pal = palette();
 	pal.setColor(QPalette::ColorRole::Window, stylebg);
@@ -104,34 +104,31 @@ HeaderWidget::HeaderWidget(QWidget* parent, const QColor& stylebg, const QColor&
 
 void HeaderWidget::OnCogPress()
 {
-	SettingsFrame* active = SettingsFrame::GetInstance();
-	if (!active)
-	{
-		QMainWindow* main = OverdrawMainWindow(this);
-		SettingsFrame* settings = new SettingsFrame(main);
-	}
+	MainWindow* main = (MainWindow*)GetMainWindow();
+	main->SetState(MAIN_WINDOW_STATE::STATE_SETTINGS);
 }
 void HeaderWidget::OnHomePress()
 {
-	QMainWindow* main = BlankMainWindow(this);
-	MainMenuFrame* menu = new MainMenuFrame(main);	
+	MainWindow* main = (MainWindow*)GetMainWindow();
+	
+	main->SetState(MAIN_WINDOW_STATE::STATE_MENU);
 	
 }
 void HeaderWidget::OnBackPress()
 {
-	QMainWindow* main = DeleteAndShowBehind(this);
-
+	MainWindow* main = (MainWindow*)GetMainWindow();
+	main->SetPreviousState();
 }
 
 void HeaderWidget::OnFullscreenClosePress()
 {
-	QMainWindow* main = GetMainWindow(this);
+	QMainWindow* main = GetMainWindow();
 	main->close();
 }
 
 void HeaderWidget::showEvent(QShowEvent* e)
 {
-	QMainWindow* main = GetMainWindow(this);
+	MainWindow* main = (MainWindow*)GetMainWindow();
 	if (e->type() == e->Show)
 	{
 		if (main->isFullScreen()) fullscreenCloseBtn->show();

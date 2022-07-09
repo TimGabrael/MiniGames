@@ -7,11 +7,13 @@
 #include <qboxlayout.h>
 #include "../CustomWidgets/PluginWidget.h"
 
-PluginFrame::PluginFrame(QMainWindow* parent, PluginClass* plClass) : QWidget(parent)
+PluginClass* PluginFrame::activePlugin = nullptr;
+
+PluginFrame::PluginFrame(QMainWindow* parent) : QWidget(parent)
 {
 	QVBoxLayout* lay = new QVBoxLayout(this);
 
-	PluginWidget* pl = new PluginWidget(this, plClass);
+	PluginWidget* pl = new PluginWidget(this, activePlugin);
 	QSurfaceFormat fmt = QSurfaceFormat::defaultFormat();
 	fmt.setSwapInterval(1);
 	//pl->setFormat(fmt);
@@ -22,7 +24,7 @@ PluginFrame::PluginFrame(QMainWindow* parent, PluginClass* plClass) : QWidget(pa
 
 
 	setLayout(lay);
-	parent->setCentralWidget(this);
+	parent->setCentralWidget(pl);
 }
 PluginFrame::~PluginFrame()
 {

@@ -46,6 +46,8 @@ struct ApplicationData
 	PLATFORM_ID platform;
 	std::vector<ClientData> players;
 	ClientData localPlayer;
+	uint8_t localPlayerID[16];
+	std::string roomName;
 	void* assetManager;
 	TCPSocket* socket;
 };
