@@ -4,6 +4,7 @@
 #include "Application.h"
 
 
+
 enum class MAIN_WINDOW_STATE
 {
     STATE_MENU,

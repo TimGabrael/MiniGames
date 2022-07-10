@@ -5,12 +5,10 @@
 #include <qmainwindow.h>
 #include <qlayout.h>
 #include "Application.h"
-#include <iostream>
-#include <qopengl.h>
-#include <qopenglcontext.h>
-#include <qopenglcontext_platform.h>
-#include <qopenglfunctions.h>
+#include <qthread.h>
+#include <qtimer.h>
 #include "MiniGames.h"
+#include  "CustomWidgets/InfoPopup.h"
 
 
 QColor AlphaBlend(const QColor& top, const QColor& bottom, float topalpha)
@@ -64,4 +62,39 @@ MainWindow* GetMainWindowOfWidget(QWidget* wdgt)
 		mainparent = main->parentWidget();
 	}
 	return (MainWindow*)main;
+}
+
+void SafeAsyncUI(void(*uiFunction)(MainWindow* wnd))
+{
+	MainApplication* app = MainApplication::GetInstance();
+	MainWindow* main = app->mainWindow;
+	if (main->thread() == QThread::currentThread())
+	{
+		uiFunction(main);
+	}
+	else
+	{
+		QTimer::singleShot(0, main, std::bind(uiFunction, main));
+	}
+}
+
+bool TryConnectToServer()
+{
+	MainApplication* app = MainApplication::GetInstance();
+	if (app->isConnected) return true;
+	MainWindow* main = app->mainWindow;
+
+	NetError err = app->socket.Connect(DEBUG_IP, DEBUG_PORT);
+	app->isConnected = (err == NetError::OK) ? true : false;
+	if (!app->isConnected)
+	{
+		QTimer::singleShot(0, main, [main]() {
+			MainApplication* app = MainApplication::GetInstance();
+			auto rect = main->geometry();
+			InfoPopup* popUp = new InfoPopup(main, "FAILED TO CONNECT TO SERVER", QPoint(rect.width() / 2, rect.height() - 100), 20, 0xFFFF0000, 3000);
+		});
+		return false;
+	}
+
+	return true;
 }

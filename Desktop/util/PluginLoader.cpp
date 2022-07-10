@@ -17,6 +17,8 @@
 #define FREE(handle) dlclose((void*)handle)
 #endif
 
+#undef min
+#undef max
 
 typedef PluginClass*(*PluginCreateFunction)();
 static std::vector<PluginClass*> plug;
@@ -54,4 +56,31 @@ void LoadAllPlugins()
 const std::vector<PluginClass*>& GetPlugins()
 {
 	return plug;
+}
+
+void LoadAndFilterPlugins(const std::vector<std::string>& used)
+{
+	LoadAllPlugins();
+	std::vector<PluginClass*> remainingPlugins;
+	for (auto p : plug)
+	{
+		PLUGIN_INFO pl = p->GetPluginInfos();
+		bool wasFound = false;
+		for (int i = 0; i < used.size(); i++)
+		{
+			if (memcmp(pl.ID, used.at(i).data(), std::min((int)used.at(i).size(), 19))) {
+				wasFound = true;
+				break;
+			}
+		}
+		if (wasFound)
+		{
+			remainingPlugins.push_back(p);
+		}
+		else
+		{
+			delete p;
+		}
+	}
+	plug = std::move(remainingPlugins);
 }

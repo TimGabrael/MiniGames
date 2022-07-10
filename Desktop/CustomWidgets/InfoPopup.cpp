@@ -4,8 +4,16 @@
 #include "../UtilFuncs.h"
 #include <qlayout.h>
 
+
+InfoPopup* InfoPopup::instance = nullptr;
+
 InfoPopup::InfoPopup(QMainWindow* wnd, const QString& content, const QPoint& position, int fontSize, const QColor& color, int duration) : QWidget(wnd)
 {
+	if (IsActive())
+	{
+		EndPopup();
+	}
+	instance = this;
 	this->setAttribute(Qt::WA_TransparentForMouseEvents);
 	const QSize wndSize = wnd->size();
 	this->setMinimumSize(-1, -1);
@@ -30,7 +38,7 @@ InfoPopup::InfoPopup(QMainWindow* wnd, const QString& content, const QPoint& pos
 
 void InfoPopup::OnTimerFinish()
 {
-	this->deleteLater();
+	EndPopup();
 }
 
 void InfoPopup::paintEvent(QPaintEvent* event)
@@ -47,4 +55,16 @@ void InfoPopup::paintEvent(QPaintEvent* event)
 	painter.setPen(m_col);
 	painter.drawText(drawMid, m_msg);
 
+}
+
+
+
+bool InfoPopup::IsActive()
+{
+	return instance;
+}
+void InfoPopup::EndPopup()
+{
+	if (instance) instance->deleteLater();
+	instance = nullptr;
 }

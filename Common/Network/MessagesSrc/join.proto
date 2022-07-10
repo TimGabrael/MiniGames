@@ -17,11 +17,13 @@ enum SERVER_ROOM_JOIN_INFO
 	ROOM_JOIN_UNAVAILABLE = 1;
 	ROOM_JOIN_NO_SHARED = 2;		// if no plugins are shared with the room
 	ROOM_JOIN_NAME_COLLISION = 3;	// name already used
+	ROOM_JOIN_INVALID_MESSAGE = 4;
 }
 enum SERVER_ROOM_CREATE_INFO
 {
 	ROOM_CREATE_OK = 0;
-	ROOM_CREATE_COLLISION = 1;	// serverID already used
+	ROOM_CREATE_COLLISION = 1;		// serverID already used
+	ROOM_CREATE_INVALID_MESSAGE = 2;
 }
 
 
@@ -50,4 +52,15 @@ message CreateResponse
 	SERVER_ROOM_CREATE_INFO error = 1;
 	Info info = 2;
 	bytes ID = 3;
+}
+
+
+message AddClient
+{
+	ClientInfo joined;
+}
+
+message RemoveClient
+{
+	ClientInfo removed;
 }

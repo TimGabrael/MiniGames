@@ -27,6 +27,7 @@ private:
     QHBoxLayout* horizontalLayout_1;
     QLabel* lobbytxt;
     QLineEdit* lobbyIn;
+    QLabel* errortxt;
     
     QHBoxLayout* horizontalLayout_2;
     class CustomButton* createBtn;
@@ -35,6 +36,7 @@ private:
     class CustomButton* exitBtn;
 
 
+    void OnJoinClick();
     void OnCreateClick();
     void OnSettingsClick();
     void OnExitClick();

@@ -172,19 +172,21 @@ const char descriptor_table_protodef_join_2eproto[] PROTOBUF_SECTION_VARIABLE(pr
   "_JOIN_INFO\022\030\n\004info\030\002 \001(\0132\n.Base.Info\022\n\n\002"
   "ID\030\003 \001(\014\"d\n\016CreateResponse\022,\n\005error\030\001 \001("
   "\0162\035.Base.SERVER_ROOM_CREATE_INFO\022\030\n\004info"
-  "\030\002 \001(\0132\n.Base.Info\022\n\n\002ID\030\003 \001(\014*{\n\025SERVER"
-  "_ROOM_JOIN_INFO\022\020\n\014ROOM_JOIN_OK\020\000\022\031\n\025ROO"
-  "M_JOIN_UNAVAILABLE\020\001\022\027\n\023ROOM_JOIN_NO_SHA"
-  "RED\020\002\022\034\n\030ROOM_JOIN_NAME_COLLISION\020\003*H\n\027S"
-  "ERVER_ROOM_CREATE_INFO\022\022\n\016ROOM_CREATE_OK"
-  "\020\000\022\031\n\025ROOM_CREATE_COLLISION\020\001b\006proto3"
+  "\030\002 \001(\0132\n.Base.Info\022\n\n\002ID\030\003 \001(\014*\232\001\n\025SERVE"
+  "R_ROOM_JOIN_INFO\022\020\n\014ROOM_JOIN_OK\020\000\022\031\n\025RO"
+  "OM_JOIN_UNAVAILABLE\020\001\022\027\n\023ROOM_JOIN_NO_SH"
+  "ARED\020\002\022\034\n\030ROOM_JOIN_NAME_COLLISION\020\003\022\035\n\031"
+  "ROOM_JOIN_INVALID_MESSAGE\020\004*i\n\027SERVER_RO"
+  "OM_CREATE_INFO\022\022\n\016ROOM_CREATE_OK\020\000\022\031\n\025RO"
+  "OM_CREATE_COLLISION\020\001\022\037\n\033ROOM_CREATE_INV"
+  "ALID_MESSAGE\020\002b\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_join_2eproto_deps[1] = {
   &::descriptor_table_ClientInfo_2eproto,
 };
 static ::_pbi::once_flag descriptor_table_join_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_join_2eproto = {
-    false, false, 637, descriptor_table_protodef_join_2eproto,
+    false, false, 702, descriptor_table_protodef_join_2eproto,
     "join.proto",
     &descriptor_table_join_2eproto_once, descriptor_table_join_2eproto_deps, 1, 5,
     schemas, file_default_instances, TableStruct_join_2eproto::offsets,
@@ -208,6 +210,7 @@ bool SERVER_ROOM_JOIN_INFO_IsValid(int value) {
     case 1:
     case 2:
     case 3:
+    case 4:
       return true;
     default:
       return false;
@@ -222,6 +225,7 @@ bool SERVER_ROOM_CREATE_INFO_IsValid(int value) {
   switch (value) {
     case 0:
     case 1:
+    case 2:
       return true;
     default:
       return false;

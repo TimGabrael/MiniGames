@@ -265,6 +265,10 @@ void Connection::SendData(PacketID id, size_t size, const void* data)
 
 	delete[] packData;
 }
+void Connection::SendData(PacketID id, const std::string& str)
+{
+	this->SendData(id, str.size(), str.data());
+}
 void Connection::SetCryptoKey(const ukey_t& k)
 {
 	this->ctx.InitContext(k.byte);

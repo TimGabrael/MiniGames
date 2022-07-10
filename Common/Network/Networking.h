@@ -7,6 +7,7 @@
 
 // ADMIN/CREATOR OF THE ROOM
 #define ADMIN_GROUP_MASK (1 << 31)
+#define STANDARD_GROUP_MASK 1
 
 enum class NetError
 {
@@ -28,7 +29,8 @@ enum class PacketID
 	CREATE = 3,
 	SYNC_REQUEST = 4,	// these need to be seperate as the server can ask the Admin for the current SYNC data
 	SYNC_RESPONSE = 5,	// these need to be seperate as the server can ask the Admin for the current SYNC data
-
+	ADD_CLIENT = 6,
+	REMOVE_CLIENT = 7,
 };
 
 struct PacketHeader
@@ -116,6 +118,7 @@ struct Connection
 	void Init(uintptr_t sock, ConnectionFunc socketCallback, void* obj, const ukey_t& key);
 
 	void SendData(PacketID id, size_t size, const void* data);
+	void SendData(PacketID id, const std::string& str);
 
 	void SetCryptoKey(const ukey_t& k);
 

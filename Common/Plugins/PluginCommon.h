@@ -48,6 +48,7 @@ struct ApplicationData
 	ClientData localPlayer;
 	uint8_t localPlayerID[16];
 	std::string roomName;
+	std::string stateData;
 	void* assetManager;
 	TCPSocket* socket;
 };
