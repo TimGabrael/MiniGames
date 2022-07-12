@@ -1,6 +1,17 @@
 #pragma once
 #include "StateFrame.h"
 
+struct VoteInfo
+{
+	std::string pluginID;
+	std::string username;
+};
+struct VoteData
+{
+	std::vector<VoteInfo> votes;
+	float remainingTime;
+};
+
 class ContentWidget;
 class LobbyFrame : public StateFrame
 {
@@ -19,6 +30,9 @@ public:
 	virtual void HandleNetworkMessage(Packet* packet) override;
 	virtual void HandleSync(const std::string& syncData) override;
 
+	static bool VoteDataHandleNetworkMessage(Packet* packet);
+
+	static VoteData data;
 private:
 	void AddPlayer(const std::string& name);
 	void RemovePlayer(const std::string& name);

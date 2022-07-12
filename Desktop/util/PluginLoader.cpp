@@ -61,6 +61,7 @@ const std::vector<PluginClass*>& GetPlugins()
 void LoadAndFilterPlugins(const std::vector<std::string>& used)
 {
 	LoadAllPlugins();
+	LOG("FILTERING BEFORE: %d\n", plug.size());
 	std::vector<PluginClass*> remainingPlugins;
 	for (auto p : plug)
 	{
@@ -68,7 +69,7 @@ void LoadAndFilterPlugins(const std::vector<std::string>& used)
 		bool wasFound = false;
 		for (int i = 0; i < used.size(); i++)
 		{
-			if (memcmp(pl.ID, used.at(i).data(), std::min((int)used.at(i).size(), 19))) {
+			if (memcmp(pl.ID, used.at(i).data(), std::min((int)used.at(i).size(), 19)) == 0) {
 				wasFound = true;
 				break;
 			}
@@ -83,4 +84,5 @@ void LoadAndFilterPlugins(const std::vector<std::string>& used)
 		}
 	}
 	plug = std::move(remainingPlugins);
+	LOG("FILTERING AFTER: %d\n", plug.size());
 }

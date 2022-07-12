@@ -256,9 +256,17 @@ void Connection::Init(uintptr_t sock, ConnectionFunc socketCallback, void* obj, 
 }
 void Connection::SendData(PacketID id, size_t size, const void* data)
 {
+	SendData(id, 0, 0, size, data);
+}
+void Connection::SendData(PacketID id, uint32_t group, size_t size, const void* data)
+{
+	SendData(id, group, 0, size, data);
+}
+void Connection::SendData(PacketID id, uint32_t group, uint32_t additionalData, size_t size, const void* data)
+{
 	uint8_t* packData = new uint8_t[size];
 	memcpy(packData, data, size);
-	PacketHeader pack(id, size);
+	PacketHeader pack(id, group,  additionalData, size);
 	ctx.EncryptBuffer(packData, size);
 	ctx.EncryptBuffer((uint8_t*)&pack, sizeof(PacketHeader));
 	SendDataToSocket(socket, pack, packData, size);
@@ -268,6 +276,14 @@ void Connection::SendData(PacketID id, size_t size, const void* data)
 void Connection::SendData(PacketID id, const std::string& str)
 {
 	this->SendData(id, str.size(), str.data());
+}
+void Connection::SendData(PacketID id, uint32_t group, const std::string& str)
+{
+	SendData(id, group, str.size(), str.data());
+}
+void Connection::SendData(PacketID id, uint32_t group, uint32_t additionalData, const std::string& str)
+{
+	SendData(id, group, additionalData, str.size(), str.data());
 }
 void Connection::SetCryptoKey(const ukey_t& k)
 {
@@ -365,6 +381,14 @@ void TCPSocket::SetPacketCallback(ClientPacketCallback cb, void* userData)
 void TCPSocket::SendData(PacketID id, uint32_t size, const uint8_t* data)
 {
 	this->serverConn.SendData(id, size, (const void*)data);
+}
+void TCPSocket::SendData(PacketID id, const std::string& data)
+{
+	serverConn.SendData(id, data);
+}
+void TCPSocket::SendData(PacketID id, uint32_t group, uint32_t additionalData, const std::string& data)
+{
+	serverConn.SendData(id, group, additionalData, data);
 }
 void TCPSocket::SendDataUnencrypted(PacketID id, uint32_t size, const uint8_t* data)
 {

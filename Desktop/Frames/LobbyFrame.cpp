@@ -19,13 +19,16 @@
 #include "../UtilFuncs.h"
 #include "PluginFrame.h"
 #include "../MiniGames.h"
+#include "Network/Messages/lobby.pb.h"
+#include <qtimer.h>
 
 
+VoteData LobbyFrame::data;
 constexpr QSize gamePopUpSize = { 400, 300 };
 class GameInfo : public QWidget
 {
 public:
-	GameInfo(QWidget* parent, const QString& imgPath) : QWidget(parent), img(imgPath), voteCount(0), anim(this) { 
+	GameInfo(QWidget* parent, const QString& imgPath, const std::string& plID) : QWidget(parent), img(imgPath), voteCount(0), anim(this), plugID(plID) { 
 		setMinimumSize(gamePopUpSize); setMaximumSize(gamePopUpSize); anim.SetDuration(300); selected = nullptr;
 	}
 
@@ -39,7 +42,13 @@ public:
 			// cpy->update();
 		}
 	}
+	void SetCount(int count)
+	{
+		voteCount = count;
+		this->update();
+	}
 
+	static GameInfo* selected;
 private:
 
 	LobbyFrame* GetLobbyFrame()
@@ -112,16 +121,34 @@ private:
 			voteCount++;
 			anim.Start();
 			update();
-			GetLobbyFrame()->StartPlugin(0);
+
+			MainApplication* app = MainApplication::GetInstance();
+
+			Base::Vote voteMessage;
+			voteMessage.set_plugin(plugID);
+			voteMessage.set_clientname(app->appData.localPlayer.name);
+			app->socket.SendData(PacketID::VOTE, 0xFFFFFFFF, 0, voteMessage.SerializeAsString());
+
+
+			for (auto& v : LobbyFrame::data.votes)
+			{
+				if (v.username == app->appData.localPlayer.name) {
+					v.pluginID = plugID;
+					return;
+				}
+			}
+			LobbyFrame::data.votes.push_back({ plugID, app->appData.localPlayer.name });
+
+			//GetLobbyFrame()->StartPlugin(0);
 		}
 	}
 	virtual void mouseDoubleClickEvent(QMouseEvent* e) override
 	{
 		
 	}
-	static GameInfo* selected;
 	GrowingCircleAnim anim;
 	QPixmap img;
+	std::string plugID;
 	int voteCount;
 };
 GameInfo* GameInfo::selected = nullptr;
@@ -133,6 +160,7 @@ class ContentWidget : public QScrollArea
 public:
 	ContentWidget(QWidget* parent) : QScrollArea(parent)
 	{
+		setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 		setMinimumSize(100, 100);
 		this->setWidgetResizable(true);
 		setVerticalScrollBar(new CustomScrollBar(this));
@@ -151,8 +179,11 @@ public:
 				for (int i = 0; i < plugs.size(); i++)
 				{
 					PLUGIN_INFO info = plugs.at(i)->GetPluginInfos();
-					LOG("RESOURCE: %s\n", info.previewResource);
-					vertical_layout1->addWidget(new GameInfo(this, info.previewResource));
+					LOG("RESOURCE: %s %s\n", info.previewResource, info.ID);
+					
+					GameInfo* gInf = new GameInfo(this, info.previewResource, info.ID);
+					contentList.push_back({gInf, info.ID});
+					vertical_layout1->addWidget(gInf);
 				}
 			}
 			//GameInfo* unoLabel = new GameInfo(this, "Assets/Uno.png");
@@ -163,7 +194,34 @@ public:
 		this->setWidget(contentArea);
 	}
 
+	void UpdateFromData()
+	{
+		ApplicationData& app = MainApplication::GetInstance()->appData;
+		GameInfo::selected = nullptr;
+		for (auto& c : contentList)
+		{
+			int count = 0;
+			for (const auto& v : LobbyFrame::data.votes)
+			{
+				if (v.pluginID == c.pluginID)
+				{
+					count++;
+					if (v.username == app.localPlayer.name)
+					{
+						GameInfo::selected = c.element;
+					}
+				}
+			}
+			c.element->SetCount(count);
+		}
+	}
+
 private:
+	struct GameInfoData
+	{
+		GameInfo* element;
+		std::string pluginID;
+	};
 
 	virtual void mouseReleaseEvent(QMouseEvent* e) override
 	{
@@ -173,12 +231,28 @@ private:
 		if ((rec.left() < p.x() && p.x() < rec.right() && rec.top() < p.y() && p.y() < rec.bottom())) {
 			GameInfo::Unselect();
 			contentArea->update();
+
 		}
 	}
 	QWidget* contentArea = nullptr;
+	std::vector<GameInfoData> contentList;
 };
 
-
+bool IsValidName(const std::string& name)
+{
+	MainApplication* app = MainApplication::GetInstance();
+	if (app->appData.localPlayer.name == name)
+	{
+		return true;
+	}
+	for (auto& p : app->appData.players)
+	{
+		if (p.name == name) {
+			return true;
+		}
+	}
+	return false;
+}
 
 
 
@@ -227,6 +301,7 @@ LobbyFrame::LobbyFrame(QMainWindow* parent) : StateFrame(parent)
 		{
 			horizontal_layout->addSpacing(10);
 			QScrollArea* area = new QScrollArea(this);
+			area->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 			area->setMinimumSize(80, 100);
 			area->setMaximumSize(600, 800);
 			area->setWidgetResizable(true);
@@ -299,10 +374,28 @@ void LobbyFrame::HandleRemovedClient(const ClientData* removed)
 
 void LobbyFrame::HandleNetworkMessage(Packet* packet)
 {
+	if (VoteDataHandleNetworkMessage(packet))
+	{
+		QTimer::singleShot(0, gamesContent, &ContentWidget::UpdateFromData);
+	}
 }
 
 void LobbyFrame::HandleSync(const std::string& syncData)
 {
+	data.votes.clear();
+	Base::SyncData sync;
+	sync.ParseFromString(syncData);
+	for (int i = 0; i < sync.votes_size(); i++)
+	{
+		const Base::Vote& vote = sync.votes(i);
+		if (IsValidName(vote.clientname()))
+		{
+			if (vote.has_plugin()) data.votes.push_back({ vote.plugin(), vote.clientname() });
+			else data.votes.push_back({ "", vote.clientname() });
+		}
+	}
+	data.remainingTime = sync.remainingtime();
+
 }
 
 
@@ -335,19 +428,74 @@ void LobbyFrame::RemovePlayer(const std::string& name)
 void LobbyFrame::ReSync()
 {
 	ApplicationData& data = MainApplication::GetInstance()->appData;
-	QVBoxLayout* pLay = (QVBoxLayout*)playerScrollContent->layout();
-	ClearLayout(pLay);
-	for (int i = 0; i < data.players.size(); i++)
 	{
-		pLay->addWidget(new QLabel(data.players.at(i).name.c_str(), playerScrollContent));
+		QVBoxLayout* pLay = (QVBoxLayout*)playerScrollContent->layout();
+		ClearLayout(pLay);
+		for (int i = 0; i < data.players.size(); i++)
+		{
+			pLay->addWidget(new QLabel(data.players.at(i).name.c_str(), playerScrollContent));
+		}
+		pLay->addStretch(1);
 	}
-	pLay->addStretch(1);
-	QLayout* gLay = gamesContent->layout();
-	ClearLayout(gLay);
-	const std::vector<PluginClass*>& plugs = GetPlugins();
-	for (int i = 0; i < plugs.size(); i++)
+	//QLayout* gLay = gamesContent->layout();
+	//ClearLayout(gLay);
+	//const std::vector<PluginClass*>& plugs = GetPlugins();
+	//for (int i = 0; i < plugs.size(); i++)
+	//{
+	//	PLUGIN_INFO info = plugs.at(i)->GetPluginInfos();
+	//	gLay->addWidget(new GameInfo(this, info.previewResource, info.ID));
+	//}
+}
+
+
+
+
+
+bool LobbyFrame::VoteDataHandleNetworkMessage(Packet* packet)
+{
+	ApplicationData& appData = MainApplication::GetInstance()->appData;
+	if (packet->header.type == (uint32_t)PacketID::VOTE)
 	{
-		PLUGIN_INFO info = plugs.at(i)->GetPluginInfos();
-		gLay->addWidget(new GameInfo(this, info.previewResource));
+		Base::Vote added;
+		added.ParseFromArray(packet->body.data(), packet->body.size());
+		const std::string& plug = added.plugin();
+		const std::string& add = added.clientname();
+		
+		if (!IsValidName(add)) return true;
+
+		for (int i = 0; i < data.votes.size(); i++)
+		{
+			VoteInfo& info = data.votes.at(i);
+			if(add == info.username)
+			{
+				data.votes.erase(data.votes.begin() + i);
+				i--;
+			}
+		}
+		if (added.has_plugin())
+			data.votes.push_back({ plug, add });
+		else
+			data.votes.push_back({ "", add });
+
+
+		return true;
 	}
+	else if (packet->header.type == (uint32_t)PacketID::VOTE_SYNC)
+	{
+		data.votes.clear();
+		Base::SyncData sync;
+		sync.ParseFromArray(packet->body.data(), packet->body.size());
+		for (int i = 0; i < sync.votes_size(); i++)
+		{
+			const Base::Vote& vote = sync.votes(i);
+			if (IsValidName(vote.clientname()))
+			{
+				if (vote.has_plugin()) data.votes.push_back({ vote.plugin(), vote.clientname() });
+				else data.votes.push_back({ "", vote.clientname() });
+			}
+		}
+		data.remainingTime = sync.remainingtime();
+		return true;
+	}
+	return false;
 }

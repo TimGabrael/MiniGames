@@ -98,6 +98,13 @@ void PacketCB(void* userData, Connection* conn, Packet* packet)
 			ClientInfo* info = AddClientInfo(conn, GetIPAddress(conn->socket), name, req.info().client().listengroup() | ADMIN_GROUP_MASK);
 			Room* added = nullptr;
 			auto err = AddRoom(&added, info, req.info().serverid());
+			if (added)
+			{
+				for (int i = 0; i < req.info().availableplugins_size(); i++)
+				{
+					added->activePlugins.push_back(req.info().availableplugins(i));
+				}
+			}
 			added->clients.push_back(info);
 
 			response.set_error(err);
@@ -151,6 +158,21 @@ void PacketCB(void* userData, Connection* conn, Packet* packet)
 				client->room->waitForSyncClients.at(i)->conn->SendData(PacketID::SYNC_RESPONSE, serialized);
 			}
 			client->room->waitForSyncClients.clear();
+		}
+	}
+	else
+	{
+		ClientInfo* client = GetClientInfo(conn);
+		if (client->room)
+		{
+			for (ClientInfo* cl : client->room->clients)
+			{
+				if (cl == client) continue;
+				if (cl->groupMask & packet->header.group)	// check if the message should be send to the client
+				{
+					cl->conn->SendData((PacketID)packet->header.type, packet->header.group, packet->header.additionalData, packet->body.size(), packet->body.data());
+				}
+			}
 		}
 	}
 

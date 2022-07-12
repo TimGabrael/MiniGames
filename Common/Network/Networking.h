@@ -31,6 +31,11 @@ enum class PacketID
 	SYNC_RESPONSE = 5,	// these need to be seperate as the server can ask the Admin for the current SYNC data
 	ADD_CLIENT = 6,
 	REMOVE_CLIENT = 7,
+	// END OF GENERAL MESSAGES
+
+
+	VOTE = 8,
+	VOTE_SYNC = 9,
 };
 
 struct PacketHeader
@@ -38,6 +43,8 @@ struct PacketHeader
 	PacketHeader() { type = 0; size = 0; group = 0x0; additionalData = 0; }
 	constexpr PacketHeader(uint32_t t, uint32_t sz) : type(t), size(sz), group(0x0), additionalData(0) { }
 	constexpr PacketHeader(PacketID t, uint32_t sz) : type((uint32_t)t), size(sz), group(0x0), additionalData(0) { }
+	constexpr PacketHeader(PacketID t, uint32_t gr, uint32_t sz) : type((uint32_t)t), size(sz), group(gr), additionalData(0) { }
+	constexpr PacketHeader(PacketID t, uint32_t gr, uint32_t dat, uint32_t sz) : type((uint32_t)t), size(sz), group(gr), additionalData(dat) { }
 	uint32_t type;
 	uint32_t size;
 	uint32_t group;
@@ -118,7 +125,11 @@ struct Connection
 	void Init(uintptr_t sock, ConnectionFunc socketCallback, void* obj, const ukey_t& key);
 
 	void SendData(PacketID id, size_t size, const void* data);
+	void SendData(PacketID id, uint32_t group, size_t size, const void* data);
+	void SendData(PacketID id, uint32_t group, uint32_t additionalData, size_t size, const void* data);
 	void SendData(PacketID id, const std::string& str);
+	void SendData(PacketID id, uint32_t group, const std::string& str);
+	void SendData(PacketID id, uint32_t group, uint32_t additionalData, const std::string& str);
 
 	void SetCryptoKey(const ukey_t& k);
 
@@ -140,6 +151,8 @@ public:
 	void SetDisconnectCallback(ClientDisconnectCallback cb, void* userData = nullptr);
 
 	void SendData(PacketID id, uint32_t size, const uint8_t* data);
+	void SendData(PacketID id, const std::string& data);
+	void SendData(PacketID id, uint32_t group, uint32_t additionalData, const std::string& data);
 
 private:
 	void SendDataUnencrypted(PacketID id, uint32_t size, const uint8_t* data);
