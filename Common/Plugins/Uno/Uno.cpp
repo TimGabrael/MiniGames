@@ -26,7 +26,7 @@ PLUGIN_INFO UnoPlugin::GetPluginInfos()
 #else
 	memcpy(plugInfo.ID, _Plugin_Export_ID_Value, strnlen(_Plugin_Export_ID_Value, 19));
 #endif
-	plugInfo.previewResource = nullptr;
+	plugInfo.previewResource = "Assets/Uno.png";
 	return plugInfo;
 }
 

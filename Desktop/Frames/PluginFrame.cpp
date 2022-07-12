@@ -9,7 +9,7 @@
 
 PluginClass* PluginFrame::activePlugin = nullptr;
 
-PluginFrame::PluginFrame(QMainWindow* parent) : QWidget(parent)
+PluginFrame::PluginFrame(QMainWindow* parent) : StateFrame(parent)
 {
 	QVBoxLayout* lay = new QVBoxLayout(this);
 
@@ -30,5 +30,25 @@ PluginFrame::~PluginFrame()
 {
 
 
+}
+
+void PluginFrame::FetchSyncData(std::string& str)
+{
+}
+
+void PluginFrame::HandleAddClient(const ClientData* added)
+{
+}
+
+void PluginFrame::HandleRemovedClient(const ClientData* removed)
+{
+}
+
+void PluginFrame::HandleNetworkMessage(Packet* packet)
+{
+}
+
+void PluginFrame::HandleSync(const std::string& syncData)
+{
 }
 

@@ -82,11 +82,22 @@ Room* GetRoomByID(const std::string& ID)
 	}
 	return nullptr;
 }
-Base::SERVER_ROOM_JOIN_INFO ClientJoinRoom(ClientInfo* info, const std::string& ID)
+Base::SERVER_ROOM_JOIN_INFO ClientJoinRoom(Room** r, ClientInfo* info, const std::string& ID)
 {
+	if (r) *r = nullptr;
 	for (int i = 0; i < rooms.size(); i++)
 	{
 		if (rooms.at(i)->ID == ID) { // ADD THE CLIENT HERR
+			auto* ro = rooms.at(i);
+			for (int j = 0; j < ro->clients.size(); j++)
+			{
+				if (ro->clients.at(j)->name == info->name) {
+					return Base::SERVER_ROOM_JOIN_INFO::ROOM_JOIN_NAME_COLLISION;
+				}
+			}
+			info->room = ro;
+			rooms.at(i)->clients.push_back(info);
+			if (r) *r = ro;
 			return Base::SERVER_ROOM_JOIN_INFO::ROOM_JOIN_OK;
 		}
 	}
@@ -106,6 +117,7 @@ Base::SERVER_ROOM_CREATE_INFO AddRoom(Room** room, ClientInfo* client, const std
 		}
 		rooms.push_back(new Room());
 		Room* r = rooms.at(roomIdx); r->admin = client; r->ID = ID;
+		client->room = r;
 		if (room) *room = r;
 	}
 	return Base::SERVER_ROOM_CREATE_INFO::ROOM_CREATE_OK;

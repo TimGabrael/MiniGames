@@ -12,3 +12,5 @@ MainWindow* GetMainWindow();
 void SafeAsyncUI(void(*uiFunction)(MainWindow* wnd));
 
 bool TryConnectToServer();
+
+void ClearLayout(QLayout* lay);

@@ -178,13 +178,12 @@ class SyncResponse final :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kConnectedClientsFieldNumber = 3,
-    kAvailablePluginsFieldNumber = 4,
+    kConnectedClientsFieldNumber = 2,
+    kAvailablePluginsFieldNumber = 3,
     kServerIDFieldNumber = 1,
-    kIDFieldNumber = 2,
-    kPluginStateFieldNumber = 5,
+    kStateFieldNumber = 4,
   };
-  // repeated .Base.ClientInfo connectedClients = 3;
+  // repeated .Base.ClientInfo connectedClients = 2;
   int connectedclients_size() const;
   private:
   int _internal_connectedclients_size() const;
@@ -202,7 +201,7 @@ class SyncResponse final :
   const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::Base::ClientInfo >&
       connectedclients() const;
 
-  // repeated string availablePlugins = 4;
+  // repeated string availablePlugins = 3;
   int availableplugins_size() const;
   private:
   int _internal_availableplugins_size() const;
@@ -240,36 +239,22 @@ class SyncResponse final :
   std::string* _internal_mutable_serverid();
   public:
 
-  // bytes ID = 2;
-  void clear_id();
-  const std::string& id() const;
-  template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_id(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_id();
-  PROTOBUF_NODISCARD std::string* release_id();
-  void set_allocated_id(std::string* id);
+  // optional bytes state = 4;
+  bool has_state() const;
   private:
-  const std::string& _internal_id() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_id(const std::string& value);
-  std::string* _internal_mutable_id();
+  bool _internal_has_state() const;
   public:
-
-  // optional bytes pluginState = 5;
-  bool has_pluginstate() const;
-  private:
-  bool _internal_has_pluginstate() const;
-  public:
-  void clear_pluginstate();
-  const std::string& pluginstate() const;
+  void clear_state();
+  const std::string& state() const;
   template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_pluginstate(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_pluginstate();
-  PROTOBUF_NODISCARD std::string* release_pluginstate();
-  void set_allocated_pluginstate(std::string* pluginstate);
+  void set_state(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_state();
+  PROTOBUF_NODISCARD std::string* release_state();
+  void set_allocated_state(std::string* state);
   private:
-  const std::string& _internal_pluginstate() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_pluginstate(const std::string& value);
-  std::string* _internal_mutable_pluginstate();
+  const std::string& _internal_state() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_state(const std::string& value);
+  std::string* _internal_mutable_state();
   public:
 
   // @@protoc_insertion_point(class_scope:Base.SyncResponse)
@@ -285,8 +270,7 @@ class SyncResponse final :
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::Base::ClientInfo > connectedclients_;
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> availableplugins_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr serverid_;
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr id_;
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr pluginstate_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr state_;
   };
   union { Impl_ _impl_; };
   friend struct ::TableStruct_sync_2eproto;
@@ -352,57 +336,7 @@ inline void SyncResponse::set_allocated_serverid(std::string* serverid) {
   // @@protoc_insertion_point(field_set_allocated:Base.SyncResponse.serverID)
 }
 
-// bytes ID = 2;
-inline void SyncResponse::clear_id() {
-  _impl_.id_.ClearToEmpty();
-}
-inline const std::string& SyncResponse::id() const {
-  // @@protoc_insertion_point(field_get:Base.SyncResponse.ID)
-  return _internal_id();
-}
-template <typename ArgT0, typename... ArgT>
-inline PROTOBUF_ALWAYS_INLINE
-void SyncResponse::set_id(ArgT0&& arg0, ArgT... args) {
- 
- _impl_.id_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:Base.SyncResponse.ID)
-}
-inline std::string* SyncResponse::mutable_id() {
-  std::string* _s = _internal_mutable_id();
-  // @@protoc_insertion_point(field_mutable:Base.SyncResponse.ID)
-  return _s;
-}
-inline const std::string& SyncResponse::_internal_id() const {
-  return _impl_.id_.Get();
-}
-inline void SyncResponse::_internal_set_id(const std::string& value) {
-  
-  _impl_.id_.Set(value, GetArenaForAllocation());
-}
-inline std::string* SyncResponse::_internal_mutable_id() {
-  
-  return _impl_.id_.Mutable(GetArenaForAllocation());
-}
-inline std::string* SyncResponse::release_id() {
-  // @@protoc_insertion_point(field_release:Base.SyncResponse.ID)
-  return _impl_.id_.Release();
-}
-inline void SyncResponse::set_allocated_id(std::string* id) {
-  if (id != nullptr) {
-    
-  } else {
-    
-  }
-  _impl_.id_.SetAllocated(id, GetArenaForAllocation());
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.id_.IsDefault()) {
-    _impl_.id_.Set("", GetArenaForAllocation());
-  }
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:Base.SyncResponse.ID)
-}
-
-// repeated .Base.ClientInfo connectedClients = 3;
+// repeated .Base.ClientInfo connectedClients = 2;
 inline int SyncResponse::_internal_connectedclients_size() const {
   return _impl_.connectedclients_.size();
 }
@@ -439,7 +373,7 @@ SyncResponse::connectedclients() const {
   return _impl_.connectedclients_;
 }
 
-// repeated string availablePlugins = 4;
+// repeated string availablePlugins = 3;
 inline int SyncResponse::_internal_availableplugins_size() const {
   return _impl_.availableplugins_.size();
 }
@@ -514,72 +448,72 @@ SyncResponse::mutable_availableplugins() {
   return &_impl_.availableplugins_;
 }
 
-// optional bytes pluginState = 5;
-inline bool SyncResponse::_internal_has_pluginstate() const {
+// optional bytes state = 4;
+inline bool SyncResponse::_internal_has_state() const {
   bool value = (_impl_._has_bits_[0] & 0x00000001u) != 0;
   return value;
 }
-inline bool SyncResponse::has_pluginstate() const {
-  return _internal_has_pluginstate();
+inline bool SyncResponse::has_state() const {
+  return _internal_has_state();
 }
-inline void SyncResponse::clear_pluginstate() {
-  _impl_.pluginstate_.ClearToEmpty();
+inline void SyncResponse::clear_state() {
+  _impl_.state_.ClearToEmpty();
   _impl_._has_bits_[0] &= ~0x00000001u;
 }
-inline const std::string& SyncResponse::pluginstate() const {
-  // @@protoc_insertion_point(field_get:Base.SyncResponse.pluginState)
-  return _internal_pluginstate();
+inline const std::string& SyncResponse::state() const {
+  // @@protoc_insertion_point(field_get:Base.SyncResponse.state)
+  return _internal_state();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void SyncResponse::set_pluginstate(ArgT0&& arg0, ArgT... args) {
+void SyncResponse::set_state(ArgT0&& arg0, ArgT... args) {
  _impl_._has_bits_[0] |= 0x00000001u;
- _impl_.pluginstate_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:Base.SyncResponse.pluginState)
+ _impl_.state_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:Base.SyncResponse.state)
 }
-inline std::string* SyncResponse::mutable_pluginstate() {
-  std::string* _s = _internal_mutable_pluginstate();
-  // @@protoc_insertion_point(field_mutable:Base.SyncResponse.pluginState)
+inline std::string* SyncResponse::mutable_state() {
+  std::string* _s = _internal_mutable_state();
+  // @@protoc_insertion_point(field_mutable:Base.SyncResponse.state)
   return _s;
 }
-inline const std::string& SyncResponse::_internal_pluginstate() const {
-  return _impl_.pluginstate_.Get();
+inline const std::string& SyncResponse::_internal_state() const {
+  return _impl_.state_.Get();
 }
-inline void SyncResponse::_internal_set_pluginstate(const std::string& value) {
+inline void SyncResponse::_internal_set_state(const std::string& value) {
   _impl_._has_bits_[0] |= 0x00000001u;
-  _impl_.pluginstate_.Set(value, GetArenaForAllocation());
+  _impl_.state_.Set(value, GetArenaForAllocation());
 }
-inline std::string* SyncResponse::_internal_mutable_pluginstate() {
+inline std::string* SyncResponse::_internal_mutable_state() {
   _impl_._has_bits_[0] |= 0x00000001u;
-  return _impl_.pluginstate_.Mutable(GetArenaForAllocation());
+  return _impl_.state_.Mutable(GetArenaForAllocation());
 }
-inline std::string* SyncResponse::release_pluginstate() {
-  // @@protoc_insertion_point(field_release:Base.SyncResponse.pluginState)
-  if (!_internal_has_pluginstate()) {
+inline std::string* SyncResponse::release_state() {
+  // @@protoc_insertion_point(field_release:Base.SyncResponse.state)
+  if (!_internal_has_state()) {
     return nullptr;
   }
   _impl_._has_bits_[0] &= ~0x00000001u;
-  auto* p = _impl_.pluginstate_.Release();
+  auto* p = _impl_.state_.Release();
 #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.pluginstate_.IsDefault()) {
-    _impl_.pluginstate_.Set("", GetArenaForAllocation());
+  if (_impl_.state_.IsDefault()) {
+    _impl_.state_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   return p;
 }
-inline void SyncResponse::set_allocated_pluginstate(std::string* pluginstate) {
-  if (pluginstate != nullptr) {
+inline void SyncResponse::set_allocated_state(std::string* state) {
+  if (state != nullptr) {
     _impl_._has_bits_[0] |= 0x00000001u;
   } else {
     _impl_._has_bits_[0] &= ~0x00000001u;
   }
-  _impl_.pluginstate_.SetAllocated(pluginstate, GetArenaForAllocation());
+  _impl_.state_.SetAllocated(state, GetArenaForAllocation());
 #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.pluginstate_.IsDefault()) {
-    _impl_.pluginstate_.Set("", GetArenaForAllocation());
+  if (_impl_.state_.IsDefault()) {
+    _impl_.state_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:Base.SyncResponse.pluginState)
+  // @@protoc_insertion_point(field_set_allocated:Base.SyncResponse.state)
 }
 
 #ifdef __GNUC__

@@ -28,8 +28,7 @@ PROTOBUF_CONSTEXPR SyncResponse::SyncResponse(
   , /*decltype(_impl_.connectedclients_)*/{}
   , /*decltype(_impl_.availableplugins_)*/{}
   , /*decltype(_impl_.serverid_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
-  , /*decltype(_impl_.id_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
-  , /*decltype(_impl_.pluginstate_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}} {}
+  , /*decltype(_impl_.state_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}} {}
 struct SyncResponseDefaultTypeInternal {
   PROTOBUF_CONSTEXPR SyncResponseDefaultTypeInternal()
       : _instance(::_pbi::ConstantInitialized{}) {}
@@ -52,18 +51,16 @@ const uint32_t TableStruct_sync_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(pro
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
   PROTOBUF_FIELD_OFFSET(::Base::SyncResponse, _impl_.serverid_),
-  PROTOBUF_FIELD_OFFSET(::Base::SyncResponse, _impl_.id_),
   PROTOBUF_FIELD_OFFSET(::Base::SyncResponse, _impl_.connectedclients_),
   PROTOBUF_FIELD_OFFSET(::Base::SyncResponse, _impl_.availableplugins_),
-  PROTOBUF_FIELD_OFFSET(::Base::SyncResponse, _impl_.pluginstate_),
-  ~0u,
+  PROTOBUF_FIELD_OFFSET(::Base::SyncResponse, _impl_.state_),
   ~0u,
   ~0u,
   ~0u,
   0,
 };
 static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
-  { 0, 11, -1, sizeof(::Base::SyncResponse)},
+  { 0, 10, -1, sizeof(::Base::SyncResponse)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -71,19 +68,18 @@ static const ::_pb::Message* const file_default_instances[] = {
 };
 
 const char descriptor_table_protodef_sync_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
-  "\n\nsync.proto\022\004Base\032\020ClientInfo.proto\"\234\001\n"
-  "\014SyncResponse\022\020\n\010serverID\030\001 \001(\t\022\n\n\002ID\030\002 "
-  "\001(\014\022*\n\020connectedClients\030\003 \003(\0132\020.Base.Cli"
-  "entInfo\022\030\n\020availablePlugins\030\004 \003(\t\022\030\n\013plu"
-  "ginState\030\005 \001(\014H\000\210\001\001B\016\n\014_pluginStateb\006pro"
-  "to3"
+  "\n\nsync.proto\022\004Base\032\020ClientInfo.proto\"\204\001\n"
+  "\014SyncResponse\022\020\n\010serverID\030\001 \001(\t\022*\n\020conne"
+  "ctedClients\030\002 \003(\0132\020.Base.ClientInfo\022\030\n\020a"
+  "vailablePlugins\030\003 \003(\t\022\022\n\005state\030\004 \001(\014H\000\210\001"
+  "\001B\010\n\006_stateb\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_sync_2eproto_deps[1] = {
   &::descriptor_table_ClientInfo_2eproto,
 };
 static ::_pbi::once_flag descriptor_table_sync_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_sync_2eproto = {
-    false, false, 203, descriptor_table_protodef_sync_2eproto,
+    false, false, 179, descriptor_table_protodef_sync_2eproto,
     "sync.proto",
     &descriptor_table_sync_2eproto_once, descriptor_table_sync_2eproto_deps, 1, 1,
     schemas, file_default_instances, TableStruct_sync_2eproto::offsets,
@@ -103,7 +99,7 @@ namespace Base {
 class SyncResponse::_Internal {
  public:
   using HasBits = decltype(std::declval<SyncResponse>()._impl_._has_bits_);
-  static void set_has_pluginstate(HasBits* has_bits) {
+  static void set_has_state(HasBits* has_bits) {
     (*has_bits)[0] |= 1u;
   }
 };
@@ -126,8 +122,7 @@ SyncResponse::SyncResponse(const SyncResponse& from)
     , decltype(_impl_.connectedclients_){from._impl_.connectedclients_}
     , decltype(_impl_.availableplugins_){from._impl_.availableplugins_}
     , decltype(_impl_.serverid_){}
-    , decltype(_impl_.id_){}
-    , decltype(_impl_.pluginstate_){}};
+    , decltype(_impl_.state_){}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   _impl_.serverid_.InitDefault();
@@ -138,20 +133,12 @@ SyncResponse::SyncResponse(const SyncResponse& from)
     _this->_impl_.serverid_.Set(from._internal_serverid(), 
       _this->GetArenaForAllocation());
   }
-  _impl_.id_.InitDefault();
+  _impl_.state_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.id_.Set("", GetArenaForAllocation());
+    _impl_.state_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (!from._internal_id().empty()) {
-    _this->_impl_.id_.Set(from._internal_id(), 
-      _this->GetArenaForAllocation());
-  }
-  _impl_.pluginstate_.InitDefault();
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.pluginstate_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (from._internal_has_pluginstate()) {
-    _this->_impl_.pluginstate_.Set(from._internal_pluginstate(), 
+  if (from._internal_has_state()) {
+    _this->_impl_.state_.Set(from._internal_state(), 
       _this->GetArenaForAllocation());
   }
   // @@protoc_insertion_point(copy_constructor:Base.SyncResponse)
@@ -167,20 +154,15 @@ inline void SyncResponse::SharedCtor(
     , decltype(_impl_.connectedclients_){arena}
     , decltype(_impl_.availableplugins_){arena}
     , decltype(_impl_.serverid_){}
-    , decltype(_impl_.id_){}
-    , decltype(_impl_.pluginstate_){}
+    , decltype(_impl_.state_){}
   };
   _impl_.serverid_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
     _impl_.serverid_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  _impl_.id_.InitDefault();
+  _impl_.state_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.id_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  _impl_.pluginstate_.InitDefault();
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.pluginstate_.Set("", GetArenaForAllocation());
+    _impl_.state_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
@@ -198,8 +180,7 @@ inline void SyncResponse::SharedDtor() {
   _impl_.connectedclients_.~RepeatedPtrField();
   _impl_.availableplugins_.~RepeatedPtrField();
   _impl_.serverid_.Destroy();
-  _impl_.id_.Destroy();
-  _impl_.pluginstate_.Destroy();
+  _impl_.state_.Destroy();
 }
 
 void SyncResponse::SetCachedSize(int size) const {
@@ -215,10 +196,9 @@ void SyncResponse::Clear() {
   _impl_.connectedclients_.Clear();
   _impl_.availableplugins_.Clear();
   _impl_.serverid_.ClearToEmpty();
-  _impl_.id_.ClearToEmpty();
   cached_has_bits = _impl_._has_bits_[0];
   if (cached_has_bits & 0x00000001u) {
-    _impl_.pluginstate_.ClearNonDefaultToEmpty();
+    _impl_.state_.ClearNonDefaultToEmpty();
   }
   _impl_._has_bits_.Clear();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
@@ -241,31 +221,22 @@ const char* SyncResponse::_InternalParse(const char* ptr, ::_pbi::ParseContext* 
         } else
           goto handle_unusual;
         continue;
-      // bytes ID = 2;
+      // repeated .Base.ClientInfo connectedClients = 2;
       case 2:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
-          auto str = _internal_mutable_id();
-          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      // repeated .Base.ClientInfo connectedClients = 3;
-      case 3:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
           ptr -= 1;
           do {
             ptr += 1;
             ptr = ctx->ParseMessage(_internal_add_connectedclients(), ptr);
             CHK_(ptr);
             if (!ctx->DataAvailable(ptr)) break;
-          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<26>(ptr));
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<18>(ptr));
         } else
           goto handle_unusual;
         continue;
-      // repeated string availablePlugins = 4;
-      case 4:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 34)) {
+      // repeated string availablePlugins = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
           ptr -= 1;
           do {
             ptr += 1;
@@ -274,14 +245,14 @@ const char* SyncResponse::_InternalParse(const char* ptr, ::_pbi::ParseContext* 
             CHK_(ptr);
             CHK_(::_pbi::VerifyUTF8(str, "Base.SyncResponse.availablePlugins"));
             if (!ctx->DataAvailable(ptr)) break;
-          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<34>(ptr));
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<26>(ptr));
         } else
           goto handle_unusual;
         continue;
-      // optional bytes pluginState = 5;
-      case 5:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 42)) {
-          auto str = _internal_mutable_pluginstate();
+      // optional bytes state = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 34)) {
+          auto str = _internal_mutable_state();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
         } else
@@ -327,34 +298,28 @@ uint8_t* SyncResponse::_InternalSerialize(
         1, this->_internal_serverid(), target);
   }
 
-  // bytes ID = 2;
-  if (!this->_internal_id().empty()) {
-    target = stream->WriteBytesMaybeAliased(
-        2, this->_internal_id(), target);
-  }
-
-  // repeated .Base.ClientInfo connectedClients = 3;
+  // repeated .Base.ClientInfo connectedClients = 2;
   for (unsigned i = 0,
       n = static_cast<unsigned>(this->_internal_connectedclients_size()); i < n; i++) {
     const auto& repfield = this->_internal_connectedclients(i);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-        InternalWriteMessage(3, repfield, repfield.GetCachedSize(), target, stream);
+        InternalWriteMessage(2, repfield, repfield.GetCachedSize(), target, stream);
   }
 
-  // repeated string availablePlugins = 4;
+  // repeated string availablePlugins = 3;
   for (int i = 0, n = this->_internal_availableplugins_size(); i < n; i++) {
     const auto& s = this->_internal_availableplugins(i);
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
       s.data(), static_cast<int>(s.length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
       "Base.SyncResponse.availablePlugins");
-    target = stream->WriteString(4, s, target);
+    target = stream->WriteString(3, s, target);
   }
 
-  // optional bytes pluginState = 5;
-  if (_internal_has_pluginstate()) {
+  // optional bytes state = 4;
+  if (_internal_has_state()) {
     target = stream->WriteBytesMaybeAliased(
-        5, this->_internal_pluginstate(), target);
+        4, this->_internal_state(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -373,14 +338,14 @@ size_t SyncResponse::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // repeated .Base.ClientInfo connectedClients = 3;
+  // repeated .Base.ClientInfo connectedClients = 2;
   total_size += 1UL * this->_internal_connectedclients_size();
   for (const auto& msg : this->_impl_.connectedclients_) {
     total_size +=
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
   }
 
-  // repeated string availablePlugins = 4;
+  // repeated string availablePlugins = 3;
   total_size += 1 *
       ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(_impl_.availableplugins_.size());
   for (int i = 0, n = _impl_.availableplugins_.size(); i < n; i++) {
@@ -395,19 +360,12 @@ size_t SyncResponse::ByteSizeLong() const {
         this->_internal_serverid());
   }
 
-  // bytes ID = 2;
-  if (!this->_internal_id().empty()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
-        this->_internal_id());
-  }
-
-  // optional bytes pluginState = 5;
+  // optional bytes state = 4;
   cached_has_bits = _impl_._has_bits_[0];
   if (cached_has_bits & 0x00000001u) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
-        this->_internal_pluginstate());
+        this->_internal_state());
   }
 
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
@@ -433,11 +391,8 @@ void SyncResponse::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::P
   if (!from._internal_serverid().empty()) {
     _this->_internal_set_serverid(from._internal_serverid());
   }
-  if (!from._internal_id().empty()) {
-    _this->_internal_set_id(from._internal_id());
-  }
-  if (from._internal_has_pluginstate()) {
-    _this->_internal_set_pluginstate(from._internal_pluginstate());
+  if (from._internal_has_state()) {
+    _this->_internal_set_state(from._internal_state());
   }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
@@ -466,12 +421,8 @@ void SyncResponse::InternalSwap(SyncResponse* other) {
       &other->_impl_.serverid_, rhs_arena
   );
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.id_, lhs_arena,
-      &other->_impl_.id_, rhs_arena
-  );
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.pluginstate_, lhs_arena,
-      &other->_impl_.pluginstate_, rhs_arena
+      &_impl_.state_, lhs_arena,
+      &other->_impl_.state_, rhs_arena
   );
 }
 

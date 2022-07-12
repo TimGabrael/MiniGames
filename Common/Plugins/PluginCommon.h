@@ -46,9 +46,11 @@ struct ApplicationData
 	PLATFORM_ID platform;
 	std::vector<ClientData> players;
 	ClientData localPlayer;
+	int addedClientIdx = -1;
+	ClientData* removedClient = nullptr;
 	uint8_t localPlayerID[16];
 	std::string roomName;
-	std::string stateData;
+	std::string tempSyncDataStorage;
 	void* assetManager;
 	TCPSocket* socket;
 };

@@ -85,22 +85,51 @@ void PacketCB(void* userData, Packet* pack)
         Base::SyncResponse res;
         res.ParseFromArray(pack->body.data(), pack->body.size());
         app->appData.roomName = res.serverid();
-        if (res.id().size() == 16)
-        {
-            memcpy(app->appData.localPlayerID, res.id().data(), 16);
-        }
         app->appData.players.clear();
         for (int i = 0; i < res.connectedclients_size(); i++)
         {
             const Base::ClientInfo& c = res.connectedclients(i);
-            app->appData.players.push_back({ c.name(), c.listengroup() });
+            if (c.name() != app->appData.localPlayer.name)
+            {
+                app->appData.players.push_back({ c.name(), c.listengroup() });
+            }
         }
-        std::vector<std::string> avPlugins;
-        for (int i = 0; i < res.availableplugins_size(); i++)
+        MAIN_WINDOW_STATE state = app->mainWindow->GetState();
+        if (state != MAIN_WINDOW_STATE::STATE_PLUGIN)
         {
-            avPlugins.push_back(res.availableplugins(i));
+            std::vector<std::string> avPlugins;
+            for (int i = 0; i < res.availableplugins_size(); i++)
+            {
+                avPlugins.push_back(res.availableplugins(i));
+            }
+            LoadAndFilterPlugins(avPlugins);
         }
-        LoadAndFilterPlugins(avPlugins);
+        if (state != MAIN_WINDOW_STATE::STATE_INVALID)
+        {
+            app->appData.tempSyncDataStorage = res.state();
+            SafeAsyncUI([](MainWindow* wnd) {
+                MainApplication* app = MainApplication::GetInstance();
+                StateFrame* state = (StateFrame*)wnd->centralWidget();
+                state->HandleSync(app->appData.tempSyncDataStorage);
+                app->appData.tempSyncDataStorage = "";
+            });
+        }
+    }
+    else if (pack->header.type == (uint32_t)PacketID::SYNC_REQUEST)
+    {
+        // the client is only responsible for providing additional sync data, the rest is handeld by the server
+        Base::SyncResponse res;
+        // TODO: ASK WHOEVER IS CURRENTLY IN CHARGE FOR THE SYNC DATA
+
+        std::string data;
+        if (app->mainWindow->GetState() != MAIN_WINDOW_STATE::STATE_INVALID)
+        {
+            StateFrame* state = (StateFrame*)app->mainWindow->centralWidget();
+            state->FetchSyncData(data);
+        }
+        res.set_state(data);
+        const std::string serialized = res.SerializeAsString();
+        sock->SendData(PacketID::SYNC_RESPONSE, serialized.size(), (const uint8_t*)serialized.data());
     }
     else if (pack->header.type == (uint32_t)PacketID::JOIN)
     {
@@ -114,7 +143,6 @@ void PacketCB(void* userData, Packet* pack)
             memcpy(app->appData.localPlayerID, j.id().c_str(), std::min(16, (int)j.id().size()));
 
             app->mainWindow->SetState(MAIN_WINDOW_STATE::STATE_LOBBY);
-
             sock->SendData(PacketID::SYNC_REQUEST, 0, nullptr);
         }
         else if (j.error() == Base::SERVER_ROOM_JOIN_INFO::ROOM_JOIN_UNAVAILABLE)
@@ -131,10 +159,16 @@ void PacketCB(void* userData, Packet* pack)
                 new InfoPopup(main, "INVALID MESSAGE SEND", QPoint(rec.center().x(), rec.height() - 100), 16, 0xFFFF0000, 3000);
             });
         }
+        else if (j.error() == Base::SERVER_ROOM_JOIN_INFO::ROOM_JOIN_NAME_COLLISION)
+        {
+            SafeAsyncUI([](MainWindow* main) {
+                QRect rec = main->rect();
+                new InfoPopup(main, "NAME ALREADY EXISTS", QPoint(rec.center().x(), rec.height() - 100), 16, 0xFFFF0000, 3000);
+                });
+        }
     }
     else if (pack->header.type == (uint32_t)PacketID::CREATE)
     {
-        MainApplication* app = MainApplication::GetInstance();
         Base::CreateResponse c;
         c.ParseFromArray(pack->body.data(), pack->body.size());
         if (c.error() == Base::SERVER_ROOM_CREATE_INFO::ROOM_CREATE_OK)
@@ -161,7 +195,69 @@ void PacketCB(void* userData, Packet* pack)
             });
         }
     }
+    else if (pack->header.type == (uint32_t)PacketID::ADD_CLIENT)
+    {
+        Base::AddClient add;
+        add.ParseFromArray(pack->body.data(), pack->body.size());
+        app->appData.players.push_back({ add.joined().name(), add.joined().listengroup() });
+        app->appData.addedClientIdx = app->appData.players.size() - 1;
 
+        MAIN_WINDOW_STATE curState = app->mainWindow->GetState();
+        if (curState != MAIN_WINDOW_STATE::STATE_INVALID)
+        {
+            SafeAsyncUI([](MainWindow* main)
+                {
+                    ApplicationData& data = MainApplication::GetInstance()->appData;
+                    LobbyFrame* lobby = (LobbyFrame*)main->centralWidget();
+                    if (data.addedClientIdx >= 0 && data.addedClientIdx < data.players.size())
+                    {
+                        lobby->HandleAddClient(&data.players.at(data.addedClientIdx));
+                    }
+                });
+        }
+
+    }
+    else if (pack->header.type == (uint32_t)PacketID::REMOVE_CLIENT)
+    {
+        Base::RemoveClient rem;
+        rem.ParseFromArray(pack->body.data(), pack->body.size());
+        ApplicationData& data = MainApplication::GetInstance()->appData;
+        if (data.removedClient) delete data.removedClient;
+        data.removedClient = nullptr;
+        for (int i = 0; i < app->appData.players.size(); i++)
+        {
+            if (app->appData.players.at(i).name == rem.removed().name()) {
+                data.removedClient = new ClientData;
+                data.removedClient->name = app->appData.players.at(i).name;
+                data.removedClient->groupMask = app->appData.players.at(i).groupMask;
+                app->appData.players.erase(app->appData.players.begin() + i);
+                break;
+            }
+        }
+        if (!data.removedClient) return;
+
+
+
+        MAIN_WINDOW_STATE curState = app->mainWindow->GetState();
+        if (curState != MAIN_WINDOW_STATE::STATE_INVALID)
+        {
+            SafeAsyncUI([](MainWindow* main) {
+                ApplicationData& data = MainApplication::GetInstance()->appData;
+                StateFrame* lobby = (StateFrame*)main->centralWidget();
+                lobby->HandleRemovedClient(data.removedClient);
+                delete data.removedClient;
+                data.removedClient = nullptr;
+            });
+        }
+    }
+    else
+    {
+        if (app->mainWindow->GetState() != MAIN_WINDOW_STATE::STATE_INVALID)
+        {
+            StateFrame* frame = (StateFrame*)app->mainWindow->centralWidget();
+            frame->HandleNetworkMessage(pack);
+        }
+    }
 }
 
 

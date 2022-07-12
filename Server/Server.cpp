@@ -1,6 +1,7 @@
 #include <iostream>
 #include "CommonCollection.h"
 #include "Network/Messages/join.pb.h"
+#include "Network/Messages/sync.pb.h"
 #include "Room.h"
 #include "Validation.h"
 
@@ -9,8 +10,6 @@ void PacketCB(void* userData, Connection* conn, Packet* packet)
 	LockResourceAccess();
 
 	TCPServerSocket* server = (TCPServerSocket*)userData;
-	// uint8_t* pack = (uint8_t*)packet->body.data();
-	// std::cout << "pack: " << pack->buf << std::endl;
 	if (packet->header.type == (uint32_t)PacketID::JOIN)
 	{
 		
@@ -25,16 +24,46 @@ void PacketCB(void* userData, Connection* conn, Packet* packet)
 		{
 			ClientInfo* info = nullptr;
 			Base::SERVER_ROOM_JOIN_INFO err = Base::SERVER_ROOM_JOIN_INFO::ROOM_JOIN_OK;
-			if (j.has_id() && j.id().size() == 16)
+			info = GetClientInfo(conn);
+			if (!info)
 			{
-				info = AddClientInfo(conn, GetIPAddress(conn->socket), name, j.info().client().listengroup() & ~(ADMIN_GROUP_MASK), (const uint8_t*)j.id().data());
-
+				if (j.has_id() && j.id().size() == 16)
+				{
+					info = AddClientInfo(conn, GetIPAddress(conn->socket), name, j.info().client().listengroup() & ~(ADMIN_GROUP_MASK), (const uint8_t*)j.id().data());
+				}
+				else
+				{
+					info = AddClientInfo(conn, GetIPAddress(conn->socket), name, j.info().client().listengroup() & ~(ADMIN_GROUP_MASK));
+				}
 			}
 			else
 			{
-				info = AddClientInfo(conn, GetIPAddress(conn->socket), name, j.info().client().listengroup() & ~(ADMIN_GROUP_MASK));
+				info->name = name;
+				info->groupMask = j.info().client().listengroup() & ~(ADMIN_GROUP_MASK);
 			}
-			err = ClientJoinRoom(info, lobby);
+			Room* room = nullptr;
+			err = ClientJoinRoom(&room, info, lobby);
+			if (err == Base::SERVER_ROOM_JOIN_INFO::ROOM_JOIN_OK)
+			{
+				Base::AddClient addMsg;
+				addMsg.mutable_joined()->set_name(name);
+				addMsg.mutable_joined()->set_listengroup(info->groupMask);
+				std::string addSer = addMsg.SerializeAsString();
+				if (room) {
+					for (int i = 0; i < room->clients.size(); i++)
+					{
+						auto c = room->clients.at(i);
+						if (c != info)
+						{
+							c->conn->SendData(PacketID::ADD_CLIENT, addSer);
+						}
+					}
+				}
+			}
+			for (int i = 0; i < j.info().availableplugins_size(); i++)
+			{
+				LOG("PLUGIN: %s\n", j.info().availableplugins(i).c_str());
+			}
 
 			LOG("%s, %s\n", name.c_str(), lobby.c_str());
 			response.set_error(err);
@@ -49,10 +78,15 @@ void PacketCB(void* userData, Connection* conn, Packet* packet)
 		}
 		conn->SendData(PacketID::JOIN, response.SerializeAsString());
 	}
-	if (packet->header.type == (uint32_t)PacketID::CREATE)
+	else if (packet->header.type == (uint32_t)PacketID::CREATE)
 	{
 		Base::CreateRequest req;
 		req.ParseFromArray(packet->body.data(), packet->body.size());
+
+		for (int i = 0; i < req.info().availableplugins_size(); i++)
+		{
+			LOG("PLUGIN: %s\n", req.info().availableplugins(i).c_str());
+		}
 
 		std::string name = req.info().client().name();
 		std::string lobby = req.info().serverid();
@@ -64,6 +98,7 @@ void PacketCB(void* userData, Connection* conn, Packet* packet)
 			ClientInfo* info = AddClientInfo(conn, GetIPAddress(conn->socket), name, req.info().client().listengroup() | ADMIN_GROUP_MASK);
 			Room* added = nullptr;
 			auto err = AddRoom(&added, info, req.info().serverid());
+			added->clients.push_back(info);
 
 			response.set_error(err);
 			response.set_id(info->id, 16);
@@ -77,7 +112,47 @@ void PacketCB(void* userData, Connection* conn, Packet* packet)
 		}
 		conn->SendData(PacketID::CREATE, response.SerializeAsString());
 	}
+	else if (packet->header.type == (uint32_t)PacketID::SYNC_REQUEST)
+	{
+		ClientInfo* client = GetClientInfo(conn);
+		if (client && client->room)
+		{
+			client->room->waitForSyncClients.push_back(client);
+			client->room->admin->conn->SendData(PacketID::SYNC_REQUEST, 0, nullptr);
+		}
+	}
+	else if (packet->header.type == (uint32_t)PacketID::SYNC_RESPONSE)
+	{
+		ClientInfo* client = GetClientInfo(conn);
+		if (client && client->room && (client->room->admin == client))
+		{
+			Room* r = client->room;
+			Base::SyncResponse res;
+			res.ParseFromArray(packet->body.data(), packet->body.size());
 
+			res.clear_availableplugins();
+			res.clear_connectedclients();
+			res.clear_serverid();
+			
+			for (int i = 0; i < r->activePlugins.size(); i++)
+			{
+				res.add_availableplugins(r->activePlugins.at(i).c_str());
+			}
+			for (int i = 0; i < r->clients.size(); i++)
+			{
+				ClientInfo* c = r->clients.at(i);
+				Base::ClientInfo* cl = res.add_connectedclients();
+				cl->set_name(c->name); cl->set_listengroup(c->groupMask);
+			}
+			res.set_serverid(r->ID);
+			const std::string serialized = res.SerializeAsString();
+			for (int i = 0; i < r->waitForSyncClients.size(); i++)
+			{
+				client->room->waitForSyncClients.at(i)->conn->SendData(PacketID::SYNC_RESPONSE, serialized);
+			}
+			client->room->waitForSyncClients.clear();
+		}
+	}
 
 	UnlockResourceAccess();
 }
@@ -86,7 +161,7 @@ void ClientConnectCB(void* userData, TCPServerSocket* server, Connection* conn)
 {
 	std::string clientIP = GetIPAddress(conn->socket);
 	LOG("Client IP Addr: %s\n", clientIP.c_str());
-
+		
 }
 
 void ClientDisconnectCB(void* userData, TCPServerSocket* sock, Connection* removed)
@@ -95,8 +170,26 @@ void ClientDisconnectCB(void* userData, TCPServerSocket* sock, Connection* remov
 	ClientInfo* removedClient = GetClientInfo(removed);
 	if (removedClient)
 	{
+		Base::RemoveClient rem;
+		rem.mutable_removed()->set_name(removedClient->name);
+		rem.mutable_removed()->set_listengroup(removedClient->groupMask);
+		const std::string removeData = rem.SerializeAsString();
 		LOG("CLIENT DISCONNECTED:\t%s\n", removedClient->name.c_str());
 		removedClient->conn = nullptr;
+		if (removedClient->room)
+		{
+			Room* r = removedClient->room;
+			for (int i = 0; i < r->clients.size(); i++)
+			{
+				if (removedClient != r->clients.at(i))
+				{
+					if (r->clients.at(i)->conn)
+					{
+						r->clients.at(i)->conn->SendData(PacketID::REMOVE_CLIENT, removeData);
+					}
+				}
+			}
+		}
 	}
 	UnlockResourceAccess();
 }

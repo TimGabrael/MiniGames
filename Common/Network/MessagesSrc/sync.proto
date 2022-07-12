@@ -9,8 +9,7 @@ package Base;
 message SyncResponse
 {
 	string serverID = 1;
-	bytes ID = 2;
-	repeated ClientInfo connectedClients = 3;
-	repeated string availablePlugins = 4;
-	optional bytes pluginState = 5;		// this should be handled in the plugin
+	repeated ClientInfo connectedClients = 2;
+	repeated string availablePlugins = 3;
+	optional bytes state = 4;		// this should be handled in the plugin/open window
 }

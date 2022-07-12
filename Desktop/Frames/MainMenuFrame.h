@@ -12,11 +12,20 @@
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QWidget>
 
-class MainMenuFrame : public QWidget
+#include "StateFrame.h"
+
+class MainMenuFrame : public StateFrame
 {
 public:
 	MainMenuFrame(QMainWindow* parent);
 	~MainMenuFrame();
+
+    virtual void FetchSyncData(std::string& str) override;
+    virtual void HandleAddClient(const ClientData* added) override;
+    virtual void HandleRemovedClient(const ClientData* removed) override;
+
+    virtual void HandleNetworkMessage(Packet* packet) override;
+    virtual void HandleSync(const std::string& syncData) override;
 
 private:
     QVBoxLayout* verticalLayout;

@@ -15,7 +15,7 @@ struct ClientInfo
 	std::string name;
 	Connection* conn = nullptr;
 	uint8_t id[16];
-	Room* room;
+	Room* room = nullptr;
 	std::string ipAddr;
 	uint32_t groupMask;
 	float timeOutTimer = 0.0f;
@@ -25,6 +25,7 @@ struct Room
 {
 	ClientInfo* admin;
 	std::vector<ClientInfo*> clients;
+	std::vector<ClientInfo*> waitForSyncClients;
 	std::vector<std::string> activePlugins;
 	std::string ID;
 };
@@ -37,8 +38,9 @@ ClientInfo* AddClientInfo(Connection* conn, const std::string& ipAddr, const std
 
 
 Room* GetRoomByID(const std::string& ID);
-Base::SERVER_ROOM_JOIN_INFO ClientJoinRoom(ClientInfo* info, const std::string& ID);
+Base::SERVER_ROOM_JOIN_INFO ClientJoinRoom(Room** r, ClientInfo* info, const std::string& ID);
 Base::SERVER_ROOM_CREATE_INFO AddRoom(Room** added, ClientInfo* info, const std::string& ID);
+
 
 
 void LockResourceAccess();

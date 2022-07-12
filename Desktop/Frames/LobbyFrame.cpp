@@ -134,20 +134,30 @@ public:
 	ContentWidget(QWidget* parent) : QScrollArea(parent)
 	{
 		setMinimumSize(100, 100);
+		this->setWidgetResizable(true);
 		setVerticalScrollBar(new CustomScrollBar(this));
 
-		// setPalette(QPalette(0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF));
+		//setPalette(QPalette(0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF));
 		contentArea = new QWidget(this);
 		QVBoxLayout* vertical_layout1 = new QVBoxLayout(this);
 		{
 			vertical_layout1->setSpacing(30);
 			vertical_layout1->setContentsMargins(30, 30, 30, 30);
-			setLayout(vertical_layout1);
 
 			QSize gamePrevSize(400, 300);
 
-			GameInfo* unoLabel = new GameInfo(this, "Assets/Uno.png");
-			vertical_layout1->addWidget(unoLabel);
+			{
+				const std::vector<PluginClass*>& plugs = GetPlugins();
+				for (int i = 0; i < plugs.size(); i++)
+				{
+					PLUGIN_INFO info = plugs.at(i)->GetPluginInfos();
+					LOG("RESOURCE: %s\n", info.previewResource);
+					vertical_layout1->addWidget(new GameInfo(this, info.previewResource));
+				}
+			}
+			//GameInfo* unoLabel = new GameInfo(this, "Assets/Uno.png");
+			//vertical_layout1->addWidget(unoLabel);
+
 		}
 		contentArea->setLayout(vertical_layout1);
 		this->setWidget(contentArea);
@@ -203,7 +213,7 @@ void onMouseReleaseScrollArea()
 {
 	GameInfo::Unselect();
 }
-LobbyFrame::LobbyFrame(QMainWindow* parent) : QWidget(parent)
+LobbyFrame::LobbyFrame(QMainWindow* parent) : StateFrame(parent)
 {
 	QVBoxLayout* vertical_layout = new QVBoxLayout(this);
 	vertical_layout->setSpacing(0);
@@ -219,33 +229,39 @@ LobbyFrame::LobbyFrame(QMainWindow* parent) : QWidget(parent)
 			QScrollArea* area = new QScrollArea(this);
 			area->setMinimumSize(80, 100);
 			area->setMaximumSize(600, 800);
+			area->setWidgetResizable(true);
 			area->setVerticalScrollBar(new CustomScrollBar(this));
 			{
 				QVBoxLayout* vertical_layout1 = new QVBoxLayout(this);
 
-				playerScrollContent = new QWidget(area);
+				playerScrollContent = new QWidget(this);
+				ApplicationData& data = MainApplication::GetInstance()->appData;
+				
+				QLabel* lab = new QLabel(data.localPlayer.name.c_str(), this);
+				vertical_layout1->addWidget(lab);
+				lab->setPalette(QPalette(0x00FF00, 0x00FF00, 0x00FF00, 0x00FF00, 0x00FF00, 0x00FF00, 0x00FF00));
+				for (int i = 0; i < data.players.size(); i++)
+				{
+					auto& p = data.players.at(i);
+					QLabel* lab = new QLabel(p.name.c_str(), this);
+					vertical_layout1->addWidget(lab);
+					if (p.groupMask & ADMIN_GROUP_MASK) lab->setPalette(QPalette(0xffd700, 0xffd700, 0xffd700, 0xffd700, 0xffd700, 0xffd700, 0xffd700));
+				}
+				vertical_layout1->addStretch(1);
 				playerScrollContent->setLayout(vertical_layout1);
-
-
-
+				area->setWidget(playerScrollContent);
 			}
 			horizontal_layout->addWidget(area, 1);
 			horizontal_layout->addStretch(1);
-
 
 		}
 		vertical_layout->addLayout(horizontal_layout, 20);
 	
 	
-		ContentWidget* gamesContent = new ContentWidget(this);
+		gamesContent = new ContentWidget(this);
 		vertical_layout->addWidget(gamesContent, 25);
-
-		
-
 	}
-
 	this->setLayout(vertical_layout);
-
 	parent->setCentralWidget(this);
 }
 LobbyFrame::~LobbyFrame()
@@ -264,6 +280,74 @@ void LobbyFrame::StartPlugin(int idx)
 	if (idx < pl.size()) {
 		PluginFrame::activePlugin = pl.at(idx);
 		main->SetState(MAIN_WINDOW_STATE::STATE_PLUGIN);
-		// PluginFrame* f = new PluginFrame(main, pl.at(idx));
+	}
+}
+
+void LobbyFrame::FetchSyncData(std::string& str)
+{
+}
+
+void LobbyFrame::HandleAddClient(const ClientData* added)
+{
+	AddPlayer(added->name);
+}
+
+void LobbyFrame::HandleRemovedClient(const ClientData* removed)
+{
+	RemovePlayer(removed->name);
+}
+
+void LobbyFrame::HandleNetworkMessage(Packet* packet)
+{
+}
+
+void LobbyFrame::HandleSync(const std::string& syncData)
+{
+}
+
+
+
+
+void LobbyFrame::AddPlayer(const std::string& name)
+{
+	QVBoxLayout* lay = (QVBoxLayout*)playerScrollContent->layout();
+	QLabel* label = new QLabel(name.c_str(), this);
+	int wdgtCount = lay->count();
+	lay->insertWidget(wdgtCount - 1, label);
+	label->show();
+}
+void LobbyFrame::RemovePlayer(const std::string& name)
+{
+	QLayout* lay = playerScrollContent->layout();
+	for (int i = 0; i < lay->count(); i++)
+	{
+		QLabel* lab = (QLabel*)lay->itemAt(i)->widget();
+		if (lab->text().toStdString() == name)
+		{
+			QLayoutItem* item = lay->takeAt(i);
+			delete item->widget();
+			delete item;
+			return;
+		}
+	}
+}
+
+void LobbyFrame::ReSync()
+{
+	ApplicationData& data = MainApplication::GetInstance()->appData;
+	QVBoxLayout* pLay = (QVBoxLayout*)playerScrollContent->layout();
+	ClearLayout(pLay);
+	for (int i = 0; i < data.players.size(); i++)
+	{
+		pLay->addWidget(new QLabel(data.players.at(i).name.c_str(), playerScrollContent));
+	}
+	pLay->addStretch(1);
+	QLayout* gLay = gamesContent->layout();
+	ClearLayout(gLay);
+	const std::vector<PluginClass*>& plugs = GetPlugins();
+	for (int i = 0; i < plugs.size(); i++)
+	{
+		PLUGIN_INFO info = plugs.at(i)->GetPluginInfos();
+		gLay->addWidget(new GameInfo(this, info.previewResource));
 	}
 }

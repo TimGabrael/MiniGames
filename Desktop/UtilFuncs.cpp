@@ -98,3 +98,13 @@ bool TryConnectToServer()
 
 	return true;
 }
+
+void ClearLayout(QLayout* lay)
+{
+	QLayoutItem* item;
+	while ((item = lay->takeAt(0)) != nullptr)
+	{
+		delete item->widget();
+		delete item;
+	}
+}

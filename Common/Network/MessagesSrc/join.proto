@@ -57,10 +57,10 @@ message CreateResponse
 
 message AddClient
 {
-	ClientInfo joined;
+	ClientInfo joined = 1;
 }
 
 message RemoveClient
 {
-	ClientInfo removed;
+	ClientInfo removed = 1;
 }

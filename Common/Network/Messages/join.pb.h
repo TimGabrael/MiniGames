@@ -47,6 +47,9 @@ struct TableStruct_join_2eproto {
 };
 extern const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_join_2eproto;
 namespace Base {
+class AddClient;
+struct AddClientDefaultTypeInternal;
+extern AddClientDefaultTypeInternal _AddClient_default_instance_;
 class CreateRequest;
 struct CreateRequestDefaultTypeInternal;
 extern CreateRequestDefaultTypeInternal _CreateRequest_default_instance_;
@@ -62,13 +65,18 @@ extern JoinRequestDefaultTypeInternal _JoinRequest_default_instance_;
 class JoinResponse;
 struct JoinResponseDefaultTypeInternal;
 extern JoinResponseDefaultTypeInternal _JoinResponse_default_instance_;
+class RemoveClient;
+struct RemoveClientDefaultTypeInternal;
+extern RemoveClientDefaultTypeInternal _RemoveClient_default_instance_;
 }  // namespace Base
 PROTOBUF_NAMESPACE_OPEN
+template<> ::Base::AddClient* Arena::CreateMaybeMessage<::Base::AddClient>(Arena*);
 template<> ::Base::CreateRequest* Arena::CreateMaybeMessage<::Base::CreateRequest>(Arena*);
 template<> ::Base::CreateResponse* Arena::CreateMaybeMessage<::Base::CreateResponse>(Arena*);
 template<> ::Base::Info* Arena::CreateMaybeMessage<::Base::Info>(Arena*);
 template<> ::Base::JoinRequest* Arena::CreateMaybeMessage<::Base::JoinRequest>(Arena*);
 template<> ::Base::JoinResponse* Arena::CreateMaybeMessage<::Base::JoinResponse>(Arena*);
+template<> ::Base::RemoveClient* Arena::CreateMaybeMessage<::Base::RemoveClient>(Arena*);
 PROTOBUF_NAMESPACE_CLOSE
 namespace Base {
 
@@ -1028,6 +1036,320 @@ class CreateResponse final :
   union { Impl_ _impl_; };
   friend struct ::TableStruct_join_2eproto;
 };
+// -------------------------------------------------------------------
+
+class AddClient final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:Base.AddClient) */ {
+ public:
+  inline AddClient() : AddClient(nullptr) {}
+  ~AddClient() override;
+  explicit PROTOBUF_CONSTEXPR AddClient(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  AddClient(const AddClient& from);
+  AddClient(AddClient&& from) noexcept
+    : AddClient() {
+    *this = ::std::move(from);
+  }
+
+  inline AddClient& operator=(const AddClient& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline AddClient& operator=(AddClient&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const AddClient& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const AddClient* internal_default_instance() {
+    return reinterpret_cast<const AddClient*>(
+               &_AddClient_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    5;
+
+  friend void swap(AddClient& a, AddClient& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(AddClient* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(AddClient* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  AddClient* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<AddClient>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const AddClient& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const AddClient& from) {
+    AddClient::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(AddClient* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "Base.AddClient";
+  }
+  protected:
+  explicit AddClient(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kJoinedFieldNumber = 1,
+  };
+  // .Base.ClientInfo joined = 1;
+  bool has_joined() const;
+  private:
+  bool _internal_has_joined() const;
+  public:
+  void clear_joined();
+  const ::Base::ClientInfo& joined() const;
+  PROTOBUF_NODISCARD ::Base::ClientInfo* release_joined();
+  ::Base::ClientInfo* mutable_joined();
+  void set_allocated_joined(::Base::ClientInfo* joined);
+  private:
+  const ::Base::ClientInfo& _internal_joined() const;
+  ::Base::ClientInfo* _internal_mutable_joined();
+  public:
+  void unsafe_arena_set_allocated_joined(
+      ::Base::ClientInfo* joined);
+  ::Base::ClientInfo* unsafe_arena_release_joined();
+
+  // @@protoc_insertion_point(class_scope:Base.AddClient)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::Base::ClientInfo* joined_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_join_2eproto;
+};
+// -------------------------------------------------------------------
+
+class RemoveClient final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:Base.RemoveClient) */ {
+ public:
+  inline RemoveClient() : RemoveClient(nullptr) {}
+  ~RemoveClient() override;
+  explicit PROTOBUF_CONSTEXPR RemoveClient(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  RemoveClient(const RemoveClient& from);
+  RemoveClient(RemoveClient&& from) noexcept
+    : RemoveClient() {
+    *this = ::std::move(from);
+  }
+
+  inline RemoveClient& operator=(const RemoveClient& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline RemoveClient& operator=(RemoveClient&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const RemoveClient& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const RemoveClient* internal_default_instance() {
+    return reinterpret_cast<const RemoveClient*>(
+               &_RemoveClient_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    6;
+
+  friend void swap(RemoveClient& a, RemoveClient& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(RemoveClient* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(RemoveClient* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  RemoveClient* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<RemoveClient>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const RemoveClient& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const RemoveClient& from) {
+    RemoveClient::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(RemoveClient* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "Base.RemoveClient";
+  }
+  protected:
+  explicit RemoveClient(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kRemovedFieldNumber = 1,
+  };
+  // .Base.ClientInfo removed = 1;
+  bool has_removed() const;
+  private:
+  bool _internal_has_removed() const;
+  public:
+  void clear_removed();
+  const ::Base::ClientInfo& removed() const;
+  PROTOBUF_NODISCARD ::Base::ClientInfo* release_removed();
+  ::Base::ClientInfo* mutable_removed();
+  void set_allocated_removed(::Base::ClientInfo* removed);
+  private:
+  const ::Base::ClientInfo& _internal_removed() const;
+  ::Base::ClientInfo* _internal_mutable_removed();
+  public:
+  void unsafe_arena_set_allocated_removed(
+      ::Base::ClientInfo* removed);
+  ::Base::ClientInfo* unsafe_arena_release_removed();
+
+  // @@protoc_insertion_point(class_scope:Base.RemoveClient)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::Base::ClientInfo* removed_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_join_2eproto;
+};
 // ===================================================================
 
 
@@ -1833,9 +2155,191 @@ inline void CreateResponse::set_allocated_id(std::string* id) {
   // @@protoc_insertion_point(field_set_allocated:Base.CreateResponse.ID)
 }
 
+// -------------------------------------------------------------------
+
+// AddClient
+
+// .Base.ClientInfo joined = 1;
+inline bool AddClient::_internal_has_joined() const {
+  return this != internal_default_instance() && _impl_.joined_ != nullptr;
+}
+inline bool AddClient::has_joined() const {
+  return _internal_has_joined();
+}
+inline const ::Base::ClientInfo& AddClient::_internal_joined() const {
+  const ::Base::ClientInfo* p = _impl_.joined_;
+  return p != nullptr ? *p : reinterpret_cast<const ::Base::ClientInfo&>(
+      ::Base::_ClientInfo_default_instance_);
+}
+inline const ::Base::ClientInfo& AddClient::joined() const {
+  // @@protoc_insertion_point(field_get:Base.AddClient.joined)
+  return _internal_joined();
+}
+inline void AddClient::unsafe_arena_set_allocated_joined(
+    ::Base::ClientInfo* joined) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.joined_);
+  }
+  _impl_.joined_ = joined;
+  if (joined) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:Base.AddClient.joined)
+}
+inline ::Base::ClientInfo* AddClient::release_joined() {
+  
+  ::Base::ClientInfo* temp = _impl_.joined_;
+  _impl_.joined_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::Base::ClientInfo* AddClient::unsafe_arena_release_joined() {
+  // @@protoc_insertion_point(field_release:Base.AddClient.joined)
+  
+  ::Base::ClientInfo* temp = _impl_.joined_;
+  _impl_.joined_ = nullptr;
+  return temp;
+}
+inline ::Base::ClientInfo* AddClient::_internal_mutable_joined() {
+  
+  if (_impl_.joined_ == nullptr) {
+    auto* p = CreateMaybeMessage<::Base::ClientInfo>(GetArenaForAllocation());
+    _impl_.joined_ = p;
+  }
+  return _impl_.joined_;
+}
+inline ::Base::ClientInfo* AddClient::mutable_joined() {
+  ::Base::ClientInfo* _msg = _internal_mutable_joined();
+  // @@protoc_insertion_point(field_mutable:Base.AddClient.joined)
+  return _msg;
+}
+inline void AddClient::set_allocated_joined(::Base::ClientInfo* joined) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.joined_);
+  }
+  if (joined) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(joined));
+    if (message_arena != submessage_arena) {
+      joined = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, joined, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  _impl_.joined_ = joined;
+  // @@protoc_insertion_point(field_set_allocated:Base.AddClient.joined)
+}
+
+// -------------------------------------------------------------------
+
+// RemoveClient
+
+// .Base.ClientInfo removed = 1;
+inline bool RemoveClient::_internal_has_removed() const {
+  return this != internal_default_instance() && _impl_.removed_ != nullptr;
+}
+inline bool RemoveClient::has_removed() const {
+  return _internal_has_removed();
+}
+inline const ::Base::ClientInfo& RemoveClient::_internal_removed() const {
+  const ::Base::ClientInfo* p = _impl_.removed_;
+  return p != nullptr ? *p : reinterpret_cast<const ::Base::ClientInfo&>(
+      ::Base::_ClientInfo_default_instance_);
+}
+inline const ::Base::ClientInfo& RemoveClient::removed() const {
+  // @@protoc_insertion_point(field_get:Base.RemoveClient.removed)
+  return _internal_removed();
+}
+inline void RemoveClient::unsafe_arena_set_allocated_removed(
+    ::Base::ClientInfo* removed) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.removed_);
+  }
+  _impl_.removed_ = removed;
+  if (removed) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:Base.RemoveClient.removed)
+}
+inline ::Base::ClientInfo* RemoveClient::release_removed() {
+  
+  ::Base::ClientInfo* temp = _impl_.removed_;
+  _impl_.removed_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::Base::ClientInfo* RemoveClient::unsafe_arena_release_removed() {
+  // @@protoc_insertion_point(field_release:Base.RemoveClient.removed)
+  
+  ::Base::ClientInfo* temp = _impl_.removed_;
+  _impl_.removed_ = nullptr;
+  return temp;
+}
+inline ::Base::ClientInfo* RemoveClient::_internal_mutable_removed() {
+  
+  if (_impl_.removed_ == nullptr) {
+    auto* p = CreateMaybeMessage<::Base::ClientInfo>(GetArenaForAllocation());
+    _impl_.removed_ = p;
+  }
+  return _impl_.removed_;
+}
+inline ::Base::ClientInfo* RemoveClient::mutable_removed() {
+  ::Base::ClientInfo* _msg = _internal_mutable_removed();
+  // @@protoc_insertion_point(field_mutable:Base.RemoveClient.removed)
+  return _msg;
+}
+inline void RemoveClient::set_allocated_removed(::Base::ClientInfo* removed) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.removed_);
+  }
+  if (removed) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(removed));
+    if (message_arena != submessage_arena) {
+      removed = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, removed, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  _impl_.removed_ = removed;
+  // @@protoc_insertion_point(field_set_allocated:Base.RemoveClient.removed)
+}
+
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------
