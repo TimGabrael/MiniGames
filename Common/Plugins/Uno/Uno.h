@@ -7,12 +7,18 @@
 #include "Animator.h"
 #include "Pointer.h"
 
+struct PlayerInfo
+{
+	std::string name;
+	CardHand hand;
+};
+
 struct UnoGlobals
 {
 	Camera playerCam;
 	GLuint skybox;
 	S3DCombinedBuffer platform;
-	CardHand* client;
+	CardHand* localPlayer;
 	std::vector<CardHand> hands;
 	MouseState ms;
 	Pointer p;

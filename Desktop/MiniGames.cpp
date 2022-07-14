@@ -300,9 +300,9 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     LoadAllPlugins();
 
     auto& pl = GetPlugins();
-    if (!pl.empty() && false) {
+    if (!pl.empty()) {
         PluginFrame::activePlugin = pl.at(0);
-        PluginFrame* f = new PluginFrame(this);
+        SetState(MAIN_WINDOW_STATE::STATE_PLUGIN);
     }
     else
     {

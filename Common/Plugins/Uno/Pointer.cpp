@@ -48,7 +48,7 @@ void Pointer::OnTouchUp(int x, int y, int touchID)
 }
 void Pointer::OnTouchMove(int x, int y, int dx, int dy, int touchID)
 {
-	if (touchID = this->id)
+	if (touchID == this->id)
 	{
 		this->x = x; this->y = y;
 		this->dx = dx; this->dy = dy;

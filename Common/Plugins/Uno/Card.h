@@ -140,7 +140,7 @@ struct CardHand
 	int mouseSelectedCard = -1;
 
 	int handID = 0;
-
+	float rotation = 0.0f;
 	
 	CARD_ID choosenCardColor = CARD_ID_RED_2;
 	bool choosingCardColor = false;

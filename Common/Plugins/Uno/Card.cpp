@@ -812,6 +812,9 @@ void CardHand::GenTransformations(const Camera& cam)
 	if (!needRegen || cards.empty()) return;
 	const glm::vec2 frustrum = cam.GetFrustrumSquare(1.0f);
 	maxWidth = frustrum.x * 1.2f;
+	if (rotation != 0.0f) {
+		maxWidth *= 0.4f;
+	}
 
 
 	glm::vec3 camUp = cam.GetRealUp();
@@ -819,8 +822,9 @@ void CardHand::GenTransformations(const Camera& cam)
 	glm::vec3 right = cam.GetRight();
 	float camYaw = cam.GetYaw() + 90.0f;
 	glm::mat4 frontFaceingRotation = glm::rotate(glm::mat4(1.0f), glm::radians(camYaw), glm::vec3(0.0f, -1.0f, 0.0f));
-	glm::mat4 std = glm::translate(glm::mat4(1.0f), baseTranslate) * glm::rotate(glm::mat4(1.0f), glm::radians(-40.0f), right) * frontFaceingRotation * glm::scale(glm::mat4(1.0f), glm::vec3(g_cardScale));
-
+	float usedCardScale = g_cardScale;
+	glm::mat4 std = glm::translate(glm::mat4(1.0f), baseTranslate) * glm::rotate(glm::mat4(1.0f), glm::radians(-40.0f), right) * frontFaceingRotation * glm::scale(glm::mat4(1.0f), glm::vec3(usedCardScale));
+	
 	int numCards = cards.size();
 
 	float distBetween = std::min(std::max(maxWidth * 2.0f / (float)cards.size(), g_cardMinDiff), maxDiff);
@@ -878,6 +882,15 @@ void CardHand::GenTransformations(const Camera& cam)
 			auto& c = cards.at(i);
 			float scale = (start + i * distBetween) * g_cardScale;
 			c.transform = glm::translate(glm::mat4(1.0f), right * scale + camUp * 0.2f * c.hoverCounter) * std;
+		}
+	}
+
+	if (rotation != 0.0f)
+	{
+		for (int i = 0; i < cards.size(); i++)
+		{
+			auto& c = cards.at(i);
+			c.transform = glm::rotate(glm::mat4(1.0f), glm::radians(rotation), glm::vec3(0.0f, 1.0f, 0.0f)) * c.transform;
 		}
 	}
 

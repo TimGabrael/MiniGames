@@ -47,6 +47,8 @@ UnoPlugin* GetInstance()
 
 
 
+
+
 //#define ALLOW_FREEMOVEMENT
 void UnoPlugin::Init(ApplicationData* data)
 {
@@ -54,7 +56,6 @@ void UnoPlugin::Init(ApplicationData* data)
 
 	initialized = true;
 	this->backendData = data;
-	LOG("LOCAL_PLAYER_NAME: %s\n", data->localPlayer.name.c_str());
 	InitializeOpenGL(data->assetManager);
 	InitializeCardPipeline(data->assetManager);
 
@@ -84,8 +85,9 @@ void UnoPlugin::Init(ApplicationData* data)
 		"Assets/CitySkybox/back.jpg");
 
 	g_objs->hands.emplace_back(-1);
-	g_objs->client = &g_objs->hands.at(0);
-	g_objs->client->Add(CARD_ID::CARD_ID_ADD_4);
+	g_objs->localPlayer = &g_objs->hands.at(0);
+	g_objs->localPlayer->Add(CARD_ID::CARD_ID_ADD_4);
+	g_objs->localPlayer->rotation = 40.0f;
 
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
@@ -132,9 +134,9 @@ void UnoPlugin::Render(ApplicationData* data)
 
 
 
-	g_objs->client->Update(g_objs->stack, g_objs->anims, g_objs->picker, g_objs->playerCam, g_objs->p, g_objs->anims.list.empty());
+	g_objs->localPlayer->Update(g_objs->stack, g_objs->anims, g_objs->picker, g_objs->playerCam, g_objs->p, g_objs->anims.list.empty());
 
-	if (g_objs->client->choosingCardColor) {
+	if (g_objs->localPlayer->choosingCardColor) {
 		g_objs->picker.Draw((float)g_objs->playerCam.screenX / (float)g_objs->playerCam.screenY, dt);
 	}
 
@@ -145,7 +147,7 @@ void UnoPlugin::Render(ApplicationData* data)
 		g_objs->stack.Draw();
 		g_objs->anims.Update(g_objs->hands, g_objs->stack, dt);
 		
-		g_objs->client->Draw(g_objs->playerCam);
+		g_objs->localPlayer->Draw(g_objs->playerCam);
 	}
 	glDisable(GL_BLEND);
 
@@ -197,7 +199,7 @@ void UnoPlugin::KeyDownCallback(Key k, bool isRepeat)
 		if (k == Key::Key_D)g_objs.playerCam.SetMovementDirection(Camera::DIRECTION::RIGHT, true);
 	}
 #endif
-	if (k == Key::Key_0) g_objs->client->FetchCard(g_objs->playerCam, g_objs->stack, g_objs->deck, g_objs->anims);
+	if (k == Key::Key_0) g_objs->localPlayer->FetchCard(g_objs->playerCam, g_objs->stack, g_objs->deck, g_objs->anims);
 }
 void UnoPlugin::KeyUpCallback(Key k, bool isRepeat)
 {
