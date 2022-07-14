@@ -64,9 +64,18 @@ HeaderWidget::HeaderWidget(QWidget* parent, const QColor& stylebg, const QColor&
 		f.setPixelSize(BtnSize.height());
 		f.setUnderline(true);
 		text->setFont(f);
-		horizontal_layout->addWidget(text, 0, Qt::AlignmentFlag::AlignHCenter);
+		text->setPalette(QPalette(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF));
+		horizontal_layout->addWidget(text, 1, Qt::AlignmentFlag::AlignHCenter);
 
-		horizontal_layout->addStretch(1);
+		QLabel* currentLobby = new QLabel(("ROOM: " + MainApplication::GetInstance()->appData.roomName).c_str(), this);
+		text->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);
+		currentLobby->setMinimumWidth(100);
+		
+		horizontal_layout->addWidget(currentLobby, 1, Qt::AlignmentFlag::AlignRight);
+
+
+
+		//horizontal_layout->addStretch();
 
 		sBtn = new QPushButton(this);
 		sBtn->setStyleSheet(btnStyles);
@@ -74,7 +83,7 @@ HeaderWidget::HeaderWidget(QWidget* parent, const QColor& stylebg, const QColor&
 		QIcon cog = LoadSvgWithColor("Assets/SettingsCog.svg", stylehighlight, BtnSize);
 		sBtn->setIcon(cog);
 		sBtn->setIconSize(BtnSize);
-		horizontal_layout->addWidget(sBtn, 0, Qt::AlignmentFlag::AlignLeft | Qt::AlignmentFlag::AlignTop);
+		horizontal_layout->addWidget(sBtn, 0, Qt::AlignmentFlag::AlignRight | Qt::AlignmentFlag::AlignTop);
 
 		
 		fullscreenCloseBtn = new QPushButton(this);

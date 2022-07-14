@@ -119,7 +119,6 @@ void PacketCB(void* userData, Packet* pack)
     {
         // the client is only responsible for providing additional sync data, the rest is handeld by the server
         Base::SyncResponse res;
-        // TODO: ASK WHOEVER IS CURRENTLY IN CHARGE FOR THE SYNC DATA
 
         std::string data;
         if (app->mainWindow->GetState() != MAIN_WINDOW_STATE::STATE_INVALID)
@@ -208,10 +207,10 @@ void PacketCB(void* userData, Packet* pack)
             SafeAsyncUI([](MainWindow* main)
                 {
                     ApplicationData& data = MainApplication::GetInstance()->appData;
-                    LobbyFrame* lobby = (LobbyFrame*)main->centralWidget();
+                    StateFrame* frame = (StateFrame*)main->centralWidget();
                     if (data.addedClientIdx >= 0 && data.addedClientIdx < data.players.size())
                     {
-                        lobby->HandleAddClient(&data.players.at(data.addedClientIdx));
+                        frame->HandleAddClient(&data.players.at(data.addedClientIdx));
                     }
                 });
         }
@@ -307,7 +306,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     }
     else
     {
-        SetState(MAIN_WINDOW_STATE::STATE_MENU);
+        SetState(MAIN_WINDOW_STATE::STATE_MENU);  
     }
 }
 

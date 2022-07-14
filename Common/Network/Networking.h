@@ -8,6 +8,7 @@
 // ADMIN/CREATOR OF THE ROOM
 #define ADMIN_GROUP_MASK (1 << 31)
 #define STANDARD_GROUP_MASK 1
+#define LISTEN_GROUP_ALL 0xFFFFFFFF
 
 enum class NetError
 {
@@ -36,7 +37,15 @@ enum class PacketID
 
 	VOTE = 8,
 	VOTE_SYNC = 9,
+	START = 10,
 };
+
+enum AdditionalDataFlags
+{
+	ADDITIONAL_DATA_FLAG_ADMIN = 1,	// only admins should and can send this message!
+
+};
+
 
 struct PacketHeader
 {
@@ -104,8 +113,8 @@ static constexpr KeyGenSharedFunc GenSharedSecret = GenSharedSecretU4096;
 
 
 
-struct TCPSocket;
-struct TCPServerSocket;
+class TCPSocket;
+class TCPServerSocket;
 typedef void(*ConnectionFunc)(void* obj, struct Connection* conn);
 typedef void(*ClientPacketCallback)(void* userData, Packet* pack);
 typedef void(*ServerPacketCallback)(void* userData, Connection* conn, Packet* pack);

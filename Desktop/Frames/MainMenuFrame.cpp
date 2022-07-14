@@ -222,7 +222,7 @@ void MainMenuFrame::OnJoinClick()
                 {
                     req.mutable_info()->add_availableplugins(plugs.at(i)->GetPluginInfos().ID);
                 }
-                // req.set_id(app->appData.localPlayerID, 16);
+                req.set_id(app->appData.localPlayerID, 16);
                 std::string serializedData = req.SerializeAsString();
                 app->socket.SendData(PacketID::JOIN, serializedData.size(), (const  uint8_t*)serializedData.data());
             }

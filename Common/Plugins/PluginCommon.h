@@ -18,7 +18,7 @@ struct PLUGIN_INFO
 #define EXPORT 
 #endif
 
-struct TCPSocket;
+class TCPSocket;
 enum PLATFORM_ID
 {
 	PLATFORM_ID_WINDOWS = 1,

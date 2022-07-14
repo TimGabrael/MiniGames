@@ -24,7 +24,7 @@ PluginFrame::PluginFrame(QMainWindow* parent) : StateFrame(parent)
 
 
 	setLayout(lay);
-	parent->setCentralWidget(pl);
+	parent->setCentralWidget(this);
 }
 PluginFrame::~PluginFrame()
 {

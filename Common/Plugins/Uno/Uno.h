@@ -1,11 +1,32 @@
 #pragma once
 #include "../PluginCommon.h"
+#include "Graphics/Camera.h"
+#include "Graphics/Simple3DRendering.h"
+#include "Card.h"
+#include "../InputStates.h"
+#include "Animator.h"
+#include "Pointer.h"
 
+struct UnoGlobals
+{
+	Camera playerCam;
+	GLuint skybox;
+	S3DCombinedBuffer platform;
+	CardHand* client;
+	std::vector<CardHand> hands;
+	MouseState ms;
+	Pointer p;
+	CardStack stack;
+	CardsInAnimation anims;
+	CardDeck deck;
+	ColorPicker picker;
 
+};
 
 
 class UnoPlugin : public PluginClass
 {
+public:
 	virtual PLUGIN_INFO GetPluginInfos() override;
 	virtual void Init(ApplicationData* data) override;
 	virtual void Resize(ApplicationData* data) override;
@@ -23,6 +44,10 @@ class UnoPlugin : public PluginClass
 
 	ApplicationData* backendData;	// AAssetManager* for android, else nullptr
 	bool initialized = false;
+
+	UnoGlobals* g_objs;
 };
+
+UnoPlugin* GetInstance();
 
 PLUGIN_EXPORTS();

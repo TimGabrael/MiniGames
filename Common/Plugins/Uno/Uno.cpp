@@ -7,11 +7,7 @@
 #include "Graphics/UiRendering.h"
 #include <chrono>
 #include <algorithm>
-#include "Card.h"
-#include "Graphics/Simple3DRendering.h"
-#include "../InputStates.h"
-#include "Animator.h"
-#include "Pointer.h"
+
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -39,27 +35,12 @@ void PrintGLMMatrix(const glm::mat4& m)
 		m[0][3], m[1][3], m[2][3], m[3][3]);
 }
 
+UnoPlugin* instance = nullptr;
 
-
-struct UnoGlobals
+UnoPlugin* GetInstance()
 {
-	Camera playerCam;
-	GLuint skybox;
-	S3DCombinedBuffer platform;
-	CardHand* client;
-	std::vector<CardHand> hands;
-	MouseState ms;
-	Pointer p;
-	CardStack stack;
-	CardsInAnimation anims;
-	CardDeck deck;
-	ColorPicker picker;
-
-}g_objs;
-
-
-
-
+	return instance;
+}
 
 
 
@@ -69,8 +50,11 @@ struct UnoGlobals
 //#define ALLOW_FREEMOVEMENT
 void UnoPlugin::Init(ApplicationData* data)
 {
+	instance = this;
+
 	initialized = true;
 	this->backendData = data;
+	LOG("LOCAL_PLAYER_NAME: %s\n", data->localPlayer.name.c_str());
 	InitializeOpenGL(data->assetManager);
 	InitializeCardPipeline(data->assetManager);
 
@@ -84,13 +68,14 @@ void UnoPlugin::Init(ApplicationData* data)
 	uint32_t platformIndices[] = {
 		0,3,2,2,1,0,
 	};
-	g_objs.platform = S3DGenerateBuffer(platformVertices, sizeof(platformVertices)/sizeof(SVertex3D), platformIndices, sizeof(platformIndices)/sizeof(uint32_t));
+	g_objs = new UnoGlobals;
+	g_objs->platform = S3DGenerateBuffer(platformVertices, sizeof(platformVertices)/sizeof(SVertex3D), platformIndices, sizeof(platformIndices)/sizeof(uint32_t));
 
-	g_objs.playerCam.pos = { 0.0f, 1.6f, 2.0f };
-	g_objs.playerCam.SetRotation(-90.0f, -40.0f, 0.0f);
+	g_objs->playerCam.pos = { 0.0f, 1.6f, 2.0f };
+	g_objs->playerCam.SetRotation(-90.0f, -40.0f, 0.0f);
 
 
-	g_objs.skybox = LoadCubemap(
+	g_objs->skybox = LoadCubemap(
 		"Assets/CitySkybox/right.jpg",
 		"Assets/CitySkybox/left.jpg",
 		"Assets/CitySkybox/top.jpg",
@@ -98,9 +83,9 @@ void UnoPlugin::Init(ApplicationData* data)
 		"Assets/CitySkybox/front.jpg",
 		"Assets/CitySkybox/back.jpg");
 
-	g_objs.hands.emplace_back(-1);
-	g_objs.client = &g_objs.hands.at(0);
-	g_objs.client->Add(CARD_ID::CARD_ID_ADD_4);
+	g_objs->hands.emplace_back(-1);
+	g_objs->client = &g_objs->hands.at(0);
+	g_objs->client->Add(CARD_ID::CARD_ID_ADD_4);
 
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
@@ -117,9 +102,9 @@ void UnoPlugin::Init(ApplicationData* data)
 void UnoPlugin::Resize(ApplicationData* data)
 {
 	if(sizeY && sizeX)
-		g_objs.playerCam.SetPerspective(90.0f, (float)this->sizeX / (float)this->sizeY, 0.1f, 256.0f);
-	g_objs.playerCam.screenX = sizeX;
-	g_objs.playerCam.screenY = sizeY;
+		g_objs->playerCam.SetPerspective(90.0f, (float)this->sizeX / (float)this->sizeY, 0.1f, 256.0f);
+	g_objs->playerCam.screenX = sizeX;
+	g_objs->playerCam.screenY = sizeY;
 }
 ColorPicker picker;
 void UnoPlugin::Render(ApplicationData* data)
@@ -139,36 +124,34 @@ void UnoPlugin::Render(ApplicationData* data)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glDepthFunc(GL_LESS);
-	g_objs.playerCam.Update();
+	g_objs->playerCam.Update();
 
 
-	auto& ray = g_objs.playerCam.mouseRay;
-	ray = g_objs.playerCam.ScreenToWorld(g_objs.p.x, g_objs.p.y);
+	auto& ray = g_objs->playerCam.mouseRay;
+	ray = g_objs->playerCam.ScreenToWorld(g_objs->p.x, g_objs->p.y);
 
 
 
-	g_objs.client->Update(g_objs.stack, g_objs.anims, g_objs.picker, g_objs.playerCam, g_objs.p, g_objs.anims.list.empty());
+	g_objs->client->Update(g_objs->stack, g_objs->anims, g_objs->picker, g_objs->playerCam, g_objs->p, g_objs->anims.list.empty());
 
-	if (g_objs.client->choosingCardColor) {
-		g_objs.picker.Draw((float)g_objs.playerCam.screenX / (float)g_objs.playerCam.screenY, dt);
+	if (g_objs->client->choosingCardColor) {
+		g_objs->picker.Draw((float)g_objs->playerCam.screenX / (float)g_objs->playerCam.screenY, dt);
 	}
 
 
 	{ // render all cards
 		ClearCards();
-		g_objs.deck.Draw();
-		g_objs.stack.Draw();
-		g_objs.anims.Update(g_objs.hands, g_objs.stack, dt);
+		g_objs->deck.Draw();
+		g_objs->stack.Draw();
+		g_objs->anims.Update(g_objs->hands, g_objs->stack, dt);
 		
-		g_objs.client->Draw(g_objs.playerCam);
+		g_objs->client->Draw(g_objs->playerCam);
 	}
 	glDisable(GL_BLEND);
 
-	DrawSimple3D(g_objs.platform, g_objs.playerCam.perspective, g_objs.playerCam.view);
+	DrawSimple3D(g_objs->platform, g_objs->playerCam.perspective, g_objs->playerCam.view);
 
-	DrawSkybox(g_objs.skybox, g_objs.playerCam.view, g_objs.playerCam.perspective);
-
-
+	DrawSkybox(g_objs->skybox, g_objs->playerCam.view, g_objs->playerCam.perspective);
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -176,13 +159,13 @@ void UnoPlugin::Render(ApplicationData* data)
 
 
 
-	DrawCards(g_objs.playerCam.perspective, g_objs.playerCam.view);
+	DrawCards(g_objs->playerCam.perspective, g_objs->playerCam.view);
 	DrawUI();
 
 	glEnable(GL_DEPTH_TEST);
 
-	g_objs.ms.FrameEnd();
-	g_objs.p.EndFrame();
+	g_objs->ms.FrameEnd();
+	g_objs->p.EndFrame();
 }
 
 
@@ -195,11 +178,11 @@ void UnoPlugin::MouseCallback(const PB_MouseData* mData)
 		g_objs.playerCam.UpdateFromMouseMovement(-mData->dx, mData->dy);
 	}
 #endif
-	g_objs.ms.SetFromPBState(mData);
+	g_objs->ms.SetFromPBState(mData);
 	// auto& ray = g_objs.playerCam.mouseRay;
 	// ray = g_objs.playerCam.ScreenToWorld(mData->xPos, mData->yPos);
 	
-	g_objs.p.FillFromMouse(mData);
+	g_objs->p.FillFromMouse(mData);
 	
 
 }
@@ -214,7 +197,7 @@ void UnoPlugin::KeyDownCallback(Key k, bool isRepeat)
 		if (k == Key::Key_D)g_objs.playerCam.SetMovementDirection(Camera::DIRECTION::RIGHT, true);
 	}
 #endif
-	if (k == Key::Key_0) g_objs.client->FetchCard(g_objs.playerCam, g_objs.stack, g_objs.deck, g_objs.anims);
+	if (k == Key::Key_0) g_objs->client->FetchCard(g_objs->playerCam, g_objs->stack, g_objs->deck, g_objs->anims);
 }
 void UnoPlugin::KeyUpCallback(Key k, bool isRepeat)
 {
@@ -234,26 +217,26 @@ void UnoPlugin::TouchDownCallback(int x, int y, int touchID)
 #ifdef ALLOW_FREEMOVEMENT
 	g_objs.playerCam.UpdateTouch(x, y, touchID, false);
 #endif
-	g_objs.p.OnTouchDown(x, y, touchID);
+	g_objs->p.OnTouchDown(x, y, touchID);
 }
 void UnoPlugin::TouchUpCallback(int x, int y, int touchID)
 {
 #ifdef ALLOW_FREEMOVEMENT
 	g_objs.playerCam.UpdateTouch(x, y, touchID, true);
 #endif
-	g_objs.p.OnTouchUp(x, y, touchID);
+	g_objs->p.OnTouchUp(x, y, touchID);
 }
 void UnoPlugin::TouchMoveCallback(int x, int y, int dx, int dy, int touchID)
 {
 #ifdef ALLOW_FREEMOVEMENT
 	g_objs.playerCam.UpdateTouchMove(x, y, dx, dy, touchID);
 #endif
-	g_objs.p.OnTouchMove(x, y, dx, dy, touchID);
+	g_objs->p.OnTouchMove(x, y, dx, dy, touchID);
 }
 void UnoPlugin::CleanUp()
 {
-	glDeleteTextures(1, &g_objs.skybox);
+	glDeleteTextures(1, &g_objs->skybox);
 	CleanUpOpenGL();
-
+	delete g_objs;
 
 }

@@ -91,7 +91,7 @@ Base::SERVER_ROOM_JOIN_INFO ClientJoinRoom(Room** r, ClientInfo* info, const std
 			auto* ro = rooms.at(i);
 			for (int j = 0; j < ro->clients.size(); j++)
 			{
-				if (ro->clients.at(j)->name == info->name) {
+				if (ro->clients.at(j) != info && ro->clients.at(j)->name == info->name) {
 					return Base::SERVER_ROOM_JOIN_INFO::ROOM_JOIN_NAME_COLLISION;
 				}
 			}

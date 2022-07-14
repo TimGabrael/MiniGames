@@ -9,6 +9,7 @@
 #include "../Animations/GrowingCircle.h"
 
 #include "../CustomWidgets/CustomButton.h"
+#include "../CustomWidgets/CustomCheckBox.h"
 #include "../CustomWidgets/CustomTextInput.h"
 #include "../CustomWidgets/CustomScrollbar.h"
 
@@ -36,10 +37,20 @@ public:
 	{
 		if (GameInfo::selected)
 		{
+			MainApplication* app = MainApplication::GetInstance();
+			for (int i = 0; i < LobbyFrame::data.votes.size(); i++)
+			{
+				auto& v = LobbyFrame::data.votes.at(i);
+				if (v.username == app->appData.localPlayer.name)
+					v.pluginID = "";
+			}
+			Base::Vote voteData;
+			voteData.set_clientname(app->appData.localPlayer.name);
+			app->socket.SendData(PacketID::VOTE, LISTEN_GROUP_ALL, 0, voteData.SerializeAsString());
+
 			GameInfo* cpy = GameInfo::selected;
 			cpy->voteCount--;
 			GameInfo::selected = nullptr;
-			// cpy->update();
 		}
 	}
 	void SetCount(int count)
@@ -238,6 +249,184 @@ private:
 	std::vector<GameInfoData> contentList;
 };
 
+
+class AdminWidget : public QWidget
+{
+public:
+	AdminWidget(QWidget* parent) : QWidget(parent)
+	{
+		//this->setPalette(QPalette(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF));
+		QGridLayout* grid_layout = new QGridLayout(this);
+		
+		ApplicationData& data = MainApplication::GetInstance()->appData;
+		
+		startBtn = new CustomButton("START", this);
+		time = new QLabel("Remaining Time: -1", this);
+		adminChooses = new CustomCheckBox(this);
+		adminChooses->setCheckState(Qt::CheckState::Unchecked);
+		adminChooses->setText("Test");
+
+		countDown.setParent(this);
+		countDown.setInterval(1000);
+		countDown.callOnTimeout(this, &AdminWidget::OnTimer);
+		
+		if (LobbyFrame::data.isRunning)
+		{
+			countDown.start();
+		}
+
+		
+		grid_layout->addWidget(time, 0, 0);
+		grid_layout->addWidget(startBtn, 1, 0);
+		grid_layout->addWidget(adminChooses, 1, 1);
+
+		startBtn->setDisabled(false);
+
+		
+		this->setLayout(grid_layout);
+
+		connect(startBtn, &QPushButton::pressed, this, &AdminWidget::OnPressStart);
+	}
+
+	void AdminSyncData()
+	{
+		MainApplication* app = MainApplication::GetInstance();
+		if (app->appData.localPlayer.groupMask & ADMIN_GROUP_MASK)
+		{
+			Base::SyncData data;
+			data.set_remainingtime(maxTimer);
+			for (int i = 0; i < LobbyFrame::data.votes.size(); i++)
+			{
+				Base::Vote* v = data.add_votes();
+				const auto& vote = LobbyFrame::data.votes.at(i);
+				v->set_plugin(vote.pluginID); v->set_clientname(vote.username);
+			}
+			data.set_running(LobbyFrame::data.isRunning);
+			app->socket.SendData(PacketID::VOTE_SYNC, LISTEN_GROUP_ALL, ADDITIONAL_DATA_FLAG_ADMIN, data.SerializeAsString());
+		}
+	}
+	void AdminStart()
+	{
+		MainApplication* app = MainApplication::GetInstance();
+		if (app->appData.localPlayer.groupMask & ADMIN_GROUP_MASK)
+		{
+			Base::StartPlugin starting;
+			std::string start = GetPluginByVotes();
+			starting.set_pluginid(start);
+			app->socket.SendData(PacketID::START, LISTEN_GROUP_ALL, ADDITIONAL_DATA_FLAG_ADMIN, starting.SerializeAsString());
+
+			LobbyFrame* frame = (LobbyFrame*)this->parentWidget();
+			frame->pluginCache = start;
+			frame->StartPlugin();
+		}
+	}
+	std::string GetPluginByVotes()
+	{
+		std::string outVal;
+		int highestCount = -1;
+		const std::vector<PluginClass*>& pl = GetPlugins();
+		for (int i = 0; i < pl.size(); i++)
+		{
+			int curCount = 0;
+			std::string id = pl.at(i)->GetPluginInfos().ID;
+			for (int j = 0; j < LobbyFrame::data.votes.size(); j++)
+			{
+				auto& v = LobbyFrame::data.votes.at(j);
+				if (v.pluginID == id)
+				{
+					curCount++;
+				}
+			}
+			if (curCount > 0 && highestCount < curCount)
+			{
+				outVal = id;
+				highestCount = curCount;
+			}
+		}
+
+		if (highestCount != -1 && !outVal.empty())
+		{
+			return outVal;
+		}
+
+		int randIDX = rand() % pl.size();
+		if (randIDX < pl.size())
+		{
+			return pl.at(randIDX)->GetPluginInfos().ID;
+		}
+
+		return "";
+	}
+
+	void OnPressStart()
+	{
+		if (!countDown.isActive())
+		{
+			MainApplication* app = MainApplication::GetInstance();
+			if (adminChooses->checkState() == Qt::CheckState::Checked)
+			{
+				AdminStart();
+			}
+			else
+			{
+				countDown.start();
+				LobbyFrame::data.remainingTime = maxTimer;
+				LobbyFrame::data.isRunning = true;
+				UpdateWithRemainingTime();
+				AdminSyncData();
+			}
+		}
+	}
+	void UpdateWithRemainingTime()
+	{
+		std::string remTxt = "Remaining Time: " + std::to_string(LobbyFrame::data.remainingTime);
+		time->setText(remTxt.c_str());
+		time->update();
+	}
+
+	void OnTimer()
+	{
+		if (LobbyFrame::data.remainingTime > 0)
+		{
+			LobbyFrame::data.remainingTime -= 1;
+			if (LobbyFrame::data.remainingTime <= 0) {
+				LobbyFrame::data.remainingTime = 0;
+				LobbyFrame::data.isRunning = false;
+				AdminSyncData();
+			}
+			UpdateWithRemainingTime();
+		}
+		else
+		{
+			countDown.stop();
+			AdminStart();
+		}
+	}
+
+	void UpdateFromData()
+	{
+		if (LobbyFrame::data.isRunning && !countDown.isActive())
+		{
+			countDown.start();
+		}
+		else if (!LobbyFrame::data.isRunning && countDown.isActive())
+		{
+			UpdateWithRemainingTime();
+			countDown.stop();
+		}
+	}
+
+
+private:
+	CustomButton* startBtn = nullptr;
+	CustomTextInput* timeIn = nullptr;
+	CustomCheckBox* adminChooses = nullptr;
+	QLabel* time = nullptr;
+	int maxTimer = 30;
+	QTimer countDown;
+};
+
+
 bool IsValidName(const std::string& name)
 {
 	MainApplication* app = MainApplication::GetInstance();
@@ -256,37 +445,11 @@ bool IsValidName(const std::string& name)
 
 
 
-void ScrollbarExample(QWidget* frame, QMainWindow* parent)
-{
-	QScrollArea* area = new QScrollArea(frame);
-	area->setMinimumSize(1200, 250);
-
-	QVBoxLayout* vbox = new QVBoxLayout(frame);
-
-	QWidget* content = new QWidget(frame);
-	content->setLayout(vbox);
-
-	QPushButton* img = new CustomButton("test1", frame);
-	img->setMinimumSize(1000, 400);
-
-	QPushButton* img1 = new CustomButton("test", frame);
-	img1->setMinimumSize(1000, 400);
-
-	vbox->addWidget(img);
-	vbox->addWidget(img1);
-
-	CustomScrollBar* scrl = new CustomScrollBar(frame);
-	area->setVerticalScrollBar(scrl);
-	area->setWidget(content);
 
 
-	parent->setCentralWidget(frame);
-}
 
-void onMouseReleaseScrollArea()
-{
-	GameInfo::Unselect();
-}
+
+
 LobbyFrame::LobbyFrame(QMainWindow* parent) : StateFrame(parent)
 {
 	QVBoxLayout* vertical_layout = new QVBoxLayout(this);
@@ -314,7 +477,9 @@ LobbyFrame::LobbyFrame(QMainWindow* parent) : StateFrame(parent)
 				
 				QLabel* lab = new QLabel(data.localPlayer.name.c_str(), this);
 				vertical_layout1->addWidget(lab);
-				lab->setPalette(QPalette(0x00FF00, 0x00FF00, 0x00FF00, 0x00FF00, 0x00FF00, 0x00FF00, 0x00FF00));
+				if(data.localPlayer.groupMask & ADMIN_GROUP_MASK) lab->setPalette(QPalette(0xFFFF00, 0xFFFF00, 0xFFFF00, 0xFFFF00, 0xFFFF00, 0xFFFF00, 0xFFFF00));
+				else lab->setPalette(QPalette(0x00FF00, 0x00FF00, 0x00FF00, 0x00FF00, 0x00FF00, 0x00FF00, 0x00FF00));
+
 				for (int i = 0; i < data.players.size(); i++)
 				{
 					auto& p = data.players.at(i);
@@ -326,12 +491,17 @@ LobbyFrame::LobbyFrame(QMainWindow* parent) : StateFrame(parent)
 				playerScrollContent->setLayout(vertical_layout1);
 				area->setWidget(playerScrollContent);
 			}
-			horizontal_layout->addWidget(area, 1);
+			horizontal_layout->addWidget(area, 4);
 			horizontal_layout->addStretch(1);
+
+
+			adminWidget = new AdminWidget(this);
+
+			horizontal_layout->addWidget(adminWidget, 4, Qt::AlignTop | Qt::AlignLeft);
+
 
 		}
 		vertical_layout->addLayout(horizontal_layout, 20);
-	
 	
 		gamesContent = new ContentWidget(this);
 		vertical_layout->addWidget(gamesContent, 25);
@@ -345,15 +515,24 @@ LobbyFrame::~LobbyFrame()
 }
 
 
-void LobbyFrame::StartPlugin(int idx)
+void LobbyFrame::StartPlugin()
 {
 	MainWindow* main = (MainWindow*)GetMainWindow();
-	main->layout()->removeWidget(this);
-	delete this;
 
+	PluginFrame::activePlugin = nullptr;
 	auto& pl = GetPlugins();
-	if (idx < pl.size()) {
-		PluginFrame::activePlugin = pl.at(idx);
+	for (int i = 0; i < pl.size(); i++)
+	{
+		std::string avPlug(pl.at(i)->GetPluginInfos().ID, 19);
+		if (avPlug == pluginCache)
+		{
+			PluginFrame::activePlugin = pl.at(i);
+			break;
+		}
+	}
+	if (PluginFrame::activePlugin) {
+		main->layout()->removeWidget(this);
+		delete this;
 		main->SetState(MAIN_WINDOW_STATE::STATE_PLUGIN);
 	}
 }
@@ -376,7 +555,14 @@ void LobbyFrame::HandleNetworkMessage(Packet* packet)
 {
 	if (VoteDataHandleNetworkMessage(packet))
 	{
-		QTimer::singleShot(0, gamesContent, &ContentWidget::UpdateFromData);
+		QTimer::singleShot(0, this, &LobbyFrame::UpdateFromData);
+	}
+	else if (packet->header.type == (uint32_t)PacketID::START && (packet->header.additionalData == ADDITIONAL_DATA_FLAG_ADMIN))
+	{
+		Base::StartPlugin startInfo;
+		startInfo.ParseFromArray(packet->body.data(), packet->body.size());
+		this->pluginCache = startInfo.pluginid();
+		QTimer::singleShot(0, this, &LobbyFrame::StartPlugin);
 	}
 }
 
@@ -395,7 +581,6 @@ void LobbyFrame::HandleSync(const std::string& syncData)
 		}
 	}
 	data.remainingTime = sync.remainingtime();
-
 }
 
 
@@ -437,14 +622,12 @@ void LobbyFrame::ReSync()
 		}
 		pLay->addStretch(1);
 	}
-	//QLayout* gLay = gamesContent->layout();
-	//ClearLayout(gLay);
-	//const std::vector<PluginClass*>& plugs = GetPlugins();
-	//for (int i = 0; i < plugs.size(); i++)
-	//{
-	//	PLUGIN_INFO info = plugs.at(i)->GetPluginInfos();
-	//	gLay->addWidget(new GameInfo(this, info.previewResource, info.ID));
-	//}
+}
+
+void LobbyFrame::UpdateFromData()
+{
+	gamesContent->UpdateFromData();
+	adminWidget->UpdateFromData();
 }
 
 
@@ -495,7 +678,9 @@ bool LobbyFrame::VoteDataHandleNetworkMessage(Packet* packet)
 			}
 		}
 		data.remainingTime = sync.remainingtime();
+		data.isRunning = sync.running();
 		return true;
 	}
+
 	return false;
 }

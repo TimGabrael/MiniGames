@@ -723,6 +723,7 @@ void CardHand::PlayCard(const CardStack& stack, CardsInAnimation& anim, int card
 	{
 		//LOG("CAN'T PLAY CARD\n");
 	}
+	
 }
 void CardHand::FetchCard(const Camera& cam, const CardStack& stack, CardDeck& deck, CardsInAnimation& anim)
 {

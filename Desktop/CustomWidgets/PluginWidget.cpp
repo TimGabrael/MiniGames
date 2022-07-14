@@ -35,6 +35,7 @@ PluginWidget::~PluginWidget()
 void PluginWidget::initializeGL()
 {
 	MainApplication* app = MainApplication::GetInstance();
+	app->appData.socket = &app->socket;
 	app->appData.platform = _CURRENT_PLATFORM_ID;
 	plugin->Init(&app->appData);
 	isInitialized = true;

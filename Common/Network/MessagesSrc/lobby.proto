@@ -8,13 +8,17 @@ message Vote
 	optional string plugin = 1;
 	string clientName = 2;
 }
-message TimeSync
-{
-	float remainingTime = 1;
-}
 
 message SyncData
 {
 	repeated Vote votes = 1;
-	float remainingTime = 2;
+	int32 remainingTime = 2;
+	bool running = 3;
 }
+
+
+message StartPlugin
+{
+	string pluginID = 1;
+}
+

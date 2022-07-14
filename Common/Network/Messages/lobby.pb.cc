@@ -36,23 +36,11 @@ struct VoteDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 VoteDefaultTypeInternal _Vote_default_instance_;
-PROTOBUF_CONSTEXPR TimeSync::TimeSync(
-    ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.remainingtime_)*/0
-  , /*decltype(_impl_._cached_size_)*/{}} {}
-struct TimeSyncDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR TimeSyncDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
-  ~TimeSyncDefaultTypeInternal() {}
-  union {
-    TimeSync _instance;
-  };
-};
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 TimeSyncDefaultTypeInternal _TimeSync_default_instance_;
 PROTOBUF_CONSTEXPR SyncData::SyncData(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.votes_)*/{}
   , /*decltype(_impl_.remainingtime_)*/0
+  , /*decltype(_impl_.running_)*/false
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct SyncDataDefaultTypeInternal {
   PROTOBUF_CONSTEXPR SyncDataDefaultTypeInternal()
@@ -63,6 +51,19 @@ struct SyncDataDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 SyncDataDefaultTypeInternal _SyncData_default_instance_;
+PROTOBUF_CONSTEXPR StartPlugin::StartPlugin(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.pluginid_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct StartPluginDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR StartPluginDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~StartPluginDefaultTypeInternal() {}
+  union {
+    StartPlugin _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 StartPluginDefaultTypeInternal _StartPlugin_default_instance_;
 }  // namespace Base
 static ::_pb::Metadata file_level_metadata_lobby_2eproto[3];
 static constexpr ::_pb::EnumDescriptor const** file_level_enum_descriptors_lobby_2eproto = nullptr;
@@ -80,13 +81,6 @@ const uint32_t TableStruct_lobby_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(pr
   0,
   ~0u,
   ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::Base::TimeSync, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::Base::TimeSync, _impl_.remainingtime_),
-  ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::Base::SyncData, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
@@ -94,29 +88,37 @@ const uint32_t TableStruct_lobby_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(pr
   ~0u,  // no _inlined_string_donated_
   PROTOBUF_FIELD_OFFSET(::Base::SyncData, _impl_.votes_),
   PROTOBUF_FIELD_OFFSET(::Base::SyncData, _impl_.remainingtime_),
+  PROTOBUF_FIELD_OFFSET(::Base::SyncData, _impl_.running_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::Base::StartPlugin, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::Base::StartPlugin, _impl_.pluginid_),
 };
 static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   { 0, 8, -1, sizeof(::Base::Vote)},
-  { 10, -1, -1, sizeof(::Base::TimeSync)},
-  { 17, -1, -1, sizeof(::Base::SyncData)},
+  { 10, -1, -1, sizeof(::Base::SyncData)},
+  { 19, -1, -1, sizeof(::Base::StartPlugin)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
   &::Base::_Vote_default_instance_._instance,
-  &::Base::_TimeSync_default_instance_._instance,
   &::Base::_SyncData_default_instance_._instance,
+  &::Base::_StartPlugin_default_instance_._instance,
 };
 
 const char descriptor_table_protodef_lobby_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
   "\n\013lobby.proto\022\004Base\":\n\004Vote\022\023\n\006plugin\030\001 "
   "\001(\tH\000\210\001\001\022\022\n\nclientName\030\002 \001(\tB\t\n\007_plugin\""
-  "!\n\010TimeSync\022\025\n\rremainingTime\030\001 \001(\002\"<\n\010Sy"
-  "ncData\022\031\n\005votes\030\001 \003(\0132\n.Base.Vote\022\025\n\rrem"
-  "ainingTime\030\002 \001(\002b\006proto3"
+  "M\n\010SyncData\022\031\n\005votes\030\001 \003(\0132\n.Base.Vote\022\025"
+  "\n\rremainingTime\030\002 \001(\005\022\017\n\007running\030\003 \001(\010\"\037"
+  "\n\013StartPlugin\022\020\n\010pluginID\030\001 \001(\tb\006proto3"
   ;
 static ::_pbi::once_flag descriptor_table_lobby_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_lobby_2eproto = {
-    false, false, 184, descriptor_table_protodef_lobby_2eproto,
+    false, false, 199, descriptor_table_protodef_lobby_2eproto,
     "lobby.proto",
     &descriptor_table_lobby_2eproto_once, nullptr, 0, 3,
     schemas, file_default_instances, TableStruct_lobby_2eproto::offsets,
@@ -400,196 +402,6 @@ void Vote::InternalSwap(Vote* other) {
 
 // ===================================================================
 
-class TimeSync::_Internal {
- public:
-};
-
-TimeSync::TimeSync(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor(arena, is_message_owned);
-  // @@protoc_insertion_point(arena_constructor:Base.TimeSync)
-}
-TimeSync::TimeSync(const TimeSync& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message() {
-  TimeSync* const _this = this; (void)_this;
-  new (&_impl_) Impl_{
-      decltype(_impl_.remainingtime_){}
-    , /*decltype(_impl_._cached_size_)*/{}};
-
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  _this->_impl_.remainingtime_ = from._impl_.remainingtime_;
-  // @@protoc_insertion_point(copy_constructor:Base.TimeSync)
-}
-
-inline void TimeSync::SharedCtor(
-    ::_pb::Arena* arena, bool is_message_owned) {
-  (void)arena;
-  (void)is_message_owned;
-  new (&_impl_) Impl_{
-      decltype(_impl_.remainingtime_){0}
-    , /*decltype(_impl_._cached_size_)*/{}
-  };
-}
-
-TimeSync::~TimeSync() {
-  // @@protoc_insertion_point(destructor:Base.TimeSync)
-  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
-  (void)arena;
-    return;
-  }
-  SharedDtor();
-}
-
-inline void TimeSync::SharedDtor() {
-  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-}
-
-void TimeSync::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
-
-void TimeSync::Clear() {
-// @@protoc_insertion_point(message_clear_start:Base.TimeSync)
-  uint32_t cached_has_bits = 0;
-  // Prevent compiler warnings about cached_has_bits being unused
-  (void) cached_has_bits;
-
-  _impl_.remainingtime_ = 0;
-  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
-}
-
-const char* TimeSync::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
-#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  while (!ctx->Done(&ptr)) {
-    uint32_t tag;
-    ptr = ::_pbi::ReadTag(ptr, &tag);
-    switch (tag >> 3) {
-      // float remainingTime = 1;
-      case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 13)) {
-          _impl_.remainingtime_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
-          ptr += sizeof(float);
-        } else
-          goto handle_unusual;
-        continue;
-      default:
-        goto handle_unusual;
-    }  // switch
-  handle_unusual:
-    if ((tag == 0) || ((tag & 7) == 4)) {
-      CHK_(ptr);
-      ctx->SetLastTag(tag);
-      goto message_done;
-    }
-    ptr = UnknownFieldParse(
-        tag,
-        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
-        ptr, ctx);
-    CHK_(ptr != nullptr);
-  }  // while
-message_done:
-  return ptr;
-failure:
-  ptr = nullptr;
-  goto message_done;
-#undef CHK_
-}
-
-uint8_t* TimeSync::_InternalSerialize(
-    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:Base.TimeSync)
-  uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
-
-  // float remainingTime = 1;
-  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
-  float tmp_remainingtime = this->_internal_remainingtime();
-  uint32_t raw_remainingtime;
-  memcpy(&raw_remainingtime, &tmp_remainingtime, sizeof(tmp_remainingtime));
-  if (raw_remainingtime != 0) {
-    target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteFloatToArray(1, this->_internal_remainingtime(), target);
-  }
-
-  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
-  }
-  // @@protoc_insertion_point(serialize_to_array_end:Base.TimeSync)
-  return target;
-}
-
-size_t TimeSync::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:Base.TimeSync)
-  size_t total_size = 0;
-
-  uint32_t cached_has_bits = 0;
-  // Prevent compiler warnings about cached_has_bits being unused
-  (void) cached_has_bits;
-
-  // float remainingTime = 1;
-  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
-  float tmp_remainingtime = this->_internal_remainingtime();
-  uint32_t raw_remainingtime;
-  memcpy(&raw_remainingtime, &tmp_remainingtime, sizeof(tmp_remainingtime));
-  if (raw_remainingtime != 0) {
-    total_size += 1 + 4;
-  }
-
-  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
-}
-
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData TimeSync::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
-    TimeSync::MergeImpl
-};
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*TimeSync::GetClassData() const { return &_class_data_; }
-
-
-void TimeSync::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
-  auto* const _this = static_cast<TimeSync*>(&to_msg);
-  auto& from = static_cast<const TimeSync&>(from_msg);
-  // @@protoc_insertion_point(class_specific_merge_from_start:Base.TimeSync)
-  GOOGLE_DCHECK_NE(&from, _this);
-  uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
-
-  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
-  float tmp_remainingtime = from._internal_remainingtime();
-  uint32_t raw_remainingtime;
-  memcpy(&raw_remainingtime, &tmp_remainingtime, sizeof(tmp_remainingtime));
-  if (raw_remainingtime != 0) {
-    _this->_internal_set_remainingtime(from._internal_remainingtime());
-  }
-  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-}
-
-void TimeSync::CopyFrom(const TimeSync& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:Base.TimeSync)
-  if (&from == this) return;
-  Clear();
-  MergeFrom(from);
-}
-
-bool TimeSync::IsInitialized() const {
-  return true;
-}
-
-void TimeSync::InternalSwap(TimeSync* other) {
-  using std::swap;
-  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  swap(_impl_.remainingtime_, other->_impl_.remainingtime_);
-}
-
-::PROTOBUF_NAMESPACE_ID::Metadata TimeSync::GetMetadata() const {
-  return ::_pbi::AssignDescriptors(
-      &descriptor_table_lobby_2eproto_getter, &descriptor_table_lobby_2eproto_once,
-      file_level_metadata_lobby_2eproto[1]);
-}
-
-// ===================================================================
-
 class SyncData::_Internal {
  public:
 };
@@ -606,10 +418,13 @@ SyncData::SyncData(const SyncData& from)
   new (&_impl_) Impl_{
       decltype(_impl_.votes_){from._impl_.votes_}
     , decltype(_impl_.remainingtime_){}
+    , decltype(_impl_.running_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  _this->_impl_.remainingtime_ = from._impl_.remainingtime_;
+  ::memcpy(&_impl_.remainingtime_, &from._impl_.remainingtime_,
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.running_) -
+    reinterpret_cast<char*>(&_impl_.remainingtime_)) + sizeof(_impl_.running_));
   // @@protoc_insertion_point(copy_constructor:Base.SyncData)
 }
 
@@ -620,6 +435,7 @@ inline void SyncData::SharedCtor(
   new (&_impl_) Impl_{
       decltype(_impl_.votes_){arena}
     , decltype(_impl_.remainingtime_){0}
+    , decltype(_impl_.running_){false}
     , /*decltype(_impl_._cached_size_)*/{}
   };
 }
@@ -649,7 +465,9 @@ void SyncData::Clear() {
   (void) cached_has_bits;
 
   _impl_.votes_.Clear();
-  _impl_.remainingtime_ = 0;
+  ::memset(&_impl_.remainingtime_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&_impl_.running_) -
+      reinterpret_cast<char*>(&_impl_.remainingtime_)) + sizeof(_impl_.running_));
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -672,11 +490,19 @@ const char* SyncData::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx)
         } else
           goto handle_unusual;
         continue;
-      // float remainingTime = 2;
+      // int32 remainingTime = 2;
       case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 21)) {
-          _impl_.remainingtime_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
-          ptr += sizeof(float);
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 16)) {
+          _impl_.remainingtime_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // bool running = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 24)) {
+          _impl_.running_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
@@ -717,14 +543,16 @@ uint8_t* SyncData::_InternalSerialize(
         InternalWriteMessage(1, repfield, repfield.GetCachedSize(), target, stream);
   }
 
-  // float remainingTime = 2;
-  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
-  float tmp_remainingtime = this->_internal_remainingtime();
-  uint32_t raw_remainingtime;
-  memcpy(&raw_remainingtime, &tmp_remainingtime, sizeof(tmp_remainingtime));
-  if (raw_remainingtime != 0) {
+  // int32 remainingTime = 2;
+  if (this->_internal_remainingtime() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteFloatToArray(2, this->_internal_remainingtime(), target);
+    target = ::_pbi::WireFormatLite::WriteInt32ToArray(2, this->_internal_remainingtime(), target);
+  }
+
+  // bool running = 3;
+  if (this->_internal_running() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteBoolToArray(3, this->_internal_running(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -750,13 +578,14 @@ size_t SyncData::ByteSizeLong() const {
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
   }
 
-  // float remainingTime = 2;
-  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
-  float tmp_remainingtime = this->_internal_remainingtime();
-  uint32_t raw_remainingtime;
-  memcpy(&raw_remainingtime, &tmp_remainingtime, sizeof(tmp_remainingtime));
-  if (raw_remainingtime != 0) {
-    total_size += 1 + 4;
+  // int32 remainingTime = 2;
+  if (this->_internal_remainingtime() != 0) {
+    total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_remainingtime());
+  }
+
+  // bool running = 3;
+  if (this->_internal_running() != 0) {
+    total_size += 1 + 1;
   }
 
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
@@ -778,12 +607,11 @@ void SyncData::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTO
   (void) cached_has_bits;
 
   _this->_impl_.votes_.MergeFrom(from._impl_.votes_);
-  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
-  float tmp_remainingtime = from._internal_remainingtime();
-  uint32_t raw_remainingtime;
-  memcpy(&raw_remainingtime, &tmp_remainingtime, sizeof(tmp_remainingtime));
-  if (raw_remainingtime != 0) {
+  if (from._internal_remainingtime() != 0) {
     _this->_internal_set_remainingtime(from._internal_remainingtime());
+  }
+  if (from._internal_running() != 0) {
+    _this->_internal_set_running(from._internal_running());
   }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
@@ -803,10 +631,218 @@ void SyncData::InternalSwap(SyncData* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   _impl_.votes_.InternalSwap(&other->_impl_.votes_);
-  swap(_impl_.remainingtime_, other->_impl_.remainingtime_);
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(SyncData, _impl_.running_)
+      + sizeof(SyncData::_impl_.running_)
+      - PROTOBUF_FIELD_OFFSET(SyncData, _impl_.remainingtime_)>(
+          reinterpret_cast<char*>(&_impl_.remainingtime_),
+          reinterpret_cast<char*>(&other->_impl_.remainingtime_));
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata SyncData::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_lobby_2eproto_getter, &descriptor_table_lobby_2eproto_once,
+      file_level_metadata_lobby_2eproto[1]);
+}
+
+// ===================================================================
+
+class StartPlugin::_Internal {
+ public:
+};
+
+StartPlugin::StartPlugin(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:Base.StartPlugin)
+}
+StartPlugin::StartPlugin(const StartPlugin& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  StartPlugin* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.pluginid_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _impl_.pluginid_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.pluginid_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_pluginid().empty()) {
+    _this->_impl_.pluginid_.Set(from._internal_pluginid(), 
+      _this->GetArenaForAllocation());
+  }
+  // @@protoc_insertion_point(copy_constructor:Base.StartPlugin)
+}
+
+inline void StartPlugin::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.pluginid_){}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+  _impl_.pluginid_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.pluginid_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+}
+
+StartPlugin::~StartPlugin() {
+  // @@protoc_insertion_point(destructor:Base.StartPlugin)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void StartPlugin::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  _impl_.pluginid_.Destroy();
+}
+
+void StartPlugin::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void StartPlugin::Clear() {
+// @@protoc_insertion_point(message_clear_start:Base.StartPlugin)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.pluginid_.ClearToEmpty();
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* StartPlugin::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // string pluginID = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+          auto str = _internal_mutable_pluginid();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "Base.StartPlugin.pluginID"));
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* StartPlugin::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:Base.StartPlugin)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // string pluginID = 1;
+  if (!this->_internal_pluginid().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_pluginid().data(), static_cast<int>(this->_internal_pluginid().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "Base.StartPlugin.pluginID");
+    target = stream->WriteStringMaybeAliased(
+        1, this->_internal_pluginid(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:Base.StartPlugin)
+  return target;
+}
+
+size_t StartPlugin::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:Base.StartPlugin)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // string pluginID = 1;
+  if (!this->_internal_pluginid().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_pluginid());
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData StartPlugin::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    StartPlugin::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*StartPlugin::GetClassData() const { return &_class_data_; }
+
+
+void StartPlugin::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<StartPlugin*>(&to_msg);
+  auto& from = static_cast<const StartPlugin&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:Base.StartPlugin)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (!from._internal_pluginid().empty()) {
+    _this->_internal_set_pluginid(from._internal_pluginid());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void StartPlugin::CopyFrom(const StartPlugin& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:Base.StartPlugin)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool StartPlugin::IsInitialized() const {
+  return true;
+}
+
+void StartPlugin::InternalSwap(StartPlugin* other) {
+  using std::swap;
+  auto* lhs_arena = GetArenaForAllocation();
+  auto* rhs_arena = other->GetArenaForAllocation();
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.pluginid_, lhs_arena,
+      &other->_impl_.pluginid_, rhs_arena
+  );
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata StartPlugin::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_lobby_2eproto_getter, &descriptor_table_lobby_2eproto_once,
       file_level_metadata_lobby_2eproto[2]);
@@ -819,13 +855,13 @@ template<> PROTOBUF_NOINLINE ::Base::Vote*
 Arena::CreateMaybeMessage< ::Base::Vote >(Arena* arena) {
   return Arena::CreateMessageInternal< ::Base::Vote >(arena);
 }
-template<> PROTOBUF_NOINLINE ::Base::TimeSync*
-Arena::CreateMaybeMessage< ::Base::TimeSync >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::Base::TimeSync >(arena);
-}
 template<> PROTOBUF_NOINLINE ::Base::SyncData*
 Arena::CreateMaybeMessage< ::Base::SyncData >(Arena* arena) {
   return Arena::CreateMessageInternal< ::Base::SyncData >(arena);
+}
+template<> PROTOBUF_NOINLINE ::Base::StartPlugin*
+Arena::CreateMaybeMessage< ::Base::StartPlugin >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::Base::StartPlugin >(arena);
 }
 PROTOBUF_NAMESPACE_CLOSE
 

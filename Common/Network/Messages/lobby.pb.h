@@ -45,19 +45,19 @@ struct TableStruct_lobby_2eproto {
 };
 extern const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_lobby_2eproto;
 namespace Base {
+class StartPlugin;
+struct StartPluginDefaultTypeInternal;
+extern StartPluginDefaultTypeInternal _StartPlugin_default_instance_;
 class SyncData;
 struct SyncDataDefaultTypeInternal;
 extern SyncDataDefaultTypeInternal _SyncData_default_instance_;
-class TimeSync;
-struct TimeSyncDefaultTypeInternal;
-extern TimeSyncDefaultTypeInternal _TimeSync_default_instance_;
 class Vote;
 struct VoteDefaultTypeInternal;
 extern VoteDefaultTypeInternal _Vote_default_instance_;
 }  // namespace Base
 PROTOBUF_NAMESPACE_OPEN
+template<> ::Base::StartPlugin* Arena::CreateMaybeMessage<::Base::StartPlugin>(Arena*);
 template<> ::Base::SyncData* Arena::CreateMaybeMessage<::Base::SyncData>(Arena*);
-template<> ::Base::TimeSync* Arena::CreateMaybeMessage<::Base::TimeSync>(Arena*);
 template<> ::Base::Vote* Arena::CreateMaybeMessage<::Base::Vote>(Arena*);
 PROTOBUF_NAMESPACE_CLOSE
 namespace Base {
@@ -238,154 +238,6 @@ class Vote final :
 };
 // -------------------------------------------------------------------
 
-class TimeSync final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:Base.TimeSync) */ {
- public:
-  inline TimeSync() : TimeSync(nullptr) {}
-  ~TimeSync() override;
-  explicit PROTOBUF_CONSTEXPR TimeSync(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
-
-  TimeSync(const TimeSync& from);
-  TimeSync(TimeSync&& from) noexcept
-    : TimeSync() {
-    *this = ::std::move(from);
-  }
-
-  inline TimeSync& operator=(const TimeSync& from) {
-    CopyFrom(from);
-    return *this;
-  }
-  inline TimeSync& operator=(TimeSync&& from) noexcept {
-    if (this == &from) return *this;
-    if (GetOwningArena() == from.GetOwningArena()
-  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
-        && GetOwningArena() != nullptr
-  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
-    ) {
-      InternalSwap(&from);
-    } else {
-      CopyFrom(from);
-    }
-    return *this;
-  }
-
-  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
-    return GetDescriptor();
-  }
-  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
-    return default_instance().GetMetadata().descriptor;
-  }
-  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
-    return default_instance().GetMetadata().reflection;
-  }
-  static const TimeSync& default_instance() {
-    return *internal_default_instance();
-  }
-  static inline const TimeSync* internal_default_instance() {
-    return reinterpret_cast<const TimeSync*>(
-               &_TimeSync_default_instance_);
-  }
-  static constexpr int kIndexInFileMessages =
-    1;
-
-  friend void swap(TimeSync& a, TimeSync& b) {
-    a.Swap(&b);
-  }
-  inline void Swap(TimeSync* other) {
-    if (other == this) return;
-  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
-    if (GetOwningArena() != nullptr &&
-        GetOwningArena() == other->GetOwningArena()) {
-   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
-    if (GetOwningArena() == other->GetOwningArena()) {
-  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
-      InternalSwap(other);
-    } else {
-      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
-    }
-  }
-  void UnsafeArenaSwap(TimeSync* other) {
-    if (other == this) return;
-    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
-    InternalSwap(other);
-  }
-
-  // implements Message ----------------------------------------------
-
-  TimeSync* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
-    return CreateMaybeMessage<TimeSync>(arena);
-  }
-  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
-  void CopyFrom(const TimeSync& from);
-  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
-  void MergeFrom( const TimeSync& from) {
-    TimeSync::MergeImpl(*this, from);
-  }
-  private:
-  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
-  public:
-  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
-  bool IsInitialized() const final;
-
-  size_t ByteSizeLong() const final;
-  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
-  uint8_t* _InternalSerialize(
-      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
-  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
-
-  private:
-  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
-  void SharedDtor();
-  void SetCachedSize(int size) const final;
-  void InternalSwap(TimeSync* other);
-
-  private:
-  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
-  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "Base.TimeSync";
-  }
-  protected:
-  explicit TimeSync(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                       bool is_message_owned = false);
-  public:
-
-  static const ClassData _class_data_;
-  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
-
-  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
-
-  // nested types ----------------------------------------------------
-
-  // accessors -------------------------------------------------------
-
-  enum : int {
-    kRemainingTimeFieldNumber = 1,
-  };
-  // float remainingTime = 1;
-  void clear_remainingtime();
-  float remainingtime() const;
-  void set_remainingtime(float value);
-  private:
-  float _internal_remainingtime() const;
-  void _internal_set_remainingtime(float value);
-  public:
-
-  // @@protoc_insertion_point(class_scope:Base.TimeSync)
- private:
-  class _Internal;
-
-  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
-  typedef void InternalArenaConstructable_;
-  typedef void DestructorSkippable_;
-  struct Impl_ {
-    float remainingtime_;
-    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
-  };
-  union { Impl_ _impl_; };
-  friend struct ::TableStruct_lobby_2eproto;
-};
-// -------------------------------------------------------------------
-
 class SyncData final :
     public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:Base.SyncData) */ {
  public:
@@ -434,7 +286,7 @@ class SyncData final :
                &_SyncData_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    2;
+    1;
 
   friend void swap(SyncData& a, SyncData& b) {
     a.Swap(&b);
@@ -509,6 +361,7 @@ class SyncData final :
   enum : int {
     kVotesFieldNumber = 1,
     kRemainingTimeFieldNumber = 2,
+    kRunningFieldNumber = 3,
   };
   // repeated .Base.Vote votes = 1;
   int votes_size() const;
@@ -528,13 +381,22 @@ class SyncData final :
   const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::Base::Vote >&
       votes() const;
 
-  // float remainingTime = 2;
+  // int32 remainingTime = 2;
   void clear_remainingtime();
-  float remainingtime() const;
-  void set_remainingtime(float value);
+  int32_t remainingtime() const;
+  void set_remainingtime(int32_t value);
   private:
-  float _internal_remainingtime() const;
-  void _internal_set_remainingtime(float value);
+  int32_t _internal_remainingtime() const;
+  void _internal_set_remainingtime(int32_t value);
+  public:
+
+  // bool running = 3;
+  void clear_running();
+  bool running() const;
+  void set_running(bool value);
+  private:
+  bool _internal_running() const;
+  void _internal_set_running(bool value);
   public:
 
   // @@protoc_insertion_point(class_scope:Base.SyncData)
@@ -546,7 +408,161 @@ class SyncData final :
   typedef void DestructorSkippable_;
   struct Impl_ {
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::Base::Vote > votes_;
-    float remainingtime_;
+    int32_t remainingtime_;
+    bool running_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_lobby_2eproto;
+};
+// -------------------------------------------------------------------
+
+class StartPlugin final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:Base.StartPlugin) */ {
+ public:
+  inline StartPlugin() : StartPlugin(nullptr) {}
+  ~StartPlugin() override;
+  explicit PROTOBUF_CONSTEXPR StartPlugin(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  StartPlugin(const StartPlugin& from);
+  StartPlugin(StartPlugin&& from) noexcept
+    : StartPlugin() {
+    *this = ::std::move(from);
+  }
+
+  inline StartPlugin& operator=(const StartPlugin& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline StartPlugin& operator=(StartPlugin&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const StartPlugin& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const StartPlugin* internal_default_instance() {
+    return reinterpret_cast<const StartPlugin*>(
+               &_StartPlugin_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    2;
+
+  friend void swap(StartPlugin& a, StartPlugin& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(StartPlugin* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(StartPlugin* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  StartPlugin* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<StartPlugin>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const StartPlugin& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const StartPlugin& from) {
+    StartPlugin::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(StartPlugin* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "Base.StartPlugin";
+  }
+  protected:
+  explicit StartPlugin(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kPluginIDFieldNumber = 1,
+  };
+  // string pluginID = 1;
+  void clear_pluginid();
+  const std::string& pluginid() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_pluginid(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_pluginid();
+  PROTOBUF_NODISCARD std::string* release_pluginid();
+  void set_allocated_pluginid(std::string* pluginid);
+  private:
+  const std::string& _internal_pluginid() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_pluginid(const std::string& value);
+  std::string* _internal_mutable_pluginid();
+  public:
+
+  // @@protoc_insertion_point(class_scope:Base.StartPlugin)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr pluginid_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -683,30 +699,6 @@ inline void Vote::set_allocated_clientname(std::string* clientname) {
 
 // -------------------------------------------------------------------
 
-// TimeSync
-
-// float remainingTime = 1;
-inline void TimeSync::clear_remainingtime() {
-  _impl_.remainingtime_ = 0;
-}
-inline float TimeSync::_internal_remainingtime() const {
-  return _impl_.remainingtime_;
-}
-inline float TimeSync::remainingtime() const {
-  // @@protoc_insertion_point(field_get:Base.TimeSync.remainingTime)
-  return _internal_remainingtime();
-}
-inline void TimeSync::_internal_set_remainingtime(float value) {
-  
-  _impl_.remainingtime_ = value;
-}
-inline void TimeSync::set_remainingtime(float value) {
-  _internal_set_remainingtime(value);
-  // @@protoc_insertion_point(field_set:Base.TimeSync.remainingTime)
-}
-
-// -------------------------------------------------------------------
-
 // SyncData
 
 // repeated .Base.Vote votes = 1;
@@ -749,24 +741,98 @@ SyncData::votes() const {
   return _impl_.votes_;
 }
 
-// float remainingTime = 2;
+// int32 remainingTime = 2;
 inline void SyncData::clear_remainingtime() {
   _impl_.remainingtime_ = 0;
 }
-inline float SyncData::_internal_remainingtime() const {
+inline int32_t SyncData::_internal_remainingtime() const {
   return _impl_.remainingtime_;
 }
-inline float SyncData::remainingtime() const {
+inline int32_t SyncData::remainingtime() const {
   // @@protoc_insertion_point(field_get:Base.SyncData.remainingTime)
   return _internal_remainingtime();
 }
-inline void SyncData::_internal_set_remainingtime(float value) {
+inline void SyncData::_internal_set_remainingtime(int32_t value) {
   
   _impl_.remainingtime_ = value;
 }
-inline void SyncData::set_remainingtime(float value) {
+inline void SyncData::set_remainingtime(int32_t value) {
   _internal_set_remainingtime(value);
   // @@protoc_insertion_point(field_set:Base.SyncData.remainingTime)
+}
+
+// bool running = 3;
+inline void SyncData::clear_running() {
+  _impl_.running_ = false;
+}
+inline bool SyncData::_internal_running() const {
+  return _impl_.running_;
+}
+inline bool SyncData::running() const {
+  // @@protoc_insertion_point(field_get:Base.SyncData.running)
+  return _internal_running();
+}
+inline void SyncData::_internal_set_running(bool value) {
+  
+  _impl_.running_ = value;
+}
+inline void SyncData::set_running(bool value) {
+  _internal_set_running(value);
+  // @@protoc_insertion_point(field_set:Base.SyncData.running)
+}
+
+// -------------------------------------------------------------------
+
+// StartPlugin
+
+// string pluginID = 1;
+inline void StartPlugin::clear_pluginid() {
+  _impl_.pluginid_.ClearToEmpty();
+}
+inline const std::string& StartPlugin::pluginid() const {
+  // @@protoc_insertion_point(field_get:Base.StartPlugin.pluginID)
+  return _internal_pluginid();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void StartPlugin::set_pluginid(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.pluginid_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:Base.StartPlugin.pluginID)
+}
+inline std::string* StartPlugin::mutable_pluginid() {
+  std::string* _s = _internal_mutable_pluginid();
+  // @@protoc_insertion_point(field_mutable:Base.StartPlugin.pluginID)
+  return _s;
+}
+inline const std::string& StartPlugin::_internal_pluginid() const {
+  return _impl_.pluginid_.Get();
+}
+inline void StartPlugin::_internal_set_pluginid(const std::string& value) {
+  
+  _impl_.pluginid_.Set(value, GetArenaForAllocation());
+}
+inline std::string* StartPlugin::_internal_mutable_pluginid() {
+  
+  return _impl_.pluginid_.Mutable(GetArenaForAllocation());
+}
+inline std::string* StartPlugin::release_pluginid() {
+  // @@protoc_insertion_point(field_release:Base.StartPlugin.pluginID)
+  return _impl_.pluginid_.Release();
+}
+inline void StartPlugin::set_allocated_pluginid(std::string* pluginid) {
+  if (pluginid != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.pluginid_.SetAllocated(pluginid, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.pluginid_.IsDefault()) {
+    _impl_.pluginid_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:Base.StartPlugin.pluginID)
 }
 
 #ifdef __GNUC__

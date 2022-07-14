@@ -111,10 +111,13 @@ void CustomButton::paintEvent(QPaintEvent* e)
 
 	QColor outline = hasFocus() ? cols.borderHighlight : cols.border;
 
-	double alpha = isDown() ? 0.2 + interpolationValue : interpolationValue;
-	QColor inner = AlphaBlend(cols.highlight, cols.background, alpha);
-
-
+	double alpha = 0.0f;
+	QColor inner = cols.background;
+	if (this->isEnabled())
+	{
+		alpha = isDown() ? 0.2 + interpolationValue : interpolationValue;
+		inner = AlphaBlend(cols.highlight, cols.background, alpha);
+	}
 
 	painter.setPen(outline);
 	painter.setBrush(inner);

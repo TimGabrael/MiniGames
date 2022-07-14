@@ -47,7 +47,7 @@ private:
 		QColor borderFocus;
 		QColor borderActive;
 	};
-	struct QPropertyAnimation* anim;
+	class QPropertyAnimation* anim;
 	qreal interpolationValue;
 	CustomColor cols;
 	int topPadding;
