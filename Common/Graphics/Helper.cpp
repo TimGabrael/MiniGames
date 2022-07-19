@@ -155,12 +155,11 @@ static const char* cubemapVS = "#version 300 es\n\
 layout (location = 0) in vec3  aPos;\n\
 out vec3 TexCoords;\n\
 \
-uniform mat4 projection;\n\
-uniform mat4 view;\n\
+uniform mat4 viewProj;\n\
 \
 void main(){\
 	TexCoords = aPos;\
-	vec4 pos = projection * view * vec4(aPos, 0.0);\n\
+	vec4 pos = viewProj * vec4(aPos, 0.0);\n\
 	gl_Position = pos.xyww;\
 }";
 
@@ -210,8 +209,7 @@ struct HelperGlobals
 	GLuint cubemapProgram;
 	GLuint cubeVertexBuffer;
 	GLuint skyboxVAO;
-	GLint projIdx = 0;
-	GLint viewIdx = 0;
+	GLint viewProjIdx = 0;
 	void* assetManager = nullptr;
 }g_helper;
 
@@ -241,8 +239,7 @@ void InitializeOpenGL(void* assetManager)
 	
 	g_helper.cubemapProgram = CreateProgram(cubemapVS, cubemapFS);
 	
-	g_helper.projIdx = glGetUniformLocation(g_helper.cubemapProgram, "projection");
-	g_helper.viewIdx = glGetUniformLocation(g_helper.cubemapProgram, "view");
+	g_helper.viewProjIdx = glGetUniformLocation(g_helper.cubemapProgram, "viewProj");
 	
 	
 	glGenVertexArrays(1, &g_helper.skyboxVAO);
@@ -250,7 +247,7 @@ void InitializeOpenGL(void* assetManager)
 	glBindBuffer(GL_ARRAY_BUFFER, g_helper.cubeVertexBuffer);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
 	
-	glUseProgram(g_helper.cubemapProgram);
+	glUseProgramWrapper(g_helper.cubemapProgram);
 	GLint curTexture = glGetUniformLocation(g_helper.cubemapProgram, "skybox");
 	glUniform1i(curTexture, 0);
 
@@ -263,7 +260,7 @@ void InitializeOpenGL(void* assetManager)
 	
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glUseProgram(0);
+	glUseProgramWrapper(0);
 }
 void CleanUpOpenGL()
 {
@@ -418,14 +415,14 @@ GLuint GenerateBRDF_LUT(int dim)
 	}
 	GLuint shader = CreateProgram(brdf_lutVertexShader, brdf_lutFragmentShader);
 
-	glUseProgram(shader);
+	glUseProgramWrapper(shader);
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 	glViewport(0, 0, dim, dim);
 
 
 
 
-	glDrawArrays(GL_TRIANGLES, 0, 3);
+	glDrawArraysWrapper(GL_TRIANGLES, 0, 3);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -444,18 +441,126 @@ GLuint GenerateBRDF_LUT(int dim)
 void DrawSkybox(GLuint skybox, const glm::mat4& viewMat, const glm::mat4& projMat)
 {
 	glDepthFunc(GL_LEQUAL);
-	glUseProgram(g_helper.cubemapProgram);
+	glUseProgramWrapper(g_helper.cubemapProgram);
 
-	glUniformMatrix4fv(g_helper.viewIdx, 1, false, (const GLfloat*)&viewMat);
-	glUniformMatrix4fv(g_helper.projIdx, 1, false, (const GLfloat*)&projMat);
+	const glm::mat4 viewProjMat = projMat * viewMat;
+
+	glUniformMatrix4fv(g_helper.viewProjIdx, 1, false, (const GLfloat*)&viewProjMat);
 
 
 	glBindVertexArray(g_helper.skyboxVAO);
 	
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, skybox);
-	glDrawArrays(GL_TRIANGLES, 0, 36);
+	glDrawArraysWrapper(GL_TRIANGLES, 0, 36);
+	glBindVertexArray(0);
+	glDepthFunc(GL_LESS);
+}
+void DrawSkybox(GLuint skybox, const glm::mat4& viewProjMat)
+{
+	glDepthFunc(GL_LEQUAL);
+	glUseProgramWrapper(g_helper.cubemapProgram);
+
+	glUniformMatrix4fv(g_helper.viewProjIdx, 1, false, (const GLfloat*)&viewProjMat);
+
+
+	glBindVertexArray(g_helper.skyboxVAO);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, skybox);
+	glDrawArraysWrapper(GL_TRIANGLES, 0, 36);
 	glBindVertexArray(0);
 	glDepthFunc(GL_LESS);
 }
 
+
+
+
+
+
+void StreamArrayBuffer::Init()
+{
+	glBuf = 0;
+	writeIdx = 0;
+	size = 0;
+	mapped = nullptr;
+	glGenBuffers(1, &glBuf);
+	glBindBuffer(GL_ARRAY_BUFFER, glBuf);
+}
+void StreamArrayBuffer::CleanUp()
+{
+	if (mapped)
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, glBuf);
+		glUnmapBuffer(GL_ARRAY_BUFFER);
+	}
+	glDeleteBuffers(1, &glBuf);
+}
+void StreamArrayBuffer::Bind()
+{
+	if (mapped) {
+		glBindBuffer(GL_ARRAY_BUFFER, glBuf);
+		glUnmapBuffer(GL_ARRAY_BUFFER);
+		mapped = nullptr;
+		writeIdx = 0;
+	}
+}
+void StreamArrayBuffer::Append(const void* data, uint32_t dataSize, uint32_t sizeSteps)
+{
+	if (writeIdx + dataSize >= size)
+	{
+		const int increaseSize = (dataSize / sizeSteps + 1) * sizeSteps;
+		const int newSize = std::max(size + increaseSize, writeIdx + increaseSize);
+		if (mapped)
+		{
+			uint8_t* newData = new uint8_t[newSize];
+			memcpy(newData, mapped, writeIdx);
+			memcpy(newData + writeIdx, data, dataSize);
+
+			glBindBuffer(GL_ARRAY_BUFFER, glBuf);
+			glUnmapBuffer(GL_ARRAY_BUFFER);
+
+			size = newSize;
+			glBufferData(GL_ARRAY_BUFFER, size, newData, GL_DYNAMIC_DRAW);
+			delete[] newData;
+			mapped = glMapBufferRange(GL_ARRAY_BUFFER, 0, size, GL_MAP_WRITE_BIT | GL_MAP_READ_BIT);
+			return;
+		}
+		else
+		{
+			size = newSize;
+			glBindBuffer(GL_ARRAY_BUFFER, glBuf);
+			glBufferData(GL_ARRAY_BUFFER, size, nullptr, GL_DYNAMIC_DRAW);
+			mapped = glMapBufferRange(GL_ARRAY_BUFFER, 0, size, GL_MAP_WRITE_BIT | GL_MAP_READ_BIT);
+		}
+	}
+	if (!mapped)
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, glBuf);
+		mapped = glMapBufferRange(GL_ARRAY_BUFFER, 0, size, GL_MAP_WRITE_BIT | GL_MAP_READ_BIT);
+	}
+
+	memcpy((void*)((uintptr_t)mapped + writeIdx), data, dataSize);
+	writeIdx += dataSize;
+}
+
+
+
+
+PScene CreateAndInitializeSceneAsDefault()
+{
+	PScene scene = SC_CreateScene();
+	TypeFunctions S3DTypeFunctions;
+	S3DTypeFunctions.BlendDraw = nullptr;
+	S3DTypeFunctions.OpaqueDraw = (PFUNCDRAWSCENEOBJECT)DrawSimple3DOpaque;
+	const uint32_t indexS3D = SC_AddType(scene, &S3DTypeFunctions);
+	assert(index == 0);
+	TypeFunctions PBRTypeFunctions;
+	PBRTypeFunctions.BlendDraw = nullptr;
+	PBRTypeFunctions.OpaqueDraw = nullptr;
+	const uint32_t indexPBR = SC_AddType(scene, &PBRTypeFunctions);
+	assert(index == 1);
+
+
+	return scene;
+}

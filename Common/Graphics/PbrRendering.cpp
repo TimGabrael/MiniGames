@@ -74,13 +74,13 @@ struct MaterialUniformData
 
 
 struct Node;
-struct BoundingBox {
+struct BoundingBoxPbr {
 	glm::vec3 min;
 	glm::vec3 max;
 	bool valid = false;
-	BoundingBox() { };
-	BoundingBox(const glm::vec3& min, const glm::vec3& max) :min(min), max(max) { };
-	BoundingBox getAABB(const glm::mat4& m)
+	BoundingBoxPbr() { };
+	BoundingBoxPbr(const glm::vec3& min, const glm::vec3& max) :min(min), max(max) { };
+	BoundingBoxPbr getAABB(const glm::mat4& m)
 	{
 		glm::vec3 min = glm::vec3(m[3]);
 		glm::vec3 max = min;
@@ -104,7 +104,7 @@ struct BoundingBox {
 		min += glm::min(v0, v1);
 		max += glm::max(v0, v1);
 
-		return BoundingBox(min, max);
+		return BoundingBoxPbr(min, max);
 	}
 };
 
@@ -128,7 +128,7 @@ struct Skin {
 	std::vector<glm::mat4> inverseBindMatrices;
 	std::vector<Node*> joints;
 };
-struct Material
+struct MaterialPbr
 {
 	enum AlphaMode{ ALPHAMODE_OPAQUE, ALPHAMODE_MASK, ALPHAMODE_BLEND };
 	AlphaMode alphaMode = ALPHAMODE_OPAQUE;
@@ -164,7 +164,7 @@ struct Material
 
 };
 struct Primitive {
-	Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t vertexCount, Material& material) : firstIndex(firstIndex), indexCount(indexCount), vertexCount(vertexCount), material(material) {
+	Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t vertexCount, MaterialPbr& material) : firstIndex(firstIndex), indexCount(indexCount), vertexCount(vertexCount), material(material) {
 		hasIndices = indexCount > 0;
 	}
 	void SetBoundingBox(glm::vec3 min, glm::vec3 max)
@@ -172,13 +172,13 @@ struct Primitive {
 		bb.min = min; bb.max = max; bb.valid = true;
 	}
 	uint32_t firstIndex; uint32_t indexCount; uint32_t vertexCount;
-	Material& material;
+	MaterialPbr& material;
 	bool hasIndices;
-	BoundingBox bb;
+	BoundingBoxPbr bb;
 };
 
-struct Mesh {
-	Mesh(const glm::mat4& matrix) {
+struct MeshPbr {
+	MeshPbr(const glm::mat4& matrix) {
 		uniformBlock.matrix = matrix;
 		glGenBuffers(1, &uniformBuffer.handle);
 		glBindBuffer(GL_UNIFORM_BUFFER, uniformBuffer.handle);
@@ -188,14 +188,14 @@ struct Mesh {
 	void SetBoundingBox(const glm::vec3& min, const glm::vec3& max) {
 		bb.min = min; bb.max = max; bb.valid = true;
 	}
-	~Mesh() {
+	~MeshPbr() {
 		glDeleteBuffers(1, &uniformBuffer.handle);
 		for (Primitive* p : primitives)
 			delete p;
 	}
 	std::vector<Primitive*> primitives;
-	BoundingBox bb;
-	BoundingBox aabb;
+	BoundingBoxPbr bb;
+	BoundingBoxPbr aabb;
 	struct UniformBuffer {
 		GLuint handle;
 	}uniformBuffer;
@@ -206,21 +206,20 @@ struct Mesh {
 	}uniformBlock;
 
 };
-
 struct Node {
 	Node* parent = nullptr;
 	uint32_t index;
 	std::vector<Node*> children;
 	glm::mat4 matrix;
 	std::string name;
-	Mesh* mesh = nullptr;
+	MeshPbr* mesh = nullptr;
 	Skin* skin = nullptr;
 	int32_t skinIndex = -1;
 	glm::vec3 translation{};
 	glm::vec3 scale{ 1.0f };
 	glm::quat rotation{};
-	BoundingBox bvh;
-	BoundingBox aabb;
+	BoundingBoxPbr bvh;
+	BoundingBoxPbr aabb;
 	glm::mat4 localMatrix()
 	{
 		return glm::translate(glm::mat4(1.0f), translation) * glm::mat4(rotation) * glm::scale(glm::mat4(1.0f), scale) * matrix;
@@ -239,7 +238,7 @@ struct Node {
 	{
 		if (mesh) {
 			glBindBuffer(GL_UNIFORM_BUFFER, mesh->uniformBuffer.handle);
-			void* mapped = glMapBufferRange(GL_UNIFORM_BUFFER, 0, sizeof(Mesh::UniformBlock), GL_MAP_WRITE_BIT| GL_MAP_INVALIDATE_BUFFER_BIT);
+			void* mapped = glMapBufferRange(GL_UNIFORM_BUFFER, 0, sizeof(MeshPbr::UniformBlock), GL_MAP_WRITE_BIT| GL_MAP_INVALIDATE_BUFFER_BIT);
 			if (mapped)
 			{
 				glm::mat4 rot = glm::mat4(1.0f);
@@ -257,10 +256,10 @@ struct Node {
 						mesh->uniformBlock.jointMatrix[i] = jointMat;
 					}
 					mesh->uniformBlock.jointcount = (float)numJoints;
-					memcpy(mapped, &mesh->uniformBlock, sizeof(Mesh::UniformBlock));
+					memcpy(mapped, &mesh->uniformBlock, sizeof(MeshPbr::UniformBlock));
 				}
 				else {
-					memset(mapped, 0, sizeof(Mesh::UniformBlock));
+					memset(mapped, 0, sizeof(MeshPbr::UniformBlock));
 					memcpy(mapped, &m, sizeof(glm::mat4));
 				}
 				auto result = glUnmapBuffer(GL_UNIFORM_BUFFER);
@@ -320,7 +319,7 @@ struct InternalPBR
 	}indices;
 	glm::mat4 aabb;
 	std::vector<GLuint> textures;
-	std::vector<Material> materials;
+	std::vector<MaterialPbr> materials;
 	std::vector<Node*> nodes;
 	std::vector<Node*> linearNodes;
 	std::vector<Animation> animations;
@@ -414,7 +413,7 @@ void LoadMaterials(tinygltf::Model& m, InternalPBR& pbr)
 {
 	for (auto& mat : m.materials)
 	{
-		Material material{};
+		MaterialPbr material{};
 		if (mat.values.find("baseColorTexture") != mat.values.end())
 		{
 			material.baseColorTexture = pbr.textures[mat.values["baseColorTexture"].TextureIndex()];
@@ -448,11 +447,11 @@ void LoadMaterials(tinygltf::Model& m, InternalPBR& pbr)
 		if (mat.additionalValues.find("alphaMode") != mat.additionalValues.end()) {
 			tinygltf::Parameter param = mat.additionalValues["alphaMode"];
 			if (param.string_value == "BLEND") {
-				material.alphaMode = Material::ALPHAMODE_BLEND;
+				material.alphaMode = MaterialPbr::ALPHAMODE_BLEND;
 			}
 			if (param.string_value == "MASK") {
 				material.alphaCutoff = 0.5f;
-				material.alphaMode = Material::ALPHAMODE_MASK;
+				material.alphaMode = MaterialPbr::ALPHAMODE_MASK;
 			}
 		}
 		if (mat.additionalValues.find("alphaCutoff") != mat.additionalValues.end()) {
@@ -505,7 +504,7 @@ void LoadMaterials(tinygltf::Model& m, InternalPBR& pbr)
 		data.emissiveTextureSet = material.emissiveTexture ? material.texCoordSets.emissive : -1;
 		data.metallicFactor = material.metallicFactor;
 		data.roughnessFactor = material.roughnessFactor;
-		data.alphaMask = (float)(material.alphaMode == Material::ALPHAMODE_MASK);
+		data.alphaMask = (float)(material.alphaMode == MaterialPbr::ALPHAMODE_MASK);
 		data.alphaMaskCutoff = material.alphaCutoff;
 
 		if (material.pbrWorkflows.metallicRoughness)
@@ -526,7 +525,7 @@ void LoadMaterials(tinygltf::Model& m, InternalPBR& pbr)
 
 		pbr.materials.push_back(material);
 	}
-	pbr.materials.push_back(Material());
+	pbr.materials.push_back(MaterialPbr());
 }
 
 void GetNodeProps(const tinygltf::Node& node, const tinygltf::Model& model, size_t& vertexCount, size_t& indexCount)
@@ -588,7 +587,7 @@ void LoadNode(InternalPBR& pbr, Node* parent, const tinygltf::Node& node, uint32
 	// Node contains mesh data
 	if (node.mesh > -1) {
 		const tinygltf::Mesh mesh = model.meshes[node.mesh];
-		Mesh* newMesh = new Mesh(newNode->matrix);
+		MeshPbr* newMesh = new MeshPbr(newNode->matrix);
 		for (size_t j = 0; j < mesh.primitives.size(); j++) {
 			const tinygltf::Primitive& primitive = mesh.primitives[j];
 			uint32_t vertexStart = loaderInfo.vertexPos;
@@ -936,7 +935,7 @@ void LoadSkins(InternalPBR& pbr, tinygltf::Model& model)
 }
 
 void CalculateBoundingBox(InternalPBR& pbr, Node* node, Node* parent) {
-	BoundingBox parentBvh = parent ? parent->bvh : BoundingBox(pbr.dimensions.min, pbr.dimensions.max);
+	BoundingBoxPbr parentBvh = parent ? parent->bvh : BoundingBoxPbr(pbr.dimensions.min, pbr.dimensions.max);
 
 	if (node->mesh) {
 		if (node->mesh->bb.valid) {
@@ -1626,7 +1625,7 @@ struct OpenGlPipelineObjects
 	GLuint defTex;
 	GLint UBOLoc; GLint UBONodeLoc; GLint UBOParamsLoc;
 	GLint MaterialLoc;
-	Material* currentBoundMaterial = nullptr;
+	MaterialPbr* currentBoundMaterial = nullptr;
 }g_pipeline;
 static constexpr size_t sd = sizeof(UBO);
 void InitializePbrPipeline(void* assetManager)
@@ -1698,7 +1697,7 @@ void CleanUpPbrPipeline()
 }
 
 
-void BindMaterial(Material* mat)
+void BindMaterial(MaterialPbr* mat)
 {
 	glBindBuffer(GL_UNIFORM_BUFFER, mat->uniformBuffer);
 	glBindBufferBase(GL_UNIFORM_BUFFER, g_pipeline.MaterialLoc, mat->uniformBuffer);
@@ -1738,18 +1737,18 @@ void BindMaterial(Material* mat)
 void DrawNode(InternalPBR* realObj, Node* node, bool drawOpaque)
 {	
 	if (node->mesh) {
-		glBindBufferRange(GL_UNIFORM_BUFFER, g_pipeline.UBONodeLoc, node->mesh->uniformBuffer.handle, 0, sizeof(Mesh::UniformBlock));
+		glBindBufferRange(GL_UNIFORM_BUFFER, g_pipeline.UBONodeLoc, node->mesh->uniformBuffer.handle, 0, sizeof(MeshPbr::UniformBlock));
 		for (Primitive* primitive : node->mesh->primitives)
 		{
-			if (drawOpaque && primitive->material.alphaMode == Material::ALPHAMODE_BLEND) continue;
-			else if (!drawOpaque && primitive->material.alphaMode != Material::ALPHAMODE_BLEND) continue;
+			if (drawOpaque && primitive->material.alphaMode == MaterialPbr::ALPHAMODE_BLEND) continue;
+			else if (!drawOpaque && primitive->material.alphaMode != MaterialPbr::ALPHAMODE_BLEND) continue;
 
 			if (g_pipeline.currentBoundMaterial != &primitive->material)
 			{
 				BindMaterial(&primitive->material);
 				g_pipeline.currentBoundMaterial = &primitive->material;
 			}
-			glDrawElements(GL_TRIANGLES, primitive->indexCount, GL_UNSIGNED_INT, (const void*)(primitive->firstIndex * sizeof(uint32_t)));
+			glDrawElementsWrapper(GL_TRIANGLES, primitive->indexCount, GL_UNSIGNED_INT, (const void*)(primitive->firstIndex * sizeof(uint32_t)));
 		}
 	}
 	for (auto& child : node->children) {

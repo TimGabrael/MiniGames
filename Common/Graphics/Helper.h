@@ -6,6 +6,7 @@
 #include "stb_image_resize.h"
 #include <vector>
 #include <glm/glm.hpp>
+#include "Scene.h"
 
 void InitializeOpenGL(void* assetManager);
 void CleanUpOpenGL();
@@ -21,5 +22,26 @@ GLuint GenerateBRDF_LUT(int dim);
 
 
 void DrawSkybox(GLuint skybox, const glm::mat4& viewMat, const glm::mat4& projMat);
+void DrawSkybox(GLuint skybox, const glm::mat4& viewProjMat);
 
 
+enum DEFAULT_SCENE_RENDER_TYPES
+{
+	SIMPLE_3D_RENDERABLE,
+	PBR_RENDERABLE,
+	NUM_DEFAULT_RENDERABLES,
+};
+
+struct StreamArrayBuffer
+{
+	GLuint glBuf;
+	void* mapped;
+	uint32_t writeIdx;
+	uint32_t size;
+	void Init();
+	void CleanUp();
+	void Bind();
+	void Append(const void* data, uint32_t dataSize, uint32_t sizeSteps);
+};
+
+PScene CreateAndInitializeSceneAsDefault();

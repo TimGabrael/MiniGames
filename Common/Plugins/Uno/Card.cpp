@@ -8,7 +8,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <algorithm>
 #include "Graphics/UiRendering.h"
+#include "Graphics/Renderer.h"
 
+#define CARD_SCENE_TYPE_INDEX DEFAULT_SCENE_RENDER_TYPES::NUM_DEFAULT_RENDERABLES
 // this is related to the UNO_DECK.png
 
 static constexpr float IMAGE_SIZE_X = 1681.0f;
@@ -341,7 +343,30 @@ void ClearCards()
 	g_cards.bufs.numInstances = 0;
 }
 
+void DrawCardsInSceneBlended(SceneObject* obj, void* renderPassData);
+void AddCardTypeToScene(PScene scene)
+{
+	TypeFunctions CardTypeFunctions;
+	CardTypeFunctions.BlendDraw = DrawCardsInSceneBlended;
+	CardTypeFunctions.OpaqueDraw = nullptr;
+	const uint32_t index = SC_AddType(scene, &CardTypeFunctions);
+	assert(index == CARD_SCENE_TYPE_INDEX);
+}
+CardSceneObject* CreateCardBatchSceneObject(PScene scene)
+{
+	CardSceneObject* obj = (CardSceneObject*)SC_AddSceneObject(scene, CARD_SCENE_TYPE_INDEX);
+	memset(obj, 0, sizeof(CardSceneObject));
+	obj->base.flags = SCENE_OBJECT_BLEND | SCENE_OBJECT_REFLECTED | SCENE_OBJECT_CAST_SHADOW;
+	obj->base.bbox.leftTopFront = { -3.0f, -3.0f, -3.0f };
+	obj->base.bbox.rightBottomBack = { 3.0f, 3.0f, 3.0f };
+	return obj;
+}
 
+void DrawCardsInSceneBlended(SceneObject* obj, void* renderPassData)
+{
+	StandardRenderPassData* data = (StandardRenderPassData*)renderPassData;
+	DrawCards(*data->camProj, *data->camView);
+}
 void DrawCards(const glm::mat4& proj, const glm::mat4& view)
 {
 	if (g_cards.bufs.mapped) {
@@ -349,7 +374,7 @@ void DrawCards(const glm::mat4& proj, const glm::mat4& view)
 		glUnmapBuffer(GL_ARRAY_BUFFER);
 		g_cards.bufs.mapped = nullptr;
 	}
-	glUseProgram(g_cards.program);
+	glUseProgramWrapper(g_cards.program);
 	glBindVertexArray(g_cards.bufs.vao);
 	glUniformMatrix4fv(g_cards.unis.projection, 1, GL_FALSE, (const GLfloat*)&proj);
 	glUniformMatrix4fv(g_cards.unis.view, 1, GL_FALSE, (const GLfloat*)&view);
@@ -358,7 +383,7 @@ void DrawCards(const glm::mat4& proj, const glm::mat4& view)
 	glBindTexture(GL_TEXTURE_2D, g_cards.texture);
 
 
-	glDrawArraysInstanced(GL_TRIANGLES, 0, 6, g_cards.bufs.numInstances);
+	glDrawArraysInstancedWrapper(GL_TRIANGLES, 0, 6, g_cards.bufs.numInstances);
 
 	glBindVertexArray(0);
 }
@@ -731,12 +756,12 @@ void CardHand::FetchCard(const Camera& cam, const CardStack& stack, CardDeck& de
 	int idx = AddTemp(cam, card);
 	anim.AddAnim(stack, cards.at(idx), handID, CARD_ANIMATIONS::ANIM_FETCH_CARD);
 }
-void CardHand::Update(CardStack& stack, CardsInAnimation& anim, ColorPicker& picker, const Camera& cam, const Pointer& p, bool allowInput)
+void CardHand::Update(CardStack& stack, CardsInAnimation& anim, ColorPicker& picker, const Camera& cam, const glm::vec3& mouseRay, const Pointer& p, bool allowInput)
 {
 	needRegen = true;
 	if (needRegen) GenTransformations(cam);
 	glm::vec3 cp = cam.pos;
-	glm::vec3 mRay = cam.mouseRay;
+	glm::vec3 mRay = mouseRay;
 
 	
 	if (mouseAttached) {

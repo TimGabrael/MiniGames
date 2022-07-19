@@ -7,6 +7,7 @@
 #include "Graphics/UiRendering.h"
 #include <chrono>
 #include <algorithm>
+#include "Graphics/Renderer.h"
 
 
 #define _USE_MATH_DEFINES
@@ -49,7 +50,7 @@ UnoPlugin* GetInstance()
 
 
 
-//#define ALLOW_FREEMOVEMENT
+#define ALLOW_FREEMOVEMENT
 void UnoPlugin::Init(ApplicationData* data)
 {
 	instance = this;
@@ -71,11 +72,20 @@ void UnoPlugin::Init(ApplicationData* data)
 	};
 	g_objs = new UnoGlobals;
 	g_objs->platform = S3DGenerateBuffer(platformVertices, sizeof(platformVertices)/sizeof(SVertex3D), platformIndices, sizeof(platformIndices)/sizeof(uint32_t));
+	g_objs->moveComp.pos = { 0.0f, 1.6f, 2.0f };
+	g_objs->moveComp.SetRotation(-90.0f, -40.0f, 0.0f);
 
-	g_objs->playerCam.pos = { 0.0f, 1.6f, 2.0f };
-	g_objs->playerCam.SetRotation(-90.0f, -40.0f, 0.0f);
+	// CREATE SCENE
+	{
+		g_objs->UnoScene = CreateAndInitializeSceneAsDefault();
+		AddCardTypeToScene(g_objs->UnoScene);
 
+		g_objs->basePlatform = AddSceneObject(g_objs->UnoScene, DEFAULT_SCENE_RENDER_TYPES::SIMPLE_3D_RENDERABLE, platformVertices,
+			sizeof(platformVertices) / sizeof(SVertex3D), platformIndices, sizeof(platformIndices) / sizeof(uint32_t));
 
+		g_objs->cardRenderObject = CreateCardBatchSceneObject(g_objs->UnoScene);
+		
+	}
 	g_objs->skybox = LoadCubemap(
 		"Assets/CitySkybox/right.jpg",
 		"Assets/CitySkybox/left.jpg",
@@ -94,6 +104,8 @@ void UnoPlugin::Init(ApplicationData* data)
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CCW);
+
+	glEnable(GL_CLIP_DISTANCE0);
 
 
 #ifndef ANDROID
@@ -126,15 +138,17 @@ void UnoPlugin::Render(ApplicationData* data)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glDepthFunc(GL_LESS);
-	g_objs->playerCam.Update();
+
+	g_objs->moveComp.Update();
+	g_objs->playerCam.Update(&g_objs->moveComp);
 
 
-	auto& ray = g_objs->playerCam.mouseRay;
+	auto& ray = g_objs->moveComp.mouseRay;
 	ray = g_objs->playerCam.ScreenToWorld(g_objs->p.x, g_objs->p.y);
 
 
 
-	g_objs->localPlayer->Update(g_objs->stack, g_objs->anims, g_objs->picker, g_objs->playerCam, g_objs->p, g_objs->anims.list.empty());
+	g_objs->localPlayer->Update(g_objs->stack, g_objs->anims, g_objs->picker, g_objs->playerCam, g_objs->moveComp.mouseRay, g_objs->p, g_objs->anims.list.empty());
 
 	if (g_objs->localPlayer->choosingCardColor) {
 		g_objs->picker.Draw((float)g_objs->playerCam.screenX / (float)g_objs->playerCam.screenY, dt);
@@ -149,25 +163,15 @@ void UnoPlugin::Render(ApplicationData* data)
 		
 		g_objs->localPlayer->Draw(g_objs->playerCam);
 	}
-	glDisable(GL_BLEND);
 
-	DrawSimple3D(g_objs->platform, g_objs->playerCam.perspective, g_objs->playerCam.view);
+	RenderSceneStandard(g_objs->UnoScene, &g_objs->playerCam.view, &g_objs->playerCam.perspective, 0, g_objs->skybox);
 
-	DrawSkybox(g_objs->skybox, g_objs->playerCam.view, g_objs->playerCam.perspective);
-
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glDisable(GL_DEPTH_TEST);
-
-
-
-	DrawCards(g_objs->playerCam.perspective, g_objs->playerCam.view);
+	
 	DrawUI();
-
-	glEnable(GL_DEPTH_TEST);
 
 	g_objs->ms.FrameEnd();
 	g_objs->p.EndFrame();
+	EndFrameAndResetData();
 }
 
 
@@ -177,7 +181,7 @@ void UnoPlugin::MouseCallback(const PB_MouseData* mData)
 #ifdef ALLOW_FREEMOVEMENT
 	if (mData->lDown && (mData->dx || mData->dy))
 	{
-		g_objs.playerCam.UpdateFromMouseMovement(-mData->dx, mData->dy);
+		g_objs->moveComp.UpdateFromMouseMovement(-mData->dx, mData->dy);
 	}
 #endif
 	g_objs->ms.SetFromPBState(mData);
@@ -193,10 +197,10 @@ void UnoPlugin::KeyDownCallback(Key k, bool isRepeat)
 #ifdef ALLOW_FREEMOVEMENT
 	if (!isRepeat)
 	{
-		if (k == Key::Key_W)g_objs.playerCam.SetMovementDirection(Camera::DIRECTION::FORWARD, true);
-		if (k == Key::Key_A)g_objs.playerCam.SetMovementDirection(Camera::DIRECTION::LEFT, true);
-		if (k == Key::Key_S)g_objs.playerCam.SetMovementDirection(Camera::DIRECTION::BACKWARD, true);
-		if (k == Key::Key_D)g_objs.playerCam.SetMovementDirection(Camera::DIRECTION::RIGHT, true);
+		if (k == Key::Key_W)g_objs->moveComp.SetMovementDirection(MovementComponent::DIRECTION::FORWARD, true);
+		if (k == Key::Key_A)g_objs->moveComp.SetMovementDirection(MovementComponent::DIRECTION::LEFT, true);
+		if (k == Key::Key_S)g_objs->moveComp.SetMovementDirection(MovementComponent::DIRECTION::BACKWARD, true);
+		if (k == Key::Key_D)g_objs->moveComp.SetMovementDirection(MovementComponent::DIRECTION::RIGHT, true);
 	}
 #endif
 	if (k == Key::Key_0) g_objs->localPlayer->FetchCard(g_objs->playerCam, g_objs->stack, g_objs->deck, g_objs->anims);
@@ -206,10 +210,10 @@ void UnoPlugin::KeyUpCallback(Key k, bool isRepeat)
 #ifdef ALLOW_FREEMOVEMENT
 	if (!isRepeat)
 	{
-		if (k == Key::Key_W)g_objs.playerCam.SetMovementDirection(Camera::DIRECTION::FORWARD, false);
-		if (k == Key::Key_A)g_objs.playerCam.SetMovementDirection(Camera::DIRECTION::LEFT, false);
-		if (k == Key::Key_S)g_objs.playerCam.SetMovementDirection(Camera::DIRECTION::BACKWARD, false);
-		if (k == Key::Key_D)g_objs.playerCam.SetMovementDirection(Camera::DIRECTION::RIGHT, false);
+		if (k == Key::Key_W)g_objs->moveComp.SetMovementDirection(MovementComponent::DIRECTION::FORWARD, false);
+		if (k == Key::Key_A)g_objs->moveComp.SetMovementDirection(MovementComponent::DIRECTION::LEFT, false);
+		if (k == Key::Key_S)g_objs->moveComp.SetMovementDirection(MovementComponent::DIRECTION::BACKWARD, false);
+		if (k == Key::Key_D)g_objs->moveComp.SetMovementDirection(MovementComponent::DIRECTION::RIGHT, false);
 	}
 #endif
 }
@@ -217,21 +221,21 @@ void UnoPlugin::KeyUpCallback(Key k, bool isRepeat)
 void UnoPlugin::TouchDownCallback(int x, int y, int touchID)
 {
 #ifdef ALLOW_FREEMOVEMENT
-	g_objs.playerCam.UpdateTouch(x, y, touchID, false);
+	g_objs->moveComp.UpdateTouch(g_objs->playerCam.screenX,x, y, touchID, false);
 #endif
 	g_objs->p.OnTouchDown(x, y, touchID);
 }
 void UnoPlugin::TouchUpCallback(int x, int y, int touchID)
 {
 #ifdef ALLOW_FREEMOVEMENT
-	g_objs.playerCam.UpdateTouch(x, y, touchID, true);
+	g_objs->moveComp.UpdateTouch(g_objs->playerCam.screenX, x, y, touchID, true);
 #endif
 	g_objs->p.OnTouchUp(x, y, touchID);
 }
 void UnoPlugin::TouchMoveCallback(int x, int y, int dx, int dy, int touchID)
 {
 #ifdef ALLOW_FREEMOVEMENT
-	g_objs.playerCam.UpdateTouchMove(x, y, dx, dy, touchID);
+	g_objs->moveComp.UpdateTouchMove(x, y, dx, dy, touchID);
 #endif
 	g_objs->p.OnTouchMove(x, y, dx, dy, touchID);
 }

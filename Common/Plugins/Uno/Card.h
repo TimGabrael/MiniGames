@@ -4,6 +4,7 @@
 #include "Graphics/Camera.h"
 #include "Animator.h"
 #include "Pointer.h"
+#include "Graphics/Helper.h"
 
 static float g_cardScale = 0.3f;
 static constexpr float g_cardMinDiff = 0.35f;
@@ -43,6 +44,11 @@ enum CARD_ANIMATIONS
 	ANIM_UNPLAYABLE,	// shake card if it is not playable
 };
 
+struct CardSceneObject	// doesn't have any data in it, uses the global card data to draw batches
+{
+	BaseSceneObject base;
+};
+
 
 
 void InitializeCardPipeline(void* assetManager);
@@ -50,6 +56,11 @@ void InitializeCardPipeline(void* assetManager);
 void RendererAddCard(CARD_ID back, CARD_ID front, const glm::mat4& transform);
 void RendererAddEffect(CARD_EFFECT effect, const glm::mat4& transform, uint32_t col);
 void ClearCards();
+
+
+void AddCardTypeToScene(PScene scene);
+CardSceneObject* CreateCardBatchSceneObject(PScene scene);
+
 
 void DrawCards(const glm::mat4& proj, const glm::mat4& view);
 
@@ -153,7 +164,7 @@ struct CardHand
 	int AddTemp(const Camera& cam, CARD_ID id);
 	void PlayCard(const CardStack& stack, CardsInAnimation& anim, int cardIdx);
 	void FetchCard(const Camera& cam, const CardStack& stack, CardDeck& deck, CardsInAnimation& anim);
-	void Update(CardStack& stack, CardsInAnimation& anim, ColorPicker& picker, const Camera& cam, const Pointer& p, bool allowInput);
+	void Update(CardStack& stack, CardsInAnimation& anim, ColorPicker& picker, const Camera& cam, const glm::vec3& mouseRay, const Pointer& p, bool allowInput);
 	void GenTransformations(const Camera& cam);
 	void Draw(const Camera& cam);
 };

@@ -215,7 +215,7 @@ void DrawUI()
 	}
 
 	glDisable(GL_DEPTH_TEST);
-	glUseProgram(g_ui.program);
+	glUseProgramWrapper(g_ui.program);
 	glBindVertexArray(g_ui.streamBuffer.vao);
 
 	
@@ -231,7 +231,7 @@ void DrawUI()
 			curBoundTex = cur.boundTexture;
 			glBindTexture(GL_TEXTURE_2D, curBoundTex);
 		}
-		glDrawArrays(cur.isTriangle ? GL_TRIANGLES : GL_LINES, curIdx, cur.numVerts);
+		glDrawArraysWrapper(cur.isTriangle ? GL_TRIANGLES : GL_LINES, curIdx, cur.numVerts);
 		curIdx += cur.numVerts;
 	}
 

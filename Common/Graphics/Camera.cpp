@@ -12,30 +12,99 @@
 
 #include "logging.h"
 
-constexpr float Camera::maxVelocity;		// required for android build
-constexpr float Camera::joystickTurnSpeed; // required for android build
+constexpr float MovementComponent::maxVelocity;			// required for android build
+constexpr float MovementComponent::joystickTurnSpeed;	// required for android build
 
 
 
-void Camera::SetRotation(float yaw, float pitch, float roll)
+void MovementComponent::SetRotation(float yaw, float pitch, float roll)
 {
 	this->yaw = yaw; this->pitch = pitch; this->roll = roll;
-	glm::vec3 fr;
-	fr.x = cosf(glm::radians(yaw)) * cosf(glm::radians(pitch));
-	fr.y = sinf(glm::radians(pitch));
-	fr.z = sinf(glm::radians(yaw)) * cosf(glm::radians(pitch));
-	front = glm::normalize(fr);
 }
-void Camera::SetPerspective(float fov, float aspect, float znear, float zfar)
+void MovementComponent::UpdateFromMouseMovement(float dx, float dy)
 {
-	this->nearClipping = znear; this->farClipping = zfar;
-	this->aspectRatio = aspect; this->fieldOfView = fov;
-	perspective = glm::perspective(glm::radians(fov), aspect, znear, zfar);
+	float sensitivity = 0.1f;
+	dx *= sensitivity; dy *= sensitivity;
+
+	yaw += dx; pitch += dy;
+	if (pitch > 89.0f) pitch = 89.0f;
+	else if (pitch < -89.0f) pitch = -89.0f;
 }
-void Camera::Update()
+void MovementComponent::UpdateTouch(int sceenWidth, int x, int y, int touchID, bool isUp)
+{
+	if (isUp)
+	{
+		for (int i = 0; i < 2; i++)
+		{
+			if (touch[i].touchID == touchID)
+			{
+				touch[i].touchID = -1;
+				touch[i].stateX = 0.0f;
+				touch[i].stateY = 0.0f;
+				break;
+			}
+		}
+		if ((touch[0].touchID == -1 && touch[1].touchID == -1))
+		{
+			touchInputUsed = false;
+		}
+	}
+	else
+	{
+		int idx = (x < sceenWidth / 2) ? 0 : 1;
+		if (touch[idx].touchID == -1)
+		{
+			touch[idx].initialX = x;
+			touch[idx].initialY = y;
+			touch[idx].stateX = 0.0f;
+			touch[idx].stateY = 0.0f;
+			touch[idx].touchID = touchID;
+			memset(keyboardMoveDirs, 0, 4);
+			touchInputUsed = true;
+		}
+	}
+}
+void MovementComponent::UpdateTouchMove(int x, int y, int dx, int dy, int touchID)
+{
+	static constexpr float MAX_RADIUS = 60.0f;
+	TouchJoystickData* tid = nullptr;
+	for (int i = 0; i < 2; i++) {
+		if (touch[i].touchID == touchID) {
+			tid = &touch[i];
+			break;
+		}
+	}
+	if (!tid) return;
+
+	const float rx = (float)(x - tid->initialX);
+	const float ry = (float)(tid->initialY - y);
+
+	const float dist = sqrtf(rx * rx + ry * ry);
+	if (dist == 0.0f) return;
+
+
+	float relX = rx / dist;
+	float relY = ry / dist;
+
+	const float radClipped = std::min(MAX_RADIUS, dist);
+
+	tid->stateX = relX * radClipped / MAX_RADIUS;
+	tid->stateY = relY * radClipped / MAX_RADIUS;
+	touchInputUsed = true;
+}
+void MovementComponent::SetMovementDirection(DIRECTION dir, bool isActive)
+{
+	this->keyboardMoveDirs[dir] = isActive;
+	keyboardDirUsed = true;
+	touchInputUsed = false;
+}
+void MovementComponent::Update()
 {
 	glm::vec3 moveVec = { 0.0f, 0.0f, 0.0f };
+	glm::vec3 front = { cosf(glm::radians(yaw)) * cosf(glm::radians(pitch)), sinf(glm::radians(pitch)), sinf(glm::radians(yaw)) * cosf(glm::radians(pitch)) };
+	glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
 	glm::vec3 right = glm::normalize(glm::cross(front, up));
+	
 	if (keyboardDirUsed)
 	{
 		bool anyActive = false;
@@ -78,102 +147,33 @@ void Camera::Update()
 		{
 			yaw += touch[1].stateX * joystickTurnSpeed;
 			pitch += touch[1].stateY * joystickTurnSpeed;
-			glm::vec3 fr;
-			fr.x = cosf(glm::radians(yaw)) * cosf(glm::radians(pitch));
-			fr.y = sinf(glm::radians(pitch));
-			fr.z = sinf(glm::radians(yaw)) * cosf(glm::radians(pitch));
-			front = glm::normalize(fr);
 		}
 	}
+}
+
+
+void Camera::SetRotation(float yaw, float pitch, float roll)
+{
+	this->yaw = yaw; this->pitch = pitch; this->roll = roll;
+	front.x = cosf(glm::radians(yaw)) * cosf(glm::radians(pitch));
+	front.y = sinf(glm::radians(pitch));
+	front.z = sinf(glm::radians(yaw)) * cosf(glm::radians(pitch));
+	
+}
+void Camera::SetPerspective(float fov, float aspect, float znear, float zfar)
+{
+	this->nearClipping = znear; this->farClipping = zfar;
+	this->aspectRatio = aspect; this->fieldOfView = fov;
+	perspective = glm::perspective(glm::radians(fov), aspect, znear, zfar);
+}
+void Camera::Update(const MovementComponent* comp)
+{
+	pos = comp->pos;
+	SetRotation(comp->yaw, comp->pitch, comp->roll);
 
 	view = glm::lookAtRH(pos, pos + front, up);
 }
 
-void Camera::UpdateFromMouseMovement(float dx, float dy)
-{
-	float sensitivity = 0.1f;
-	dx *= sensitivity; dy *= sensitivity;
-
-	yaw += dx; pitch += dy;
-	if (pitch > 89.0f) pitch = 89.0f;
-	else if (pitch < -89.0f) pitch = -89.0f;
-
-	glm::vec3 fr;
-	fr.x = cosf(glm::radians(yaw)) * cosf(glm::radians(pitch));
-	fr.y = sinf(glm::radians(pitch));
-	fr.z = sinf(glm::radians(yaw)) * cosf(glm::radians(pitch));
-	front = glm::normalize(fr);
-}
-void Camera::UpdateTouch(int x, int y, int touchID, bool isUp)
-{
-	if (isUp)
-	{
-		for (int i = 0; i < 2; i++)
-		{
-			if (touch[i].touchID == touchID)
-			{
-				touch[i].touchID = -1;
-				touch[i].stateX = 0.0f;
-				touch[i].stateY = 0.0f;
-				break;
-			}
-		}
-		if ((touch[0].touchID == -1 && touch[1].touchID == -1))
-		{
-			touchInputUsed = false;
-		}
-	}
-	else
-	{
-		int idx = (x < screenX / 2) ? 0 : 1;
-		if (touch[idx].touchID == -1)
-		{
-			touch[idx].initialX = x;
-			touch[idx].initialY = y;
-			touch[idx].stateX = 0.0f;
-			touch[idx].stateY = 0.0f;
-			touch[idx].touchID = touchID;
-			memset(keyboardMoveDirs, 0, 4);
-			touchInputUsed = true;
-		}
-	}
-}
-void Camera::UpdateTouchMove(int x, int y, int dx, int dy, int touchID)
-{
-	static constexpr float MAX_RADIUS = 60.0f;
-	TouchJoystickData* tid = nullptr;
-	for (int i = 0; i < 2; i++) {
-		if (touch[i].touchID == touchID) {
-			tid = &touch[i];
-			break;
-		}
-	}
-	if (!tid) return;
-
-	const float rx = (float)(x - tid->initialX);
-	const float ry = (float)(tid->initialY - y);
-
-	const float dist = sqrtf(rx * rx + ry * ry);
-	if (dist == 0.0f) return;
-
-
-	float relX = rx / dist;
-	float relY = ry / dist;
-
-	const float radClipped = std::min(MAX_RADIUS, dist);
-
-	tid->stateX = relX * radClipped / MAX_RADIUS;
-	tid->stateY = relY * radClipped / MAX_RADIUS;
-	touchInputUsed = true;
-
-}
-
-void Camera::SetMovementDirection(DIRECTION dir, bool isActive)
-{
-	this->keyboardMoveDirs[dir] = isActive;
-	keyboardDirUsed = true;
-	touchInputUsed = false;
-}
 glm::vec3 Camera::GetFront() const
 {
 	return front;

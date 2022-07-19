@@ -16,6 +16,7 @@ struct PlayerInfo
 struct UnoGlobals
 {
 	Camera playerCam;
+	MovementComponent moveComp;
 	GLuint skybox;
 	S3DCombinedBuffer platform;
 	CardHand* localPlayer;
@@ -27,6 +28,9 @@ struct UnoGlobals
 	CardDeck deck;
 	ColorPicker picker;
 
+	PScene UnoScene;
+	S3DSceneObject* basePlatform;
+	CardSceneObject* cardRenderObject;
 };
 
 

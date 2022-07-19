@@ -1,7 +1,10 @@
 #include "Simple3DRendering.h"
 #include "Helper.h"
+#include "logging.h"
+#include "Renderer.h"
 
 static const char* uiVertexShader = "#version 300 es\n\
+#extension GL_EXT_clip_cull_distance : enable\
 \n\
 layout(location = 0) in vec3 pos;\n\
 layout(location = 1) in vec2 texPos;\n\
@@ -9,12 +12,14 @@ layout(location = 2) in vec4 color;\n\
 uniform mat4 projection;\n\
 uniform mat4 model;\n\
 uniform mat4 view;\n\
+uniform vec4 clipPlane;\n\
 out vec2 tPos;\
 out vec4 col;\
 void main(){\
 	gl_Position = projection * view * model * vec4(pos, 1.0f);\
 	tPos = texPos;\
 	col = color;\
+	gl_ClipDistance[0] = dot(gl_Position, clipPlane);\
 }\
 ";
 
@@ -29,7 +34,6 @@ void main(){\
 	outCol = texture(tex, tPos).rgba * col;\
 }\
 ";
-
 
 struct UniformLocations
 {
@@ -68,6 +72,9 @@ void InitializeSimple3DPipeline()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
+
+
+
 }
 
 S3DCombinedBuffer S3DGenerateBuffer(SVertex3D* verts, size_t numVerts, uint32_t* indices, size_t numIndices)
@@ -110,6 +117,62 @@ S3DVertexBuffer S3DGenerateBuffer(SVertex3D* verts, size_t numVerts)
 	return res;
 }
 
+BoundingBox GenerateBoundingBoxFromVertices(SVertex3D* verts, size_t numVerts)
+{
+	assert(numVerts != 0);
+	BoundingBox r = { verts[0].pos, verts[0].pos };
+	glm::vec3& rl = r.leftTopFront;
+	glm::vec3& rh = r.rightBottomBack;
+
+	for (size_t i = 1; i < numVerts; i++)
+	{
+		glm::vec3 p = verts[i].pos;
+		p += glm::vec3(0.1f);
+		if (p.x > rh.x) rh.x = p.x;
+		if (p.y > rh.y) rh.y = p.y;
+		if (p.z > rh.z) rh.z = p.z;
+		p -= glm::vec3(0.2f);
+		if (p.x < rl.x) rl.x = p.x;
+		if (p.y < rl.y) rl.y = p.y;
+		if (p.z < rl.z) rl.z = p.z;
+	}
+
+	return r;
+}
+S3DSceneObject* AddSceneObject(PScene scene, uint32_t s3dTypeIndex, SVertex3D* verts, size_t numVerts)
+{
+	S3DSceneObject* obj = (S3DSceneObject*)SC_AddSceneObject(scene, s3dTypeIndex);
+	if (!obj) return nullptr;
+
+	obj->mesh = (S3DCombinedBuffer*)SC_AddMesh(scene, s3dTypeIndex, sizeof(S3DCombinedBuffer));
+
+	obj->mesh->vtxBuf = S3DGenerateBuffer(verts, numVerts);
+	obj->texture = 0;
+	obj->transform = nullptr;
+	obj->base.bbox = GenerateBoundingBoxFromVertices(verts, numVerts);
+	obj->base.flags = SCENE_OBJECT_FLAGS::SCENE_OBJECT_OPAQUE | SCENE_OBJECT_FLAGS::SCENE_OBJECT_CAST_SHADOW | SCENE_OBJECT_FLAGS::SCENE_OBJECT_REFLECTED;
+	obj->base.additionalFlags = 1;
+	
+
+	return obj;
+}
+S3DSceneObject* AddSceneObject(PScene scene, uint32_t s3dTypeIndex, SVertex3D* verts, size_t numVerts, uint32_t* indices, size_t numIndices)
+{
+	S3DSceneObject* obj = (S3DSceneObject*)SC_AddSceneObject(scene, s3dTypeIndex);
+	if (!obj) return nullptr;
+
+	obj->mesh = (S3DCombinedBuffer*)SC_AddMesh(scene, s3dTypeIndex, sizeof(S3DCombinedBuffer));
+
+	*obj->mesh = S3DGenerateBuffer(verts, numVerts, indices, numIndices);
+	obj->texture = 0;
+	obj->transform = nullptr;
+	obj->base.bbox = GenerateBoundingBoxFromVertices(verts, numVerts);
+	obj->base.flags = SCENE_OBJECT_FLAGS::SCENE_OBJECT_OPAQUE | SCENE_OBJECT_FLAGS::SCENE_OBJECT_CAST_SHADOW | SCENE_OBJECT_FLAGS::SCENE_OBJECT_REFLECTED;
+	obj->base.additionalFlags = 1;
+
+
+	return obj;
+}
 
 void CleanUpSimple3DPipeline()
 {
@@ -121,7 +184,7 @@ void CleanUpSimple3DPipeline()
 
 void DrawSimple3D(const S3DCombinedBuffer& buf, const glm::mat4& proj, const glm::mat4& view, const glm::mat4& model)
 {
-	glUseProgram(g_3d.program);
+	glUseProgramWrapper(g_3d.program);
 	glUniformMatrix4fv(g_3d.unis.proj, 1, GL_FALSE, (const GLfloat*)&proj);
 	glUniformMatrix4fv(g_3d.unis.view, 1, GL_FALSE, (const GLfloat*)&view);
 	glUniformMatrix4fv(g_3d.unis.model, 1, GL_FALSE, (const GLfloat*)&model);
@@ -133,13 +196,13 @@ void DrawSimple3D(const S3DCombinedBuffer& buf, const glm::mat4& proj, const glm
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buf.idxBuf);
 
 
-	glDrawElements(GL_TRIANGLES, buf.numIndices, GL_UNSIGNED_INT, nullptr);
+	glDrawElementsWrapper(GL_TRIANGLES, buf.numIndices, GL_UNSIGNED_INT, nullptr);
 
 	glBindVertexArray(0);
 }
 void DrawSimple3D(const S3DCombinedBuffer& buf, const glm::mat4& proj, const glm::mat4& view, GLuint texture, const glm::mat4& model)
 {
-	glUseProgram(g_3d.program);
+	glUseProgramWrapper(g_3d.program);
 	glUniformMatrix4fv(g_3d.unis.proj, 1, GL_FALSE, (const GLfloat*)&proj);
 	glUniformMatrix4fv(g_3d.unis.view, 1, GL_FALSE, (const GLfloat*)&view);
 	glUniformMatrix4fv(g_3d.unis.model, 1, GL_FALSE, (const GLfloat*)&model);
@@ -151,14 +214,14 @@ void DrawSimple3D(const S3DCombinedBuffer& buf, const glm::mat4& proj, const glm
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buf.idxBuf);
 
 
-	glDrawElements(GL_TRIANGLES, buf.numIndices, GL_UNSIGNED_INT, nullptr);
+	glDrawElementsWrapper(GL_TRIANGLES, buf.numIndices, GL_UNSIGNED_INT, nullptr);
 
 	glBindVertexArray(0);
 
 }
 void DrawSimple3D(const S3DVertexBuffer& buf, const glm::mat4& proj, const glm::mat4& view, const glm::mat4& model)
 {
-	glUseProgram(g_3d.program);
+	glUseProgramWrapper(g_3d.program);
 	glUniformMatrix4fv(g_3d.unis.proj, 1, GL_FALSE, (const GLfloat*)&proj);
 	glUniformMatrix4fv(g_3d.unis.view, 1, GL_FALSE, (const GLfloat*)&view);
 	glUniformMatrix4fv(g_3d.unis.model, 1, GL_FALSE, (const GLfloat*)&model);
@@ -168,13 +231,13 @@ void DrawSimple3D(const S3DVertexBuffer& buf, const glm::mat4& proj, const glm::
 
 	glBindVertexArray(buf.vao);
 
-	glDrawArrays(GL_TRIANGLES, 0, buf.numVertices);
+	glDrawArraysWrapper(GL_TRIANGLES, 0, buf.numVertices);
 
 	glBindVertexArray(0);
 }
 void DrawSimple3D(const S3DVertexBuffer& buf, const glm::mat4& proj, const glm::mat4& view, GLuint texture, const glm::mat4& model)
 {
-	glUseProgram(g_3d.program);
+	glUseProgramWrapper(g_3d.program);
 	glUniformMatrix4fv(g_3d.unis.proj, 1, GL_FALSE, (const GLfloat*)&proj);
 	glUniformMatrix4fv(g_3d.unis.view, 1, GL_FALSE, (const GLfloat*)&view);
 	glUniformMatrix4fv(g_3d.unis.model, 1, GL_FALSE, (const GLfloat*)&model);
@@ -184,7 +247,27 @@ void DrawSimple3D(const S3DVertexBuffer& buf, const glm::mat4& proj, const glm::
 
 	glBindVertexArray(buf.vao);
 
-	glDrawArrays(GL_TRIANGLES, 0, buf.numVertices);
+	glDrawArraysWrapper(GL_TRIANGLES, 0, buf.numVertices);
 
 	glBindVertexArray(0);
+}
+
+void DrawSimple3DOpaque(S3DSceneObject* obj, void* renderPassData)
+{
+	StandardRenderPassData* data = (StandardRenderPassData*)renderPassData;
+	glm::mat4 matrix(1.0f);
+	if (obj->transform)
+	{
+		matrix = *obj->transform;
+	}
+	if (obj->base.additionalFlags)	// 0 => combined buf,  1 => vertex buf
+	{
+		if (obj->texture) DrawSimple3D(*obj->mesh, *data->camProj, *data->camView, obj->texture, matrix);
+		else DrawSimple3D(*obj->mesh, *data->camProj, *data->camView, matrix);
+	}
+	else
+	{
+		if (obj->texture) DrawSimple3D(obj->mesh->vtxBuf, *data->camProj, *data->camView, obj->texture, matrix);
+		else DrawSimple3D(obj->mesh->vtxBuf, *data->camProj, *data->camView, matrix);
+	}
 }
