@@ -109,7 +109,6 @@ void UnoPlugin::Init(ApplicationData* data)
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CCW);
-	glEnable(GL_CLIP_DISTANCE0);
 
 
 
@@ -181,7 +180,7 @@ void UnoPlugin::Render(ApplicationData* data)
 	glClearColor(1.0f, 0.4f, 0.4f, 1.0f);
 	glClearDepthf(1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glm::vec4 plane = { 0.0f, 1.0f, 0.0f, 10.0f };
+	glm::vec4 plane = { 0.0f, 1.0f, 0.0f, 0.0f };
 	RenderSceneReflectedOnPlane(g_objs->UnoScene, &g_objs->playerCam, &plane, 0, g_objs->skybox);
 
 

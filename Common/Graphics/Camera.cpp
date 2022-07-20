@@ -158,7 +158,7 @@ Camera Camera::GetReflected(const Camera* ref, const glm::vec4& reflectionPlane)
 	glm::vec3 planeNormal = reflectionPlane;
 	planeNormal = glm::normalize(planeNormal);
 	cam.front = cam.front - 2 * glm::dot(cam.front, planeNormal) * planeNormal;
-	cam.pos -= 2 * reflectionPlane.w * planeNormal;
+	cam.pos -= 2 * (glm::dot(cam.pos, planeNormal) + reflectionPlane.w) * planeNormal;
 	cam.SetViewMatrix();
 	return cam;
 }
