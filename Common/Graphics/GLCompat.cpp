@@ -1,12 +1,12 @@
 #include "GLCompat.h"
-
+#include "logging.h"
 #define LOG_DRAW_CALLS false
 
 
 
 static GLuint currentlyBoundShaderProgram = 0;
+static GLuint defaultFramebuffer = 0;
 #if LOG_DRAW_CALLS
-#include "logging.h"
 static int numDrawCallsMadeThisFrame = 0;
 #endif
 
@@ -54,4 +54,15 @@ void glDrawArraysInstancedWrapper(GLenum mode, GLint first, GLsizei count, GLsiz
 	numDrawCallsMadeThisFrame = numDrawCallsMadeThisFrame + 1;
 #endif
 	glDrawArraysInstanced(mode, first, count, instancecount);
+}
+
+
+
+void SetDefaultFramebuffer(GLuint fb)
+{
+	defaultFramebuffer = fb;
+}
+GLint GetDefaultFramebuffer()
+{
+	return defaultFramebuffer;
 }

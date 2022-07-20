@@ -230,7 +230,6 @@ void InitializeOpenGL(void* assetManager)
 	gladLoadGL();
 #endif
 	g_helper.assetManager = assetManager;
-
 	
 	InitializePbrPipeline(assetManager);
 	InitializeUiPipeline();
@@ -421,14 +420,15 @@ GLuint GenerateBRDF_LUT(int dim)
 
 
 
-
 	glDrawArraysWrapper(GL_TRIANGLES, 0, 3);
 
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, GetDefaultFramebuffer());
+
 
 	glDeleteProgram(shader);
 	glDeleteFramebuffers(1, &framebuffer);
 	glEnable(GL_DEPTH_TEST);
+
 
 	return brdfLut;
 }
@@ -567,24 +567,37 @@ SingleFBO CreateSingleFBO(int width, int height)
 	glGenFramebuffers(1, &out.fbo);
 	glBindFramebuffer(GL_FRAMEBUFFER, out.fbo);
 
-	GLuint texture;
+	
+	
+
+
 	glGenTextures(1, &out.texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glBindTexture(GL_TEXTURE_2D, out.texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-	glGenRenderbuffers(1, &out.depth);
-	glBindRenderbuffer(GL_RENDERBUFFER, out.depth);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, out.depth);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, out.texture, 0);
 
-	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, out.texture, 0);
-	GLenum drawBuffers = GL_COLOR_ATTACHMENT0;
-	glDrawBuffers(1, &drawBuffers);
+
+
+	glGenTextures(1, &out.depth);
+	glBindTexture(GL_TEXTURE_2D, out.depth);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, out.depth, 0);
+
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 		LOG("FAILED  TO CREATE FRAMEBUFFER\n");
 	}
+
+	glBindFramebuffer(GL_FRAMEBUFFER, GetDefaultFramebuffer());
 
 	return out;
 }

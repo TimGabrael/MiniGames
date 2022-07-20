@@ -49,7 +49,7 @@ UnoPlugin* GetInstance()
 
 
 
-
+GLuint lut;
 #define ALLOW_FREEMOVEMENT
 void UnoPlugin::Init(ApplicationData* data)
 {
@@ -61,11 +61,16 @@ void UnoPlugin::Init(ApplicationData* data)
 	InitializeCardPipeline(data->assetManager);
 
 	static constexpr float cubeSize = 4.0f;
+	uint32_t platformColor = 0xFFFFFFFF;
 	SVertex3D platformVertices[4] = {
-		{{-cubeSize, 0.0f, -cubeSize}, {0.0f, 0.0f}, 0xFF000090},
-		{{ cubeSize, 0.0f, -cubeSize}, {0.0f, 0.0f}, 0xFF900000},
-		{{ cubeSize, 0.0f,  cubeSize}, {0.0f, 0.0f}, 0xFF009000},
-		{{-cubeSize, 0.0f,  cubeSize}, {0.0f, 0.0f}, 0xFF009090},
+		//{{-cubeSize, 0.0f, -cubeSize}, {0.0f, 0.0f}, 0xFF000090},
+		//{{ cubeSize, 0.0f, -cubeSize}, {1.0f, 0.0f}, 0xFF900000},
+		//{{ cubeSize, 0.0f,  cubeSize}, {1.0f, 1.0f}, 0xFF009000},
+		//{{-cubeSize, 0.0f,  cubeSize}, {0.0f, 1.0f}, 0xFF009090},
+		{{-cubeSize, 0.0f, -cubeSize}, {0.0f, 0.0f}, platformColor},
+		{{ cubeSize, 0.0f, -cubeSize}, {1.0f, 0.0f}, platformColor},
+		{{ cubeSize, 0.0f,  cubeSize}, {1.0f, 1.0f}, platformColor},
+		{{-cubeSize, 0.0f,  cubeSize}, {0.0f, 1.0f}, platformColor},
 	};
 	uint32_t platformIndices[] = {
 		0,3,2,2,1,0,
@@ -104,8 +109,9 @@ void UnoPlugin::Init(ApplicationData* data)
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CCW);
-
 	glEnable(GL_CLIP_DISTANCE0);
+
+
 
 #ifndef ANDROID
 	glEnable(GL_MULTISAMPLE);
@@ -120,6 +126,9 @@ void UnoPlugin::Resize(ApplicationData* data)
 	g_objs->playerCam.screenX = sizeX;
 	g_objs->playerCam.screenY = sizeY;
 	if (once) {
+		GLint defaultFBO;
+		glGetIntegerv(GL_FRAMEBUFFER_BINDING, &defaultFBO);
+		SetDefaultFramebuffer(defaultFBO);
 		g_objs->reflectFBO = CreateSingleFBO(sizeX, sizeY);
 		once = false;
 	}
@@ -135,13 +144,13 @@ void UnoPlugin::Render(ApplicationData* data)
 	float dt = std::chrono::duration<float>(now - prev).count();
 	prev = now;
 
-	glViewport(0, 0, framebufferX, framebufferY);
-	glClearColor(1.0f, 0.4f, 0.4f, 1.0f);
-	glClearDepthf(1.0f);
+	//glViewport(0, 0, framebufferX, framebufferY);
+	//glClearColor(1.0f, 0.4f, 0.4f, 1.0f);
+	//glClearDepthf(1.0f);
+	//
+	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	glDepthFunc(GL_LESS);
+	//glDepthFunc(GL_LESS);
 
 	g_objs->moveComp.Update();
 	g_objs->playerCam.Update(&g_objs->moveComp);
@@ -167,8 +176,27 @@ void UnoPlugin::Render(ApplicationData* data)
 		
 		g_objs->localPlayer->Draw(g_objs->playerCam);
 	}
+	
+	glBindFramebuffer(GL_FRAMEBUFFER, g_objs->reflectFBO.fbo);
+	glClearColor(1.0f, 0.4f, 0.4f, 1.0f);
+	glClearDepthf(1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glm::vec4 plane = { 0.0f, 1.0f, 0.0f, 10.0f };
+	RenderSceneReflectedOnPlane(g_objs->UnoScene, &g_objs->playerCam, &plane, 0, g_objs->skybox);
+
+
+
+
+	glBindFramebuffer(GL_FRAMEBUFFER, GetDefaultFramebuffer());
+
+	glClearColor(1.0f, 0.4f, 0.4f, 1.0f);
+	glClearDepthf(1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	g_objs->basePlatform->texture = g_objs->reflectFBO.texture;
 
 	RenderSceneStandard(g_objs->UnoScene, &g_objs->playerCam.view, &g_objs->playerCam.perspective, 0, g_objs->skybox);
+
 
 	
 	DrawUI();
