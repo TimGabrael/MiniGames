@@ -550,17 +550,41 @@ void StreamArrayBuffer::Append(const void* data, uint32_t dataSize, uint32_t siz
 PScene CreateAndInitializeSceneAsDefault()
 {
 	PScene scene = SC_CreateScene();
-	TypeFunctions S3DTypeFunctions;
-	S3DTypeFunctions.BlendDraw = nullptr;
-	S3DTypeFunctions.OpaqueDraw = (PFUNCDRAWSCENEOBJECT)DrawSimple3DOpaque;
+	TypeFunctions S3DTypeFunctions = S3DGetDrawFunctions();
 	const uint32_t indexS3D = SC_AddType(scene, &S3DTypeFunctions);
 	assert(index == 0);
-	TypeFunctions PBRTypeFunctions;
-	PBRTypeFunctions.BlendDraw = nullptr;
-	PBRTypeFunctions.OpaqueDraw = nullptr;
+	TypeFunctions PBRTypeFunctions{ 0 };
 	const uint32_t indexPBR = SC_AddType(scene, &PBRTypeFunctions);
 	assert(index == 1);
 
 
 	return scene;
+}
+
+SingleFBO CreateSingleFBO(int width, int height)
+{
+	SingleFBO out;
+	glGenFramebuffers(1, &out.fbo);
+	glBindFramebuffer(GL_FRAMEBUFFER, out.fbo);
+
+	GLuint texture;
+	glGenTextures(1, &out.texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+	glGenRenderbuffers(1, &out.depth);
+	glBindRenderbuffer(GL_RENDERBUFFER, out.depth);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, out.depth);
+
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, out.texture, 0);
+	GLenum drawBuffers = GL_COLOR_ATTACHMENT0;
+	glDrawBuffers(1, &drawBuffers);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+		LOG("FAILED  TO CREATE FRAMEBUFFER\n");
+	}
+
+	return out;
 }

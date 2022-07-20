@@ -16,7 +16,8 @@ uniform vec4 clipPlane;\n\
 out vec2 tPos;\
 out vec4 col;\
 void main(){\
-	gl_Position = projection * view * model * vec4(pos, 1.0f);\
+	vec4 pos = model * vec4(pos, 1.0f);\
+	gl_Position = projection * view * pos;\
 	tPos = texPos;\
 	col = color;\
 	gl_ClipDistance[0] = dot(gl_Position, clipPlane);\
@@ -40,6 +41,7 @@ struct UniformLocations
 	GLuint proj;
 	GLuint model;
 	GLuint view;
+	GLuint plane;
 };
 
 struct Basic3DPipelineObjects
@@ -59,6 +61,7 @@ void InitializeSimple3DPipeline()
 	g_3d.unis.proj = glGetUniformLocation(g_3d.program, "projection");
 	g_3d.unis.model = glGetUniformLocation(g_3d.program, "model");
 	g_3d.unis.view = glGetUniformLocation(g_3d.program, "view");
+	g_3d.unis.plane = glGetUniformLocation(g_3d.program, "clipPlane");
 
 	glGenTextures(1, &g_3d.defaultTexture);
 	glBindTexture(GL_TEXTURE_2D, g_3d.defaultTexture);
@@ -251,9 +254,48 @@ void DrawSimple3D(const S3DVertexBuffer& buf, const glm::mat4& proj, const glm::
 
 	glBindVertexArray(0);
 }
-
-void DrawSimple3DOpaque(S3DSceneObject* obj, void* renderPassData)
+void DrawSimple3D(const S3DVertexBuffer& buf, const glm::mat4& proj, const glm::mat4& view, GLuint texture, const glm::mat4& model, const glm::vec4& clipPlane)
 {
+	glUseProgramWrapper(g_3d.program);
+	glUniformMatrix4fv(g_3d.unis.proj, 1, GL_FALSE, (const GLfloat*)&proj);
+	glUniformMatrix4fv(g_3d.unis.view, 1, GL_FALSE, (const GLfloat*)&view);
+	glUniformMatrix4fv(g_3d.unis.model, 1, GL_FALSE, (const GLfloat*)&model);
+	glUniform4fv(g_3d.unis.plane, 1, (const GLfloat*)&clipPlane);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, texture);
+
+	glBindVertexArray(buf.vao);
+
+	glDrawArraysWrapper(GL_TRIANGLES, 0, buf.numVertices);
+
+	glBindVertexArray(0);
+}
+void DrawSimple3D(const S3DCombinedBuffer& buf, const glm::mat4& proj, const glm::mat4& view, GLuint texture, const glm::mat4& model, const glm::vec4& clipPlane)
+{
+	glUseProgramWrapper(g_3d.program);
+	glUniformMatrix4fv(g_3d.unis.proj, 1, GL_FALSE, (const GLfloat*)&proj);
+	glUniformMatrix4fv(g_3d.unis.view, 1, GL_FALSE, (const GLfloat*)&view);
+	glUniformMatrix4fv(g_3d.unis.model, 1, GL_FALSE, (const GLfloat*)&model);
+	glUniform4fv(g_3d.unis.plane, 1, (const GLfloat*)&clipPlane);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, texture);
+
+	glBindVertexArray(buf.vtxBuf.vao);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buf.idxBuf);
+
+
+	glDrawElementsWrapper(GL_TRIANGLES, buf.numIndices, GL_UNSIGNED_INT, nullptr);
+
+	glBindVertexArray(0);
+
+}
+
+
+void DrawSimple3DOpaque(SceneObject* sceneObject, void* renderPassData)
+{
+	S3DSceneObject* obj = (S3DSceneObject*)sceneObject;
 	StandardRenderPassData* data = (StandardRenderPassData*)renderPassData;
 	glm::mat4 matrix(1.0f);
 	if (obj->transform)
@@ -270,4 +312,38 @@ void DrawSimple3DOpaque(S3DSceneObject* obj, void* renderPassData)
 		if (obj->texture) DrawSimple3D(obj->mesh->vtxBuf, *data->camProj, *data->camView, obj->texture, matrix);
 		else DrawSimple3D(obj->mesh->vtxBuf, *data->camProj, *data->camView, matrix);
 	}
+}
+void DrawSimple3DOpaqueClipPlane(SceneObject* sceneObject, void* renderPassData)
+{
+	S3DSceneObject* obj = (S3DSceneObject*)sceneObject;
+	ReflectPlanePassData* planeData = (ReflectPlanePassData*)renderPassData;
+	StandardRenderPassData* data = &planeData->base;
+	glm::mat4 matrix(1.0f);
+	
+	if (obj->transform)
+	{
+		matrix = *obj->transform;
+	}
+	if (obj->base.additionalFlags)	// 0 => combined buf,  1 => vertex buf
+	{
+		if (obj->texture) DrawSimple3D(*obj->mesh, *data->camProj, *data->camView, obj->texture, matrix, *planeData->planeEquation);
+		else DrawSimple3D(*obj->mesh, *data->camProj, *data->camView, matrix);
+	}
+	else
+	{
+		if (obj->texture) DrawSimple3D(obj->mesh->vtxBuf, *data->camProj, *data->camView, obj->texture, matrix, *planeData->planeEquation);
+		else DrawSimple3D(obj->mesh->vtxBuf, *data->camProj, *data->camView, g_3d.defaultTexture, matrix);
+	}
+}
+
+
+TypeFunctions S3DGetDrawFunctions()
+{
+	TypeFunctions tf;
+	tf.GeometryDraw = nullptr;
+	tf.OpaqueDraw = DrawSimple3DOpaque;
+	tf.BlendDraw = nullptr;
+	tf.ClipPlaneOpaqueDraw = DrawSimple3DOpaqueClipPlane;
+	tf.ClipPlaneBlendDraw = nullptr;
+	return tf;
 }

@@ -152,6 +152,17 @@ void MovementComponent::Update()
 }
 
 
+Camera Camera::GetReflected(const Camera* ref, const glm::vec4& reflectionPlane)
+{
+	Camera cam = *ref;
+	glm::vec3 planeNormal = reflectionPlane;
+	planeNormal = glm::normalize(planeNormal);
+	cam.front = cam.front - 2 * glm::dot(cam.front, planeNormal) * planeNormal;
+	cam.pos -= 2 * reflectionPlane.w * planeNormal;
+	cam.SetViewMatrix();
+	return cam;
+}
+
 void Camera::SetRotation(float yaw, float pitch, float roll)
 {
 	this->yaw = yaw; this->pitch = pitch; this->roll = roll;
@@ -173,7 +184,10 @@ void Camera::Update(const MovementComponent* comp)
 
 	view = glm::lookAtRH(pos, pos + front, up);
 }
-
+void Camera::SetViewMatrix()
+{
+	view = glm::lookAtRH(pos, pos + front, up);
+}
 glm::vec3 Camera::GetFront() const
 {
 	return front;

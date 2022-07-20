@@ -43,5 +43,12 @@ struct StreamArrayBuffer
 	void Bind();
 	void Append(const void* data, uint32_t dataSize, uint32_t sizeSteps);
 };
+struct SingleFBO
+{
+	GLuint fbo;
+	GLuint depth;
+	GLuint texture;
+};
 
 PScene CreateAndInitializeSceneAsDefault();
+SingleFBO CreateSingleFBO(int width, int height);

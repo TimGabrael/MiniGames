@@ -377,23 +377,28 @@ void GenerateBBoxView(BoundingBox* view, const glm::mat4* viewProjMatrix)
 
 }
 
-ObjectRenderStruct* SC_GenerateRenderListOpaque(PScene scene, const glm::mat4* viewProjMatrix, int* num)
+
+
+ObjectRenderStruct* SC_GenerateRenderList(PScene scene)
 {
-	assert(scene != nullptr && viewProjMatrix != nullptr && num != nullptr);
+	_ImplScene* sc = (_ImplScene*)scene;
+	ObjectRenderStruct* output = (ObjectRenderStruct*)malloc(sc->numObjects * sizeof(ObjectRenderStruct));
+
+	return output;
+}
+ObjectRenderStruct* SC_FillRenderList(PScene scene, ObjectRenderStruct* list, const glm::mat4* viewProjMatrix, int* num, TYPE_FUNCTION f, uint32_t objFlag)
+{
+	assert(scene != nullptr && viewProjMatrix != nullptr && num != nullptr && list != nullptr && f < TYPE_FUNCTION::NUM_TYPE_FUNCTION && objFlag != 0);
 	_ImplScene* sc = (_ImplScene*)scene;
 	BoundingBox viewSpace;
 	GenerateBBoxView(&viewSpace, viewProjMatrix);
-	
 
-	ObjectRenderStruct* output = (ObjectRenderStruct*)malloc(sc->numObjects * sizeof(ObjectRenderStruct));
-	assert(output != nullptr);
 	int count = 0;
-	
-
 	for (int i = 0; i < sc->numTypes; i++)
 	{
 		PtrSafeBatchListHeader64* cur = sc->objectDatas[i];
-		const TypeFunctions* funcs = &sc->functions[i];
+		const PFUNCDRAWSCENEOBJECT* funcs = (const PFUNCDRAWSCENEOBJECT*)&sc->functions[i];
+		if (!funcs[f]) continue;
 		while (cur)
 		{
 			for (int j = 0; j < NUM_ELEMENTS_IN_BATCH_LIST64; j++)
@@ -401,12 +406,12 @@ ObjectRenderStruct* SC_GenerateRenderListOpaque(PScene scene, const glm::mat4* v
 				SceneObject* sObj = (SceneObject*)GetElementFromList(cur, j, sizeof(SceneObject));
 				if (sObj)
 				{
-					if (sObj->base.flags & SCENE_OBJECT_OPAQUE)
+					if (sObj->base.flags & objFlag)
 					{
 						if (CubeCubeIntersectionTest(&viewSpace, &sObj->base.bbox))
 						{
-							output[count].obj = sObj;
-							output[count].DrawFunc = funcs->OpaqueDraw;
+							list[count].obj = sObj;
+							list[count].DrawFunc = funcs[f];
 							count++;
 						}
 					}
@@ -416,57 +421,12 @@ ObjectRenderStruct* SC_GenerateRenderListOpaque(PScene scene, const glm::mat4* v
 		}
 	}
 	*num = count;
-	if (count == 0) {
-		free(output);
-		return nullptr;
-	}
-	return output;
+	return list;
 }
-ObjectRenderStruct* SC_GenerateRenderListBlend(PScene scene, const glm::mat4* viewProjMatrix, int* num)
-{
-	assert(scene != nullptr && viewProjMatrix != nullptr && num != nullptr);
-	_ImplScene* sc = (_ImplScene*)scene;
-	BoundingBox viewSpace;
-	GenerateBBoxView(&viewSpace, viewProjMatrix);
-
-	ObjectRenderStruct* output = (ObjectRenderStruct*)malloc(sc->numObjects * sizeof(ObjectRenderStruct));
-	assert(output != nullptr);
-	int count = 0;
 
 
-	for (int i = 0; i < sc->numTypes; i++)
-	{
-		PtrSafeBatchListHeader64* cur = sc->objectDatas[i];
-		const TypeFunctions* funcs = &sc->functions[i];
-		while (cur)
-		{
-			for (int j = 0; j < NUM_ELEMENTS_IN_BATCH_LIST64; j++)
-			{
-				SceneObject* sObj = (SceneObject*)GetElementFromList(cur, j, sizeof(SceneObject));
-				if (sObj)
-				{
-					if (sObj->base.flags & SCENE_OBJECT_BLEND)
-					{
-						if (CubeCubeIntersectionTest(&viewSpace, &sObj->base.bbox))
-						{
-							output[count].obj = sObj;
-							output[count].DrawFunc = funcs->BlendDraw;
-							count++;
-						}
-					}
-				}
-			}
-			cur = cur->next;
-		}
-	}
-	*num = count;
-	if (count == 0) {
-		free(output);
-		return nullptr;
-	}
-	return output;
-}
-void SC_FreeRenderListOpaque(ObjectRenderStruct* list)
+
+void SC_FreeRenderList(ObjectRenderStruct* list)
 {
 	if (list)
 	{

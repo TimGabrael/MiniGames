@@ -107,7 +107,6 @@ void UnoPlugin::Init(ApplicationData* data)
 
 	glEnable(GL_CLIP_DISTANCE0);
 
-
 #ifndef ANDROID
 	glEnable(GL_MULTISAMPLE);
 #endif
@@ -115,10 +114,15 @@ void UnoPlugin::Init(ApplicationData* data)
 
 void UnoPlugin::Resize(ApplicationData* data)
 {
+	static bool once = true;
 	if(sizeY && sizeX)
 		g_objs->playerCam.SetPerspective(90.0f, (float)this->sizeX / (float)this->sizeY, 0.1f, 256.0f);
 	g_objs->playerCam.screenX = sizeX;
 	g_objs->playerCam.screenY = sizeY;
+	if (once) {
+		g_objs->reflectFBO = CreateSingleFBO(sizeX, sizeY);
+		once = false;
+	}
 }
 ColorPicker picker;
 void UnoPlugin::Render(ApplicationData* data)

@@ -25,6 +25,15 @@ enum SCENE_OBJECT_FLAGS
 	SCENE_OBJECT_REFLECTED = 1 << 3,		// requires		Opaque or Blend Draw		Function
 	SCENE_OBJECT_SURFACE_REFLECTED = 1 << 4,// requires		Clip Plane Draw				Function 
 };
+enum TYPE_FUNCTION
+{
+	TYPE_FUNCTION_GEOMETRY,
+	TYPE_FUNCTION_OPAQUE,
+	TYPE_FUNCTION_BLEND,
+	TYPE_FUNCTION_CLIP_PLANE_OPAQUE,
+	TYPE_FUNCTION_CLIP_PLANE_BLEND,
+	NUM_TYPE_FUNCTION
+};
 
 struct BaseSceneObject
 {
@@ -46,7 +55,8 @@ struct TypeFunctions
 	PFUNCDRAWSCENEOBJECT GeometryDraw;
 	PFUNCDRAWSCENEOBJECT OpaqueDraw;
 	PFUNCDRAWSCENEOBJECT BlendDraw;
-	PFUNCDRAWSCENEOBJECT ClipPlaneDraw;	// drawing with a set clipping plane, used for reflective surfaces
+	PFUNCDRAWSCENEOBJECT ClipPlaneOpaqueDraw;	// drawing with a set clipping plane, used for reflective surfaces
+	PFUNCDRAWSCENEOBJECT ClipPlaneBlendDraw;	// drawing with a set clipping plane, used for reflective surfaces
 };
 
 
@@ -75,6 +85,6 @@ void SC_RemoveTransform(PScene scene, uint32_t typeIndex, uint32_t transformSize
 void SC_RemoveSceneObject(PScene scene, uint32_t typeIndex, SceneObject* rmObj);
 
 
-ObjectRenderStruct* SC_GenerateRenderListOpaque(PScene scene, const glm::mat4* viewProjMatrix, int* num);
-ObjectRenderStruct* SC_GenerateRenderListBlend(PScene scene, const glm::mat4* viewProjMatrix, int* num);
-void SC_FreeRenderListOpaque(ObjectRenderStruct* list);
+ObjectRenderStruct* SC_GenerateRenderList(PScene scene);
+ObjectRenderStruct* SC_FillRenderList(PScene scene, ObjectRenderStruct* list, const glm::mat4* viewProjMatrix, int* num, TYPE_FUNCTION funcType, uint32_t objFlag);
+void SC_FreeRenderList(ObjectRenderStruct* list);

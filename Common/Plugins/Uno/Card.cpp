@@ -34,6 +34,7 @@ static constexpr float CARD_EFFECT_SIZEY = CARD_EFFECT_Y / IMAGE_SIZE_Y;
 
 
 static const char* cardVertexShader = "#version 300 es\n\
+#extension GL_EXT_clip_cull_distance : enable\n\
 \n\
 layout(location = 0) in vec2 pos;\n\
 layout(location = 1) in vec2 texPos;\n\
@@ -43,14 +44,17 @@ layout(location = 7) in vec2 texSize;\n\
 layout(location = 8) in vec4 addColor;\n\
 uniform mat4 projection;\n\
 uniform mat4 view;\n\
+uniform vec4 clipPlane;\n\
 out vec3 outNormal;\
 out vec2 tPos;\
 out vec4 addCol;\
 void main(){\
-	gl_Position = projection * view * instanceMatrix * vec4(pos, 0.0f, 1.0f);\
+	vec4 worldPos = instanceMatrix * vec4(pos, 0.0f, 1.0f);\
+	gl_Position = projection * view * worldPos;\
 	tPos = texPos * texSize + texOffset;\
 	outNormal = (instanceMatrix * vec4(0.0f, 0.0f, 1.0f, 0.0f)).xyz;\
 	addCol = addColor;\
+	gl_ClipDistance[0] = dot(worldPos, clipPlane);\
 }\
 ";
 
@@ -117,6 +121,7 @@ struct CardUniforms
 	GLuint projection;
 	GLuint view;
 	GLuint tex;
+	GLuint plane;
 };
 
 struct CardPipeline
@@ -139,6 +144,7 @@ void InitializeCardPipeline(void* assetManager)
 	g_cards.unis.projection = glGetUniformLocation(g_cards.program, "projection");
 	g_cards.unis.view = glGetUniformLocation(g_cards.program, "view");
 	g_cards.unis.tex = glGetUniformLocation(g_cards.program, "tex");
+	g_cards.unis.plane = glGetUniformLocation(g_cards.program, "clipPlane");
 
 	// load texture
 	glGenTextures(1, &g_cards.texture);
@@ -226,12 +232,6 @@ void InitializeCardPipeline(void* assetManager)
 	glVertexAttribDivisor(7, 1);
 	glVertexAttribDivisor(8, 1);
 	
-
-
-
-
-
-
 
 	glBindVertexArray(0);
 }
@@ -344,11 +344,12 @@ void ClearCards()
 }
 
 void DrawCardsInSceneBlended(SceneObject* obj, void* renderPassData);
+void DrawCardsInSceneBlendedClip(SceneObject* obj, void* renderPassData);
 void AddCardTypeToScene(PScene scene)
 {
-	TypeFunctions CardTypeFunctions;
+	TypeFunctions CardTypeFunctions{ 0 };
 	CardTypeFunctions.BlendDraw = DrawCardsInSceneBlended;
-	CardTypeFunctions.OpaqueDraw = nullptr;
+	CardTypeFunctions.ClipPlaneBlendDraw = DrawCardsInSceneBlendedClip;
 	const uint32_t index = SC_AddType(scene, &CardTypeFunctions);
 	assert(index == CARD_SCENE_TYPE_INDEX);
 }
@@ -356,7 +357,7 @@ CardSceneObject* CreateCardBatchSceneObject(PScene scene)
 {
 	CardSceneObject* obj = (CardSceneObject*)SC_AddSceneObject(scene, CARD_SCENE_TYPE_INDEX);
 	memset(obj, 0, sizeof(CardSceneObject));
-	obj->base.flags = SCENE_OBJECT_BLEND | SCENE_OBJECT_REFLECTED | SCENE_OBJECT_CAST_SHADOW;
+	obj->base.flags = SCENE_OBJECT_BLEND | SCENE_OBJECT_REFLECTED | SCENE_OBJECT_CAST_SHADOW | SCENE_OBJECT_SURFACE_REFLECTED;
 	obj->base.bbox.leftTopFront = { -3.0f, -3.0f, -3.0f };
 	obj->base.bbox.rightBottomBack = { 3.0f, 3.0f, 3.0f };
 	return obj;
@@ -366,6 +367,28 @@ void DrawCardsInSceneBlended(SceneObject* obj, void* renderPassData)
 {
 	StandardRenderPassData* data = (StandardRenderPassData*)renderPassData;
 	DrawCards(*data->camProj, *data->camView);
+}
+void DrawCardsInSceneBlendedClip(SceneObject* obj, void* renderPassData)
+{
+	ReflectPlanePassData* rData = (ReflectPlanePassData*)renderPassData;
+	if (g_cards.bufs.mapped) {
+		glBindBuffer(GL_ARRAY_BUFFER, g_cards.bufs.streamBuffer);
+		glUnmapBuffer(GL_ARRAY_BUFFER);
+		g_cards.bufs.mapped = nullptr;
+	}
+	glUseProgramWrapper(g_cards.program);
+	glBindVertexArray(g_cards.bufs.vao);
+	glUniformMatrix4fv(g_cards.unis.projection, 1, GL_FALSE, (const GLfloat*)rData->base.camProj);
+	glUniformMatrix4fv(g_cards.unis.view, 1, GL_FALSE, (const GLfloat*)rData->base.camView);
+	glUniform4fv(g_cards.unis.plane, 1, (const GLfloat*)rData->planeEquation);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, g_cards.texture);
+
+
+	glDrawArraysInstancedWrapper(GL_TRIANGLES, 0, 6, g_cards.bufs.numInstances);
+
+	glBindVertexArray(0);
 }
 void DrawCards(const glm::mat4& proj, const glm::mat4& view)
 {
@@ -381,7 +404,6 @@ void DrawCards(const glm::mat4& proj, const glm::mat4& view)
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, g_cards.texture);
-
 
 	glDrawArraysInstancedWrapper(GL_TRIANGLES, 0, 6, g_cards.bufs.numInstances);
 

@@ -55,10 +55,12 @@ struct MovementComponent
 
 struct Camera
 {
+	static Camera GetReflected(const Camera* ref, const glm::vec4& reflectionPlane);
 	void SetRotation(float yaw, float pitch, float roll);
 	void SetPerspective(float fov, float aspect, float znear, float zfar);
 
 	void Update(const MovementComponent* comp);
+	void SetViewMatrix();
 
 	glm::vec3 GetFront() const;
 	glm::vec3 GetRealUp() const;	// independent of the up vector used in the transformations

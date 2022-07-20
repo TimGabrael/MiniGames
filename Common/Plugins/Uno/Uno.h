@@ -17,6 +17,7 @@ struct UnoGlobals
 {
 	Camera playerCam;
 	MovementComponent moveComp;
+	SingleFBO reflectFBO;
 	GLuint skybox;
 	S3DCombinedBuffer platform;
 	CardHand* localPlayer;
