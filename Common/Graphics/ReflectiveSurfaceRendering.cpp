@@ -2,6 +2,7 @@
 #include "Helper.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include "Renderer.h"
+#include "logging.h"
 
 const char* vertexShader = "#version 300 es\n\
 #extension GL_EXT_clip_cull_distance : enable\
@@ -45,8 +46,8 @@ out vec4 outCol;\
 void main(){\
 	vec2 refract = clipSpace.xy/clipSpace.w * 0.5f + 0.5f;\
 	vec2 reflect = vec2(refract.x, -refract.y);\
-	outCol = texture(reflectTexture, reflect);\
-	outCol = outCol + texture(refractTexture, refract);\
+	outCol = texture(reflectTexture, reflect);\n\
+	outCol = (outCol + texture(refractTexture, refract)) * material.tintColor;\n\
 }\
 ";
 
@@ -104,19 +105,18 @@ void InitializeReflectiveSurfacePipeline()
 	g_reflect.viewLoc = glGetUniformLocation(g_reflect.program, "view");
 	g_reflect.modelLoc = glGetUniformLocation(g_reflect.program, "model");
 	g_reflect.clipPlaneLoc = glGetUniformLocation(g_reflect.program, "clipPlane");
-	g_reflect.materialLoc = glGetUniformLocation(g_reflect.program, "material");
+	g_reflect.materialLoc = glGetUniformBlockIndex(g_reflect.program, "Material");
 	glUniformBlockBinding(g_reflect.program, g_reflect.materialLoc, g_reflect.materialLoc);
 
-	
 }
-
 SceneObject* AddReflectiveSurface(PScene scene, const glm::vec3* pos, const glm::vec3* normal, float scaleX, float scaleY, const ReflectiveSurfaceMaterialData* data, const ReflectiveSurfaceTextures* texData)
 {
 	ReflectiveSurfaceSceneObject* obj = (ReflectiveSurfaceSceneObject*)SC_AddSceneObject(scene, REFLECTIVE_RENDERABLE);
 	
 	obj->base.flags = SCENE_OBJECT_FLAGS::SCENE_OBJECT_OPAQUE | SCENE_OBJECT_FLAGS::SCENE_OBJECT_CAST_SHADOW | SCENE_OBJECT_FLAGS::SCENE_OBJECT_REFLECTED | SCENE_OBJECT_FLAGS::SCENE_OBJECT_SURFACE_REFLECTED;
 
-
+	obj->base.bbox.leftTopFront = { -0.5f, -0.5f, -0.1f };
+	obj->base.bbox.rightBottomBack = { 0.5f, 0.5f, 0.1f };
 
 
 	obj->material = (ReflectiveSurfaceMaterial*)SC_AddMaterial(scene, REFLECTIVE_RENDERABLE, sizeof(ReflectiveSurfaceMaterial));
@@ -126,8 +126,23 @@ SceneObject* AddReflectiveSurface(PScene scene, const glm::vec3* pos, const glm:
 	const float product = glm::dot(norm, glm::vec3(0.0f, 0.0f, 1.0f));
 	const glm::vec3 rotVec = glm::cross(norm, glm::vec3(0.0f, 0.0f, 1.0f));
 	const float angle = acosf(product);
+	
 
-	*obj->modelTransform = glm::rotate(glm::mat4(1.0f), angle, rotVec) * glm::scale(glm::mat4(1.0f), glm::vec3(scaleX, scaleY, 1.0f));
+	if(angle != 0.0f)
+	{
+		*obj->modelTransform = glm::translate(glm::mat4(1.0f), *pos) * glm::rotate(glm::mat4(1.0f), -angle, rotVec) * glm::scale(glm::mat4(1.0f), glm::vec3(scaleX, scaleY, 1.0f));
+	}
+	else
+	{
+		*obj->modelTransform = glm::translate(glm::mat4(1.0f), *pos) * glm::scale(glm::mat4(1.0f), glm::vec3(scaleX, scaleY, 1.0f));
+	}
+	obj->base.bbox.leftTopFront = *obj->modelTransform * glm::vec4(obj->base.bbox.leftTopFront, 1.0f);
+	obj->base.bbox.rightBottomBack = *obj->modelTransform * glm::vec4(obj->base.bbox.rightBottomBack, 1.0f);
+	auto& min = obj->base.bbox.leftTopFront;
+	auto& max = obj->base.bbox.rightBottomBack;
+	if (min.x > max.x) { float temp = max.x; max.x = min.x; min.x = temp; }
+	if (min.y > max.y) { float temp = max.y; max.y = min.y; min.y = temp; }
+	if (min.z > max.z) { float temp = max.z; max.z = min.z; min.z = temp; }
 
 	if (texData)
 	{
@@ -159,7 +174,7 @@ void DrawReflectiveSurface(ReflectiveSurfaceSceneObject* obj, const StandardRend
 	glActiveTexture(GL_TEXTURE0 + RS_TEXTURE_REFLECT);
 	glBindTexture(GL_TEXTURE_2D, obj->material->reflectionTexture);
 	glActiveTexture(GL_TEXTURE0 + RS_TEXTURE_REFRACT);
-	glBindTexture(GL_TEXTURE_2D, obj->material->reflectionTexture);
+	glBindTexture(GL_TEXTURE_2D, obj->material->refractionTexture);
 	glActiveTexture(GL_TEXTURE0 + RS_TEXTURE_DVDU);
 	glBindTexture(GL_TEXTURE_2D, obj->material->dudv);
 

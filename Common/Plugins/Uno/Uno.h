@@ -30,9 +30,8 @@ struct UnoGlobals
 	ColorPicker picker;
 
 	PScene UnoScene;
-	S3DSceneObject* basePlatform;
+	SceneObject* basePlatform;
 	CardSceneObject* cardRenderObject;
-	SceneObject* testReflectionObject;
 	int offscreenX;
 	int offscreenY;
 };

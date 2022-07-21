@@ -8,7 +8,7 @@
 #include <chrono>
 #include <algorithm>
 #include "Graphics/Renderer.h"
-
+#include "Graphics/ReflectiveSurfaceRendering.h"
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -48,7 +48,6 @@ UnoPlugin* GetInstance()
 
 
 
-
 GLuint lut;
 #define ALLOW_FREEMOVEMENT
 void UnoPlugin::Init(ApplicationData* data)
@@ -60,23 +59,7 @@ void UnoPlugin::Init(ApplicationData* data)
 	InitializeOpenGL(data->assetManager);
 	InitializeCardPipeline(data->assetManager);
 
-	static constexpr float cubeSize = 4.0f;
-	uint32_t platformColor = 0xFFFFFFFF;
-	SVertex3D platformVertices[4] = {
-		//{{-cubeSize, 0.0f, -cubeSize}, {0.0f, 0.0f}, 0xFF000090},
-		//{{ cubeSize, 0.0f, -cubeSize}, {1.0f, 0.0f}, 0xFF900000},
-		//{{ cubeSize, 0.0f,  cubeSize}, {1.0f, 1.0f}, 0xFF009000},
-		//{{-cubeSize, 0.0f,  cubeSize}, {0.0f, 1.0f}, 0xFF009090},
-		{{-cubeSize, 0.0f, -cubeSize}, {0.0f, 0.0f}, platformColor},
-		{{ cubeSize, 0.0f, -cubeSize}, {1.0f, 0.0f}, platformColor},
-		{{ cubeSize, 0.0f,  cubeSize}, {1.0f, 1.0f}, platformColor},
-		{{-cubeSize, 0.0f,  cubeSize}, {0.0f, 1.0f}, platformColor},
-	};
-	uint32_t platformIndices[] = {
-		0,3,2,2,1,0,
-	};
 	g_objs = new UnoGlobals;
-	g_objs->platform = S3DGenerateBuffer(platformVertices, sizeof(platformVertices)/sizeof(SVertex3D), platformIndices, sizeof(platformIndices)/sizeof(uint32_t));
 	g_objs->moveComp.pos = { 0.0f, 1.6f, 2.0f };
 	g_objs->moveComp.SetRotation(-90.0f, -40.0f, 0.0f);
 
@@ -85,11 +68,13 @@ void UnoPlugin::Init(ApplicationData* data)
 		g_objs->UnoScene = CreateAndInitializeSceneAsDefault();
 		AddCardTypeToScene(g_objs->UnoScene);
 
-		g_objs->basePlatform = AddSceneObject(g_objs->UnoScene, DEFAULT_SCENE_RENDER_TYPES::SIMPLE_3D_RENDERABLE, platformVertices,
-			sizeof(platformVertices) / sizeof(SVertex3D), platformIndices, sizeof(platformIndices) / sizeof(uint32_t));
-
 		g_objs->cardRenderObject = CreateCardBatchSceneObject(g_objs->UnoScene);
-		
+
+		glm::vec3 reflectPos = { 0.0f, 0.0f, 0.0f };
+		glm::vec3 normal = { 0.0f, 1.0f, 0.0f };
+		ReflectiveSurfaceMaterialData data{ };
+		data.tintColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+		g_objs->basePlatform = AddReflectiveSurface(g_objs->UnoScene, &reflectPos, &normal, 8.0f, 8.0f, &data, nullptr);
 	}
 	g_objs->skybox = LoadCubemap(
 		"Assets/CitySkybox/right.jpg",
@@ -130,6 +115,13 @@ void UnoPlugin::Resize(ApplicationData* data)
 		glGetIntegerv(GL_FRAMEBUFFER_BINDING, &defaultFBO);
 		SetDefaultFramebuffer(defaultFBO);
 		g_objs->reflectFBO = CreateSingleFBO(sizeX, sizeY);
+
+		ReflectiveSurfaceTextures texs;
+		texs.reflect = g_objs->reflectFBO.texture;
+		texs.refract = 0;
+		texs.dudv = 0;
+		ReflectiveSurfaceSetTextureData(g_objs->basePlatform, &texs);
+
 		once = false;
 	}
 }
@@ -143,14 +135,6 @@ void UnoPlugin::Render(ApplicationData* data)
 
 	float dt = std::chrono::duration<float>(now - prev).count();
 	prev = now;
-
-	//glViewport(0, 0, framebufferX, framebufferY);
-	//glClearColor(1.0f, 0.4f, 0.4f, 1.0f);
-	//glClearDepthf(1.0f);
-	//
-	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	//glDepthFunc(GL_LESS);
 
 	g_objs->moveComp.Update();
 	g_objs->playerCam.Update(&g_objs->moveComp);
@@ -195,7 +179,6 @@ void UnoPlugin::Render(ApplicationData* data)
 	glClearDepthf(1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	g_objs->basePlatform->texture = g_objs->reflectFBO.texture;
 
 	RenderSceneStandard(g_objs->UnoScene, &g_objs->playerCam.view, &g_objs->playerCam.perspective,  &g_objs->playerCam.pos, 0, g_objs->skybox);
 

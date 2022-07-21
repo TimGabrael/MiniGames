@@ -18,7 +18,7 @@ struct PtrSafeBatchListHeader64
 };
 
 
-int PositionOfRightMostClearedBit(uint64_t testMask)
+static int PositionOfRightMostClearedBit(uint64_t testMask)
 {
 	if (testMask == UINT64_MAX)
 		return -1;
@@ -33,7 +33,7 @@ int PositionOfRightMostClearedBit(uint64_t testMask)
 	return bitPos;
 }
 
-PtrSafeBatchListHeader64* CreateBatchList(uint32_t elementSize)
+static PtrSafeBatchListHeader64* CreateBatchList(uint32_t elementSize)
 {
 	const uint32_t size = NUM_ELEMENTS_IN_BATCH_LIST64 * elementSize + sizeof(PtrSafeBatchListHeader64);
 	PtrSafeBatchListHeader64* list = (PtrSafeBatchListHeader64*)malloc(size);
@@ -41,13 +41,13 @@ PtrSafeBatchListHeader64* CreateBatchList(uint32_t elementSize)
 	memset(list, 0, size);
 	return list;
 }
-void FreeBatchList(PtrSafeBatchListHeader64* list)
+static void FreeBatchList(PtrSafeBatchListHeader64* list)
 {
 	assert(list != nullptr);
 	free(list);
 }
 
-void* AddElementToBatchList(PtrSafeBatchListHeader64* list, uint32_t elementSize)
+static void* AddElementToBatchList(PtrSafeBatchListHeader64* list, uint32_t elementSize)
 {
 	assert(list != nullptr);
 	if (list->usedbitmask == UINT64_MAX)
@@ -74,7 +74,7 @@ void* AddElementToBatchList(PtrSafeBatchListHeader64* list, uint32_t elementSize
 		return (void*)((uintptr_t)list + listIdx + sizeof(PtrSafeBatchListHeader64));
 	}
 }
-bool RemoveFromList(PtrSafeBatchListHeader64* list, void* ptr, uint32_t elementSize)
+static bool RemoveFromList(PtrSafeBatchListHeader64* list, void* ptr, uint32_t elementSize)
 {
 	assert(list != nullptr);
 	const uintptr_t start = (uintptr_t)list + sizeof(PtrSafeBatchListHeader64);
@@ -105,7 +105,7 @@ bool RemoveFromList(PtrSafeBatchListHeader64* list, void* ptr, uint32_t elementS
 	}
 	return false;
 }
-void DeleteList(PtrSafeBatchListHeader64* list)
+static void DeleteList(PtrSafeBatchListHeader64* list)
 {
 	PtrSafeBatchListHeader64* cur = list;
 	while (cur->prev)
@@ -119,7 +119,7 @@ void DeleteList(PtrSafeBatchListHeader64* list)
 		cur = next;
 	}
 }
-void* GetElementFromList(PtrSafeBatchListHeader64* list, uint32_t idx, uint32_t elementSize)
+static void* GetElementFromList(PtrSafeBatchListHeader64* list, uint32_t idx, uint32_t elementSize)
 {
 	if (list->usedbitmask & (1LL << idx)) return (void*)(((uintptr_t)list) + sizeof(PtrSafeBatchListHeader64) + idx * elementSize);
 	return nullptr;
