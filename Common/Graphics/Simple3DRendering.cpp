@@ -15,14 +15,12 @@ uniform mat4 view;\n\
 uniform vec4 clipPlane;\n\
 out vec2 tPos;\
 out vec4 col;\
-out vec4 clipSpace;\
 void main(){\
 	vec4 pos = model * vec4(pos, 1.0f);\
 	gl_Position = projection * view * pos;\
 	tPos = texPos;\
 	col = color;\
-	clipSpace = projection * view * pos;\
-	gl_ClipDistance[0] = dot(gl_Position, clipPlane);\
+	gl_ClipDistance[0] = dot(pos, clipPlane);\
 }\
 ";
 
@@ -31,13 +29,10 @@ precision highp float;\n\
 \n\
 in vec2 tPos;\
 in vec4 col;\
-in vec4 clipSpace;\
 uniform sampler2D tex;\
 out vec4 outCol;\
 void main(){\
-	vec2 ndc = clipSpace.xy/clipSpace.w * 0.5f + 0.5f;\
-	ndc = vec2(ndc.x, -ndc.y);\
-	outCol = texture(tex, ndc).rgba * col;\
+	outCol = texture(tex, tPos).rgba * col;\
 }\
 ";
 
