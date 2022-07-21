@@ -6,14 +6,14 @@
 const char* vertexShader = "#version 300 es\n\
 #extension GL_EXT_clip_cull_distance : enable\
 \n\
-const vec2 pos[6] = {\
+vec2 pos[6] = vec2[6](\
 	vec2(-0.5f, -0.5f),\
 	vec2( 0.5f, -0.5f),\
 	vec2( 0.5f,  0.5f),\
 	vec2( 0.5f,  0.5f),\
 	vec2(-0.5f,  0.5f),\
-	vec2(-0.5f, -0.5f),\
-};\
+	vec2(-0.5f, -0.5f)\
+);\
 uniform mat4 projection;\n\
 uniform mat4 view;\n\
 uniform mat4 model;\n\
@@ -44,7 +44,7 @@ uniform sampler2D dvdu;\
 out vec4 outCol;\
 void main(){\
 	vec2 refract = clipSpace.xy/clipSpace.w * 0.5f + 0.5f;\
-	vec2 reflect = vec2(ndc.x, -ndc.y);\
+	vec2 reflect = vec2(refract.x, -refract.y);\
 	outCol = texture(reflectTexture, reflect);\
 	outCol = outCol + texture(refractTexture, refract);\
 }\

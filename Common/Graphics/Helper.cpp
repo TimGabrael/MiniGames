@@ -238,6 +238,7 @@ void InitializeOpenGL(void* assetManager)
 	InitializePbrPipeline(assetManager);
 	InitializeUiPipeline();
 	InitializeSimple3DPipeline();
+	InitializeReflectiveSurfacePipeline();
 
 	
 	g_helper.cubemapProgram = CreateProgram(cubemapVS, cubemapFS);
