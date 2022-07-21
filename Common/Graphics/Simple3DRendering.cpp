@@ -342,13 +342,9 @@ void DrawSimple3DOpaqueClipPlane(SceneObject* sceneObject, void* renderPassData)
 }
 
 
-TypeFunctions S3DGetDrawFunctions()
+PFUNCDRAWSCENEOBJECT S3DGetDrawFunctions(TYPE_FUNCTION f)
 {
-	TypeFunctions tf;
-	tf.GeometryDraw = nullptr;
-	tf.OpaqueDraw = DrawSimple3DOpaque;
-	tf.BlendDraw = nullptr;
-	tf.ClipPlaneOpaqueDraw = DrawSimple3DOpaqueClipPlane;
-	tf.ClipPlaneBlendDraw = nullptr;
-	return tf;
+	if (f == TYPE_FUNCTION::TYPE_FUNCTION_OPAQUE) return DrawSimple3DOpaque;
+	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_CLIP_PLANE_OPAQUE) return DrawSimple3DOpaqueClipPlane;
+	return nullptr;
 }

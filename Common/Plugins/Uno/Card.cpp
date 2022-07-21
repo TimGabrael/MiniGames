@@ -168,10 +168,10 @@ void GenerateCardListsFromCache(CardVertex* vertList, uint32_t* indList, const s
 		{
 			continue;
 		}
-		vertList[curVert] = { card.pos - dx - dy, cardNormal, {texCoord.x + texSize.x, texCoord.y }, card.col };
-		vertList[curVert+1] = { card.pos + dx - dy, cardNormal, glm::vec2(texCoord.x, texCoord.y), card.col };
-		vertList[curVert + 2] = { card.pos + dx + dy, cardNormal, { texCoord.x, texCoord.y + texSize.y }, card.col };
-		vertList[curVert+3] = { card.pos - dx + dy, cardNormal, glm::vec2(texCoord.x + texSize.x, texCoord.y + texSize.y), card.col };
+		vertList[curVert] = { card.pos - dx - dy, cardNormal, glm::vec2(texCoord.x, texCoord.y + texSize.y), card.col };
+		vertList[curVert+1] = { card.pos + dx - dy, cardNormal, glm::vec2(texCoord.x + texSize.x, texCoord.y + texSize.y), card.col };
+		vertList[curVert + 2] = { card.pos + dx + dy, cardNormal, { texCoord.x + texSize.x, texCoord.y }, card.col };
+		vertList[curVert+3] = { card.pos - dx + dy, cardNormal, glm::vec2(texCoord.x, texCoord.y), card.col };
 
 		curVert += 4;
 		curIdx += 6;
@@ -290,12 +290,15 @@ void ClearCards()
 
 void DrawCardsInSceneBlended(SceneObject* obj, void* renderPassData);
 void DrawCardsInSceneBlendedClip(SceneObject* obj, void* renderPassData);
+PFUNCDRAWSCENEOBJECT GetDrawSceneObjectFunction(TYPE_FUNCTION f)
+{
+	if (f == TYPE_FUNCTION::TYPE_FUNCTION_BLEND) return DrawCardsInSceneBlended;
+	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_CLIP_PLANE_BLEND) return DrawCardsInSceneBlendedClip;
+	return nullptr;
+}
 void AddCardTypeToScene(PScene scene)
 {
-	TypeFunctions CardTypeFunctions{ 0 };
-	CardTypeFunctions.BlendDraw = DrawCardsInSceneBlended;
-	CardTypeFunctions.ClipPlaneBlendDraw = DrawCardsInSceneBlendedClip;
-	const uint32_t index = SC_AddType(scene, &CardTypeFunctions);
+	const uint32_t index = SC_AddType(scene, GetDrawSceneObjectFunction);
 	assert(index == CARD_SCENE_TYPE_INDEX);
 }
 CardSceneObject* CreateCardBatchSceneObject(PScene scene)

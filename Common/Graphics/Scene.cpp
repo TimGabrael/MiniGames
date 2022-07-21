@@ -136,7 +136,7 @@ struct _ImplScene
 	PtrSafeBatchListHeader64** materials;
 	PtrSafeBatchListHeader64** transforms;
 
-	TypeFunctions* functions;
+	PFUNCGETDRAWFUNCTION* functions;
 
 	int numTypes;
 	int capacityTypes;
@@ -153,19 +153,19 @@ PScene SC_CreateScene()
 	memset(scene, 0, sizeof(_ImplScene));
 	return scene;
 }
-uint32_t SC_AddType(PScene scene, const TypeFunctions* functions)
+uint32_t SC_AddType(PScene scene, PFUNCGETDRAWFUNCTION function)
 {
-	assert(scene != nullptr && functions != nullptr);
+	assert(scene != nullptr && function != nullptr);
 	_ImplScene* sc = (_ImplScene*)scene;
 	if (sc->numTypes + 1 >= sc->capacityTypes)
 	{
 		sc->capacityTypes = sc->capacityTypes + SCENE_ALLOCATION_TYPES_STEPS;
 		{
-			TypeFunctions* funcs = (TypeFunctions*)malloc(sc->capacityTypes * sizeof(TypeFunctions));
-			memset(funcs, 0, sc->capacityTypes * sizeof(TypeFunctions));
+			PFUNCGETDRAWFUNCTION* funcs = (PFUNCGETDRAWFUNCTION*)malloc(sc->capacityTypes * sizeof(PFUNCGETDRAWFUNCTION));
+			memset(funcs, 0, sc->capacityTypes * sizeof(PFUNCGETDRAWFUNCTION));
 			if (sc->functions)
 			{
-				memcpy(funcs, sc->functions, sc->numTypes * sizeof(TypeFunctions));
+				memcpy(funcs, sc->functions, sc->numTypes * sizeof(PFUNCGETDRAWFUNCTION));
 				free(sc->functions);
 			}
 			sc->functions = funcs;
@@ -211,7 +211,7 @@ uint32_t SC_AddType(PScene scene, const TypeFunctions* functions)
 			sc->transforms = transforms;
 		}
 	}
-	memcpy(&sc->functions[sc->numTypes], functions, sizeof(TypeFunctions));
+	sc->functions[sc->numTypes] = function;
 	sc->numTypes = sc->numTypes + 1;
 	return sc->numTypes - 1;
 }
@@ -397,8 +397,8 @@ ObjectRenderStruct* SC_FillRenderList(PScene scene, ObjectRenderStruct* list, co
 	for (int i = 0; i < sc->numTypes; i++)
 	{
 		PtrSafeBatchListHeader64* cur = sc->objectDatas[i];
-		const PFUNCDRAWSCENEOBJECT* funcs = (const PFUNCDRAWSCENEOBJECT*)&sc->functions[i];
-		if (!funcs[f]) continue;
+		PFUNCDRAWSCENEOBJECT func = sc->functions[i](f);
+		if (!func) continue;
 		while (cur)
 		{
 			for (int j = 0; j < NUM_ELEMENTS_IN_BATCH_LIST64; j++)
@@ -411,7 +411,7 @@ ObjectRenderStruct* SC_FillRenderList(PScene scene, ObjectRenderStruct* list, co
 						if (CubeCubeIntersectionTest(&viewSpace, &sObj->base.bbox))
 						{
 							list[count].obj = sObj;
-							list[count].DrawFunc = funcs[f];
+							list[count].DrawFunc = func;
 							count++;
 						}
 					}

@@ -52,4 +52,5 @@ void DrawSimple3D(const S3DCombinedBuffer& buf, const glm::mat4& proj, const glm
 void DrawSimple3D(const S3DVertexBuffer& buf, const glm::mat4& proj, const glm::mat4& view, const glm::mat4& model = glm::mat4(1.0f));
 void DrawSimple3D(const S3DVertexBuffer& buf, const glm::mat4& proj, const glm::mat4& view, GLuint texture, const glm::mat4& model = glm::mat4(1.0f));
 
-TypeFunctions S3DGetDrawFunctions();
+
+PFUNCDRAWSCENEOBJECT S3DGetDrawFunctions(TYPE_FUNCTION f);

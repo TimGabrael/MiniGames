@@ -277,6 +277,8 @@ void UnoPlugin::CleanUp()
 {
 	glDeleteTextures(1, &g_objs->skybox);
 	CleanUpOpenGL();
+	DestroySingleFBO(&g_objs->reflectFBO);
+	
 	delete g_objs;
 
 }

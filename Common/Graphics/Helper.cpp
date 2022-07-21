@@ -22,6 +22,7 @@
 #include "UiRendering.h"
 #include "PbrRendering.h"
 #include "Simple3DRendering.h"
+#include "ReflectiveSurfaceRendering.h"
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -549,17 +550,20 @@ void StreamArrayBuffer::Append(const void* data, uint32_t dataSize, uint32_t siz
 
 
 
-
+PFUNCDRAWSCENEOBJECT TEMPORARY_DRAW_RETRIEVER(TYPE_FUNCTION f)
+{
+	return nullptr;
+}
 PScene CreateAndInitializeSceneAsDefault()
 {
+	auto temp = [](TYPE_FUNCTION f) { return nullptr; };
 	PScene scene = SC_CreateScene();
-	TypeFunctions S3DTypeFunctions = S3DGetDrawFunctions();
-	const uint32_t indexS3D = SC_AddType(scene, &S3DTypeFunctions);
+	const uint32_t indexS3D = SC_AddType(scene, S3DGetDrawFunctions);
 	assert(index == 0);
-	TypeFunctions PBRTypeFunctions{ 0 };
-	const uint32_t indexPBR = SC_AddType(scene, &PBRTypeFunctions);
+	const uint32_t indexPBR = SC_AddType(scene, TEMPORARY_DRAW_RETRIEVER);		// TODO ADD GET DRAW FUNCTION 
 	assert(index == 1);
-
+	const uint32_t indexReflect = SC_AddType(scene, ReflectiveSurfaceGetDrawFunction);	// TODO ADD GET DRAW FUNCTION 
+	assert(index == 2);
 
 	return scene;
 }
@@ -569,9 +573,6 @@ SingleFBO CreateSingleFBO(int width, int height)
 	SingleFBO out;
 	glGenFramebuffers(1, &out.fbo);
 	glBindFramebuffer(GL_FRAMEBUFFER, out.fbo);
-
-	
-	
 
 
 	glGenTextures(1, &out.texture);
@@ -603,4 +604,15 @@ SingleFBO CreateSingleFBO(int width, int height)
 	glBindFramebuffer(GL_FRAMEBUFFER, GetDefaultFramebuffer());
 
 	return out;
+}
+void RecreateSingleFBO(SingleFBO* fbo, int width, int height)
+{
+	DestroySingleFBO(fbo);
+	*fbo = CreateSingleFBO(width, height);
+}
+void DestroySingleFBO(SingleFBO* fbo)
+{
+	glDeleteFramebuffers(1, &fbo->fbo);
+	glDeleteTextures(1, &fbo->texture);
+	glDeleteTextures(1, &fbo->depth);
 }

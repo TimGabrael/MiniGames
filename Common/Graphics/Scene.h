@@ -30,10 +30,11 @@ enum TYPE_FUNCTION
 	TYPE_FUNCTION_GEOMETRY,
 	TYPE_FUNCTION_OPAQUE,
 	TYPE_FUNCTION_BLEND,
-	TYPE_FUNCTION_CLIP_PLANE_OPAQUE,
-	TYPE_FUNCTION_CLIP_PLANE_BLEND,
+	TYPE_FUNCTION_CLIP_PLANE_OPAQUE,	// drawing with a set clipping plane, used for reflective surfaces
+	TYPE_FUNCTION_CLIP_PLANE_BLEND,		// drawing with a set clipping plane, used for reflective surfaces
 	NUM_TYPE_FUNCTION
 };
+typedef PFUNCDRAWSCENEOBJECT(*PFUNCGETDRAWFUNCTION)(TYPE_FUNCTION f);
 
 struct BaseSceneObject
 {
@@ -45,18 +46,9 @@ struct BaseSceneObject
 struct SceneObject	// the mesh/material/transform component can be interchanged with anything, but the Base shall stay the same for all scene object types
 {
 	BaseSceneObject base;
-	PMesh mesh;
-	PMaterial material;
-	PTransform transform;
-};
-
-struct TypeFunctions
-{
-	PFUNCDRAWSCENEOBJECT GeometryDraw;
-	PFUNCDRAWSCENEOBJECT OpaqueDraw;
-	PFUNCDRAWSCENEOBJECT BlendDraw;
-	PFUNCDRAWSCENEOBJECT ClipPlaneOpaqueDraw;	// drawing with a set clipping plane, used for reflective surfaces
-	PFUNCDRAWSCENEOBJECT ClipPlaneBlendDraw;	// drawing with a set clipping plane, used for reflective surfaces
+	PMesh mesh;					// these just show intended uses, nothing is enforced here
+	PMaterial material;			// these just show intended uses, nothing is enforced here
+	PTransform transform;		// these just show intended uses, nothing is enforced here
 };
 
 
@@ -72,7 +64,7 @@ struct ObjectRenderStruct
 PScene SC_CreateScene();
 
 // returns the type index, increases by one every time a new type is added starting from 0
-uint32_t SC_AddType(PScene scene, const TypeFunctions* functions);
+uint32_t SC_AddType(PScene scene, PFUNCGETDRAWFUNCTION functions);
 PMaterial SC_AddMaterial(PScene scene, uint32_t typeIndex, uint32_t materialSize);
 PMesh SC_AddMesh(PScene scene, uint32_t typeIndex, uint32_t meshSize);
 PTransform SC_AddTransform(PScene scene, uint32_t typeIndex, uint32_t transformSize);

@@ -29,6 +29,7 @@ enum DEFAULT_SCENE_RENDER_TYPES
 {
 	SIMPLE_3D_RENDERABLE,
 	PBR_RENDERABLE,
+	REFLECTIVE_RENDERABLE,
 	NUM_DEFAULT_RENDERABLES,
 };
 
@@ -52,3 +53,5 @@ struct SingleFBO
 
 PScene CreateAndInitializeSceneAsDefault();
 SingleFBO CreateSingleFBO(int width, int height);
+void RecreateSingleFBO(SingleFBO* fbo, int width, int height);
+void DestroySingleFBO(SingleFBO* fbo);

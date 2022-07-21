@@ -9,7 +9,7 @@ set(COMMON_SOURCES ${COMMON_SOURCES} ${LOCAL_COLLECTION_SOURCES} PARENT_SCOPE)
 
 
 
-add_library(Uno SHARED "Plugins/Uno/Uno.cpp" "Plugins/Uno/Card.h" "Plugins/Uno/Card.cpp" ${LOCAL_COLLECTION_SOURCES} ${OPENGL_SOURCES} "Plugins/Uno/Animator.h" "Plugins/Uno/Animator.cpp" "Plugins/Uno/Pointer.h" "Plugins/Uno/Pointer.cpp" "Graphics/Scene.h" "Graphics/Scene.cpp" "Graphics/Renderer.h" "Graphics/Renderer.cpp")
+add_library(Uno SHARED "Plugins/Uno/Uno.cpp" "Plugins/Uno/Card.h" "Plugins/Uno/Card.cpp" ${LOCAL_COLLECTION_SOURCES} ${OPENGL_SOURCES} "Plugins/Uno/Animator.h" "Plugins/Uno/Animator.cpp" "Plugins/Uno/Pointer.h" "Plugins/Uno/Pointer.cpp" "Graphics/Scene.h" "Graphics/Scene.cpp" "Graphics/Renderer.h" "Graphics/Renderer.cpp" "Graphics/ReflectiveSurfaceRendering.cpp" "Graphics/ReflectiveSurfaceRendering.h")
 
 
 if(EMSCRIPTEN)

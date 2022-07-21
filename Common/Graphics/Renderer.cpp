@@ -43,7 +43,6 @@ void RenderSceneReflectedOnPlane(PScene scene, const Camera* cam, const glm::vec
 		objs[i].DrawFunc(objs[i].obj, &reflectPassData);
 	}
 
-
 	SC_FreeRenderList(objs);
 
 	glDisable(GL_CLIP_DISTANCE0);
