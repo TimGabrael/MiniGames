@@ -23,6 +23,7 @@ void RenderSceneReflectedOnPlane(PScene scene, const Camera* cam, const glm::vec
 	StandardRenderPassData& standardPassData = reflectPassData.base;
 	standardPassData.camView = &rCam.view;
 	standardPassData.camProj = &rCam.perspective;
+	standardPassData.camPos = &rCam.pos;
 	standardPassData.cameraUniform = cameraUniform;
 	standardPassData.skyBox = skybox;
 	reflectPassData.planeEquation = planeEquation;
@@ -48,7 +49,7 @@ void RenderSceneReflectedOnPlane(PScene scene, const Camera* cam, const glm::vec
 	glDisable(GL_CLIP_DISTANCE0);
 }
 
-void RenderSceneStandard(PScene scene, const glm::mat4* camView, const glm::mat4* camProj, GLuint cameraUniform, GLuint skybox)
+void RenderSceneStandard(PScene scene, const glm::mat4* camView, const glm::mat4* camProj, const glm::vec3* camPos, GLuint cameraUniform, GLuint skybox)
 {
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
@@ -57,6 +58,7 @@ void RenderSceneStandard(PScene scene, const glm::mat4* camView, const glm::mat4
 	StandardRenderPassData standardPassData;
 	standardPassData.camView = camView;
 	standardPassData.camProj = camProj;
+	standardPassData.camPos = camPos;
 	standardPassData.cameraUniform = cameraUniform;
 	standardPassData.skyBox = skybox;
 

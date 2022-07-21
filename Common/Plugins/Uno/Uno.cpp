@@ -102,14 +102,13 @@ void UnoPlugin::Init(ApplicationData* data)
 	g_objs->hands.emplace_back(-1);
 	g_objs->localPlayer = &g_objs->hands.at(0);
 	g_objs->localPlayer->Add(CARD_ID::CARD_ID_ADD_4);
-	g_objs->localPlayer->rotation = 40.0f;
+	g_objs->localPlayer->rotation = 0.0f;
 
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CCW);
-
 
 
 #ifndef ANDROID
@@ -125,6 +124,8 @@ void UnoPlugin::Resize(ApplicationData* data)
 	g_objs->playerCam.screenX = sizeX;
 	g_objs->playerCam.screenY = sizeY;
 	if (once) {
+		g_objs->offscreenX = sizeX;
+		g_objs->offscreenY = sizeY;
 		GLint defaultFBO;
 		glGetIntegerv(GL_FRAMEBUFFER_BINDING, &defaultFBO);
 		SetDefaultFramebuffer(defaultFBO);
@@ -132,7 +133,7 @@ void UnoPlugin::Resize(ApplicationData* data)
 		once = false;
 	}
 }
-ColorPicker picker;
+static ColorPicker picker;
 void UnoPlugin::Render(ApplicationData* data)
 {
 	if (!(sizeX && sizeY)) return;
@@ -177,6 +178,7 @@ void UnoPlugin::Render(ApplicationData* data)
 	}
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, g_objs->reflectFBO.fbo);
+	glViewport(0, 0, g_objs->offscreenX, g_objs->offscreenY);
 	glClearColor(1.0f, 0.4f, 0.4f, 1.0f);
 	glClearDepthf(1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -187,6 +189,7 @@ void UnoPlugin::Render(ApplicationData* data)
 
 
 	glBindFramebuffer(GL_FRAMEBUFFER, GetDefaultFramebuffer());
+	glViewport(0, 0, sizeX, sizeY);
 
 	glClearColor(1.0f, 0.4f, 0.4f, 1.0f);
 	glClearDepthf(1.0f);
@@ -194,7 +197,7 @@ void UnoPlugin::Render(ApplicationData* data)
 
 	g_objs->basePlatform->texture = g_objs->reflectFBO.texture;
 
-	RenderSceneStandard(g_objs->UnoScene, &g_objs->playerCam.view, &g_objs->playerCam.perspective, 0, g_objs->skybox);
+	RenderSceneStandard(g_objs->UnoScene, &g_objs->playerCam.view, &g_objs->playerCam.perspective,  &g_objs->playerCam.pos, 0, g_objs->skybox);
 
 
 	

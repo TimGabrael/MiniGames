@@ -67,6 +67,7 @@ struct Camera
 	glm::vec3 GetRight() const;
 
 	float GetYaw() const;
+	glm::vec3 GetRotation() const;
 	glm::vec2 GetFrustrumSquare(float distance) const;
 
 	glm::vec3 ScreenToWorld(float x, float y) const;

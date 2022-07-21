@@ -7,6 +7,7 @@
 #include <glm/matrix.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <algorithm>
+#include <glm/gtc/quaternion.hpp>
 #include "Graphics/UiRendering.h"
 #include "Graphics/Renderer.h"
 
@@ -36,12 +37,10 @@ static constexpr float CARD_EFFECT_SIZEY = CARD_EFFECT_Y / IMAGE_SIZE_Y;
 static const char* cardVertexShader = "#version 300 es\n\
 #extension GL_EXT_clip_cull_distance : enable\n\
 \n\
-layout(location = 0) in vec2 pos;\n\
-layout(location = 1) in vec2 texPos;\n\
-layout(location = 2) in mat4 instanceMatrix;\n\
-layout(location = 6) in vec2 texOffset;\n\
-layout(location = 7) in vec2 texSize;\n\
-layout(location = 8) in vec4 addColor;\n\
+layout(location = 0) in vec3 pos;\n\
+layout(location = 1) in vec3 nor;\n\
+layout(location = 2) in vec2 texPos;\n\
+layout(location = 3) in vec4 col;\n\
 uniform mat4 projection;\n\
 uniform mat4 view;\n\
 uniform vec4 clipPlane;\n\
@@ -49,11 +48,11 @@ out vec3 outNormal;\
 out vec2 tPos;\
 out vec4 addCol;\
 void main(){\
-	vec4 worldPos = instanceMatrix * vec4(pos, 0.0f, 1.0f);\
+	vec4 worldPos = vec4(pos, 1.0f);\
 	gl_Position = projection * view * worldPos;\
-	tPos = texPos * texSize + texOffset;\
-	outNormal = (instanceMatrix * vec4(0.0f, 0.0f, 1.0f, 0.0f)).xyz;\
-	addCol = addColor;\
+	tPos = texPos;\
+	outNormal = nor;\
+	addCol = col;\
 	gl_ClipDistance[0] = dot(worldPos, clipPlane);\
 }\
 ";
@@ -79,42 +78,115 @@ void main(){\
 ";
 
 
-glm::vec2 CardIDToTextureIndex(CARD_ID id)
+glm::vec2 CardIDToTextureIndex(uint32_t id)
 {
-	const int xPos = id % 14;
-	const int yPos = id / 14;
-	return { CARD_STEP_SIZEX * xPos, CARD_STEP_SIZEY * yPos };
+	if (id < CARD_ID::NUM_AVAILABLE_CARDS)
+	{
+		const int xPos = id % 14;
+		const int yPos = id / 14;
+		return { CARD_STEP_SIZEX * xPos, CARD_STEP_SIZEY * yPos };
+	}
+	else
+	{
+		if (id == CARD_ID::NUM_AVAILABLE_CARDS) return { 0, CARD_EFFECT_START_Y / IMAGE_SIZE_Y };
+	}
+	return { 0.0f,0.0f };
 }
-glm::vec2 CardEffectToTextureIndex(CARD_EFFECT eff)
+glm::vec2 CardIDToTextureSize(uint32_t id)
 {
-	const int xPos = eff % 1;
-
-	return { CARD_EFFECT_SIZEX * xPos, CARD_EFFECT_START_Y / IMAGE_SIZE_Y };
+	if (id < CARD_ID::NUM_AVAILABLE_CARDS)
+	{
+		return { CARD_STEP_SIZEX, CARD_STEP_SIZEY };
+	}
+	else
+	{
+		return { CARD_EFFECT_SIZEX, CARD_EFFECT_SIZEY };
+	}
 }
 
 struct CardVertex
 {
-	glm::vec2 pos;
+	glm::vec3 pos;
+	glm::vec3 nor;
 	glm::vec2 tex;
-};
-struct InstanceData
-{
-	glm::mat4 mat;
-	glm::vec2 tOff;
-	glm::vec2 tSz;
 	uint32_t col;
 };
-static constexpr size_t instSize = sizeof(InstanceData);
+struct _InternalCard
+{
+	glm::vec3 pos;
+	glm::quat rot;
+	float scaleX;
+	float scaleY;
+	uint32_t col;
+	uint16_t frontID;
+	uint16_t backID;
+};
+
+void GenerateCardListsFromCache(CardVertex* vertList, uint32_t* indList, const std::vector<_InternalCard>& cache, const glm::vec3& camPos, int* numInds, bool backwards)
+{
+	const size_t cardCount = cache.size() - 1;
+	size_t curVert = 0;
+	int curIdx = 0;
+	for (size_t i = 0; i < cache.size(); i++)
+	{
+		const _InternalCard& card = cache.at(backwards ? cardCount - i : i);
+		glm::vec3 delta = card.pos - camPos;
+		glm::vec3 cardNormal = glm::normalize(card.rot * glm::vec3(0.0f, 0.0f, 1.0f));
+		glm::vec3 dx = card.rot * glm::vec3(0.5f, 0.0f, 0.0f) * card.scaleX;
+		glm::vec3 dy = card.rot * glm::vec3(0.0f, 1.0f, 0.0f) * card.scaleY * CARD_HEIGHT_HALF;
+
+		float dir = glm::dot(delta, cardNormal);
+		glm::vec2 texCoord;
+		glm::vec2 texSize;
+		if (dir > 0.0f) // show back
+		{
+			texCoord = CardIDToTextureIndex(card.backID);
+			texSize = CardIDToTextureSize(card.backID);
+
+			indList[curIdx + 0] = curVert + 0;
+			indList[curIdx + 1] = curVert + 3;
+			indList[curIdx + 2] = curVert + 2;
+			indList[curIdx + 3] = curVert + 2;
+			indList[curIdx + 4] = curVert + 1;
+			indList[curIdx + 5] = curVert + 0;
+
+		}
+		else if (dir < 0.0f) // show front
+		{
+			texCoord = CardIDToTextureIndex(card.frontID);
+			texSize = CardIDToTextureSize(card.frontID);
+			cardNormal = glm::normalize(card.rot * glm::vec3(0.0f, 0.0f, -1.0f));
+
+			indList[curIdx + 0] = curVert + 0;
+			indList[curIdx + 1] = curVert + 1;
+			indList[curIdx + 2] = curVert + 2;
+			indList[curIdx + 3] = curVert + 2;
+			indList[curIdx + 4] = curVert + 3;
+			indList[curIdx + 5] = curVert + 0;
+		}
+		else
+		{
+			continue;
+		}
+		vertList[curVert] = { card.pos - dx - dy, cardNormal, {texCoord.x + texSize.x, texCoord.y }, card.col };
+		vertList[curVert+1] = { card.pos + dx - dy, cardNormal, glm::vec2(texCoord.x, texCoord.y), card.col };
+		vertList[curVert + 2] = { card.pos + dx + dy, cardNormal, { texCoord.x, texCoord.y + texSize.y }, card.col };
+		vertList[curVert+3] = { card.pos - dx + dy, cardNormal, glm::vec2(texCoord.x + texSize.x, texCoord.y + texSize.y), card.col };
+
+		curVert += 4;
+		curIdx += 6;
+	}
+	*numInds = curIdx;
+}
+
 
 struct CardBuffers
 {
 	GLuint vao;
-	GLuint vertexBuffer;	// single card
-	GLuint streamBuffer;
-	int numInstances = 0;
-	int avSize = 0;
-
-	unsigned char* mapped = nullptr;
+	GLuint verts;
+	GLuint inds;
+	size_t bufferSize;
+	std::vector<_InternalCard> cardCache;
 };
 struct CardUniforms
 {
@@ -172,175 +244,48 @@ void InitializeCardPipeline(void* assetManager)
 		delete[] content.data;
 	}
 	// 
-
+	g_cards.width_half = 0.5f;
+	g_cards.height_half = CARD_HEIGHT_HALF;
 
 	glGenVertexArrays(1, &g_cards.bufs.vao);
 	glBindVertexArray(g_cards.bufs.vao);
 
-	glGenBuffers(1, &g_cards.bufs.vertexBuffer);
-	glGenBuffers(1, &g_cards.bufs.streamBuffer);
-
+	glGenBuffers(1, &g_cards.bufs.verts);
+	glBindBuffer(GL_ARRAY_BUFFER, g_cards.bufs.verts);
 	
-	glBindBuffer(GL_ARRAY_BUFFER, g_cards.bufs.vertexBuffer);
 
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(CardVertex), nullptr);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(CardVertex), (void*)(offsetof(CardVertex, tex)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(CardVertex), (void*)(offsetof(CardVertex, nor)));
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(CardVertex), (void*)(offsetof(CardVertex, tex)));
+	glVertexAttribPointer(3, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(CardVertex), (void*)(offsetof(CardVertex, col)));
 
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
-	g_cards.width_half = 0.5f;
-	g_cards.height_half = CARD_HEIGHT_HALF;
-	CardVertex vert[6] = {
-		{{-0.5f, -cardHeight}, {1.0f, 1.0f}},	// br
-		{{-0.5f, cardHeight}, {1.0f, 0.0f}},	// tr
-		{{0.5f, cardHeight}, {0.0f, 0.0f}},		// tl
-		{{0.5f, cardHeight}, {0.0f, 0.0f}},		// tl
-		{{0.5f, -cardHeight}, {0.0f, 1.0f}},	// bl
-		{{-0.5f, -cardHeight}, {1.0f, 1.0f}},	// br
-	};
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vert), vert, GL_STATIC_DRAW);
-
-	
-	glBindBuffer(GL_ARRAY_BUFFER, g_cards.bufs.streamBuffer);
-	InstanceData data;
-	data.mat = glm::mat4(1.0f);
-	data.tOff = { 0.0f, 0.0f };
-	glBufferData(GL_ARRAY_BUFFER, sizeof(InstanceData), &data, GL_DYNAMIC_DRAW);
-
-	static constexpr size_t vec4Size = sizeof(glm::vec4);
-	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(InstanceData), nullptr);
-	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(InstanceData), (void*)(1 * vec4Size));
-	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(InstanceData), (void*)(2 * vec4Size));
-	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(InstanceData), (void*)(3 * vec4Size));
-	glVertexAttribPointer(6, 2, GL_FLOAT, GL_FALSE, sizeof(InstanceData), (void*)(offsetof(InstanceData, tOff)));
-	glVertexAttribPointer(7, 2, GL_FLOAT, GL_FALSE, sizeof(InstanceData), (void*)(offsetof(InstanceData, tSz)));
-	glVertexAttribPointer(8, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(InstanceData), (void*)(offsetof(InstanceData, col)));
-	
 	glEnableVertexAttribArray(2);
 	glEnableVertexAttribArray(3);
-	glEnableVertexAttribArray(4);
-	glEnableVertexAttribArray(5);
-	glEnableVertexAttribArray(6);
-	glEnableVertexAttribArray(7);
-	glEnableVertexAttribArray(8);
-
-	glVertexAttribDivisor(2, 1);
-	glVertexAttribDivisor(3, 1);
-	glVertexAttribDivisor(4, 1);
-	glVertexAttribDivisor(5, 1);
-	glVertexAttribDivisor(6, 1);
-	glVertexAttribDivisor(7, 1);
-	glVertexAttribDivisor(8, 1);
-	
 
 	glBindVertexArray(0);
+
+	glGenBuffers(1, &g_cards.bufs.inds);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_cards.bufs.inds);
+
+	g_cards.bufs.bufferSize = 0;
+
 }
 
-void RendererAddCard(CARD_ID back, CARD_ID front, const glm::mat4& transform)
+void RendererAddCard(CARD_ID back, CARD_ID front, const glm::vec3& pos, const glm::quat& rot, float sx, float sy)
 {
-	static constexpr int numReserved = 100;
-
-	auto& b = g_cards.bufs;
-	b.numInstances+=2;
-
-	InstanceData data[2];
-	data[0].mat = transform * glm::rotate(glm::mat4(1.0f), 3.14159f, glm::vec3(0.0f, 1.0f, 0.0f));
-	data[0].tOff = CardIDToTextureIndex(front);
-	data[0].tSz = glm::vec2(CARD_STEP_SIZEX, CARD_STEP_SIZEY);
-	data[0].col = 0xFFFFFFFF;
-	data[1].mat = transform * glm::mat4(1.0f);
-	data[1].tOff = CardIDToTextureIndex(back);
-	data[1].tSz = glm::vec2(CARD_STEP_SIZEX, CARD_STEP_SIZEY);
-	data[1].col = 0xFFFFFFFF;
-
-	if (b.avSize <= b.numInstances)
-	{
-		b.avSize = (b.avSize + b.numInstances + numReserved);
-		if (b.mapped)
-		{
-			uint8_t* newData = new uint8_t[b.avSize * sizeof(InstanceData)];
-			memcpy(newData, b.mapped, (b.numInstances-2) * sizeof(InstanceData));
-			memcpy(newData + (b.numInstances - 2) * sizeof(InstanceData), &data, sizeof(InstanceData) * 2);
-
-			glBindBuffer(GL_ARRAY_BUFFER, b.streamBuffer);
-			glUnmapBuffer(GL_ARRAY_BUFFER);
-
-			glBufferData(GL_ARRAY_BUFFER, b.avSize * sizeof(InstanceData), newData, GL_DYNAMIC_DRAW);
-
-			delete[] newData;
-			b.mapped = (unsigned char*)glMapBufferRange(GL_ARRAY_BUFFER, 0, b.avSize * sizeof(InstanceData), GL_MAP_WRITE_BIT | GL_MAP_READ_BIT);
-			return;
-		}
-		else
-		{
-			glBindBuffer(GL_ARRAY_BUFFER, b.streamBuffer);
-			glBufferData(GL_ARRAY_BUFFER, b.avSize * sizeof(InstanceData), nullptr, GL_DYNAMIC_DRAW);
-			b.mapped = (unsigned char*)glMapBufferRange(GL_ARRAY_BUFFER, 0, b.avSize * sizeof(InstanceData), GL_MAP_WRITE_BIT | GL_MAP_READ_BIT);
-		}
-	}
-	if (!b.mapped)
-	{
-		glBindBuffer(GL_ARRAY_BUFFER, b.streamBuffer);
-		b.mapped = (unsigned char*)glMapBufferRange(GL_ARRAY_BUFFER, 0, b.avSize * sizeof(InstanceData), GL_MAP_WRITE_BIT | GL_MAP_READ_BIT);
-	}
-	memcpy(b.mapped + (b.numInstances-2) * sizeof(InstanceData), &data, sizeof(InstanceData) * 2);
+	g_cards.bufs.cardCache.push_back({ pos, rot, sx, sy, 0xFFFFFFFF, (uint16_t)front, (uint16_t)back });
 }
-void RendererAddEffect(CARD_EFFECT effect, const glm::mat4& transform, uint32_t col)
+void RendererAddEffect(CARD_EFFECT effect, const glm::vec3& pos, const glm::quat& rot, float sx, float sy, uint32_t col)
 {
-	static constexpr int numReserved = 100;
-
-	auto& b = g_cards.bufs;
-	b.numInstances += 2;
-
-
-	const glm::vec2 effPos = CardEffectToTextureIndex(effect);
-
-	InstanceData data[2];
-	data[0].mat = transform * glm::rotate(glm::mat4(1.0f), 3.14159f, glm::vec3(0.0f, 1.0f, 0.0f));
-	data[0].tOff = effPos;
-	data[0].tSz = glm::vec2(CARD_EFFECT_SIZEX, CARD_EFFECT_SIZEY);
-	data[0].col = col;
-	data[1].mat = transform;
-	data[1].tOff = effPos;
-	data[1].tSz = data[0].tSz;
-	data[1].col = col;
-
-
-	if (b.avSize <= b.numInstances)
-	{
-		b.avSize = (b.avSize + b.numInstances + numReserved);
-		if (b.mapped)
-		{
-			uint8_t* newData = new uint8_t[b.avSize * sizeof(InstanceData)];
-			memcpy(newData, b.mapped, (b.numInstances - 2) * sizeof(InstanceData));
-			memcpy(newData + (b.numInstances - 2) * sizeof(InstanceData), &data, sizeof(InstanceData) * 2);
-
-			glBindBuffer(GL_ARRAY_BUFFER, b.streamBuffer);
-			glUnmapBuffer(GL_ARRAY_BUFFER);
-
-			glBufferData(GL_ARRAY_BUFFER, b.avSize * sizeof(InstanceData), newData, GL_DYNAMIC_DRAW);
-
-			delete[] newData;
-			b.mapped = (unsigned char*)glMapBufferRange(GL_ARRAY_BUFFER, 0, b.avSize * sizeof(InstanceData), GL_MAP_WRITE_BIT | GL_MAP_READ_BIT);
-			return;
-		}
-		else
-		{
-			glBindBuffer(GL_ARRAY_BUFFER, b.streamBuffer);
-			glBufferData(GL_ARRAY_BUFFER, b.avSize * sizeof(InstanceData), nullptr, GL_DYNAMIC_DRAW);
-			b.mapped = (unsigned char*)glMapBufferRange(GL_ARRAY_BUFFER, 0, b.avSize * sizeof(InstanceData), GL_MAP_WRITE_BIT | GL_MAP_READ_BIT);
-		}
-	}
-	if (!b.mapped)
-	{
-		glBindBuffer(GL_ARRAY_BUFFER, b.streamBuffer);
-		b.mapped = (unsigned char*)glMapBufferRange(GL_ARRAY_BUFFER, 0, b.avSize * sizeof(InstanceData), GL_MAP_WRITE_BIT | GL_MAP_READ_BIT);
-	}
-	memcpy(b.mapped + (b.numInstances - 2) * sizeof(InstanceData), &data, sizeof(InstanceData) * 2);
+	uint16_t faceID = (uint16_t)effect + (uint16_t)CARD_ID::NUM_AVAILABLE_CARDS;
+	g_cards.bufs.cardCache.push_back({ pos, rot, sx, sy, col, faceID, faceID });
+	
 }
 void ClearCards()
 {
-	g_cards.bufs.numInstances = 0;
+	g_cards.bufs.cardCache.clear();
 }
 
 void DrawCardsInSceneBlended(SceneObject* obj, void* renderPassData);
@@ -363,19 +308,40 @@ CardSceneObject* CreateCardBatchSceneObject(PScene scene)
 	return obj;
 }
 
+int FillCardListAndMapToBuffer(const glm::vec3& pos, bool backwards)
+{
+	glBindBuffer(GL_ARRAY_BUFFER, g_cards.bufs.verts);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_cards.bufs.inds);
+	if (g_cards.bufs.cardCache.size() > g_cards.bufs.bufferSize)
+	{
+		g_cards.bufs.bufferSize = g_cards.bufs.cardCache.size() + 100;
+		const uint32_t vtxSize = sizeof(CardVertex) * g_cards.bufs.bufferSize * 4;
+		const uint32_t idxSize = sizeof(uint32_t) * g_cards.bufs.bufferSize * 6;
+		glBufferData(GL_ARRAY_BUFFER, vtxSize, nullptr, GL_DYNAMIC_DRAW);
+
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, idxSize, nullptr, GL_DYNAMIC_DRAW);
+	}
+
+	CardVertex* vtxBuf = (CardVertex*)glMapBufferRange(GL_ARRAY_BUFFER, 0, sizeof(CardVertex) * g_cards.bufs.bufferSize * 4, GL_MAP_WRITE_BIT);
+	uint32_t* idxBuf = (uint32_t*)glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(uint32_t) * g_cards.bufs.bufferSize * 6, GL_MAP_WRITE_BIT);
+	int numInds = 0;
+	GenerateCardListsFromCache(vtxBuf, idxBuf, g_cards.bufs.cardCache, pos, &numInds, backwards);
+	glUnmapBuffer(GL_ARRAY_BUFFER);
+	glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
+	return numInds;
+}
 void DrawCardsInSceneBlended(SceneObject* obj, void* renderPassData)
 {
 	StandardRenderPassData* data = (StandardRenderPassData*)renderPassData;
-	DrawCards(*data->camProj, *data->camView);
+	DrawCards(*data->camProj, *data->camView, *data->camPos);
 }
 void DrawCardsInSceneBlendedClip(SceneObject* obj, void* renderPassData)
 {
 	ReflectPlanePassData* rData = (ReflectPlanePassData*)renderPassData;
-	if (g_cards.bufs.mapped) {
-		glBindBuffer(GL_ARRAY_BUFFER, g_cards.bufs.streamBuffer);
-		glUnmapBuffer(GL_ARRAY_BUFFER);
-		g_cards.bufs.mapped = nullptr;
-	}
+	const glm::vec3* camPos = rData->base.camPos;
+
+	int numInds = FillCardListAndMapToBuffer(*rData->base.camPos, true);
+
 	glUseProgramWrapper(g_cards.program);
 	glBindVertexArray(g_cards.bufs.vao);
 	glUniformMatrix4fv(g_cards.unis.projection, 1, GL_FALSE, (const GLfloat*)rData->base.camProj);
@@ -385,18 +351,16 @@ void DrawCardsInSceneBlendedClip(SceneObject* obj, void* renderPassData)
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, g_cards.texture);
 
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_cards.bufs.inds);
 
-	glDrawArraysInstancedWrapper(GL_TRIANGLES, 0, 6, g_cards.bufs.numInstances);
+	glDrawElementsWrapper(GL_TRIANGLES, numInds, GL_UNSIGNED_INT, nullptr);
 
 	glBindVertexArray(0);
 }
-void DrawCards(const glm::mat4& proj, const glm::mat4& view)
+void DrawCards(const glm::mat4& proj, const glm::mat4& view, const glm::vec3& camPos)
 {
-	if (g_cards.bufs.mapped) {
-		glBindBuffer(GL_ARRAY_BUFFER, g_cards.bufs.streamBuffer);
-		glUnmapBuffer(GL_ARRAY_BUFFER);
-		g_cards.bufs.mapped = nullptr;
-	}
+	int numInds = FillCardListAndMapToBuffer(camPos, false);
+
 	glUseProgramWrapper(g_cards.program);
 	glBindVertexArray(g_cards.bufs.vao);
 	glUniformMatrix4fv(g_cards.unis.projection, 1, GL_FALSE, (const GLfloat*)&proj);
@@ -405,23 +369,19 @@ void DrawCards(const glm::mat4& proj, const glm::mat4& view)
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, g_cards.texture);
 
-	glDrawArraysInstancedWrapper(GL_TRIANGLES, 0, 6, g_cards.bufs.numInstances);
+	glDrawElementsWrapper(GL_TRIANGLES, numInds, GL_UNSIGNED_INT, nullptr);
 
 	glBindVertexArray(0);
 }
 
-bool HitTest(const glm::mat4& model, const glm::vec3& camPos, const glm::vec3& mouseRay)
+bool HitTest(const glm::vec3& center, const glm::quat& rot, float scaleX, float scaleY, const glm::vec3& camPos, const glm::vec3& mouseRay)
 {
-	glm::vec3 normal = glm::normalize(model * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f));
-	glm::vec3 tangent1 = model * glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
-	glm::vec3 tangent2 = model * glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+	glm::vec3 normal = normalize(rot * glm::vec3(0.0f, 0.0f, 1.0f));
+	glm::vec3 tangent1 = rot * glm::vec3(1.0f, 0.0f, 0.0f);
+	glm::vec3 tangent2 = rot * glm::vec3(0.0f, 1.0f, 0.0f);
 
-	float scaledWidth_half = sqrtf(glm::dot(tangent1, tangent1)) * g_cards.width_half;
-	float scaledHeight_half = sqrtf(glm::dot(tangent2, tangent2)) * g_cards.height_half;
-	tangent1 = glm::normalize(tangent1);
-	tangent2 = glm::normalize(tangent2);
-
-	glm::vec3 center = model * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+	float scaledWidth_half = g_cards.width_half * scaleX;
+	float scaledHeight_half = g_cards.height_half * scaleY;
 
 
 	float rayDot = glm::dot(mouseRay, normal);
@@ -446,7 +406,7 @@ bool HitTest(const glm::mat4& model, const glm::vec3& camPos, const glm::vec3& m
 	return false;
 }
 
-// use exact order of webiste
+// use exact order of website
 std::vector<CARD_ID> GenerateDeck()
 {
 	return {
@@ -625,7 +585,7 @@ void ColorPicker::Draw(float aspectRatio, float dt)
 
 
 	if(hoveredColor == 0) DrawCircle({ io, ioa }, { ir, ira }, glm::radians(0.0f), glm::radians(90.0f), ia | 0x0000FF, numSamples);			// red
-	else DrawCircle({ o, oa}, { r, ra },		glm::radians(0.0f),   glm::radians(90.0f), 0x600000FF, numSamples);							// red
+	else DrawCircle({ o, oa}, { r, ra },	glm::radians(0.0f),   glm::radians(90.0f), 0x600000FF, numSamples);								// red
 
 	if(hoveredColor == 1) DrawCircle({ io, -ioa }, { ir, ira }, glm::radians(90.0f), glm::radians(90.0f), ia | 0x00FFFF, numSamples);		// yellow
 	else DrawCircle({ o, -oa}, { r, ra },	glm::radians(90.0f),  glm::radians(90.0f), 0x6000FFFF, numSamples);								// yellow
@@ -646,10 +606,10 @@ void ColorPicker::Draw(float aspectRatio, float dt)
 void CardDeck::Draw()
 {
 	glm::mat4 baseTransform = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(g_cardScale, g_cardScale, g_cardScale));
+	glm::quat rotation = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 	for (int i = 0; i < numCards; i++)
 	{
-		glm::mat4 mat = glm::translate(glm::mat4(1.0f), glm::vec3(dx, i * dy, 0)) * baseTransform;
-		RendererAddCard(CARD_ID_BLANK, CARD_ID_BLANK, mat);
+		RendererAddCard(CARD_ID_BLANK, CARD_ID_BLANK, glm::vec3(dx, i * dy, 0.0f), rotation, g_cardScale, g_cardScale);
 	}
 }
 CARD_ID CardDeck::PullCard()
@@ -678,14 +638,14 @@ void CardStack::Draw()
 				topAnim = std::min(topAnim + 0.02f, 1.0f);
 				if (topAnim == 1.0f) countDown = true;
 			}
-			const float s = 1.3f + 0.4f * topAnim;
+			const float s = g_cardScale * (1.3f + 0.4f * topAnim);
 			const uint32_t col = GetCardColorFromID(this->blackColorID);
-			RendererAddEffect(CARD_EFFECT_BLUR, c.transform * glm::scale(glm::mat4(1.0f), glm::vec3(s, s-0.1f, s)), col);
+			RendererAddEffect(CARD_EFFECT_BLUR, c.position, c.rotation, s, s - 0.1f * g_cardScale, col);
 		}
-		RendererAddCard(c.back, c.front, c.transform);
+		RendererAddCard(c.back, c.front, c.position, c.rotation, g_cardScale, g_cardScale);
 	}
 }
-void CardStack::AddToStack(CARD_ID card, const glm::mat4& mat)
+void CardStack::AddToStack(CARD_ID card, const glm::vec3& pos, const glm::quat& rot)
 {
 	if (cards.size() > 10)
 	{
@@ -695,11 +655,11 @@ void CardStack::AddToStack(CARD_ID card, const glm::mat4& mat)
 		}
 		auto& ad = cards.at(cards.size() - 1);
 		ad.front = card;
-		ad.hoverCounter = 0.0f; ad.transform = mat; ad.visible = true;
+		ad.hoverCounter = 0.0f; ad.position = pos; ad.rotation = rot; ad.visible = true;
 	}
 	else
 	{
-		cards.emplace_back(CARD_ID::CARD_ID_BLANK, card, mat, 0.0f, true);
+		cards.emplace_back(CARD_ID::CARD_ID_BLANK, card, pos, rot, 0.0f, true);
 	}
 }
 CARD_ID CardStack::GetTop(CARD_ID& blackColorRef) const
@@ -717,7 +677,7 @@ void CardHand::Add(CARD_ID id)
 {
 	if (wideCardsStart >= 0.0f) wideCardsStart += g_cardMinDiff * 0.5f;
 
-	cards.emplace_back(CARD_ID::CARD_ID_BLANK, id, glm::mat4(1.0f), 0.0f, true);
+	cards.emplace_back(CARD_ID::CARD_ID_BLANK, id, glm::vec3(0.0f), glm::mat4(1.0f), 0.0f, true);
 
 	std::sort(cards.begin(), cards.end(), [](CardInfo& i1, CardInfo& i2) {
 		return CardSort(i1.front, i2.front);
@@ -729,7 +689,7 @@ int CardHand::AddTemp(const Camera& cam, CARD_ID id)
 {
 	if (wideCardsStart >= 0.0f) wideCardsStart += g_cardMinDiff * 0.5f;
 
-	cards.emplace_back(CARD_ID::CARD_ID_BLANK, id, glm::mat4(1.0f), -1.0f, false);
+	cards.emplace_back(CARD_ID::CARD_ID_BLANK, id, glm::vec3(0.0f), glm::mat4(1.0f), -1.0f, false);
 	std::sort(cards.begin(), cards.end(), [](CardInfo& i1, CardInfo& i2) {
 		return CardSort(i1.front, i2.front);
 		});
@@ -805,7 +765,7 @@ void CardHand::Update(CardStack& stack, CardsInAnimation& anim, ColorPicker& pic
 	for (int i = cards.size() - 1; i >= 0; i--)
 	{
 		auto& c = cards.at(i);
-		if (hitIdx == -1 && HitTest(c.transform, cp, mRay))
+		if (hitIdx == -1 && HitTest(c.position, c.rotation, g_cardScale, g_cardScale, cp, mRay))
 		{
 			hitIdx = i;
 			highlightedCardIdx = hitIdx;
@@ -863,18 +823,18 @@ void CardHand::GenTransformations(const Camera& cam)
 		maxWidth *= 0.4f;
 	}
 
+	const glm::quat transRot = glm::rotate(glm::mat4(1.0f), glm::radians(rotation), glm::vec3(0.0f, 1.0f, 0.0f));
 
-	glm::vec3 camUp = cam.GetRealUp();
-	glm::vec3 baseTranslate = cam.pos + cam.GetFront() + camUp * -1.f;
-	glm::vec3 right = cam.GetRight();
-	float camYaw = cam.GetYaw() + 90.0f;
-	glm::mat4 frontFaceingRotation = glm::rotate(glm::mat4(1.0f), glm::radians(camYaw), glm::vec3(0.0f, -1.0f, 0.0f));
-	float usedCardScale = g_cardScale;
-	glm::mat4 std = glm::translate(glm::mat4(1.0f), baseTranslate) * glm::rotate(glm::mat4(1.0f), glm::radians(-40.0f), right) * frontFaceingRotation * glm::scale(glm::mat4(1.0f), glm::vec3(usedCardScale));
+
+	const glm::vec3 camUp = transRot * cam.GetRealUp();
+	const glm::vec3 camFront = transRot * cam.GetFront();
+	const glm::vec3 right = transRot * cam.GetRight();
+	glm::vec3 baseTranslate = transRot * cam.pos + (camFront + camUp * -1.0f);
+	float camYaw = cam.GetYaw() + 90.0f - rotation;
+	const glm::quat frontFaceingRotation = glm::rotate(glm::mat4(1.0f), glm::radians(-40.0f), right) * glm::rotate(glm::mat4(1.0f), glm::radians(camYaw), glm::vec3(0.0f, -1.0f, 0.0f));
 	
-	int numCards = cards.size();
-
-	float distBetween = std::min(std::max(maxWidth * 2.0f / (float)cards.size(), g_cardMinDiff), maxDiff);
+	const int numCards = cards.size();
+	const float distBetween = std::min(std::max(maxWidth * 2.0f / (float)cards.size(), g_cardMinDiff), maxDiff);
 
 	if (distBetween * numCards > maxWidth * 2.0f)
 	{
@@ -899,7 +859,9 @@ void CardHand::GenTransformations(const Camera& cam)
 		for (int i = 0; i < numCardsInSigma1 && i < numCards; i++)
 		{
 			auto& c = cards.at(i);
-			c.transform = glm::translate(glm::mat4(1.0f), right * curScale * g_cardScale + camUp * 0.2f * c.hoverCounter) * std;
+			c.position = right * curScale * g_cardScale + camUp * 0.2f * c.hoverCounter + baseTranslate;
+			c.rotation = frontFaceingRotation;
+			//c.transform = glm::translate(glm::mat4(1.0f), right * curScale * g_cardScale + camUp * 0.2f * c.hoverCounter) * std;
 			curScale += distSigma1;
 		}
 		int idx = numCardsInSigma1;
@@ -907,7 +869,8 @@ void CardHand::GenTransformations(const Camera& cam)
 		while (curScale < bigEnd && idx < numCards)
 		{
 			auto& c = cards.at(idx);
-			c.transform = glm::translate(glm::mat4(1.0f), right * curScale * g_cardScale + camUp * 0.2f * c.hoverCounter) * std;
+			c.position = right * curScale * g_cardScale + camUp * 0.2f * c.hoverCounter + baseTranslate;
+			c.rotation = frontFaceingRotation;
 			curScale += g_cardMinDiff;
 			idx++;
 		}
@@ -915,7 +878,8 @@ void CardHand::GenTransformations(const Camera& cam)
 		for (int i = idx; i < numCards; i++)
 		{
 			auto& c = cards.at(i);
-			c.transform = glm::translate(glm::mat4(1.0f), right * curScale * g_cardScale + camUp * 0.2f * c.hoverCounter) * std;
+			c.position = right * curScale * g_cardScale + camUp * 0.2f * c.hoverCounter + baseTranslate;
+			c.rotation = frontFaceingRotation;
 			curScale += distSigma2;
 		}
 	}
@@ -928,16 +892,8 @@ void CardHand::GenTransformations(const Camera& cam)
 		{
 			auto& c = cards.at(i);
 			float scale = (start + i * distBetween) * g_cardScale;
-			c.transform = glm::translate(glm::mat4(1.0f), right * scale + camUp * 0.2f * c.hoverCounter) * std;
-		}
-	}
-
-	if (rotation != 0.0f)
-	{
-		for (int i = 0; i < cards.size(); i++)
-		{
-			auto& c = cards.at(i);
-			c.transform = glm::rotate(glm::mat4(1.0f), glm::radians(rotation), glm::vec3(0.0f, 1.0f, 0.0f)) * c.transform;
+			c.position = right * scale + camUp * 0.2f * c.hoverCounter + baseTranslate;
+			c.rotation = frontFaceingRotation;
 		}
 	}
 
@@ -963,11 +919,10 @@ void CardHand::Draw(const Camera& cam)
 		}
 		if (i == highlightedCardIdx)
 		{
-			float scale = 1.3f + 0.1f * idx;
-			glm::mat4 s = glm::scale(glm::mat4(1.0f), glm::vec3(scale, scale - 0.1f, scale));
-			RendererAddEffect(CARD_EFFECT::CARD_EFFECT_BLUR, c.transform * s, 0xFF00D7FF);
+			float scale = g_cardScale * (1.3f + 0.1f * idx);
+			RendererAddEffect(CARD_EFFECT::CARD_EFFECT_BLUR, c.position, c.rotation, scale, scale - 0.1f * g_cardScale, 0xFF00D7FF);
 		}
-		RendererAddCard(c.back, c.front, c.transform);
+		RendererAddCard(c.back, c.front, c.position, c.rotation, g_cardScale, g_cardScale);
 	}
 	
 }
@@ -979,19 +934,8 @@ void CardHand::Draw(const Camera& cam)
 
 
 
-AnimatedCard::AnimatedCard(const CardStack& stack, CARD_ID front, const glm::vec3& pos, float yaw, float pitch, float roll, float dur, CARD_ANIMATIONS a, int cardID, int handID) {
-	back = CARD_ID_BLANK; this->front = front; anim.AddState(pos, yaw, pitch, roll, AnimationType::ANIMATION_LINEAR, dur); this->cardID = cardID; this->handID = handID;
-	if (a == ANIM_PLAY_CARD) {
-		AddStackAnimation(stack);
-	}
-	else if (a == ANIM_FETCH_CARD)
-	{
-		AddDeckAnimation();
-	}
-}
-AnimatedCard::AnimatedCard(const CardStack& stack, CARD_ID front, const glm::mat4& mat, float dur, CARD_ANIMATIONS a, int cardID, int handID)
-{
-	back = CARD_ID_BLANK; this->front = front; anim.AddState(mat, AnimationType::ANIMATION_LINEAR, dur); this->cardID = cardID; this->handID = handID;
+AnimatedCard::AnimatedCard(const CardStack& stack, CARD_ID front, const glm::vec3& pos, const glm::quat& rot, float dur, CARD_ANIMATIONS a, int cardID, int handID) {
+	back = CARD_ID_BLANK; this->front = front; posAnim.AddState(pos, AnimationType::ANIMATION_LINEAR, dur); rotAnim.AddState(rot, AnimationType::ANIMATION_LINEAR, dur); this->cardID = cardID; this->handID = handID;
 	if (a == ANIM_PLAY_CARD) {
 		AddStackAnimation(stack);
 	}
@@ -1003,35 +947,39 @@ AnimatedCard::AnimatedCard(const CardStack& stack, CARD_ID front, const glm::mat
 void AnimatedCard::AddStackAnimation(const CardStack& stack)
 {
 	type = CARD_ANIMATIONS::ANIM_PLAY_CARD;
-	if (anim.states.empty()) return;// first state should be set already
-	auto& s = anim.states.at(0);
-	glm::vec3 startPos = s.transform * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-
-	float startYaw = glm::degrees((glm::vec4(0.0f, 1.0f, 0.0f, 0.0f) * s.transform).y);
-	float startPitch = glm::degrees((glm::vec4(1.0f, 0.0f, 0.0f, 0.0f) * s.transform).x);
-	float startRoll = glm::degrees((glm::vec4(0.0f, 0.0f, 1.0f, 0.0f) * s.transform).z);
+	if (posAnim.states.empty() || rotAnim.states.empty()) return;// first state should be set already
+	
 	glm::vec3 endPos = glm::vec3(0.0f, CardStack::dy * stack.cards.size(), 0.0f);
 
 	float endYaw = (rand() % 360) * 1.0f;	// 0° -> 360°
 	float endPitch = -90.0f;
 	float endRoll = 0.0f;
 
-	glm::vec3 middlePos = (endPos + startPos) / 2.0f + glm::vec3(0.0f, 0.4f, 0.0f);
+	glm::vec3 middlePos = (endPos + posAnim.states.at(0).transform) / 2.0f + glm::vec3(0.0f, 0.4f, 0.0f);
+	glm::quat middleRot = glm::rotate(glm::mat4(1.0f), glm::radians(endPitch / 2.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * 
+		glm::rotate(glm::mat4(1.0f), glm::radians(endYaw / 2.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	glm::quat endRot = glm::rotate(glm::mat4(1.0f), glm::radians(endPitch), glm::vec3(1.0f, 0.0f, 0.0f)) *
+		glm::rotate(glm::mat4(1.0f), glm::radians(endYaw), glm::vec3(0.0f, 0.0f, 1.0f));
 
-	float middleYaw = (endYaw - startYaw) / 2.0f;
-	float middlePitch = (endPitch - startPitch) / 2.0f;
-	float middleRoll = (endRoll - startRoll) / 2.0f;
 
-	anim.AddState(middlePos, middleYaw, middlePitch, middleRoll, AnimationType::ANIMATION_LINEAR, 0.15f);
-	anim.AddState(endPos, endYaw, endPitch, endRoll, AnimationType::ANIMATION_LINEAR, 0.3f);
+
+	posAnim.AddState(middlePos, AnimationType::ANIMATION_LINEAR, 0.15f);
+	rotAnim.AddState(middleRot, AnimationType::ANIMATION_LINEAR, 0.15f);
+	posAnim.AddState(endPos, AnimationType::ANIMATION_LINEAR, 0.3f);
+	rotAnim.AddState(endRot, AnimationType::ANIMATION_LINEAR, 0.3f);
 }
 void AnimatedCard::AddDeckAnimation()
 {
 	type = CARD_ANIMATIONS::ANIM_FETCH_CARD;
-	if (anim.states.empty()) return;
-	anim.AddState(glm::vec3(CardDeck::dx, CardDeck::topY, 0.0f), 0.0f, 90.0f, 0.0f, AnimationType::ANIMATION_LINEAR, 0.0f);
-	std::swap(anim.states.at(0), anim.states.at(1));
-	anim.states.at(1).duration = 0.4f;
+	if (posAnim.states.empty() || rotAnim.states.empty()) return;
+	glm::quat rot = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	posAnim.AddState(glm::vec3(CardDeck::dx, CardDeck::topY, 0.0f), AnimationType::ANIMATION_LINEAR, 0.0f);
+	rotAnim.AddState(rot, AnimationType::ANIMATION_LINEAR, 0.0f);
+	std::swap(posAnim.states.at(0), posAnim.states.at(1));
+	std::swap(rotAnim.states.at(0), rotAnim.states.at(1));
+
+	posAnim.states.at(1).duration = 0.4f;
+	rotAnim.states.at(1).duration = 0.4f;
 }
 
 
@@ -1039,16 +987,16 @@ void AnimatedCard::AddDeckAnimation()
 void CardsInAnimation::AddAnim(const CardStack& stack, const CardInfo& info, int handID, CARD_ANIMATIONS id)
 {
 	const float inv_scale = 1.0f / g_cardScale;
-	list.emplace_back(stack, info.front, glm::scale(info.transform, glm::vec3(inv_scale)), 0.0f, id, info.transitionID, handID);
+	list.emplace_back(stack, info.front, info.position, info.rotation, 0.0f, id, info.transitionID, handID);
 }
 void CardsInAnimation::Update(std::vector<CardHand>& hands, CardStack& stack, float dt)
 {
 	bool anyTrue = false;
 	for (auto& a : list)
 	{
-		glm::mat4 curTransform = a.anim.GetTransform(dt, a.done) * glm::scale(glm::mat4(1.0f), glm::vec3(g_cardScale));
-		glm::vec3 pos = curTransform * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-		RendererAddCard(a.back, a.front, curTransform);
+		glm::vec3 curPos = a.posAnim.GetTransform(dt, a.done);
+		glm::quat curRot = a.rotAnim.GetTransform(dt, a.done);
+		RendererAddCard(a.back, a.front, curPos, curRot, g_cardScale, g_cardScale);
 		if (a.done) anyTrue = true;
 	}
 	if (anyTrue)
@@ -1059,14 +1007,14 @@ void CardsInAnimation::Update(std::vector<CardHand>& hands, CardStack& stack, fl
 			if (!a.done) newList.push_back(a);
 			else
 			{
-				OnFinish(hands, stack, a.anim.currentTransform, a.front, a.type, a.handID, a.cardID);
+				OnFinish(hands, stack, a.posAnim.currentTransform, a.rotAnim.currentTransform, a.front, a.type, a.handID, a.cardID);
 			}
 		}
 		list = std::move(newList);
 	}
 }
 
-void CardsInAnimation::OnFinish(std::vector<CardHand>& hands, CardStack& stack, const glm::mat4& transform, CARD_ID id, CARD_ANIMATIONS type, int handID, int transitionID)
+void CardsInAnimation::OnFinish(std::vector<CardHand>& hands, CardStack& stack, const glm::vec3& position, const glm::quat& rotation, CARD_ID id, CARD_ANIMATIONS type, int handID, int transitionID)
 {
 	CardHand* hand = nullptr;
 	for (auto& h : hands)
@@ -1087,6 +1035,6 @@ void CardsInAnimation::OnFinish(std::vector<CardHand>& hands, CardStack& stack, 
 		}
 	}
 	if (type == CARD_ANIMATIONS::ANIM_PLAY_CARD) {
-		stack.AddToStack(id, transform * glm::scale(glm::mat4(1.0f), glm::vec3(g_cardScale)));
+		stack.AddToStack(id, position, rotation);
 	}
 }

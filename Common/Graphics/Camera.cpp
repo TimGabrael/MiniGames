@@ -209,6 +209,10 @@ float Camera::GetYaw() const
 {
 	return yaw;
 }
+glm::vec3 Camera::GetRotation() const
+{
+	return { yaw, pitch, roll };
+}
 glm::vec2 Camera::GetFrustrumSquare(float distance) const
 {
 	float heightCut = 2.0f * tanf(glm::radians(fieldOfView) / 2.0f) * distance;

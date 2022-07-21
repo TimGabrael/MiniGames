@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 
 enum AnimationType 
@@ -11,24 +12,59 @@ enum AnimationType
 	ANIMATION_EASE_IN,
 	ANIMATION_EASE_OUT,
 };
-
+template<typename T>
 struct AnimationState
 {
-	AnimationState(const glm::mat4& t, AnimationType ty, float dur) : transform(t), type(ty), duration(dur) {}
-	glm::mat4 transform;
+	AnimationState(const T& t, AnimationType ty, float dur) : transform(t), type(ty), duration(dur) {}
+	T transform;
+
+	
 	AnimationType type;
 	float duration;
 };
+template<typename T>
 struct Animation
 {
-	void AddState(const glm::mat4& anim, AnimationType animType, float dur) { states.emplace_back(anim, animType, dur); }
-	void AddState(const glm::vec3& pos, float yaw, float pitch, float roll, AnimationType animType, float dur);
+	void AddState(const T& anim, AnimationType animType, float dur) { states.emplace_back(anim, animType, dur); }
 
+	T GetTransform(float deltaTime, bool& finished)
+	{
+		finished = false;
+		float oldDur = curDuration;
+		curDuration += deltaTime;
 
-	glm::mat4 GetTransform(float deltaTime, bool& finished);
+		AnimationState<T>* first = nullptr;
+		AnimationState<T>* second = nullptr;
+		float curTime = 0.0f;
+		for (int i = 0; i < states.size(); i++)
+		{
+			float d = states.at(i).duration;
+			if (!second && curTime <= curDuration && curDuration < curTime + d)
+			{
+				second = &states.at(i);
+				if (i > 0) first = &states.at(i - 1);
+				else first = &states.at(0);
+			}
+			if (second) break;
+			curTime += d;
+		}
 
-	glm::mat4 currentTransform;	// gets set in GetTransform
-	std::vector<AnimationState> states;
+		if (first && second)
+		{
+			const float normalizedOffset = (curDuration - curTime) / second->duration;
+
+			currentTransform = first->transform * (1.0f - normalizedOffset) + normalizedOffset * second->transform;
+		}
+		else if (curTime < curDuration)
+		{
+			finished = true;
+			currentTransform = states.at(states.size() - 1).transform;
+		}
+		return currentTransform;
+	}
+
+	T currentTransform;	// gets set in GetTransform
+	std::vector<AnimationState<T>> states;
 	float curDuration = 0.0f;
 };
 

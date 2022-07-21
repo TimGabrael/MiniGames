@@ -1,5 +1,6 @@
 #pragma once
 #include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <vector>
 #include "Graphics/Camera.h"
 #include "Animator.h"
@@ -53,8 +54,8 @@ struct CardSceneObject	// doesn't have any data in it, uses the global card data
 
 void InitializeCardPipeline(void* assetManager);
 
-void RendererAddCard(CARD_ID back, CARD_ID front, const glm::mat4& transform);
-void RendererAddEffect(CARD_EFFECT effect, const glm::mat4& transform, uint32_t col);
+void RendererAddCard(CARD_ID back, CARD_ID front, const glm::vec3& pos, const glm::quat& rot, float sx, float sy);
+void RendererAddEffect(CARD_EFFECT effect, const glm::vec3& pos, const glm::quat& rot, float sx, float sy, uint32_t col);
 void ClearCards();
 
 
@@ -62,7 +63,7 @@ void AddCardTypeToScene(PScene scene);
 CardSceneObject* CreateCardBatchSceneObject(PScene scene);
 
 
-void DrawCards(const glm::mat4& proj, const glm::mat4& view);
+void DrawCards(const glm::mat4& proj, const glm::mat4& view, const glm::vec3& camPos);
 
 bool HitTest(const glm::mat4& model, const glm::vec3& camPos, const glm::vec3& mouseRay);
 
@@ -104,9 +105,10 @@ struct ColorPicker
 struct CardsInAnimation;
 struct CardInfo
 {
-	CardInfo(CARD_ID back, CARD_ID front, const glm::mat4& mat, float hov, bool isVisible) : back(back), front(front), transform(mat), hoverCounter(hov), visible(isVisible) {};
+	CardInfo(CARD_ID back, CARD_ID front, const glm::vec3& pos, const glm::quat& rot, float hov, bool isVisible) : back(back), front(front), position(pos), rotation(rot), hoverCounter(hov), visible(isVisible) {};
 	CARD_ID back; CARD_ID front;
-	glm::mat4 transform;
+	glm::vec3 position;
+	glm::quat rotation;
 	float hoverCounter = 0.0f;
 	int transitionID = -1;			// used to match a card with a animation
 	bool visible = false;			// temporary card is not shown! used for animations that end in the hand
@@ -132,7 +134,7 @@ struct CardStack
 	bool countDown = false;
 
 	void Draw();
-	void AddToStack(CARD_ID card, const glm::mat4& mat);
+	void AddToStack(CARD_ID card, const glm::vec3& pos, const glm::quat& rot);
 	CARD_ID GetTop(CARD_ID& blackColorRef) const;
 };
 struct CardHand
@@ -172,13 +174,13 @@ struct CardHand
 
 struct AnimatedCard
 {
-	AnimatedCard(const CardStack& stack, CARD_ID front, const glm::vec3& pos, float yaw, float pitch, float roll, float dur, CARD_ANIMATIONS a, int cardID, int handID);
-	AnimatedCard(const CardStack& stack, CARD_ID front, const glm::mat4& mat, float dur, CARD_ANIMATIONS a, int cardID, int handID);
+	AnimatedCard(const CardStack& stack, CARD_ID front, const glm::vec3& pos, const glm::quat& rot, float dur, CARD_ANIMATIONS a, int cardID, int handID);
 	void AddStackAnimation(const CardStack& stack);
 	void AddDeckAnimation();
 
 	CARD_ID back; CARD_ID front;
-	Animation anim;
+	Animation<glm::vec3> posAnim;
+	Animation<glm::quat> rotAnim;
 	CARD_ANIMATIONS type;
 	int handID = -1;
 	int cardID = 0;
@@ -190,7 +192,7 @@ struct CardsInAnimation
 	bool inputsAllowed;
 	void AddAnim(const CardStack& stack, const CardInfo& info, int handID, CARD_ANIMATIONS id);
 	void Update(std::vector<CardHand>& hands, CardStack& stack, float dt);
-	void OnFinish(std::vector<CardHand>& hands, CardStack& stack, const glm::mat4& transform, CARD_ID id, CARD_ANIMATIONS type, int handID, int transitionID);
+	void OnFinish(std::vector<CardHand>& hands, CardStack& stack, const glm::vec3& position, const glm::quat& rotation, CARD_ID id, CARD_ANIMATIONS type, int handID, int transitionID);
 };
 
 

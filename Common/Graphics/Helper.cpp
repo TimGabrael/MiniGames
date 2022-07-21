@@ -229,6 +229,9 @@ void InitializeOpenGL(void* assetManager)
 #if !defined(ANDROID) and !defined(EMSCRIPTEN)
 	gladLoadGL();
 #endif
+#ifdef ANDROID
+	glEnable(CLIP_DISTANCE0_EXT);
+#endif
 	g_helper.assetManager = assetManager;
 	
 	InitializePbrPipeline(assetManager);

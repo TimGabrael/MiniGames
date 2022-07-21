@@ -32,6 +32,8 @@ struct UnoGlobals
 	PScene UnoScene;
 	S3DSceneObject* basePlatform;
 	CardSceneObject* cardRenderObject;
+	int offscreenX;
+	int offscreenY;
 };
 
 
