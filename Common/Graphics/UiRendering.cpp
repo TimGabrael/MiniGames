@@ -33,6 +33,7 @@ void main(){\
 
 struct DrawInstruction
 {
+	DrawInstruction(GLuint bTex, int nVerts, bool isTrig) : boundTexture(bTex), numVerts(nVerts), isTriangle(isTrig) {}
 	GLuint boundTexture = 0;
 	int numVerts = 0;
 	bool isTriangle = 0;
@@ -73,7 +74,7 @@ void AddVerticesToBuffer(Vertex2D* verts, int numVerts, GLuint boundTexture, boo
 	const int addingSize = numVerts * sizeof(Vertex2D);
 	if (sb.instructions.empty() || sb.instructions.at(sb.instructions.size() - 1).boundTexture != boundTexture || sb.instructions.at(sb.instructions.size() - 1).numVerts != areTriangles)
 	{
-		sb.instructions.push_back({ boundTexture, numVerts, areTriangles });
+		sb.instructions.emplace_back(boundTexture, numVerts, areTriangles);
 	}
 	else
 	{

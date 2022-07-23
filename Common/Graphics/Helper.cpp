@@ -234,9 +234,6 @@ void InitializeOpenGL(void* assetManager)
 #if !defined(ANDROID) and !defined(EMSCRIPTEN)
 	gladLoadGL();
 #endif
-#ifdef ANDROID
-	glEnable(CLIP_DISTANCE0_EXT);
-#endif
 	g_helper.assetManager = assetManager;
 	
 	InitializePbrPipeline(assetManager);
@@ -566,11 +563,11 @@ PScene CreateAndInitializeSceneAsDefault()
 {
 	PScene scene = SC_CreateScene();
 	const uint32_t indexS3D = SC_AddType(scene, S3DGetDrawFunctions);
-	assert(index == 0);
+	assert(indexS3D == 0);
 	const uint32_t indexPBR = SC_AddType(scene, TEMPORARY_DRAW_RETRIEVER);		// TODO ADD GET DRAW FUNCTION 
-	assert(index == 1);
+	assert(indexPBR == 1);
 	const uint32_t indexReflect = SC_AddType(scene, ReflectiveSurfaceGetDrawFunction);	// TODO ADD GET DRAW FUNCTION 
-	assert(index == 2);
+	assert(indexReflect == 2);
 
 	return scene;
 }
@@ -623,12 +620,17 @@ DepthFBO CreateDepthFBO(int width, int height)
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	GLfloat borderColor = 1.0f;
+#ifdef ANDROID
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER_EXT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER_EXT);
+	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR_EXT, &borderColor);
+#else
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-	GLfloat borderColor = 1.0f;
 	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, &borderColor);
+#endif
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, out.depth, 0);
-
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 		LOG("FAILED  TO CREATE FRAMEBUFFER\n");

@@ -31,7 +31,7 @@ void RenderSceneShadow(PScene scene, const StandardRenderPassData* data)
 
 void RenderSceneReflectedOnPlane(PScene scene, const ReflectPlanePassData* data)
 {
-	glEnable(GL_CLIP_DISTANCE0);
+	glEnableClipDistance(0);
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
@@ -58,7 +58,7 @@ void RenderSceneReflectedOnPlane(PScene scene, const ReflectPlanePassData* data)
 		objs[i].DrawFunc(objs[i].obj, (void*)data);
 	}
 
-	glDisable(GL_CLIP_DISTANCE0);
+	glDisableClipDistance(0);
 }
 
 void RenderSceneStandard(PScene scene, const StandardRenderPassData* data)

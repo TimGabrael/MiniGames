@@ -55,7 +55,7 @@ struct PointerData{
 JNIEnv* env = nullptr;
 struct engine {
     struct android_app* app;
-
+    ApplicationData* passedData;
     AAssetManager* pAssetManager;
     ASensorManager* sensorManager;
     const ASensor* accelerometerSensor;
@@ -270,7 +270,7 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd) {
                 engine_init_display(engine);
                 engine_draw_frame(engine);
                 if(loadedPlugin) {
-                    loadedPlugin->Init(engine->pAssetManager, PLATFORM_ID::PLATFORM_ID_ANDROID);
+                    loadedPlugin->Init(engine->passedData);
                     loadedPlugin->Resize(nullptr);
                     engine->initialized = true;
                 }
@@ -398,6 +398,18 @@ void android_main(struct android_app* state)
     engine.sensorEventQueue = ASensorManager_createEventQueue(engine.sensorManager,
                                                               state->looper, LOOPER_ID_USER, NULL, NULL);
 
+    engine.passedData = new ApplicationData;
+    {   // initialize engine passedData
+        ApplicationData* p = engine.passedData;
+        p->assetManager = engine.pAssetManager;
+        p->addedClientIdx = -1;
+        p->removedClient = nullptr;
+        p->localPlayer.groupMask = 0x1;
+        p->localPlayer.name = "TEMPORARY_TEST_NAME";
+        p->roomName = "TEMPORARY_TEST_ROOM";
+        p->tempSyncDataStorage = "";
+        p->socket = nullptr; // for now nullptr
+    }
     LoadAssetManager(&engine);
 
 

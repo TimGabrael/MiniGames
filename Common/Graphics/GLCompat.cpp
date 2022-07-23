@@ -55,7 +55,22 @@ void glDrawArraysInstancedWrapper(GLenum mode, GLint first, GLsizei count, GLsiz
 #endif
 	glDrawArraysInstanced(mode, first, count, instancecount);
 }
-
+void glEnableClipDistance(int clipIndex)
+{
+#ifdef ANDROID
+	glEnable(GL_CLIP_DISTANCE0_EXT + clipIndex);
+#else
+	glEnable(GL_CLIP_DISTANCE0 + clipIndex);
+#endif
+}
+void glDisableClipDistance(int clipIndex)
+{
+#ifdef ANDROID
+	glDisable(GL_CLIP_DISTANCE0_EXT + clipIndex);
+#else
+	glDisable(GL_CLIP_DISTANCE0 + clipIndex);
+#endif
+}
 
 
 void SetDefaultFramebuffer(GLuint fb)
