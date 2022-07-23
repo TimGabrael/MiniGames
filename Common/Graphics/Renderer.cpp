@@ -26,6 +26,7 @@ void RenderSceneShadow(PScene scene, const StandardRenderPassData* data)
 		objs[i].DrawFunc(objs[i].obj, (void*)data);
 	}
 
+	//glCullFace(GL_BACK);
 }
 
 void RenderSceneReflectedOnPlane(PScene scene, const ReflectPlanePassData* data)

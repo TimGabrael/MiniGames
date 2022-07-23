@@ -8,13 +8,19 @@ struct CameraData
 	glm::mat4 view;
 	glm::vec3 camPos;
 };
+struct DirectionalLightData
+{
+	const glm::mat4* viewProjMat;
+	const glm::vec3* dir;
+	GLuint shadowMap;
+};
 
 struct StandardRenderPassData
 {
 	const glm::mat4* camView;
 	const glm::mat4* camProj;
 	const glm::vec3* camPos;
-	const glm::vec3* lightDir;	// base light of the scene
+	DirectionalLightData light;	// base light of the scene may be 0
 	GLuint cameraUniform;
 	GLuint skyBox;
 };

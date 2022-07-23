@@ -194,18 +194,21 @@ void UnoPlugin::Render(ApplicationData* data)
 	stdData.camPos = &shadowCam.pos;
 	stdData.camProj = &shadowCam.proj;
 	stdData.camView = &shadowCam.view;
-	stdData.lightDir = &lightDir;
+	stdData.light.dir = &lightDir;
 	stdData.skyBox = g_objs->skybox;
 
 	
 	glm::vec3 testPos = { 2.0f, 4.0f, 2.0f };
 	glm::mat4 testView = glm::lookAtLH(testPos, testPos - glm::vec3(lightDir.x, -lightDir.y, lightDir.z), glm::vec3(0.0f, 1.0f, 0.0f));
 	glm::mat4 testProj = glm::ortho(-4.0f, 4.0f, -4.0f, 4.0f, -10.0f, 10.0f);
+	glm::mat4 testViewProj = testProj * testView;
 	stdData.camPos = &testPos;
 	stdData.camProj = &testProj;
 	stdData.camView = &testView;
+	stdData.light.viewProjMat = &testViewProj;
+	stdData.light.shadowMap = 0;
 	RenderSceneShadow(g_objs->UnoScene, &stdData);
-	
+	stdData.light.shadowMap = g_objs->shadowFBO.depth;
 
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, g_objs->reflectFBO.fbo);

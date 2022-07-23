@@ -56,7 +56,6 @@ void main(){\
 	gl_ClipDistance[0] = dot(worldPos, clipPlane);\
 }\
 ";
-
 static const char* cardFragmentShader = "#version 300 es\n\
 precision highp float;\n\
 \n\
@@ -71,6 +70,19 @@ void main(){\
 	vec3 norm = normalize(outNormal);\
 	float diff = max(dot(norm, lDir), 0.0);\
 	outCol = vec4((diff+0.2) * c.rgb, c.a);\n\
+}\
+";
+static const char* cardGeometryFragmentShader = "#version 300 es\n\
+precision highp float;\n\
+\n\
+in vec3 outNormal;\
+in vec2 tPos;\
+in vec4 addCol;\
+uniform vec3 lDir;\
+uniform sampler2D tex;\
+void main(){\
+	vec4 c = texture(tex, tPos);\
+	if (c.a < 0.5f) discard;\n\
 }\
 ";
 
@@ -213,12 +225,15 @@ struct CardPipeline
 void InitializeCardPipeline(void* assetManager)
 {
 	g_cards.program = CreateProgram(cardVertexShader, cardFragmentShader);
-	g_cards.geometryProgram = CreateProgram(cardVertexShader);
-	g_cards.unis.projection = glGetUniformLocation(g_cards.program, "projection");
+	g_cards.geometryProgram = CreateProgram(cardVertexShader, cardGeometryFragmentShader);
 	g_cards.geomUnis.projection = glGetUniformLocation(g_cards.geometryProgram, "projection");
-	
-	g_cards.unis.view = glGetUniformLocation(g_cards.program, "view");
 	g_cards.geomUnis.view = glGetUniformLocation(g_cards.geometryProgram, "view");
+	g_cards.geomUnis.tex = glGetUniformLocation(g_cards.geometryProgram, "tex");
+	g_cards.geomUnis.plane = glGetUniformLocation(g_cards.geometryProgram, "clipPlane");
+	g_cards.geomUnis.lightDir = glGetUniformLocation(g_cards.geometryProgram, "lDir");
+	
+	g_cards.unis.projection = glGetUniformLocation(g_cards.program, "projection");
+	g_cards.unis.view = glGetUniformLocation(g_cards.program, "view");
 	g_cards.unis.tex = glGetUniformLocation(g_cards.program, "tex");
 	g_cards.unis.plane = glGetUniformLocation(g_cards.program, "clipPlane");
 	g_cards.unis.lightDir = glGetUniformLocation(g_cards.program, "lDir");
@@ -342,12 +357,12 @@ int FillCardListAndMapToBuffer(const glm::vec3& pos, bool backwards)
 void DrawCardsInSceneBlended(SceneObject* obj, void* renderPassData)
 {
 	StandardRenderPassData* data = (StandardRenderPassData*)renderPassData;
-	DrawCards(*data->camProj, *data->camView, *data->camPos, *data->lightDir, false);
+	DrawCards(*data->camProj, *data->camView, *data->camPos, *data->light.dir, false);
 }
 void DrawCardsInSceneGeometry(SceneObject* obj, void* renderPassData)
 {
 	StandardRenderPassData* data = (StandardRenderPassData*)renderPassData;
-	DrawCards(*data->camProj, *data->camView, *data->camPos, *data->lightDir, true);
+	DrawCards(*data->camProj, *data->camView, *data->camPos, *data->light.dir, true);
 }
 void DrawCardsInSceneBlendedClip(SceneObject* obj, void* renderPassData)
 {
@@ -359,7 +374,7 @@ void DrawCardsInSceneBlendedClip(SceneObject* obj, void* renderPassData)
 	glUniformMatrix4fv(g_cards.unis.projection, 1, GL_FALSE, (const GLfloat*)rData->base->camProj);
 	glUniformMatrix4fv(g_cards.unis.view, 1, GL_FALSE, (const GLfloat*)rData->base->camView);
 	glUniform4fv(g_cards.unis.plane, 1, (const GLfloat*)rData->planeEquation);
-	glUniform3fv(g_cards.unis.lightDir, 1, (const GLfloat*)rData->base->lightDir);
+	glUniform3fv(g_cards.unis.lightDir, 1, (const GLfloat*)rData->base->light.dir);
 
 	int numInds = FillCardListAndMapToBuffer(*rData->base->camPos, true);
 
