@@ -47,10 +47,10 @@ S3DSceneObject* AddSceneObject(PScene scene, uint32_t s3dTypeIndex, SVertex3D* v
 
 
 
-void DrawSimple3D(const S3DCombinedBuffer& buf, const glm::mat4& proj, const glm::mat4& view, const glm::mat4& model = glm::mat4(1.0f));
-void DrawSimple3D(const S3DCombinedBuffer& buf, const glm::mat4& proj, const glm::mat4& view, GLuint texture, const glm::mat4& model = glm::mat4(1.0f));
-void DrawSimple3D(const S3DVertexBuffer& buf, const glm::mat4& proj, const glm::mat4& view, const glm::mat4& model = glm::mat4(1.0f));
-void DrawSimple3D(const S3DVertexBuffer& buf, const glm::mat4& proj, const glm::mat4& view, GLuint texture, const glm::mat4& model = glm::mat4(1.0f));
+void DrawSimple3D(const S3DCombinedBuffer& buf, const glm::mat4& proj, const glm::mat4& view, const glm::mat4& model = glm::mat4(1.0f), bool geometryOnly = false);
+void DrawSimple3D(const S3DCombinedBuffer& buf, const glm::mat4& proj, const glm::mat4& view, GLuint texture, const glm::mat4& model = glm::mat4(1.0f), bool geometryOnly = false);
+void DrawSimple3D(const S3DVertexBuffer& buf, const glm::mat4& proj, const glm::mat4& view, const glm::mat4& model = glm::mat4(1.0f), bool geometryOnly = false);
+void DrawSimple3D(const S3DVertexBuffer& buf, const glm::mat4& proj, const glm::mat4& view, GLuint texture, const glm::mat4& model = glm::mat4(1.0f), bool geometryOnly = false);
 
 
 PFUNCDRAWSCENEOBJECT S3DGetDrawFunctions(TYPE_FUNCTION f);

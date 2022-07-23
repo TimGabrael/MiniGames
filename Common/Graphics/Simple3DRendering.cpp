@@ -46,6 +46,7 @@ struct UniformLocations
 
 struct Basic3DPipelineObjects
 {
+	GLuint geometryProgram;
 	GLuint program;
 	GLuint defaultTexture;
 
@@ -56,6 +57,7 @@ struct Basic3DPipelineObjects
 
 void InitializeSimple3DPipeline()
 {
+	g_3d.geometryProgram = CreateProgram(uiVertexShader);
 	g_3d.program = CreateProgram(uiVertexShader, uiFragmentShader);
 
 	g_3d.unis.proj = glGetUniformLocation(g_3d.program, "projection");
@@ -185,9 +187,9 @@ void CleanUpSimple3DPipeline()
 
 
 
-void DrawSimple3D(const S3DCombinedBuffer& buf, const glm::mat4& proj, const glm::mat4& view, const glm::mat4& model)
+void DrawSimple3D(const S3DCombinedBuffer& buf, const glm::mat4& proj, const glm::mat4& view, const glm::mat4& model, bool geometryOnly)
 {
-	glUseProgramWrapper(g_3d.program);
+	glUseProgramWrapper(geometryOnly ? g_3d.geometryProgram : g_3d.program);
 	glUniformMatrix4fv(g_3d.unis.proj, 1, GL_FALSE, (const GLfloat*)&proj);
 	glUniformMatrix4fv(g_3d.unis.view, 1, GL_FALSE, (const GLfloat*)&view);
 	glUniformMatrix4fv(g_3d.unis.model, 1, GL_FALSE, (const GLfloat*)&model);
@@ -203,9 +205,9 @@ void DrawSimple3D(const S3DCombinedBuffer& buf, const glm::mat4& proj, const glm
 
 	glBindVertexArray(0);
 }
-void DrawSimple3D(const S3DCombinedBuffer& buf, const glm::mat4& proj, const glm::mat4& view, GLuint texture, const glm::mat4& model)
+void DrawSimple3D(const S3DCombinedBuffer& buf, const glm::mat4& proj, const glm::mat4& view, GLuint texture, const glm::mat4& model, bool geometryOnly)
 {
-	glUseProgramWrapper(g_3d.program);
+	glUseProgramWrapper(geometryOnly ? g_3d.geometryProgram : g_3d.program);
 	glUniformMatrix4fv(g_3d.unis.proj, 1, GL_FALSE, (const GLfloat*)&proj);
 	glUniformMatrix4fv(g_3d.unis.view, 1, GL_FALSE, (const GLfloat*)&view);
 	glUniformMatrix4fv(g_3d.unis.model, 1, GL_FALSE, (const GLfloat*)&model);
@@ -222,9 +224,9 @@ void DrawSimple3D(const S3DCombinedBuffer& buf, const glm::mat4& proj, const glm
 	glBindVertexArray(0);
 
 }
-void DrawSimple3D(const S3DVertexBuffer& buf, const glm::mat4& proj, const glm::mat4& view, const glm::mat4& model)
+void DrawSimple3D(const S3DVertexBuffer& buf, const glm::mat4& proj, const glm::mat4& view, const glm::mat4& model, bool geometryOnly)
 {
-	glUseProgramWrapper(g_3d.program);
+	glUseProgramWrapper(geometryOnly ? g_3d.geometryProgram : g_3d.program);
 	glUniformMatrix4fv(g_3d.unis.proj, 1, GL_FALSE, (const GLfloat*)&proj);
 	glUniformMatrix4fv(g_3d.unis.view, 1, GL_FALSE, (const GLfloat*)&view);
 	glUniformMatrix4fv(g_3d.unis.model, 1, GL_FALSE, (const GLfloat*)&model);
@@ -238,9 +240,9 @@ void DrawSimple3D(const S3DVertexBuffer& buf, const glm::mat4& proj, const glm::
 
 	glBindVertexArray(0);
 }
-void DrawSimple3D(const S3DVertexBuffer& buf, const glm::mat4& proj, const glm::mat4& view, GLuint texture, const glm::mat4& model)
+void DrawSimple3D(const S3DVertexBuffer& buf, const glm::mat4& proj, const glm::mat4& view, GLuint texture, const glm::mat4& model, bool geometryOnly)
 {
-	glUseProgramWrapper(g_3d.program);
+	glUseProgramWrapper(geometryOnly ? g_3d.geometryProgram : g_3d.program);
 	glUniformMatrix4fv(g_3d.unis.proj, 1, GL_FALSE, (const GLfloat*)&proj);
 	glUniformMatrix4fv(g_3d.unis.view, 1, GL_FALSE, (const GLfloat*)&view);
 	glUniformMatrix4fv(g_3d.unis.model, 1, GL_FALSE, (const GLfloat*)&model);
@@ -254,9 +256,9 @@ void DrawSimple3D(const S3DVertexBuffer& buf, const glm::mat4& proj, const glm::
 
 	glBindVertexArray(0);
 }
-void DrawSimple3D(const S3DVertexBuffer& buf, const glm::mat4& proj, const glm::mat4& view, GLuint texture, const glm::mat4& model, const glm::vec4& clipPlane)
+void DrawSimple3D(const S3DVertexBuffer& buf, const glm::mat4& proj, const glm::mat4& view, GLuint texture, const glm::mat4& model, const glm::vec4& clipPlane, bool geometryOnly = false)
 {
-	glUseProgramWrapper(g_3d.program);
+	glUseProgramWrapper(geometryOnly ? g_3d.geometryProgram : g_3d.program);
 	glUniformMatrix4fv(g_3d.unis.proj, 1, GL_FALSE, (const GLfloat*)&proj);
 	glUniformMatrix4fv(g_3d.unis.view, 1, GL_FALSE, (const GLfloat*)&view);
 	glUniformMatrix4fv(g_3d.unis.model, 1, GL_FALSE, (const GLfloat*)&model);
@@ -271,9 +273,9 @@ void DrawSimple3D(const S3DVertexBuffer& buf, const glm::mat4& proj, const glm::
 
 	glBindVertexArray(0);
 }
-void DrawSimple3D(const S3DCombinedBuffer& buf, const glm::mat4& proj, const glm::mat4& view, GLuint texture, const glm::mat4& model, const glm::vec4& clipPlane)
+void DrawSimple3D(const S3DCombinedBuffer& buf, const glm::mat4& proj, const glm::mat4& view, GLuint texture, const glm::mat4& model, const glm::vec4& clipPlane, bool geometryOnly = false)
 {
-	glUseProgramWrapper(g_3d.program);
+	glUseProgramWrapper(geometryOnly ? g_3d.geometryProgram : g_3d.program);
 	glUniformMatrix4fv(g_3d.unis.proj, 1, GL_FALSE, (const GLfloat*)&proj);
 	glUniformMatrix4fv(g_3d.unis.view, 1, GL_FALSE, (const GLfloat*)&view);
 	glUniformMatrix4fv(g_3d.unis.model, 1, GL_FALSE, (const GLfloat*)&model);
@@ -293,6 +295,26 @@ void DrawSimple3D(const S3DCombinedBuffer& buf, const glm::mat4& proj, const glm
 }
 
 
+void DrawSimple3DGeometry(SceneObject* sceneObject, void* renderPassData)
+{
+	S3DSceneObject* obj = (S3DSceneObject*)sceneObject;
+	StandardRenderPassData* data = (StandardRenderPassData*)renderPassData;
+	glm::mat4 matrix(1.0f);
+	if (obj->transform)
+	{
+		matrix = *obj->transform;
+	}
+	if (obj->base.additionalFlags)	// 0 => combined buf,  1 => vertex buf
+	{
+		if (obj->texture) DrawSimple3D(*obj->mesh, *data->camProj, *data->camView, obj->texture, matrix, true);
+		else DrawSimple3D(*obj->mesh, *data->camProj, *data->camView, matrix, true);
+	}
+	else
+	{
+		if (obj->texture) DrawSimple3D(obj->mesh->vtxBuf, *data->camProj, *data->camView, obj->texture, matrix, true);
+		else DrawSimple3D(obj->mesh->vtxBuf, *data->camProj, *data->camView, matrix, true);
+	}
+}
 void DrawSimple3DOpaque(SceneObject* sceneObject, void* renderPassData)
 {
 	S3DSceneObject* obj = (S3DSceneObject*)sceneObject;
@@ -317,7 +339,7 @@ void DrawSimple3DOpaqueClipPlane(SceneObject* sceneObject, void* renderPassData)
 {
 	S3DSceneObject* obj = (S3DSceneObject*)sceneObject;
 	ReflectPlanePassData* planeData = (ReflectPlanePassData*)renderPassData;
-	StandardRenderPassData* data = &planeData->base;
+	const StandardRenderPassData* data = planeData->base;
 	glm::mat4 matrix(1.0f);
 	
 	if (obj->transform)
@@ -341,5 +363,6 @@ PFUNCDRAWSCENEOBJECT S3DGetDrawFunctions(TYPE_FUNCTION f)
 {
 	if (f == TYPE_FUNCTION::TYPE_FUNCTION_OPAQUE) return DrawSimple3DOpaque;
 	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_CLIP_PLANE_OPAQUE) return DrawSimple3DOpaqueClipPlane;
+	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_GEOMETRY) return DrawSimple3DGeometry;
 	return nullptr;
 }

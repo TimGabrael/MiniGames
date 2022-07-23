@@ -61,7 +61,7 @@ static void* AddElementToBatchList(PtrSafeBatchListHeader64* list, uint32_t elem
 			list->next = CreateBatchList(elementSize);
 			list->next->prev = list;
 			int freeBit = PositionOfRightMostClearedBit(list->usedbitmask);
-			list->usedbitmask |= (1LL << freeBit);
+			list->usedbitmask |= (1LL << (freeBit - 1));
 			int listIdx = elementSize * (freeBit - 1);
 			return (void*)((uintptr_t)list + listIdx + sizeof(PtrSafeBatchListHeader64));
 		}
@@ -69,8 +69,8 @@ static void* AddElementToBatchList(PtrSafeBatchListHeader64* list, uint32_t elem
 	else
 	{
 		int freeBit = PositionOfRightMostClearedBit(list->usedbitmask);
-		list->usedbitmask |= (1LL << freeBit);
-		int listIdx = elementSize * (freeBit);
+		list->usedbitmask |= (1LL << (freeBit - 1));
+		int listIdx = elementSize * (freeBit - 1);
 		return (void*)((uintptr_t)list + listIdx + sizeof(PtrSafeBatchListHeader64));
 	}
 }

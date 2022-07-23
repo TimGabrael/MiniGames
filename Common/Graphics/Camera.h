@@ -63,6 +63,7 @@ struct Camera
 	void SetViewMatrix();
 
 	glm::vec3 GetFront() const;
+	glm::vec3 GetUp() const; 
 	glm::vec3 GetRealUp() const;	// independent of the up vector used in the transformations
 	glm::vec3 GetRight() const;
 
@@ -90,4 +91,15 @@ private:
 	float farClipping = 0.0f;
 	float aspectRatio = 0.0f;
 	float fieldOfView = 0.0f;
+};
+
+
+struct OrthographicCamera
+{
+	static OrthographicCamera CreateMinimalFit(const Camera& cam, const glm::vec3& dir, float distance);
+
+	glm::mat4 proj;
+	glm::mat4 view;
+	glm::vec3 pos;
+
 };

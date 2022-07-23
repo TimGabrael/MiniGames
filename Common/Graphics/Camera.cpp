@@ -192,6 +192,10 @@ glm::vec3 Camera::GetFront() const
 {
 	return front;
 }
+glm::vec3 Camera::GetUp() const
+{
+	return up;
+}
 glm::vec3 Camera::GetRealUp() const
 {
 	float upPitch = pitch + 90.0f;
@@ -235,4 +239,62 @@ glm::vec3 Camera::ScreenToWorld(float x, float y) const
 	res = glm::normalize(invView * res);
 
 	return res;
+}
+
+static glm::vec4 NDCToWorld(const glm::mat4& invMat, const glm::vec4& pos)
+{
+	glm::vec4 world = invMat * pos;
+	world = world / world.w;
+	return world;
+}
+
+OrthographicCamera OrthographicCamera::CreateMinimalFit(const Camera& cam, const glm::vec3& dir, float distance)
+{
+	OrthographicCamera out;
+	
+	glm::mat4 invMat = glm::inverse(cam.perspective * cam.view);
+
+	
+
+	glm::vec4 pts[8] = {
+		NDCToWorld(invMat, {-1.0f, -1.0f, -1.0f, 1.0f}),
+		NDCToWorld(invMat, { 1.0f, -1.0f, -1.0f, 1.0f}),
+		NDCToWorld(invMat, { 1.0f,  1.0f, -1.0f, 1.0f}),
+		NDCToWorld(invMat, {-1.0f,  1.0f, -1.0f, 1.0f}),
+		
+		NDCToWorld(invMat, {-1.0f, -1.0f,  1.0f, 1.0f}),
+		NDCToWorld(invMat, { 1.0f, -1.0f,  1.0f, 1.0f}),
+		NDCToWorld(invMat, { 1.0f,  1.0f,  1.0f, 1.0f}),
+		NDCToWorld(invMat, {-1.0f,  1.0f,  1.0f, 1.0f}),
+	};
+	glm::vec3 center = { 0,0,0 };
+	for(int i = 0; i < 8; i++)
+	{
+		center += glm::vec3(pts[i]);
+	}
+	center /= 8;
+	out.pos = center - dir * distance;
+	
+	out.view = glm::lookAtRH(out.pos, center, glm::vec3(0.0f, 1.0f, 0.0f));
+
+	for (int i = 0; i < 8; i++)
+	{
+		pts[i] = out.view * pts[i];
+	}
+
+	glm::vec3 min = pts[0];
+	glm::vec3 max = pts[0];
+	for (int i = 1; i < 8; i++)
+	{
+		if (pts[i].x < min.x) min.x = pts[i].x;
+		if (max.x < pts[i].x) max.x = pts[i].x;
+		if (pts[i].y < min.y) min.y = pts[i].y;
+		if (max.y < pts[i].y) max.y = pts[i].y;
+		if (pts[i].z < min.z) min.z = pts[i].z;
+		if (max.z < pts[i].z) max.z = pts[i].z;
+	}
+	out.proj = glm::orthoLH(min.x, max.x, min.y, max.y, min.z, max.z);
+
+
+	return out;
 }

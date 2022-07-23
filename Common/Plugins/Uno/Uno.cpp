@@ -14,6 +14,7 @@
 #include <math.h>
 
 PLUGIN_EXPORT_DEFINITION(UnoPlugin, "a3fV-6giK-10Eb-2rdT");
+#define SHADOW_TEXTURE_SIZE 2048
 
 PLUGIN_INFO UnoPlugin::GetPluginInfos()
 {
@@ -63,6 +64,7 @@ void UnoPlugin::Init(ApplicationData* data)
 	g_objs->moveComp.pos = { 0.0f, 1.6f, 2.0f };
 	g_objs->moveComp.SetRotation(-90.0f, -40.0f, 0.0f);
 
+	g_objs->shadowFBO = CreateDepthFBO(SHADOW_TEXTURE_SIZE, SHADOW_TEXTURE_SIZE);
 	// CREATE SCENE
 	{
 		g_objs->UnoScene = CreateAndInitializeSceneAsDefault();
@@ -75,6 +77,11 @@ void UnoPlugin::Init(ApplicationData* data)
 		ReflectiveSurfaceMaterialData data{ };
 		data.tintColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 		g_objs->basePlatform = AddReflectiveSurface(g_objs->UnoScene, &reflectPos, &normal, 8.0f, 8.0f, &data, nullptr);
+
+		reflectPos = { 0.0f, 1.0f, 0.0f };
+		SceneObject* obj = AddReflectiveSurface(g_objs->UnoScene, &reflectPos, &normal, 8.0f, 8.0f, &data, nullptr);
+		std::cout << "g: " << g_objs->basePlatform << ", " << obj << std::endl;
+		
 	}
 	g_objs->skybox = LoadCubemap(
 		"Assets/CitySkybox/right.jpg",
@@ -105,7 +112,7 @@ void UnoPlugin::Resize(ApplicationData* data)
 {
 	static bool once = true;
 	if(sizeY && sizeX)
-		g_objs->playerCam.SetPerspective(90.0f, (float)this->sizeX / (float)this->sizeY, 0.1f, 256.0f);
+		g_objs->playerCam.SetPerspective(90.0f, (float)this->sizeX / (float)this->sizeY, 0.1f, 20.0f);
 	g_objs->playerCam.screenX = sizeX;
 	g_objs->playerCam.screenY = sizeY;
 	if (once) {
@@ -116,9 +123,22 @@ void UnoPlugin::Resize(ApplicationData* data)
 		SetDefaultFramebuffer(defaultFBO);
 		g_objs->reflectFBO = CreateSingleFBO(sizeX, sizeY);
 
+		GLuint colTex;
+		glGenTextures(1, &colTex);
+		glBindTexture(GL_TEXTURE_2D, colTex);
+		uint32_t cols[4] = {
+			0xFF0000FF, 0xFF00FF00,
+			0xFF00FFFF, 0xFFFF0000
+		};
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, cols);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
 		ReflectiveSurfaceTextures texs;
 		texs.reflect = g_objs->reflectFBO.texture;
-		texs.refract = 0;
+		texs.refract = colTex;
 		texs.dudv = 0;
 		ReflectiveSurfaceSetTextureData(g_objs->basePlatform, &texs);
 
@@ -126,6 +146,8 @@ void UnoPlugin::Resize(ApplicationData* data)
 	}
 }
 static ColorPicker picker;
+static bool testBOOL = false;
+static bool anotherBOOL = false;
 void UnoPlugin::Render(ApplicationData* data)
 {
 	if (!(sizeX && sizeY)) return;
@@ -160,17 +182,73 @@ void UnoPlugin::Render(ApplicationData* data)
 		
 		g_objs->localPlayer->Draw(g_objs->playerCam);
 	}
+
+
+
+	BeginScene(g_objs->UnoScene);
+
+
+	StandardRenderPassData stdData;
+	stdData.cameraUniform = 0;
+
+	glm::vec4 plane = { 0.0f, 1.0f, 0.0f, 0.0f };
+	glm::vec3 lightDir = { -1.0f/sqrtf(3.0f), 1.0f/sqrt(3.0f), -1.0f/sqrt(3.0f) };
+	OrthographicCamera shadowCam = OrthographicCamera::CreateMinimalFit(g_objs->playerCam, lightDir, 4.0f);
+	glBindFramebuffer(GL_FRAMEBUFFER, g_objs->shadowFBO.fbo);
+	glViewport(0, 0, SHADOW_TEXTURE_SIZE, SHADOW_TEXTURE_SIZE);
+	glClearDepthf(1.0f);
+	glClear(GL_DEPTH_BUFFER_BIT);
+	stdData.camPos = &shadowCam.pos;
+	stdData.camProj = &shadowCam.proj;
+	stdData.camView = &shadowCam.view;
+	stdData.lightDir = &lightDir;
+	stdData.skyBox = g_objs->skybox;
+
+	glm::vec3 testPos = { 0.0f, 4.0f, 0.0f };
+	glm::mat4 testView = glm::lookAtRH(testPos, glm::vec3(lightDir.x, -lightDir.y, lightDir.z) + testPos, glm::vec3(0.0f, 1.0f, 0.0f));
+	glm::mat4 testProj = glm::orthoLH(-4.0f, 4.0f, -4.0f, 4.0f, -100.0f, 100.0f);
+	stdData.camPos = &testPos;
+	stdData.camProj = &testProj;
+	stdData.camView = &testView;
+	RenderSceneShadow(g_objs->UnoScene, &stdData);
+	
+
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, g_objs->reflectFBO.fbo);
 	glViewport(0, 0, g_objs->offscreenX, g_objs->offscreenY);
 	glClearColor(1.0f, 0.4f, 0.4f, 1.0f);
 	glClearDepthf(1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glm::vec4 plane = { 0.0f, 1.0f, 0.0f, 0.0f };
-	RenderSceneReflectedOnPlane(g_objs->UnoScene, &g_objs->playerCam, &plane, 0, g_objs->skybox);
 
 
 
+	Camera reflected = Camera::GetReflected(&g_objs->playerCam, plane);
+	plane.w = 0.1f;
+	stdData.camView = &reflected.view;
+	stdData.camProj = &reflected.perspective;
+	stdData.camPos = &reflected.pos;
+	ReflectPlanePassData reflectData;
+	reflectData.base = &stdData;
+	reflectData.planeEquation = &plane;
+
+	RenderSceneReflectedOnPlane(g_objs->UnoScene, &reflectData);
+	lightDir.y *= -1.0f;
+
+	stdData.camView = &g_objs->playerCam.view;
+	stdData.camProj = &g_objs->playerCam.perspective;
+	stdData.camPos = &g_objs->playerCam.pos;
+	
+
+	// THIS IS A SOMEWHAT WORKING ORTHOGRAPHIC CAMERA
+	 //glm::vec3 testPos = { 0.0f, 4.0f, 0.0f };
+	 //glm::mat4 testView = glm::lookAtRH(testPos, lightDir + testPos, glm::vec3(0.0f, 1.0f, 0.0f));
+	 //glm::mat4 testProj = glm::orthoLH(-4.0f, 4.0f, -4.0f, 4.0f, -10.0f, 10.0f);
+	 if (anotherBOOL)
+	 {
+	 	stdData.camPos = &testPos;
+	 	stdData.camProj = &testProj;
+	 	stdData.camView = &testView;
+	 }
 
 	glBindFramebuffer(GL_FRAMEBUFFER, GetDefaultFramebuffer());
 	glViewport(0, 0, sizeX, sizeY);
@@ -179,12 +257,12 @@ void UnoPlugin::Render(ApplicationData* data)
 	glClearDepthf(1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-
-	RenderSceneStandard(g_objs->UnoScene, &g_objs->playerCam.view, &g_objs->playerCam.perspective,  &g_objs->playerCam.pos, 0, g_objs->skybox);
-
-
-	
+	RenderSceneStandard(g_objs->UnoScene, &stdData);
+	if(testBOOL)
+		DrawQuad({ -1.0f, -1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF, g_objs->shadowFBO.depth);
 	DrawUI();
+
+	EndScene();
 
 	g_objs->ms.FrameEnd();
 	g_objs->p.EndFrame();
@@ -202,12 +280,7 @@ void UnoPlugin::MouseCallback(const PB_MouseData* mData)
 	}
 #endif
 	g_objs->ms.SetFromPBState(mData);
-	// auto& ray = g_objs.playerCam.mouseRay;
-	// ray = g_objs.playerCam.ScreenToWorld(mData->xPos, mData->yPos);
-	
 	g_objs->p.FillFromMouse(mData);
-	
-
 }
 void UnoPlugin::KeyDownCallback(Key k, bool isRepeat)
 {
@@ -218,6 +291,8 @@ void UnoPlugin::KeyDownCallback(Key k, bool isRepeat)
 		if (k == Key::Key_A)g_objs->moveComp.SetMovementDirection(MovementComponent::DIRECTION::LEFT, true);
 		if (k == Key::Key_S)g_objs->moveComp.SetMovementDirection(MovementComponent::DIRECTION::BACKWARD, true);
 		if (k == Key::Key_D)g_objs->moveComp.SetMovementDirection(MovementComponent::DIRECTION::RIGHT, true);
+		if (k == Key::Key_L) testBOOL = !testBOOL;
+		if (k == Key::Key_J) anotherBOOL = !anotherBOOL;
 	}
 #endif
 	if (k == Key::Key_0) g_objs->localPlayer->FetchCard(g_objs->playerCam, g_objs->stack, g_objs->deck, g_objs->anims);

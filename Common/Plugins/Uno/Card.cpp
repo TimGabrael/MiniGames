@@ -63,22 +63,19 @@ precision highp float;\n\
 in vec3 outNormal;\
 in vec2 tPos;\
 in vec4 addCol;\
+uniform vec3 lDir;\
 uniform sampler2D tex;\
 out vec4 outCol;\
-const vec3 lPos = vec3(0.0f, 1.0f, 2.0f);\
-const vec3 lDir = vec3(0.0f, -1.0f, 0.0f);\
-const vec3 lDif = vec3(0.2f, 0.2f, 0.2f);\
-const vec3 fSpe = vec3(0.8f, 0.8f, 0.8f);\
 void main(){\
 	vec4 c = texture(tex, tPos) * addCol;\n\
 	vec3 norm = normalize(outNormal);\
-	float diff = min(max(dot(norm, lDir), 0.0), 0.8);\
-	outCol = vec4((diff+lDif) * c.rgb, c.a);\n\
+	float diff = max(dot(norm, lDir), 0.0);\
+	outCol = vec4((diff+0.2) * c.rgb, c.a);\n\
 }\
 ";
 
 
-glm::vec2 CardIDToTextureIndex(uint32_t id)
+static glm::vec2 CardIDToTextureIndex(uint32_t id)
 {
 	if (id < CARD_ID::NUM_AVAILABLE_CARDS)
 	{
@@ -92,7 +89,7 @@ glm::vec2 CardIDToTextureIndex(uint32_t id)
 	}
 	return { 0.0f,0.0f };
 }
-glm::vec2 CardIDToTextureSize(uint32_t id)
+static glm::vec2 CardIDToTextureSize(uint32_t id)
 {
 	if (id < CARD_ID::NUM_AVAILABLE_CARDS)
 	{
@@ -122,7 +119,7 @@ struct _InternalCard
 	uint16_t backID;
 };
 
-void GenerateCardListsFromCache(CardVertex* vertList, uint32_t* indList, const std::vector<_InternalCard>& cache, const glm::vec3& camPos, int* numInds, bool backwards)
+static void GenerateCardListsFromCache(CardVertex* vertList, uint32_t* indList, const std::vector<_InternalCard>& cache, const glm::vec3& camPos, int* numInds, bool backwards)
 {
 	const size_t cardCount = cache.size() - 1;
 	size_t curVert = 0;
@@ -193,11 +190,13 @@ struct CardUniforms
 	GLuint projection;
 	GLuint view;
 	GLuint tex;
+	GLuint lightDir;
 	GLuint plane;
 };
 
 struct CardPipeline
 {
+	GLuint geometryProgram;
 	GLuint program;
 	GLuint texture;
 	
@@ -213,11 +212,12 @@ struct CardPipeline
 void InitializeCardPipeline(void* assetManager)
 {
 	g_cards.program = CreateProgram(cardVertexShader, cardFragmentShader);
+	g_cards.geometryProgram = CreateProgram(cardVertexShader);
 	g_cards.unis.projection = glGetUniformLocation(g_cards.program, "projection");
 	g_cards.unis.view = glGetUniformLocation(g_cards.program, "view");
 	g_cards.unis.tex = glGetUniformLocation(g_cards.program, "tex");
 	g_cards.unis.plane = glGetUniformLocation(g_cards.program, "clipPlane");
-
+	g_cards.unis.lightDir = glGetUniformLocation(g_cards.program, "lDir");
 	// load texture
 	glGenTextures(1, &g_cards.texture);
 	FileContent content = LoadFileContent(assetManager, "Assets/UNO_DECK.png");
@@ -290,10 +290,12 @@ void ClearCards()
 
 void DrawCardsInSceneBlended(SceneObject* obj, void* renderPassData);
 void DrawCardsInSceneBlendedClip(SceneObject* obj, void* renderPassData);
-PFUNCDRAWSCENEOBJECT GetDrawSceneObjectFunction(TYPE_FUNCTION f)
+void DrawCardsInSceneGeometry(SceneObject* obj, void* renderPassData);
+static PFUNCDRAWSCENEOBJECT GetDrawSceneObjectFunction(TYPE_FUNCTION f)
 {
 	if (f == TYPE_FUNCTION::TYPE_FUNCTION_BLEND) return DrawCardsInSceneBlended;
 	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_CLIP_PLANE_BLEND) return DrawCardsInSceneBlendedClip;
+	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_GEOMETRY) return DrawCardsInSceneGeometry;
 	return nullptr;
 }
 void AddCardTypeToScene(PScene scene)
@@ -336,20 +338,26 @@ int FillCardListAndMapToBuffer(const glm::vec3& pos, bool backwards)
 void DrawCardsInSceneBlended(SceneObject* obj, void* renderPassData)
 {
 	StandardRenderPassData* data = (StandardRenderPassData*)renderPassData;
-	DrawCards(*data->camProj, *data->camView, *data->camPos);
+	DrawCards(*data->camProj, *data->camView, *data->camPos, *data->lightDir, false);
+}
+void DrawCardsInSceneGeometry(SceneObject* obj, void* renderPassData)
+{
+	StandardRenderPassData* data = (StandardRenderPassData*)renderPassData;
+	DrawCards(*data->camProj, *data->camView, *data->camPos, *data->lightDir, true);
 }
 void DrawCardsInSceneBlendedClip(SceneObject* obj, void* renderPassData)
 {
 	ReflectPlanePassData* rData = (ReflectPlanePassData*)renderPassData;
-	const glm::vec3* camPos = rData->base.camPos;
-
-	int numInds = FillCardListAndMapToBuffer(*rData->base.camPos, true);
+	const glm::vec3* camPos = rData->base->camPos;
 
 	glUseProgramWrapper(g_cards.program);
 	glBindVertexArray(g_cards.bufs.vao);
-	glUniformMatrix4fv(g_cards.unis.projection, 1, GL_FALSE, (const GLfloat*)rData->base.camProj);
-	glUniformMatrix4fv(g_cards.unis.view, 1, GL_FALSE, (const GLfloat*)rData->base.camView);
+	glUniformMatrix4fv(g_cards.unis.projection, 1, GL_FALSE, (const GLfloat*)rData->base->camProj);
+	glUniformMatrix4fv(g_cards.unis.view, 1, GL_FALSE, (const GLfloat*)rData->base->camView);
 	glUniform4fv(g_cards.unis.plane, 1, (const GLfloat*)rData->planeEquation);
+	glUniform3fv(g_cards.unis.lightDir, 1, (const GLfloat*)rData->base->lightDir);
+
+	int numInds = FillCardListAndMapToBuffer(*rData->base->camPos, true);
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, g_cards.texture);
@@ -360,20 +368,23 @@ void DrawCardsInSceneBlendedClip(SceneObject* obj, void* renderPassData)
 
 	glBindVertexArray(0);
 }
-void DrawCards(const glm::mat4& proj, const glm::mat4& view, const glm::vec3& camPos)
+void DrawCards(const glm::mat4& proj, const glm::mat4& view, const glm::vec3& camPos, const glm::vec3& lDir, bool geomOnly)
 {
-	int numInds = FillCardListAndMapToBuffer(camPos, false);
-
-	glUseProgramWrapper(g_cards.program);
+	
+	glUseProgramWrapper(geomOnly ? g_cards.geometryProgram : g_cards.program);
 	glBindVertexArray(g_cards.bufs.vao);
 	glUniformMatrix4fv(g_cards.unis.projection, 1, GL_FALSE, (const GLfloat*)&proj);
 	glUniformMatrix4fv(g_cards.unis.view, 1, GL_FALSE, (const GLfloat*)&view);
+	glUniform3fv(g_cards.unis.lightDir, 1, (const GLfloat*)&lDir);
+
+	int numInds = FillCardListAndMapToBuffer(camPos, false);
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, g_cards.texture);
 
+	
 	glDrawElementsWrapper(GL_TRIANGLES, numInds, GL_UNSIGNED_INT, nullptr);
-
+	
 	glBindVertexArray(0);
 }
 

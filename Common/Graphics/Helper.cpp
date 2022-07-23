@@ -30,7 +30,7 @@
 #include "FileQuery.h"
 
 
-const char* brdf_lutVertexShader = "#version 300 es\n\
+static const char* brdf_lutVertexShader = "#version 300 es\n\
 out vec2 UV;\
 void main()\
 {\
@@ -38,7 +38,7 @@ void main()\
 	gl_Position = vec4(UV * 2.0f - 1.0f, 0.0f, 1.0f);\
 }";
 
-const char* brdf_lutFragmentShader = "#version 300 es\n\
+static const char* brdf_lutFragmentShader = "#version 300 es\n\
 precision highp float;\n\
 in vec2 UV;\n\
 out vec4 outColor;\n\
@@ -114,7 +114,11 @@ void main()\n\
 {\
 	outColor = vec4(BRDF(UV.s, 1.0 - UV.t), 0.0, 1.0);\
 }";
-
+static const char* emptyFragmentShader = "#version 300 es\n\
+precision highp float;\n\
+void main()\
+{\
+}";
 
 
 
@@ -325,7 +329,10 @@ GLuint CreateProgram(const char* vertexShaderSrc, const char* fragmentShaderSrc)
 	}
 	return resultProgram;
 }
-
+GLuint CreateProgram(const char* vertexShader)
+{
+	return CreateProgram(vertexShader, emptyFragmentShader);
+}
 
 
 
@@ -606,6 +613,32 @@ SingleFBO CreateSingleFBO(int width, int height)
 
 	return out;
 }
+DepthFBO CreateDepthFBO(int width, int height)
+{
+	DepthFBO out;
+	glGenFramebuffers(1, &out.fbo);
+	glBindFramebuffer(GL_FRAMEBUFFER, out.fbo);
+
+	glGenTextures(1, &out.depth);
+	glBindTexture(GL_TEXTURE_2D, out.depth);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	GLint borderColor = 0;
+	glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, &borderColor);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, out.depth, 0);
+
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+		LOG("FAILED  TO CREATE FRAMEBUFFER\n");
+	}
+
+	glBindFramebuffer(GL_FRAMEBUFFER, GetDefaultFramebuffer());
+
+	return out;
+}
 void RecreateSingleFBO(SingleFBO* fbo, int width, int height)
 {
 	DestroySingleFBO(fbo);
@@ -615,5 +648,10 @@ void DestroySingleFBO(SingleFBO* fbo)
 {
 	glDeleteFramebuffers(1, &fbo->fbo);
 	glDeleteTextures(1, &fbo->texture);
+	glDeleteTextures(1, &fbo->depth);
+}
+void DestroyDepthFBO(DepthFBO* fbo)
+{
+	glDeleteFramebuffers(1, &fbo->fbo);
 	glDeleteTextures(1, &fbo->depth);
 }

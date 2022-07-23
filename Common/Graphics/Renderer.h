@@ -14,15 +14,18 @@ struct StandardRenderPassData
 	const glm::mat4* camView;
 	const glm::mat4* camProj;
 	const glm::vec3* camPos;
+	const glm::vec3* lightDir;	// base light of the scene
 	GLuint cameraUniform;
 	GLuint skyBox;
 };
 struct ReflectPlanePassData
 {
-	StandardRenderPassData base;
+	const StandardRenderPassData* base;
 	const glm::vec4* planeEquation;
 };
 
-
-void RenderSceneReflectedOnPlane(PScene scene, const Camera* cam, const glm::vec4* planeEquation, GLuint cameraUniform, GLuint skybox);
-void RenderSceneStandard(PScene scene, const glm::mat4* camView, const glm::mat4* camProj, const glm::vec3* camPos, GLuint cameraUniform, GLuint skybox);
+void BeginScene(PScene scene);
+void EndScene();
+void RenderSceneShadow(PScene scene, const StandardRenderPassData* data);
+void RenderSceneReflectedOnPlane(PScene scene, const ReflectPlanePassData* data);
+void RenderSceneStandard(PScene scene, const StandardRenderPassData* data);

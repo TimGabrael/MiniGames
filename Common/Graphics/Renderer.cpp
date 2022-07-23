@@ -3,8 +3,33 @@
 #include "logging.h"
 
 
+static ObjectRenderStruct* objs = nullptr;
+void BeginScene(PScene scene)
+{
+	objs = SC_GenerateRenderList(scene);
+}
+void EndScene()
+{
+	SC_FreeRenderList(objs);
+}
+void RenderSceneShadow(PScene scene, const StandardRenderPassData* data)
+{
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
 
-void RenderSceneReflectedOnPlane(PScene scene, const Camera* cam, const glm::vec4* planeEquation, GLuint cameraUniform, GLuint skybox)
+
+	int num;
+	glm::mat4 camViewProj = *data->camProj * *data->camView;
+	SC_FillRenderList(scene, objs, &camViewProj, &num, TYPE_FUNCTION_GEOMETRY, SCENE_OBJECT_CAST_SHADOW);
+	
+	for (int i = 0; i < num; i++)
+	{
+		objs[i].DrawFunc(objs[i].obj, (void*)data);
+	}
+
+}
+
+void RenderSceneReflectedOnPlane(PScene scene, const ReflectPlanePassData* data)
 {
 	glEnable(GL_CLIP_DISTANCE0);
 
@@ -12,27 +37,17 @@ void RenderSceneReflectedOnPlane(PScene scene, const Camera* cam, const glm::vec
 	glDepthFunc(GL_LESS);
 	glDisable(GL_BLEND);
 
-	Camera rCam = Camera::GetReflected(cam, *planeEquation);
 
 	int num;
-	glm::mat4 camViewProj = rCam.perspective * rCam.view;
-	ObjectRenderStruct* objs = SC_GenerateRenderList(scene);
+	glm::mat4 camViewProj = *data->base->camProj * *data->base->camView;
 	SC_FillRenderList(scene, objs, &camViewProj, &num, TYPE_FUNCTION::TYPE_FUNCTION_CLIP_PLANE_OPAQUE, SCENE_OBJECT_FLAGS::SCENE_OBJECT_SURFACE_REFLECTED | SCENE_OBJECT_FLAGS::SCENE_OBJECT_OPAQUE);
 	
-	ReflectPlanePassData reflectPassData;
-	StandardRenderPassData& standardPassData = reflectPassData.base;
-	standardPassData.camView = &rCam.view;
-	standardPassData.camProj = &rCam.perspective;
-	standardPassData.camPos = &rCam.pos;
-	standardPassData.cameraUniform = cameraUniform;
-	standardPassData.skyBox = skybox;
-	reflectPassData.planeEquation = planeEquation;
 
 	for (int i = 0; i < num; i++)
 	{
-		objs[i].DrawFunc(objs[i].obj, &reflectPassData);
+		objs[i].DrawFunc(objs[i].obj, (void*)data);
 	}
-	DrawSkybox(skybox, camViewProj);
+	DrawSkybox(data->base->skyBox, camViewProj);
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -40,36 +55,26 @@ void RenderSceneReflectedOnPlane(PScene scene, const Camera* cam, const glm::vec
 	SC_FillRenderList(scene, objs, &camViewProj, &num, TYPE_FUNCTION::TYPE_FUNCTION_CLIP_PLANE_BLEND, SCENE_OBJECT_FLAGS::SCENE_OBJECT_SURFACE_REFLECTED | SCENE_OBJECT_FLAGS::SCENE_OBJECT_BLEND);
 	for (int i = 0; i < num; i++)
 	{
-		objs[i].DrawFunc(objs[i].obj, &reflectPassData);
+		objs[i].DrawFunc(objs[i].obj, (void*)data);
 	}
-
-	SC_FreeRenderList(objs);
 
 	glDisable(GL_CLIP_DISTANCE0);
 }
 
-void RenderSceneStandard(PScene scene, const glm::mat4* camView, const glm::mat4* camProj, const glm::vec3* camPos, GLuint cameraUniform, GLuint skybox)
+void RenderSceneStandard(PScene scene, const StandardRenderPassData* data)
 {
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 	glDisable(GL_BLEND);
 
-	StandardRenderPassData standardPassData;
-	standardPassData.camView = camView;
-	standardPassData.camProj = camProj;
-	standardPassData.camPos = camPos;
-	standardPassData.cameraUniform = cameraUniform;
-	standardPassData.skyBox = skybox;
-
 	int num;
-	glm::mat4 camViewProj = *camProj * *camView;
-	ObjectRenderStruct* objs = SC_GenerateRenderList(scene);
+	glm::mat4 camViewProj = *data->camProj * *data->camView;
 	SC_FillRenderList(scene, objs, &camViewProj, &num, TYPE_FUNCTION::TYPE_FUNCTION_OPAQUE, SCENE_OBJECT_FLAGS::SCENE_OBJECT_OPAQUE);
 	for (int i = 0; i < num; i++)
 	{
-		objs[i].DrawFunc(objs[i].obj, &standardPassData);
+		objs[i].DrawFunc(objs[i].obj, (void*)data);
 	}
-	DrawSkybox(skybox, camViewProj);
+	DrawSkybox(data->skyBox, camViewProj);
 	
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -78,7 +83,6 @@ void RenderSceneStandard(PScene scene, const glm::mat4* camView, const glm::mat4
 	
 	for (int i = 0; i < num; i++)
 	{
-		objs[i].DrawFunc(objs[i].obj, &standardPassData);
+		objs[i].DrawFunc(objs[i].obj, (void*)data);
 	}
-	SC_FreeRenderList(objs);
 }

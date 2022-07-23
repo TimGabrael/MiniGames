@@ -25,16 +25,17 @@ in vec4 col;\
 uniform sampler2D tex;\
 out vec4 outCol;\
 void main(){\
-	outCol = texture(tex, tPos).rgba * col;\
+	outCol = texture(tex, tPos).rgba * col;\n\
+	//outCol = vec4(texture(tex, tPos).rgb, 1.0f) * col;\n\
 }\
 ";
 
 
 struct DrawInstruction
 {
-	GLuint boundTexture;
-	int numVerts;
-	bool isTriangle;
+	GLuint boundTexture = 0;
+	int numVerts = 0;
+	bool isTriangle = 0;
 };
 struct StreamVertexBuffer
 {
@@ -47,9 +48,9 @@ struct StreamVertexBuffer
 };
 
 struct UiObjects {
-	GLuint program;
+	GLuint program = 0;
 	StreamVertexBuffer streamBuffer;
-	GLuint standardTexture;
+	GLuint standardTexture = 0;
 }g_ui;
 
 
@@ -173,6 +174,14 @@ void DrawQuad(const glm::vec2& tl, const glm::vec2& br, uint32_t color)
 		{br, {0.0f, 0.0f}, color}, {{tl.x, br.y}, {0.0f, 0.0f}, color}, {tl, {0.0f, 0.0f}, color},
 	};
 	AddVerticesToBuffer(preQuad, 6, g_ui.standardTexture, true);
+}
+void DrawQuad(const glm::vec2& tl, const glm::vec2& br, uint32_t color, GLuint texture)
+{
+	Vertex2D preQuad[6] = {
+		{tl, {0.0f, 0.0f}, color}, {{br.x, tl.y}, {1.0f, 0.0f}, color}, {br, {1.0f, 1.0f}, color},
+		{br, {1.0f, 1.0f}, color}, {{tl.x, br.y}, {0.0f, 1.0f}, color}, {tl, {0.0f, 0.0f}, color},
+	};
+	AddVerticesToBuffer(preQuad, 6, texture, true);
 }
 void DrawCircle(const glm::vec2& center, const glm::vec2& rad, float angleStart, float fillAngle, uint32_t color, int samples)
 {

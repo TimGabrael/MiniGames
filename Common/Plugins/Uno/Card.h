@@ -63,7 +63,7 @@ void AddCardTypeToScene(PScene scene);
 CardSceneObject* CreateCardBatchSceneObject(PScene scene);
 
 
-void DrawCards(const glm::mat4& proj, const glm::mat4& view, const glm::vec3& camPos);
+void DrawCards(const glm::mat4& proj, const glm::mat4& view, const glm::vec3& camPos, const glm::vec3& lDir, bool geomOnly);
 
 bool HitTest(const glm::mat4& model, const glm::vec3& camPos, const glm::vec3& mouseRay);
 

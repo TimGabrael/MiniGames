@@ -13,6 +13,7 @@ void CleanUpOpenGL();
 
 
 GLuint CreateProgram(const char* vertexShader, const char* fragmentShader);
+GLuint CreateProgram(const char* vertexShader);	
 
 
 GLuint LoadCubemap(const char* right, const char* left, const char* bottom, const char* top, const char* front, const char* back);
@@ -50,8 +51,15 @@ struct SingleFBO
 	GLuint depth;
 	GLuint texture;
 };
+struct DepthFBO
+{
+	GLuint fbo;
+	GLuint depth;
+};
 
 PScene CreateAndInitializeSceneAsDefault();
 SingleFBO CreateSingleFBO(int width, int height);
+DepthFBO CreateDepthFBO(int width, int height);
 void RecreateSingleFBO(SingleFBO* fbo, int width, int height);
 void DestroySingleFBO(SingleFBO* fbo);
+void DestroyDepthFBO(DepthFBO* fbo);

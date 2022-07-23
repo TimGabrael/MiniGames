@@ -20,12 +20,13 @@ uniform mat4 view;\n\
 uniform mat4 model;\n\
 uniform vec4 clipPlane;\n\
 out vec4 clipSpace;\
-out vec4 texCoord;\
+out vec2 texCoord;\
 void main(){\
 	vec4 worldPos = model * vec4(pos[gl_VertexID], 0.0f, 1.0f);\
 	clipSpace = projection * view * worldPos;\
 	gl_Position = clipSpace;\
 	gl_ClipDistance[0] = dot(worldPos, clipPlane);\
+	texCoord = pos[gl_VertexID] + glm::vec2(0.5f);\
 }\
 ";
 static const char* fragmentShader = "#version 300 es\n\
@@ -38,7 +39,7 @@ uniform Material {\n\
 	int type;\n\
 } material;\n\
 in vec4 clipSpace;\
-in vec4 texCoord;\
+in vec2 texCoord;\
 uniform sampler2D reflectTexture;\
 uniform sampler2D refractTexture;\
 uniform sampler2D dvdu;\
@@ -47,7 +48,7 @@ void main(){\
 	vec2 refract = clipSpace.xy/clipSpace.w * 0.5f + 0.5f;\
 	vec2 reflect = vec2(refract.x, -refract.y);\
 	outCol = texture(reflectTexture, reflect);\n\
-	outCol = (outCol + texture(refractTexture, refract)) * material.tintColor;\n\
+	outCol = (vec4(0.8f) * outCol + vec4(0.2f) * texture(refractTexture, texCoord)) * material.tintColor;\n\
 }\
 ";
 
@@ -62,6 +63,7 @@ enum RS_TEXTURES
 
 struct ReflectiveSurfacePipelineObjects
 {
+	GLuint geometryProgram;
 	GLuint program;
 	GLint projLoc;
 	GLint viewLoc;
@@ -91,6 +93,7 @@ static_assert(sizeof(ReflectiveSurfaceSceneObject) <= sizeof(SceneObject), "INVA
 
 void InitializeReflectiveSurfacePipeline()
 {
+	g_reflect.geometryProgram = CreateProgram(vertexShader);
 	g_reflect.program = CreateProgram(vertexShader, fragmentShader);
 
 	glUseProgramWrapper(g_reflect.program);
@@ -167,9 +170,9 @@ void ReflectiveSurfaceSetTextureData(SceneObject* objd, const ReflectiveSurfaceT
 	obj->material->refractionTexture = texData->refract;
 }
 
-void DrawReflectiveSurface(ReflectiveSurfaceSceneObject* obj, const StandardRenderPassData* stdData, const glm::vec4* clipPlane)
+static void DrawReflectiveSurface(ReflectiveSurfaceSceneObject* obj, const StandardRenderPassData* stdData, const glm::vec4* clipPlane, bool geometryOnly)
 {
-	glUseProgramWrapper(g_reflect.program);
+	glUseProgramWrapper(geometryOnly ? g_reflect.geometryProgram : g_reflect.program);
 	glBindBufferBase(GL_UNIFORM_BUFFER, g_reflect.materialLoc, obj->material->dataUniform);
 	glActiveTexture(GL_TEXTURE0 + RS_TEXTURE_REFLECT);
 	glBindTexture(GL_TEXTURE_2D, obj->material->reflectionTexture);
@@ -190,19 +193,25 @@ void DrawReflectiveSurface(ReflectiveSurfaceSceneObject* obj, const StandardRend
 
 }
 
-void DrawReflectStandard(SceneObject* obj, void* data)
+static void DrawReflectGeoemtry(SceneObject* obj, void* data)
 {
 	const StandardRenderPassData* d = (const StandardRenderPassData*)data;
-	DrawReflectiveSurface((ReflectiveSurfaceSceneObject*)obj, d, nullptr);
+	DrawReflectiveSurface((ReflectiveSurfaceSceneObject*)obj, d, nullptr, true);
 }
-void DrawReflectPlane(SceneObject* obj, void* data)
+static void DrawReflectStandard(SceneObject* obj, void* data)
+{
+	const StandardRenderPassData* d = (const StandardRenderPassData*)data;
+	DrawReflectiveSurface((ReflectiveSurfaceSceneObject*)obj, d, nullptr, false);
+}
+static void DrawReflectPlane(SceneObject* obj, void* data)
 {
 	const ReflectPlanePassData* planeData = (const ReflectPlanePassData*)data;
-	DrawReflectiveSurface((ReflectiveSurfaceSceneObject*)obj, &planeData->base, planeData->planeEquation);
+	DrawReflectiveSurface((ReflectiveSurfaceSceneObject*)obj, planeData->base, planeData->planeEquation, false);
 }
 PFUNCDRAWSCENEOBJECT ReflectiveSurfaceGetDrawFunction(TYPE_FUNCTION f)
 {
 	if (f == TYPE_FUNCTION::TYPE_FUNCTION_OPAQUE) return DrawReflectStandard;
 	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_CLIP_PLANE_OPAQUE) return DrawReflectPlane;
+	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_GEOMETRY) return DrawReflectGeoemtry;
 	return nullptr;
 }

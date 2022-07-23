@@ -18,6 +18,7 @@ struct UnoGlobals
 	Camera playerCam;
 	MovementComponent moveComp;
 	SingleFBO reflectFBO;
+	DepthFBO shadowFBO;
 	GLuint skybox;
 	S3DCombinedBuffer platform;
 	CardHand* localPlayer;
