@@ -60,16 +60,22 @@ enum RS_TEXTURES
 	NUM_RS_TEXTURES,
 };
 
-
-struct ReflectiveSurfacePipelineObjects
+struct ReflectiveSurfaceUniforms
 {
-	GLuint geometryProgram;
-	GLuint program;
 	GLint projLoc;
 	GLint viewLoc;
 	GLint modelLoc;
 	GLint clipPlaneLoc;
 	GLint materialLoc;
+};
+
+
+struct ReflectiveSurfacePipelineObjects
+{
+	GLuint geometryProgram;
+	GLuint program;
+	ReflectiveSurfaceUniforms unis;
+	ReflectiveSurfaceUniforms geomUnis;
 
 }g_reflect;
 
@@ -104,12 +110,19 @@ void InitializeReflectiveSurfacePipeline()
 	index = glGetUniformLocation(g_reflect.program, "dvdu");
 	glUniform1i(index, RS_TEXTURE_DVDU);
 
-	g_reflect.projLoc = glGetUniformLocation(g_reflect.program, "projection");
-	g_reflect.viewLoc = glGetUniformLocation(g_reflect.program, "view");
-	g_reflect.modelLoc = glGetUniformLocation(g_reflect.program, "model");
-	g_reflect.clipPlaneLoc = glGetUniformLocation(g_reflect.program, "clipPlane");
-	g_reflect.materialLoc = glGetUniformBlockIndex(g_reflect.program, "Material");
-	glUniformBlockBinding(g_reflect.program, g_reflect.materialLoc, g_reflect.materialLoc);
+	g_reflect.unis.projLoc = glGetUniformLocation(g_reflect.program, "projection");
+	g_reflect.unis.viewLoc = glGetUniformLocation(g_reflect.program, "view");
+	g_reflect.unis.modelLoc = glGetUniformLocation(g_reflect.program, "model");
+	g_reflect.unis.clipPlaneLoc = glGetUniformLocation(g_reflect.program, "clipPlane");
+	g_reflect.unis.materialLoc = glGetUniformBlockIndex(g_reflect.program, "Material");
+	glUniformBlockBinding(g_reflect.program, g_reflect.unis.materialLoc, g_reflect.unis.materialLoc);
+
+	g_reflect.geomUnis.projLoc = glGetUniformLocation(g_reflect.geometryProgram, "projection");
+	g_reflect.geomUnis.viewLoc = glGetUniformLocation(g_reflect.geometryProgram, "view");
+	g_reflect.geomUnis.modelLoc = glGetUniformLocation(g_reflect.geometryProgram, "model");
+	g_reflect.geomUnis.clipPlaneLoc = glGetUniformLocation(g_reflect.geometryProgram, "clipPlane");
+	g_reflect.geomUnis.materialLoc = glGetUniformBlockIndex(g_reflect.geometryProgram, "Material");
+	glUniformBlockBinding(g_reflect.geometryProgram, g_reflect.geomUnis.materialLoc, g_reflect.geomUnis.materialLoc);
 
 }
 SceneObject* AddReflectiveSurface(PScene scene, const glm::vec3* pos, const glm::vec3* normal, float scaleX, float scaleY, const ReflectiveSurfaceMaterialData* data, const ReflectiveSurfaceTextures* texData)
@@ -172,8 +185,9 @@ void ReflectiveSurfaceSetTextureData(SceneObject* objd, const ReflectiveSurfaceT
 
 static void DrawReflectiveSurface(ReflectiveSurfaceSceneObject* obj, const StandardRenderPassData* stdData, const glm::vec4* clipPlane, bool geometryOnly)
 {
+	ReflectiveSurfaceUniforms* unis = geometryOnly ? &g_reflect.geomUnis : &g_reflect.unis;
 	glUseProgramWrapper(geometryOnly ? g_reflect.geometryProgram : g_reflect.program);
-	glBindBufferBase(GL_UNIFORM_BUFFER, g_reflect.materialLoc, obj->material->dataUniform);
+	glBindBufferBase(GL_UNIFORM_BUFFER, unis->materialLoc, obj->material->dataUniform);
 	glActiveTexture(GL_TEXTURE0 + RS_TEXTURE_REFLECT);
 	glBindTexture(GL_TEXTURE_2D, obj->material->reflectionTexture);
 	glActiveTexture(GL_TEXTURE0 + RS_TEXTURE_REFRACT);
@@ -181,11 +195,11 @@ static void DrawReflectiveSurface(ReflectiveSurfaceSceneObject* obj, const Stand
 	glActiveTexture(GL_TEXTURE0 + RS_TEXTURE_DVDU);
 	glBindTexture(GL_TEXTURE_2D, obj->material->dudv);
 
-	glUniformMatrix4fv(g_reflect.projLoc, 1, GL_FALSE, (const GLfloat*)stdData->camProj);
-	glUniformMatrix4fv(g_reflect.viewLoc, 1, GL_FALSE, (const GLfloat*)stdData->camView);
-	glUniformMatrix4fv(g_reflect.modelLoc, 1, GL_FALSE, (const GLfloat*)obj->modelTransform);
+	glUniformMatrix4fv(unis->projLoc, 1, GL_FALSE, (const GLfloat*)stdData->camProj);
+	glUniformMatrix4fv(unis->viewLoc, 1, GL_FALSE, (const GLfloat*)stdData->camView);
+	glUniformMatrix4fv(unis->modelLoc, 1, GL_FALSE, (const GLfloat*)obj->modelTransform);
 	if(clipPlane)
-		glUniform4fv(g_reflect.clipPlaneLoc, 1, (const GLfloat*)clipPlane);
+		glUniform4fv(unis->clipPlaneLoc, 1, (const GLfloat*)clipPlane);
 
 
 

@@ -77,11 +77,6 @@ void UnoPlugin::Init(ApplicationData* data)
 		ReflectiveSurfaceMaterialData data{ };
 		data.tintColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 		g_objs->basePlatform = AddReflectiveSurface(g_objs->UnoScene, &reflectPos, &normal, 8.0f, 8.0f, &data, nullptr);
-
-		reflectPos = { 0.0f, 1.0f, 0.0f };
-		SceneObject* obj = AddReflectiveSurface(g_objs->UnoScene, &reflectPos, &normal, 8.0f, 8.0f, &data, nullptr);
-		std::cout << "g: " << g_objs->basePlatform << ", " << obj << std::endl;
-		
 	}
 	g_objs->skybox = LoadCubemap(
 		"Assets/CitySkybox/right.jpg",
@@ -146,8 +141,6 @@ void UnoPlugin::Resize(ApplicationData* data)
 	}
 }
 static ColorPicker picker;
-static bool testBOOL = false;
-static bool anotherBOOL = false;
 void UnoPlugin::Render(ApplicationData* data)
 {
 	if (!(sizeX && sizeY)) return;
@@ -204,9 +197,10 @@ void UnoPlugin::Render(ApplicationData* data)
 	stdData.lightDir = &lightDir;
 	stdData.skyBox = g_objs->skybox;
 
-	glm::vec3 testPos = { 0.0f, 4.0f, 0.0f };
-	glm::mat4 testView = glm::lookAtRH(testPos, glm::vec3(lightDir.x, -lightDir.y, lightDir.z) + testPos, glm::vec3(0.0f, 1.0f, 0.0f));
-	glm::mat4 testProj = glm::orthoLH(-4.0f, 4.0f, -4.0f, 4.0f, -100.0f, 100.0f);
+	
+	glm::vec3 testPos = { 2.0f, 4.0f, 2.0f };
+	glm::mat4 testView = glm::lookAtLH(testPos, testPos - glm::vec3(lightDir.x, -lightDir.y, lightDir.z), glm::vec3(0.0f, 1.0f, 0.0f));
+	glm::mat4 testProj = glm::ortho(-4.0f, 4.0f, -4.0f, 4.0f, -10.0f, 10.0f);
 	stdData.camPos = &testPos;
 	stdData.camProj = &testProj;
 	stdData.camView = &testView;
@@ -237,18 +231,7 @@ void UnoPlugin::Render(ApplicationData* data)
 	stdData.camView = &g_objs->playerCam.view;
 	stdData.camProj = &g_objs->playerCam.perspective;
 	stdData.camPos = &g_objs->playerCam.pos;
-	
 
-	// THIS IS A SOMEWHAT WORKING ORTHOGRAPHIC CAMERA
-	 //glm::vec3 testPos = { 0.0f, 4.0f, 0.0f };
-	 //glm::mat4 testView = glm::lookAtRH(testPos, lightDir + testPos, glm::vec3(0.0f, 1.0f, 0.0f));
-	 //glm::mat4 testProj = glm::orthoLH(-4.0f, 4.0f, -4.0f, 4.0f, -10.0f, 10.0f);
-	 if (anotherBOOL)
-	 {
-	 	stdData.camPos = &testPos;
-	 	stdData.camProj = &testProj;
-	 	stdData.camView = &testView;
-	 }
 
 	glBindFramebuffer(GL_FRAMEBUFFER, GetDefaultFramebuffer());
 	glViewport(0, 0, sizeX, sizeY);
@@ -258,8 +241,7 @@ void UnoPlugin::Render(ApplicationData* data)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	RenderSceneStandard(g_objs->UnoScene, &stdData);
-	if(testBOOL)
-		DrawQuad({ -1.0f, -1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF, g_objs->shadowFBO.depth);
+
 	DrawUI();
 
 	EndScene();
@@ -291,8 +273,6 @@ void UnoPlugin::KeyDownCallback(Key k, bool isRepeat)
 		if (k == Key::Key_A)g_objs->moveComp.SetMovementDirection(MovementComponent::DIRECTION::LEFT, true);
 		if (k == Key::Key_S)g_objs->moveComp.SetMovementDirection(MovementComponent::DIRECTION::BACKWARD, true);
 		if (k == Key::Key_D)g_objs->moveComp.SetMovementDirection(MovementComponent::DIRECTION::RIGHT, true);
-		if (k == Key::Key_L) testBOOL = !testBOOL;
-		if (k == Key::Key_J) anotherBOOL = !anotherBOOL;
 	}
 #endif
 	if (k == Key::Key_0) g_objs->localPlayer->FetchCard(g_objs->playerCam, g_objs->stack, g_objs->deck, g_objs->anims);

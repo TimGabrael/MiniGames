@@ -17,7 +17,6 @@ void RenderSceneShadow(PScene scene, const StandardRenderPassData* data)
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 
-
 	int num;
 	glm::mat4 camViewProj = *data->camProj * *data->camView;
 	SC_FillRenderList(scene, objs, &camViewProj, &num, TYPE_FUNCTION_GEOMETRY, SCENE_OBJECT_CAST_SHADOW);

@@ -275,7 +275,7 @@ OrthographicCamera OrthographicCamera::CreateMinimalFit(const Camera& cam, const
 	center /= 8;
 	out.pos = center - dir * distance;
 	
-	out.view = glm::lookAtRH(out.pos, center, glm::vec3(0.0f, 1.0f, 0.0f));
+	out.view = glm::lookAtLH(out.pos, center, glm::vec3(0.0f, 1.0f, 0.0f));
 
 	for (int i = 0; i < 8; i++)
 	{
@@ -293,7 +293,7 @@ OrthographicCamera OrthographicCamera::CreateMinimalFit(const Camera& cam, const
 		if (pts[i].z < min.z) min.z = pts[i].z;
 		if (max.z < pts[i].z) max.z = pts[i].z;
 	}
-	out.proj = glm::orthoLH(min.x, max.x, min.y, max.y, min.z, max.z);
+	out.proj = glm::ortho(min.x, max.x, min.y, max.y, min.z, max.z);
 
 
 	return out;

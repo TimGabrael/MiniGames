@@ -564,7 +564,6 @@ PFUNCDRAWSCENEOBJECT TEMPORARY_DRAW_RETRIEVER(TYPE_FUNCTION f)
 }
 PScene CreateAndInitializeSceneAsDefault()
 {
-	auto temp = [](TYPE_FUNCTION f) { return nullptr; };
 	PScene scene = SC_CreateScene();
 	const uint32_t indexS3D = SC_AddType(scene, S3DGetDrawFunctions);
 	assert(index == 0);

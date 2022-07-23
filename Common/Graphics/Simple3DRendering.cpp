@@ -51,6 +51,7 @@ struct Basic3DPipelineObjects
 	GLuint defaultTexture;
 
 	UniformLocations unis;
+	UniformLocations geomUnis;
 
 }g_3d;
 
@@ -64,6 +65,10 @@ void InitializeSimple3DPipeline()
 	g_3d.unis.model = glGetUniformLocation(g_3d.program, "model");
 	g_3d.unis.view = glGetUniformLocation(g_3d.program, "view");
 	g_3d.unis.plane = glGetUniformLocation(g_3d.program, "clipPlane");
+	g_3d.geomUnis.proj = glGetUniformLocation(g_3d.geometryProgram, "projection");
+	g_3d.geomUnis.model = glGetUniformLocation(g_3d.geometryProgram, "model");
+	g_3d.geomUnis.view = glGetUniformLocation(g_3d.geometryProgram, "view");
+	g_3d.geomUnis.plane = glGetUniformLocation(g_3d.geometryProgram, "clipPlane");
 
 	glGenTextures(1, &g_3d.defaultTexture);
 	glBindTexture(GL_TEXTURE_2D, g_3d.defaultTexture);
@@ -189,10 +194,11 @@ void CleanUpSimple3DPipeline()
 
 void DrawSimple3D(const S3DCombinedBuffer& buf, const glm::mat4& proj, const glm::mat4& view, const glm::mat4& model, bool geometryOnly)
 {
+	UniformLocations* unis = geometryOnly ? &g_3d.geomUnis : &g_3d.unis;
 	glUseProgramWrapper(geometryOnly ? g_3d.geometryProgram : g_3d.program);
-	glUniformMatrix4fv(g_3d.unis.proj, 1, GL_FALSE, (const GLfloat*)&proj);
-	glUniformMatrix4fv(g_3d.unis.view, 1, GL_FALSE, (const GLfloat*)&view);
-	glUniformMatrix4fv(g_3d.unis.model, 1, GL_FALSE, (const GLfloat*)&model);
+	glUniformMatrix4fv(unis->proj, 1, GL_FALSE, (const GLfloat*)&proj);
+	glUniformMatrix4fv(unis->view, 1, GL_FALSE, (const GLfloat*)&view);
+	glUniformMatrix4fv(unis->model, 1, GL_FALSE, (const GLfloat*)&model);
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, g_3d.defaultTexture);
@@ -207,10 +213,11 @@ void DrawSimple3D(const S3DCombinedBuffer& buf, const glm::mat4& proj, const glm
 }
 void DrawSimple3D(const S3DCombinedBuffer& buf, const glm::mat4& proj, const glm::mat4& view, GLuint texture, const glm::mat4& model, bool geometryOnly)
 {
+	UniformLocations* unis = geometryOnly ? &g_3d.geomUnis : &g_3d.unis;
 	glUseProgramWrapper(geometryOnly ? g_3d.geometryProgram : g_3d.program);
-	glUniformMatrix4fv(g_3d.unis.proj, 1, GL_FALSE, (const GLfloat*)&proj);
-	glUniformMatrix4fv(g_3d.unis.view, 1, GL_FALSE, (const GLfloat*)&view);
-	glUniformMatrix4fv(g_3d.unis.model, 1, GL_FALSE, (const GLfloat*)&model);
+	glUniformMatrix4fv(unis->proj, 1, GL_FALSE, (const GLfloat*)&proj);
+	glUniformMatrix4fv(unis->view, 1, GL_FALSE, (const GLfloat*)&view);
+	glUniformMatrix4fv(unis->model, 1, GL_FALSE, (const GLfloat*)&model);
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texture);
@@ -226,10 +233,11 @@ void DrawSimple3D(const S3DCombinedBuffer& buf, const glm::mat4& proj, const glm
 }
 void DrawSimple3D(const S3DVertexBuffer& buf, const glm::mat4& proj, const glm::mat4& view, const glm::mat4& model, bool geometryOnly)
 {
+	UniformLocations* unis = geometryOnly ? &g_3d.geomUnis : &g_3d.unis;
 	glUseProgramWrapper(geometryOnly ? g_3d.geometryProgram : g_3d.program);
-	glUniformMatrix4fv(g_3d.unis.proj, 1, GL_FALSE, (const GLfloat*)&proj);
-	glUniformMatrix4fv(g_3d.unis.view, 1, GL_FALSE, (const GLfloat*)&view);
-	glUniformMatrix4fv(g_3d.unis.model, 1, GL_FALSE, (const GLfloat*)&model);
+	glUniformMatrix4fv(unis->proj, 1, GL_FALSE, (const GLfloat*)&proj);
+	glUniformMatrix4fv(unis->view, 1, GL_FALSE, (const GLfloat*)&view);
+	glUniformMatrix4fv(unis->model, 1, GL_FALSE, (const GLfloat*)&model);
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, g_3d.defaultTexture);
@@ -242,10 +250,11 @@ void DrawSimple3D(const S3DVertexBuffer& buf, const glm::mat4& proj, const glm::
 }
 void DrawSimple3D(const S3DVertexBuffer& buf, const glm::mat4& proj, const glm::mat4& view, GLuint texture, const glm::mat4& model, bool geometryOnly)
 {
+	UniformLocations* unis = geometryOnly ? &g_3d.geomUnis : &g_3d.unis;
 	glUseProgramWrapper(geometryOnly ? g_3d.geometryProgram : g_3d.program);
-	glUniformMatrix4fv(g_3d.unis.proj, 1, GL_FALSE, (const GLfloat*)&proj);
-	glUniformMatrix4fv(g_3d.unis.view, 1, GL_FALSE, (const GLfloat*)&view);
-	glUniformMatrix4fv(g_3d.unis.model, 1, GL_FALSE, (const GLfloat*)&model);
+	glUniformMatrix4fv(unis->proj, 1, GL_FALSE, (const GLfloat*)&proj);
+	glUniformMatrix4fv(unis->view, 1, GL_FALSE, (const GLfloat*)&view);
+	glUniformMatrix4fv(unis->model, 1, GL_FALSE, (const GLfloat*)&model);
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texture);
@@ -258,11 +267,12 @@ void DrawSimple3D(const S3DVertexBuffer& buf, const glm::mat4& proj, const glm::
 }
 void DrawSimple3D(const S3DVertexBuffer& buf, const glm::mat4& proj, const glm::mat4& view, GLuint texture, const glm::mat4& model, const glm::vec4& clipPlane, bool geometryOnly = false)
 {
+	UniformLocations* unis = geometryOnly ? &g_3d.geomUnis : &g_3d.unis;
 	glUseProgramWrapper(geometryOnly ? g_3d.geometryProgram : g_3d.program);
-	glUniformMatrix4fv(g_3d.unis.proj, 1, GL_FALSE, (const GLfloat*)&proj);
-	glUniformMatrix4fv(g_3d.unis.view, 1, GL_FALSE, (const GLfloat*)&view);
-	glUniformMatrix4fv(g_3d.unis.model, 1, GL_FALSE, (const GLfloat*)&model);
-	glUniform4fv(g_3d.unis.plane, 1, (const GLfloat*)&clipPlane);
+	glUniformMatrix4fv(unis->proj, 1, GL_FALSE, (const GLfloat*)&proj);
+	glUniformMatrix4fv(unis->view, 1, GL_FALSE, (const GLfloat*)&view);
+	glUniformMatrix4fv(unis->model, 1, GL_FALSE, (const GLfloat*)&model);
+	glUniform4fv(unis->plane, 1, (const GLfloat*)&clipPlane);
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texture);
@@ -275,11 +285,12 @@ void DrawSimple3D(const S3DVertexBuffer& buf, const glm::mat4& proj, const glm::
 }
 void DrawSimple3D(const S3DCombinedBuffer& buf, const glm::mat4& proj, const glm::mat4& view, GLuint texture, const glm::mat4& model, const glm::vec4& clipPlane, bool geometryOnly = false)
 {
+	UniformLocations* unis = geometryOnly ? &g_3d.geomUnis : &g_3d.unis;
 	glUseProgramWrapper(geometryOnly ? g_3d.geometryProgram : g_3d.program);
-	glUniformMatrix4fv(g_3d.unis.proj, 1, GL_FALSE, (const GLfloat*)&proj);
-	glUniformMatrix4fv(g_3d.unis.view, 1, GL_FALSE, (const GLfloat*)&view);
-	glUniformMatrix4fv(g_3d.unis.model, 1, GL_FALSE, (const GLfloat*)&model);
-	glUniform4fv(g_3d.unis.plane, 1, (const GLfloat*)&clipPlane);
+	glUniformMatrix4fv(unis->proj, 1, GL_FALSE, (const GLfloat*)&proj);
+	glUniformMatrix4fv(unis->view, 1, GL_FALSE, (const GLfloat*)&view);
+	glUniformMatrix4fv(unis->model, 1, GL_FALSE, (const GLfloat*)&model);
+	glUniform4fv(unis->plane, 1, (const GLfloat*)&clipPlane);
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texture);

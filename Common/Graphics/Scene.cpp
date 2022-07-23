@@ -50,6 +50,7 @@ static void FreeBatchList(PtrSafeBatchListHeader64* list)
 static void* AddElementToBatchList(PtrSafeBatchListHeader64* list, uint32_t elementSize)
 {
 	assert(list != nullptr);
+
 	if (list->usedbitmask == UINT64_MAX)
 	{
 		if (list->next)

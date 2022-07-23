@@ -202,6 +202,7 @@ struct CardPipeline
 	
 	CardBuffers bufs;
 	CardUniforms unis;
+	CardUniforms geomUnis;
 
 	float width_half = 0.0f;
 	float height_half = 0.0f;
@@ -214,7 +215,10 @@ void InitializeCardPipeline(void* assetManager)
 	g_cards.program = CreateProgram(cardVertexShader, cardFragmentShader);
 	g_cards.geometryProgram = CreateProgram(cardVertexShader);
 	g_cards.unis.projection = glGetUniformLocation(g_cards.program, "projection");
+	g_cards.geomUnis.projection = glGetUniformLocation(g_cards.geometryProgram, "projection");
+	
 	g_cards.unis.view = glGetUniformLocation(g_cards.program, "view");
+	g_cards.geomUnis.view = glGetUniformLocation(g_cards.geometryProgram, "view");
 	g_cards.unis.tex = glGetUniformLocation(g_cards.program, "tex");
 	g_cards.unis.plane = glGetUniformLocation(g_cards.program, "clipPlane");
 	g_cards.unis.lightDir = glGetUniformLocation(g_cards.program, "lDir");
@@ -370,12 +374,13 @@ void DrawCardsInSceneBlendedClip(SceneObject* obj, void* renderPassData)
 }
 void DrawCards(const glm::mat4& proj, const glm::mat4& view, const glm::vec3& camPos, const glm::vec3& lDir, bool geomOnly)
 {
-	
+	CardUniforms* unis = geomOnly ? &g_cards.geomUnis : &g_cards.unis;
 	glUseProgramWrapper(geomOnly ? g_cards.geometryProgram : g_cards.program);
+	//glUseProgramWrapper(g_cards.program);
 	glBindVertexArray(g_cards.bufs.vao);
-	glUniformMatrix4fv(g_cards.unis.projection, 1, GL_FALSE, (const GLfloat*)&proj);
-	glUniformMatrix4fv(g_cards.unis.view, 1, GL_FALSE, (const GLfloat*)&view);
-	glUniform3fv(g_cards.unis.lightDir, 1, (const GLfloat*)&lDir);
+	glUniformMatrix4fv(unis->projection, 1, GL_FALSE, (const GLfloat*)&proj);
+	glUniformMatrix4fv(unis->view, 1, GL_FALSE, (const GLfloat*)&view);
+	glUniform3fv(unis->lightDir, 1, (const GLfloat*)&lDir);
 
 	int numInds = FillCardListAndMapToBuffer(camPos, false);
 
