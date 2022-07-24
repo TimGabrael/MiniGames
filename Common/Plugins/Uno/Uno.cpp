@@ -9,6 +9,7 @@
 #include <algorithm>
 #include "Graphics/Renderer.h"
 #include "Graphics/ReflectiveSurfaceRendering.h"
+#include "Graphics/BloomRendering.h"
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -65,6 +66,7 @@ void UnoPlugin::Init(ApplicationData* data)
 	g_objs->moveComp.SetRotation(-90.0f, -40.0f, 0.0f);
 
 	g_objs->shadowFBO = CreateDepthFBO(SHADOW_TEXTURE_SIZE, SHADOW_TEXTURE_SIZE);
+	g_objs->bloomFBO.Create(10, 10);
 	// CREATE SCENE
 	{
 		g_objs->UnoScene = CreateAndInitializeSceneAsDefault();
@@ -110,12 +112,12 @@ void UnoPlugin::Resize(ApplicationData* data)
 		g_objs->playerCam.SetPerspective(90.0f, (float)this->sizeX / (float)this->sizeY, 0.1f, 20.0f);
 	g_objs->playerCam.screenX = sizeX;
 	g_objs->playerCam.screenY = sizeY;
+	GLint defaultFBO;
+	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &defaultFBO);
+	SetDefaultFramebuffer(defaultFBO);
 	if (once) {
 		g_objs->offscreenX = sizeX;
 		g_objs->offscreenY = sizeY;
-		GLint defaultFBO;
-		glGetIntegerv(GL_FRAMEBUFFER_BINDING, &defaultFBO);
-		SetDefaultFramebuffer(defaultFBO);
 		g_objs->reflectFBO = CreateSingleFBO(sizeX, sizeY);
 
 		GLuint colTex;
@@ -139,6 +141,9 @@ void UnoPlugin::Resize(ApplicationData* data)
 
 		once = false;
 	}
+	ResizeBloomInternals(sizeX, sizeY);
+	g_objs->bloomFBO.Resize(sizeX, sizeY);
+	SetMainFramebuffer(g_objs->bloomFBO.defaultFBO);
 }
 static ColorPicker picker;
 void UnoPlugin::Render(ApplicationData* data)
@@ -236,7 +241,7 @@ void UnoPlugin::Render(ApplicationData* data)
 	stdData.camPos = &g_objs->playerCam.pos;
 
 
-	glBindFramebuffer(GL_FRAMEBUFFER, GetDefaultFramebuffer());
+	glBindFramebuffer(GL_FRAMEBUFFER, GetMainFramebuffer());
 	glViewport(0, 0, sizeX, sizeY);
 
 	glClearColor(1.0f, 0.4f, 0.4f, 1.0f);
@@ -245,6 +250,11 @@ void UnoPlugin::Render(ApplicationData* data)
 
 	RenderSceneStandard(g_objs->UnoScene, &stdData);
 
+
+	BlurTextureToFramebuffer(GetDefaultFramebuffer(), sizeX, sizeY, g_objs->bloomFBO.defaultTexture, 1.0f);
+
+	//DrawQuad({ -1.0f, -1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF, g_objs->bloomFBO.defaultTexture);
+	//
 	DrawUI();
 
 	EndScene();

@@ -23,6 +23,7 @@
 #include "PbrRendering.h"
 #include "Simple3DRendering.h"
 #include "ReflectiveSurfaceRendering.h"
+#include "BloomRendering.h"
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -240,6 +241,7 @@ void InitializeOpenGL(void* assetManager)
 	InitializeUiPipeline();
 	InitializeSimple3DPipeline();
 	InitializeReflectiveSurfacePipeline();
+	InitializeBloomPipeline();
 
 	
 	g_helper.cubemapProgram = CreateProgram(cubemapVS, cubemapFS);
@@ -655,4 +657,82 @@ void DestroyDepthFBO(DepthFBO* fbo)
 {
 	glDeleteFramebuffers(1, &fbo->fbo);
 	glDeleteTextures(1, &fbo->depth);
+}
+
+
+void BloomFBO::Create(int sx, int sy)
+{
+	sizeX = sx;
+	sizeY = sy;
+	glGenFramebuffers(1, &defaultFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, defaultFBO);
+
+	glGenTextures(1, &defaultDepth);
+	glBindTexture(GL_TEXTURE_2D, defaultDepth);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, sx, sy, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, defaultDepth, 0);
+
+	glGenTextures(1, &defaultTexture);
+	glBindTexture(GL_TEXTURE_2D, defaultTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, sx, sy, 0, GL_RGBA, GL_FLOAT, nullptr);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, defaultTexture, 0);
+
+	
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+		LOG("FAILED  TO CREATE FRAMEBUFFER\n");
+	}
+	
+
+
+	numBloomFbos = 1 + floor(log2(std::max(sx, sy)));
+	this->bloomFBOs = new GLuint[numBloomFbos];
+
+	glGenFramebuffers(numBloomFbos, bloomFBOs);
+
+
+	glGenTextures(1, &bloomTexture);
+	glBindTexture(GL_TEXTURE_2D, bloomTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, sx, sy, 0, GL_RGBA, GL_FLOAT, nullptr);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glGenerateMipmap(GL_TEXTURE_2D);
+
+	for (int i = 0; i < numBloomFbos; i++)
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, bloomFBOs[i]);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bloomTexture, i);
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+			LOG("FAILED  TO CREATE FRAMEBUFFER\n");
+		}
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, GetDefaultFramebuffer());
+
+}
+void BloomFBO::Resize(int sx, int sy)
+{
+	CleanUp();
+	Create(sx, sy);
+}
+void BloomFBO::CleanUp()
+{
+	if (bloomFBOs)
+	{
+		glDeleteFramebuffers(numBloomFbos, bloomFBOs);
+		delete[] bloomFBOs;
+		bloomFBOs = nullptr;
+	}
+	glDeleteFramebuffers(1, &defaultFBO);
+	glDeleteTextures(1, &bloomTexture);
+	glDeleteTextures(1, &defaultTexture);
+	glDeleteTextures(1, &defaultDepth);
 }

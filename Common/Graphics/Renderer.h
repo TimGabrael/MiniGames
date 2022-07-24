@@ -35,3 +35,4 @@ void EndScene();
 void RenderSceneShadow(PScene scene, const StandardRenderPassData* data);
 void RenderSceneReflectedOnPlane(PScene scene, const ReflectPlanePassData* data);
 void RenderSceneStandard(PScene scene, const StandardRenderPassData* data);
+void RenderPostProcessingBloom(struct BloomFBO* bloomData, GLuint finalFBO, int finalSizeX, int finalSizeY);

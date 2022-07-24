@@ -19,6 +19,7 @@ struct UnoGlobals
 	MovementComponent moveComp;
 	SingleFBO reflectFBO;
 	DepthFBO shadowFBO;
+	BloomFBO bloomFBO;
 	GLuint skybox;
 	S3DCombinedBuffer platform;
 	CardHand* localPlayer;

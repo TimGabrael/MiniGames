@@ -86,3 +86,6 @@ void RenderSceneStandard(PScene scene, const StandardRenderPassData* data)
 		objs[i].DrawFunc(objs[i].obj, (void*)data);
 	}
 }
+void RenderPostProcessingBloom(BloomFBO* bloomData, GLuint finalFBO, int finalSizeX, int finalSizeY)
+{
+}

@@ -24,4 +24,8 @@ void glDisableClipDistance(int clipIndex);
 // IN THE CASE OF QT IT SHOWED THAT THE DEFAULT FB IS 1 USUALLY
 // BUT THAT MAY ( MAY ) DIFFER ON EACH STARTUP WHO KNOWS WHAT QT IS UP TO :(
 void SetDefaultFramebuffer(GLuint fb);
-GLint GetDefaultFramebuffer();
+GLuint GetDefaultFramebuffer();
+
+// THE FRAMEBUFFER ALL OBJECTS ARE SUPPOSED TO BE DRAWN TO, may differ from DefaultFramebuffer for example in Compositing/Bloom
+void SetMainFramebuffer(GLuint fb);
+GLuint GetMainFramebuffer();

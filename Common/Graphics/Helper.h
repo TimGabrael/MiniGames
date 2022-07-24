@@ -56,6 +56,20 @@ struct DepthFBO
 	GLuint fbo;
 	GLuint depth;
 };
+struct BloomFBO
+{
+	GLuint defaultFBO;
+	GLuint* bloomFBOs;
+	GLuint defaultTexture;
+	GLuint defaultDepth;
+	GLuint bloomTexture;
+	int sizeX;
+	int sizeY;
+	int numBloomFbos; // numBloomFbos == numMipMaps
+	void Create(int sx, int sy);
+	void Resize(int sx, int sy);
+	void CleanUp();
+};
 
 PScene CreateAndInitializeSceneAsDefault();
 SingleFBO CreateSingleFBO(int width, int height);
@@ -63,3 +77,4 @@ DepthFBO CreateDepthFBO(int width, int height);
 void RecreateSingleFBO(SingleFBO* fbo, int width, int height);
 void DestroySingleFBO(SingleFBO* fbo);
 void DestroyDepthFBO(DepthFBO* fbo);
+

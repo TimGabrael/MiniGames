@@ -6,6 +6,7 @@
 
 static GLuint currentlyBoundShaderProgram = 0;
 static GLuint defaultFramebuffer = 0;
+static GLuint mainFramebuffer = 0;
 #if LOG_DRAW_CALLS
 static int numDrawCallsMadeThisFrame = 0;
 #endif
@@ -77,7 +78,16 @@ void SetDefaultFramebuffer(GLuint fb)
 {
 	defaultFramebuffer = fb;
 }
-GLint GetDefaultFramebuffer()
+GLuint GetDefaultFramebuffer()
 {
 	return defaultFramebuffer;
+}
+
+void SetMainFramebuffer(GLuint fb)
+{
+	mainFramebuffer = fb;
+}
+GLuint GetMainFramebuffer()
+{
+	return mainFramebuffer;
 }
