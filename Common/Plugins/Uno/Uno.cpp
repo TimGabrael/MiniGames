@@ -66,7 +66,7 @@ void UnoPlugin::Init(ApplicationData* data)
 	g_objs->moveComp.SetRotation(-90.0f, -40.0f, 0.0f);
 
 	g_objs->shadowFBO = CreateDepthFBO(SHADOW_TEXTURE_SIZE, SHADOW_TEXTURE_SIZE);
-	g_objs->bloomFBO.Create(10, 10);
+	g_objs->bloomFBO.Create(10, 10, 10, 10);
 	// CREATE SCENE
 	{
 		g_objs->UnoScene = CreateAndInitializeSceneAsDefault();
@@ -142,7 +142,7 @@ void UnoPlugin::Resize(ApplicationData* data)
 		once = false;
 	}
 	ResizeBloomInternals(sizeX, sizeY);
-	g_objs->bloomFBO.Resize(sizeX, sizeY);
+	g_objs->bloomFBO.Resize(sizeX, sizeY, sizeX / 2, sizeY / 2);
 	SetMainFramebuffer(g_objs->bloomFBO.defaultFBO);
 }
 static ColorPicker picker;
@@ -251,7 +251,9 @@ void UnoPlugin::Render(ApplicationData* data)
 	RenderSceneStandard(g_objs->UnoScene, &stdData);
 
 
-	BlurTextureToFramebuffer(GetDefaultFramebuffer(), sizeX, sizeY, g_objs->bloomFBO.defaultTexture, 1.0f);
+	//BlurTextureToFramebuffer(GetDefaultFramebuffer(), sizeX, sizeY, g_objs->bloomFBO.defaultTexture, 1.0f);
+	//BloomTextureToFramebuffer(GetDefaultFramebuffer(), sizeX, sizeY, g_objs->bloomFBO.defaultTexture, 1.0f, 0.01f);
+	RenderPostProcessingBloom(&g_objs->bloomFBO, GetDefaultFramebuffer(), sizeX, sizeY);
 
 	//DrawQuad({ -1.0f, -1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF, g_objs->bloomFBO.defaultTexture);
 	//

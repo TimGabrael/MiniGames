@@ -1,7 +1,7 @@
 #include "Renderer.h"
 #include "Helper.h"
 #include "logging.h"
-
+#include "BloomRendering.h"
 
 static ObjectRenderStruct* objs = nullptr;
 void BeginScene(PScene scene)
@@ -88,4 +88,37 @@ void RenderSceneStandard(PScene scene, const StandardRenderPassData* data)
 }
 void RenderPostProcessingBloom(BloomFBO* bloomData, GLuint finalFBO, int finalSizeX, int finalSizeY)
 {
+	glDisable(GL_BLEND);
+	glDisable(GL_DEPTH_TEST);
+	float blurRadius = 4.0f;
+	float intensity = 1.0f;
+	if (bloomData->numBloomFbos == 0) return;
+	glm::ivec2 fboSizes[20];
+	BloomTextureToFramebuffer(bloomData->bloomFBOs1[0], bloomData->sizeX, bloomData->sizeY, bloomData->bloomFBOs2[0], bloomData->sizeX, bloomData->sizeY, bloomData->bloomTexture2, bloomData->defaultTexture, blurRadius, intensity, 0, 0);
+
+	fboSizes[0] = { bloomData->sizeX, bloomData->sizeY };
+	int curSizeX = bloomData->sizeX;
+	int curSizeY = bloomData->sizeY;
+	for (int i = 1; i < bloomData->numBloomFbos; i++)
+	{
+		curSizeX = std::max(curSizeX >> 1, 1); curSizeY = std::max(curSizeY >> 1, 1);
+		fboSizes[i] = { curSizeX, curSizeY };
+		BloomTextureToFramebuffer(bloomData->bloomFBOs1[i], curSizeX, curSizeY, bloomData->bloomFBOs2[i], curSizeX, curSizeY, bloomData->bloomTexture2, bloomData->bloomTexture1, blurRadius, 0.0f, i - 1, i);
+	}
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_ONE, GL_ONE);
+	for (int i = bloomData->numBloomFbos - 2; i >= 0; i--)
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, bloomData->bloomFBOs1[i]);
+		glViewport(0, 0, fboSizes[i].x, fboSizes[i].y);
+
+		UpsampleTextureToFramebuffer(bloomData->bloomTexture1, i + 1);
+	}
+
+	glDisable(GL_BLEND);
+	
+	glBindFramebuffer(GL_FRAMEBUFFER, finalFBO);
+	glViewport(0, 0, finalSizeX, finalSizeY);
+
+	CopyTexturesToFramebuffer(bloomData->bloomTexture1, 0, bloomData->defaultTexture, 0);
 }

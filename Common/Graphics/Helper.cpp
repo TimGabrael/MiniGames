@@ -660,7 +660,7 @@ void DestroyDepthFBO(DepthFBO* fbo)
 }
 
 
-void BloomFBO::Create(int sx, int sy)
+void BloomFBO::Create(int drawFboSx, int drawFboSy, int sx, int sy)
 {
 	sizeX = sx;
 	sizeY = sy;
@@ -669,7 +669,7 @@ void BloomFBO::Create(int sx, int sy)
 
 	glGenTextures(1, &defaultDepth);
 	glBindTexture(GL_TEXTURE_2D, defaultDepth);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, sx, sy, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, drawFboSx, drawFboSy, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -678,7 +678,7 @@ void BloomFBO::Create(int sx, int sy)
 
 	glGenTextures(1, &defaultTexture);
 	glBindTexture(GL_TEXTURE_2D, defaultTexture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, sx, sy, 0, GL_RGBA, GL_FLOAT, nullptr);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, drawFboSx, drawFboSy, 0, GL_RGBA, GL_FLOAT, nullptr);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -693,46 +693,87 @@ void BloomFBO::Create(int sx, int sy)
 
 
 	numBloomFbos = 1 + floor(log2(std::max(sx, sy)));
-	this->bloomFBOs = new GLuint[numBloomFbos];
-
-	glGenFramebuffers(numBloomFbos, bloomFBOs);
-
-
-	glGenTextures(1, &bloomTexture);
-	glBindTexture(GL_TEXTURE_2D, bloomTexture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, sx, sy, 0, GL_RGBA, GL_FLOAT, nullptr);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glGenerateMipmap(GL_TEXTURE_2D);
-
-	for (int i = 0; i < numBloomFbos; i++)
+	int curX = sx; int curY = sy;
+	for (int i = 1; i < numBloomFbos; i++)
 	{
-		glBindFramebuffer(GL_FRAMEBUFFER, bloomFBOs[i]);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bloomTexture, i);
-		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-			LOG("FAILED  TO CREATE FRAMEBUFFER\n");
+		curX = std::max((curX >> 1), 1);
+		curY = std::max((curY >> 1), 1);
+		if (curX < 16 && curY < 16 && false)
+		{
+			numBloomFbos = i;
+			break;
 		}
 	}
+	numBloomFbos = std::min(numBloomFbos, 8);	// NO MORE THEN 8 PLEASE!
+	{
+		this->bloomFBOs1 = new GLuint[numBloomFbos];
+		glGenFramebuffers(numBloomFbos, bloomFBOs1);
+
+		glGenTextures(1, &bloomTexture1);
+		glBindTexture(GL_TEXTURE_2D, bloomTexture1);
+		glTexStorage2D(GL_TEXTURE_2D, numBloomFbos, GL_RGBA16F, sx, sy);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+		for (int i = 0; i < numBloomFbos; i++)
+		{
+			glBindFramebuffer(GL_FRAMEBUFFER, bloomFBOs1[i]);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bloomTexture1, i);
+			if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+				LOG("FAILED  TO CREATE FRAMEBUFFER\n");
+			}
+		}
+	}
+	{
+		this->bloomFBOs2 = new GLuint[numBloomFbos];
+		glGenFramebuffers(numBloomFbos, bloomFBOs2);
+
+		glGenTextures(1, &bloomTexture2);
+		glBindTexture(GL_TEXTURE_2D, bloomTexture2);
+		glTexStorage2D(GL_TEXTURE_2D, numBloomFbos, GL_RGBA16F, sx, sy);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+		for (int i = 0; i < numBloomFbos; i++)
+		{
+			glBindFramebuffer(GL_FRAMEBUFFER, bloomFBOs2[i]);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bloomTexture2, i);
+			if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+				LOG("FAILED  TO CREATE FRAMEBUFFER\n");
+			}
+		}
+	}
+
+
 	glBindFramebuffer(GL_FRAMEBUFFER, GetDefaultFramebuffer());
 
 }
-void BloomFBO::Resize(int sx, int sy)
+void BloomFBO::Resize(int drawFboSx, int drawFboSy, int sx, int sy)
 {
 	CleanUp();
-	Create(sx, sy);
+	Create(drawFboSx, drawFboSy, sx, sy);
 }
 void BloomFBO::CleanUp()
 {
-	if (bloomFBOs)
+	if (bloomFBOs1)
 	{
-		glDeleteFramebuffers(numBloomFbos, bloomFBOs);
-		delete[] bloomFBOs;
-		bloomFBOs = nullptr;
+		glDeleteFramebuffers(numBloomFbos, bloomFBOs1);
+		delete[] bloomFBOs1;
+		bloomFBOs1 = nullptr;
+	}
+	if (bloomFBOs2)
+	{
+		glDeleteFramebuffers(numBloomFbos, bloomFBOs2);
+		delete[] bloomFBOs2;
+		bloomFBOs2 = nullptr;
 	}
 	glDeleteFramebuffers(1, &defaultFBO);
-	glDeleteTextures(1, &bloomTexture);
+	glDeleteTextures(1, &bloomTexture1);
+	glDeleteTextures(1, &bloomTexture2);
 	glDeleteTextures(1, &defaultTexture);
 	glDeleteTextures(1, &defaultDepth);
 }

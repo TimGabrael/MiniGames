@@ -59,15 +59,17 @@ struct DepthFBO
 struct BloomFBO
 {
 	GLuint defaultFBO;
-	GLuint* bloomFBOs;
+	GLuint* bloomFBOs1;
+	GLuint* bloomFBOs2;
+	GLuint bloomTexture1;
+	GLuint bloomTexture2;
 	GLuint defaultTexture;
 	GLuint defaultDepth;
-	GLuint bloomTexture;
 	int sizeX;
 	int sizeY;
 	int numBloomFbos; // numBloomFbos == numMipMaps
-	void Create(int sx, int sy);
-	void Resize(int sx, int sy);
+	void Create(int drawFboSx, int drawFboSy, int sx, int sy);
+	void Resize(int drawFboSx, int drawFboSy, int sx, int sy);
 	void CleanUp();
 };
 
