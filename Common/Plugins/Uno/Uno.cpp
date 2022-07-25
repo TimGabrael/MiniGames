@@ -15,7 +15,7 @@
 #include <math.h>
 
 PLUGIN_EXPORT_DEFINITION(UnoPlugin, "a3fV-6giK-10Eb-2rdT");
-#define SHADOW_TEXTURE_SIZE 2048
+#define SHADOW_TEXTURE_SIZE 1024
 
 PLUGIN_INFO UnoPlugin::GetPluginInfos()
 {
@@ -54,12 +54,13 @@ GLuint lut;
 #define ALLOW_FREEMOVEMENT
 void UnoPlugin::Init(ApplicationData* data)
 {
-	instance = this;
 
 	initialized = true;
 	this->backendData = data;
+
 	InitializeOpenGL(data->assetManager);
 	InitializeCardPipeline(data->assetManager);
+
 
 	g_objs = new UnoGlobals;
 	g_objs->moveComp.pos = { 0.0f, 1.6f, 2.0f };
@@ -98,7 +99,7 @@ void UnoPlugin::Init(ApplicationData* data)
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CCW);
-
+	glDepthMask(GL_TRUE);
 
 #ifndef ANDROID
 	glEnable(GL_MULTISAMPLE);
@@ -141,7 +142,6 @@ void UnoPlugin::Resize(ApplicationData* data)
 
 		once = false;
 	}
-	ResizeBloomInternals(sizeX, sizeY);
 	g_objs->bloomFBO.Resize(sizeX, sizeY, sizeX / 2, sizeY / 2);
 	SetMainFramebuffer(g_objs->bloomFBO.defaultFBO);
 }
@@ -251,12 +251,9 @@ void UnoPlugin::Render(ApplicationData* data)
 	RenderSceneStandard(g_objs->UnoScene, &stdData);
 
 
-	//BlurTextureToFramebuffer(GetDefaultFramebuffer(), sizeX, sizeY, g_objs->bloomFBO.defaultTexture, 1.0f);
-	//BloomTextureToFramebuffer(GetDefaultFramebuffer(), sizeX, sizeY, g_objs->bloomFBO.defaultTexture, 1.0f, 0.01f);
 	RenderPostProcessingBloom(&g_objs->bloomFBO, GetDefaultFramebuffer(), sizeX, sizeY);
 
-	//DrawQuad({ -1.0f, -1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF, g_objs->bloomFBO.defaultTexture);
-	//
+	
 	DrawUI();
 
 	EndScene();

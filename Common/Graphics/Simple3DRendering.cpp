@@ -4,7 +4,6 @@
 #include "Renderer.h"
 
 static const char* uiVertexShader = "#version 300 es\n\
-#extension GL_EXT_clip_cull_distance : enable\
 \n\
 layout(location = 0) in vec3 pos;\n\
 layout(location = 1) in vec2 texPos;\n\
@@ -15,12 +14,13 @@ uniform mat4 view;\n\
 uniform vec4 clipPlane;\n\
 out vec2 tPos;\
 out vec4 col;\
+out float clipDist;\
 void main(){\
 	vec4 pos = model * vec4(pos, 1.0f);\
 	gl_Position = projection * view * pos;\
 	tPos = texPos;\
 	col = color;\
-	gl_ClipDistance[0] = dot(pos, clipPlane);\
+	clipDist = dot(pos, clipPlane);\
 }\
 ";
 
@@ -29,9 +29,11 @@ precision highp float;\n\
 \n\
 in vec2 tPos;\
 in vec4 col;\
+in float clipDist;\
 uniform sampler2D tex;\
 out vec4 outCol;\
 void main(){\
+	if(clipDist < 0.0f) discard;\
 	outCol = texture(tex, tPos).rgba * col;\
 }\
 ";

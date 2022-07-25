@@ -302,11 +302,11 @@ GLuint CreateProgram(const char* vertexShaderSrc, const char* fragmentShaderSrc)
 	fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
 	glShaderSource(fragmentShader, 1, &fragmentShaderSrc, NULL);
 	glCompileShader(fragmentShader);
-	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
 	if (!success)
 	{
-		glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-		LOG("ERROR::SHADER::VERTEX::COMPILATION_FAILED %s\n", infoLog);
+		glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
+		LOG("ERROR::SHADER::FRAGMENT::COMPILATION_FAILED %s\n", infoLog);
 		glDeleteShader(vertexShader); glDeleteShader(fragmentShader);
 		return 0;
 	}
@@ -595,7 +595,7 @@ SingleFBO CreateSingleFBO(int width, int height)
 
 	glGenTextures(1, &out.depth);
 	glBindTexture(GL_TEXTURE_2D, out.depth);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -619,23 +619,33 @@ DepthFBO CreateDepthFBO(int width, int height)
 
 	glGenTextures(1, &out.depth);
 	glBindTexture(GL_TEXTURE_2D, out.depth);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	GLfloat borderColor = 1.0f;
 #ifdef ANDROID
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER_EXT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER_EXT);
-	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR_EXT, &borderColor);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	//glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR_EXT, &borderColor);
 #else
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, &borderColor);
 #endif
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, out.depth, 0);
 
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-		LOG("FAILED  TO CREATE FRAMEBUFFER\n");
+	// for whatever reason this doesn't lead to undefined behavior even though 
+	// the documentation tells me otherwise, (EXACT OPPOSITE) one should use GL_NONE as a compare_mode, if you want to sample the Depth texture with a
+	// normal sampler2D, but my physical phone doesn't perform depth test with GL_NONE :(
+	// but to mitigate further unkown U.B. just use a sampler2DShadow in the shader (which also did not work originaly for me)
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);	
+
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, out.depth, 0);
+	
+
+	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER); // 8CD6  GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT, is the usual error
+	if (status != GL_FRAMEBUFFER_COMPLETE) {
+		LOG("FAILED TO CREATE FRAMEBUFFER OBJECT, STATUS: %d\n", status);
 	}
 
 	glBindFramebuffer(GL_FRAMEBUFFER, GetDefaultFramebuffer());
@@ -669,7 +679,7 @@ void BloomFBO::Create(int drawFboSx, int drawFboSy, int sx, int sy)
 
 	glGenTextures(1, &defaultDepth);
 	glBindTexture(GL_TEXTURE_2D, defaultDepth);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, drawFboSx, drawFboSy, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, drawFboSx, drawFboSy, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -704,7 +714,7 @@ void BloomFBO::Create(int drawFboSx, int drawFboSy, int sx, int sy)
 			break;
 		}
 	}
-	numBloomFbos = std::min(numBloomFbos, 8);	// NO MORE THEN 8 PLEASE!
+	numBloomFbos = std::min(numBloomFbos, MAX_BLOOM_MIPMAPS);
 	{
 		this->bloomFBOs1 = new GLuint[numBloomFbos];
 		glGenFramebuffers(numBloomFbos, bloomFBOs1);

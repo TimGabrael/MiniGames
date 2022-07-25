@@ -5,7 +5,6 @@
 #include "logging.h"
 
 const char* vertexShader = "#version 300 es\n\
-#extension GL_EXT_clip_cull_distance : enable\
 \n\
 vec2 pos[6] = vec2[6](\
 	vec2(-0.5f, -0.5f),\
@@ -23,17 +22,19 @@ uniform vec4 clipPlane;\n\
 out vec4 clipSpace;\
 out vec2 texCoord;\
 out vec4 fragPosLightSpace;\
+out float clipDist;\
 void main(){\
 	vec4 worldPos = model * vec4(pos[gl_VertexID], 0.0f, 1.0f);\
 	fragPosLightSpace = lightSpaceMatrix * vec4(worldPos.xyz, 1.0f);\
 	clipSpace = projection * view * worldPos;\
 	gl_Position = clipSpace;\
-	gl_ClipDistance[0] = dot(worldPos, clipPlane);\
+	clipDist = dot(worldPos, clipPlane);\
 	texCoord = pos[gl_VertexID] + vec2(0.5f);\
 }\
 ";
 static const char* fragmentShader = "#version 300 es\n\
 precision highp float;\n\
+precision highp sampler2DShadow;\n\
 \n\
 uniform Material {\n\
 	vec4 tintColor;\n\
@@ -44,22 +45,20 @@ uniform Material {\n\
 in vec4 clipSpace;\
 in vec2 texCoord;\
 in vec4 fragPosLightSpace;\
+in float clipDist;\
 uniform sampler2D reflectTexture;\
 uniform sampler2D refractTexture;\
 uniform sampler2D dvdu;\
-uniform sampler2D shadowMap;\
+uniform sampler2DShadow shadowMap;\
 out vec4 outCol;\
 float shadowCalculation()\
 {\
 	vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;\
 	projCoords = projCoords * 0.5 + 0.5;\
-	float closestDepth = texture(shadowMap, projCoords.xy).r;\
-	float currentDepth = projCoords.z;\
-	float bias = 0.000005;\
-	float shadow = (currentDepth - bias) > closestDepth ? 0.0 : 1.0;\
-	return shadow;\
+	return texture(shadowMap, projCoords.xyz);\
 }\
 void main(){\
+	if(clipDist < 0.0f) discard;\
 	vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;\
 	projCoords = projCoords * 0.5 + 0.5;\
 	vec2 refract = clipSpace.xy/clipSpace.w * 0.5f + 0.5f;\
@@ -68,7 +67,10 @@ void main(){\
 	float shadow = shadowCalculation();\n\
 	outCol = (shadow + 0.2f) * (vec4(0.8f) * outCol + vec4(0.2f) * texture(refractTexture, texCoord)) * material.tintColor;\n\
 }\
-";
+";	
+// THE texture(shadowMap, projCoords) already applys a little bit of antialiasing (2x2 Kernel)
+// might be sufficient for my uses
+
 
 enum RS_TEXTURES
 {
@@ -224,8 +226,10 @@ static void DrawReflectiveSurface(ReflectiveSurfaceSceneObject* obj, const Stand
 	glUniformMatrix4fv(unis->viewLoc, 1, GL_FALSE, (const GLfloat*)stdData->camView);
 	glUniformMatrix4fv(unis->modelLoc, 1, GL_FALSE, (const GLfloat*)obj->modelTransform);
 	glUniformMatrix4fv(unis->lightSpaceMatrixLoc, 1, GL_FALSE, (const GLfloat*)stdData->light.viewProjMat);
-	if(clipPlane)
+	if (clipPlane)
 		glUniform4fv(unis->clipPlaneLoc, 1, (const GLfloat*)clipPlane);
+	else
+		glUniform4f(unis->clipPlaneLoc, 0.0f, 1.0f, 0.0f, 10000000.0f);
 	
 	
 

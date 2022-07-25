@@ -223,7 +223,8 @@ void DrawUI()
 		g_ui.streamBuffer.mapped = nullptr;
 		g_ui.streamBuffer.writeIdx = 0;
 	}
-
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glDisable(GL_DEPTH_TEST);
 	glUseProgramWrapper(g_ui.program);
 	glBindVertexArray(g_ui.streamBuffer.vao);

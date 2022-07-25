@@ -3,11 +3,11 @@
 
 #if defined(ANDROID) or defined(EMSCRIPTEN)
 #include <GLES3/gl3.h>
-#include <GLES2/gl2ext.h>
 #include <GLES3/gl3platform.h>
 #else
 #include "glad/glad.h"
 #endif
+#define MAX_BLOOM_MIPMAPS 8
 
 void EndFrameAndResetData();
 

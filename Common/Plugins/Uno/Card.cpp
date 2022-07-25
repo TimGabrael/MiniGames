@@ -35,7 +35,6 @@ static constexpr float CARD_EFFECT_SIZEY = CARD_EFFECT_Y / IMAGE_SIZE_Y;
 
 
 static const char* cardVertexShader = "#version 300 es\n\
-#extension GL_EXT_clip_cull_distance : enable\n\
 \n\
 layout(location = 0) in vec3 pos;\n\
 layout(location = 1) in vec3 nor;\n\
@@ -47,13 +46,14 @@ uniform vec4 clipPlane;\n\
 out vec3 outNormal;\
 out vec2 tPos;\
 out vec4 addCol;\
+out float clipDist;\
 void main(){\
 	vec4 worldPos = vec4(pos, 1.0f);\
 	gl_Position = projection * view * worldPos;\
 	tPos = texPos;\
 	outNormal = nor;\
 	addCol = col;\
-	gl_ClipDistance[0] = dot(worldPos, clipPlane);\
+	clipDist = dot(worldPos, clipPlane);\
 }\
 ";
 static const char* cardFragmentShader = "#version 300 es\n\
@@ -62,13 +62,15 @@ precision highp float;\n\
 in vec3 outNormal;\
 in vec2 tPos;\
 in vec4 addCol;\
+in float clipDist;\
 uniform vec3 lDir;\
 uniform sampler2D tex;\
 out vec4 outCol;\
 void main(){\
+	if(clipDist < 0.0f) discard;\
 	vec4 c = texture(tex, tPos) * addCol;\n\
 	vec3 norm = normalize(outNormal);\
-	float diff = max(dot(norm, lDir), 0.0);\
+	float diff = min(max(dot(norm, lDir), 0.0), 0.8);\
 	outCol = vec4((diff+0.2) * c.rgb, c.a);\n\
 }\
 ";
@@ -80,9 +82,11 @@ in vec2 tPos;\
 in vec4 addCol;\
 uniform vec3 lDir;\
 uniform sampler2D tex;\
+out vec4 outCol;\
 void main(){\
 	vec4 c = texture(tex, tPos);\
-	if (c.a < 0.5f) discard;\n\
+	if (c.a < 0.9f) discard;\n\
+	outCol = c;\
 }\
 ";
 
@@ -237,6 +241,7 @@ void InitializeCardPipeline(void* assetManager)
 	g_cards.unis.tex = glGetUniformLocation(g_cards.program, "tex");
 	g_cards.unis.plane = glGetUniformLocation(g_cards.program, "clipPlane");
 	g_cards.unis.lightDir = glGetUniformLocation(g_cards.program, "lDir");
+
 	// load texture
 	glGenTextures(1, &g_cards.texture);
 	FileContent content = LoadFileContent(assetManager, "Assets/UNO_DECK.png");
@@ -391,12 +396,12 @@ void DrawCards(const glm::mat4& proj, const glm::mat4& view, const glm::vec3& ca
 {
 	CardUniforms* unis = geomOnly ? &g_cards.geomUnis : &g_cards.unis;
 	glUseProgramWrapper(geomOnly ? g_cards.geometryProgram : g_cards.program);
-	//glUseProgramWrapper(g_cards.program);
+	
 	glBindVertexArray(g_cards.bufs.vao);
 	glUniformMatrix4fv(unis->projection, 1, GL_FALSE, (const GLfloat*)&proj);
 	glUniformMatrix4fv(unis->view, 1, GL_FALSE, (const GLfloat*)&view);
 	glUniform3fv(unis->lightDir, 1, (const GLfloat*)&lDir);
-
+	glUniform4f(unis->plane, 0.0f, 1.0f, 0.0f, 10000000.0f);
 	int numInds = FillCardListAndMapToBuffer(camPos, false);
 
 	glActiveTexture(GL_TEXTURE0);

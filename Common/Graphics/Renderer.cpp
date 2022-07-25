@@ -26,7 +26,6 @@ void RenderSceneShadow(PScene scene, const StandardRenderPassData* data)
 		objs[i].DrawFunc(objs[i].obj, (void*)data);
 	}
 
-	//glCullFace(GL_BACK);
 }
 
 void RenderSceneReflectedOnPlane(PScene scene, const ReflectPlanePassData* data)
@@ -93,7 +92,7 @@ void RenderPostProcessingBloom(BloomFBO* bloomData, GLuint finalFBO, int finalSi
 	float blurRadius = 4.0f;
 	float intensity = 1.0f;
 	if (bloomData->numBloomFbos == 0) return;
-	glm::ivec2 fboSizes[20];
+	glm::ivec2 fboSizes[MAX_BLOOM_MIPMAPS];
 	BloomTextureToFramebuffer(bloomData->bloomFBOs1[0], bloomData->sizeX, bloomData->sizeY, bloomData->bloomFBOs2[0], bloomData->sizeX, bloomData->sizeY, bloomData->bloomTexture2, bloomData->defaultTexture, blurRadius, intensity, 0, 0);
 
 	fboSizes[0] = { bloomData->sizeX, bloomData->sizeY };

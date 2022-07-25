@@ -399,6 +399,7 @@ void android_main(struct android_app* state)
                                                               state->looper, LOOPER_ID_USER, NULL, NULL);
 
     engine.passedData = new ApplicationData;
+    LoadAssetManager(&engine);
     {   // initialize engine passedData
         ApplicationData* p = engine.passedData;
         p->assetManager = engine.pAssetManager;
@@ -410,8 +411,6 @@ void android_main(struct android_app* state)
         p->tempSyncDataStorage = "";
         p->socket = nullptr; // for now nullptr
     }
-    LoadAssetManager(&engine);
-
 
     if (state->savedState != NULL) {
         // engine.state = *(struct saved_state*)state->savedState;
