@@ -52,6 +52,7 @@ UnoPlugin* GetInstance()
 
 
 #define ALLOW_FREEMOVEMENT
+SceneDirLight* light = nullptr;
 void UnoPlugin::Init(ApplicationData* data)
 {
 	initialized = true;
@@ -110,7 +111,7 @@ void UnoPlugin::Init(ApplicationData* data)
 		data.tintColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 		g_objs->basePlatform = AddReflectiveSurface(g_objs->UnoScene, &reflectPos, &normal, 8.0f, 8.0f, &data, nullptr);
 
-		SceneDirLight* light = SC_AddDirectionalLight(g_objs->UnoScene);
+		light = SC_AddDirectionalLight(g_objs->UnoScene);
 		light->data.ambient = { 0.2f, 0.2f, 0.2f };
 		light->data.diffuse = { 0.8f, 0.8f, 1.0f };
 		light->data.dir = { -1.0f / sqrtf(3.0f), -1.0f / sqrt(3.0f), -1.0f / sqrt(3.0f) };
@@ -212,6 +213,8 @@ void UnoPlugin::Render(ApplicationData* data)
 	auto& ray = g_objs->moveComp.mouseRay;
 	ray = g_objs->playerCam.ScreenToWorld(g_objs->p.x, g_objs->p.y);
 
+
+	light->data.dir = glm::vec3(0.0f, -1.0f, 0.0f);
 
 
 	g_objs->localPlayer->Update(g_objs->stack, g_objs->anims, g_objs->picker, g_objs->playerCam, g_objs->moveComp.mouseRay, g_objs->p, g_objs->anims.list.empty());

@@ -1354,8 +1354,6 @@ vec3 getIBLContribution(PBRInfo pbrInputs, vec3 n, vec3 reflection)\n\
 	vec3 diffuse = diffuseLight * pbrInputs.diffuseColor;\n\
 	vec3 specular = specularLight * (pbrInputs.specularColor * brdf.x + brdf.y);\n\
 \n\
-	// For presentation, this allows us to disable IBL terms\n\
-	// For presentation, this allows us to disable IBL terms\n\
 	diffuse *= uboParams.scaleIBLAmbient;\n\
 	specular *= uboParams.scaleIBLAmbient;\n\
 \n\
@@ -1483,7 +1481,7 @@ void main()\n\
 	vec3 specularEnvironmentR90 = vec3(1.0f, 1.0f, 1.0f) * reflectance90;\n\
 \n\
 	vec3 n = (material.normalTextureSet > -1) ? getNormal() : normalize(inNormal);\n\
-	vec3 v = normalize(ubo.camPos - inWorldPos);    // Vector from surface point to camera\n\
+	vec3 v = -normalize(ubo.camPos - inWorldPos);    // Vector from surface point to camera\n\
 	vec3 l = normalize(uboParams.lightDir.xyz);     // Vector from surface point to light\n\
 	vec3 h = normalize(l + v);                        // Half vector between both l and v\n\
 	vec3 reflection = -normalize(reflect(v, n));\n\
@@ -1528,7 +1526,7 @@ void main()\n\
 	const float u_OcclusionStrength = 1.0f;\n\
 	if (material.occlusionTextureSet > -1) {\n\
 		float ao = texture(aoMap, (material.occlusionTextureSet == 0 ? inUV0 : inUV1)).r;\n\
-		color = mix(color, color * ao, u_OcclusionStrength);\n\
+		//color = mix(color, color * ao, u_OcclusionStrength);\n\
 	}\n\
 \n\
 	const float u_EmissiveFactor = 1.0f;\n\
