@@ -75,7 +75,7 @@ out vec4 outCol;\
 float shadowCalculation()\
 {\
 	vec2 ts = vec2(1.0f) / vec2(textureSize(shadowMap, 0));\
-	vec3 projCoords = vec3(shadowFragLightPos.xy, shadowFragLightPos.z + 0.00005f) / shadowFragLightPos.w;\
+	vec3 projCoords = shadowFragLightPos.xyz / shadowFragLightPos.w;\
 	projCoords = projCoords * 0.5f + 0.5f;\
 	float shadow = 0.0f;\
 	for(int x = -1; x <= 1; ++x)\
