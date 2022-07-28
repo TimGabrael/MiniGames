@@ -80,61 +80,11 @@ GLuint GetMainFramebuffer()
 
 
 
-const char* GetVertexShaderBase()
-{
-	return
-"#version 300 es\n\
-#define MAX_NUM_LIGHTS 8\n\
-struct PointLight\
-{\
-	vec3 pos;\
-	float constant;\
-	float linear;\
-	float quadratic;\
-	vec3 ambient;\
-	vec3 diffuse;\
-	vec3 specular;\
-};\
-struct DirectionalLight\
-{\
-	vec3 dir;\
-	vec3 ambient;\
-	vec3 diffuse;\
-	vec3 specular;\
-	bool hasShadow;\
-};\
-struct LightMapper\
-{\
-	mat4 viewProj;\
-	vec2 start;\
-	vec2 end;\
-};\
-uniform LightData\
-{\
-	LightMapper mapped;\
-	PointLight pointLights[MAX_NUM_LIGHTS];\
-	DirectionalLight dirLights[MAX_NUM_LIGHTS];\
-	int numPointLights;\
-	int numDirLights;\
-}_lightData;\
-out vec4 shadowFragLightPos;\
-void SetShadowOutputVariable(vec4 worldPos)\
-{\
-	shadowFragLightPos = _lightData.mapped.viewProj * vec4(worldPos.xyz, 1.0f);\
-}\n\
-";
-}
 
 
+// vec3 convert_xyz_to_cube_uv(vec3 xyz) output: int index, float u, float v
 
 
-
-
-
-
-
-//uniform sampler2DShadow shadowMap;\
-//
 const char* GetFragmentShaderBase()
 {
 	return
@@ -142,6 +92,16 @@ const char* GetFragmentShaderBase()
 precision highp float;\n\
 precision highp sampler2DShadow;\n\
 #define MAX_NUM_LIGHTS 8\n\
+struct LightMapper\
+{\
+	mat4 viewProj;\
+	vec2 start;\
+	vec2 end;\
+};\
+struct CubemapLightMapperData\
+{\
+	vec4 startEnd[6];\
+};\
 struct PointLight\
 {\
 	vec3 pos;\
@@ -151,6 +111,8 @@ struct PointLight\
 	vec3 ambient;\
 	vec3 diffuse;\
 	vec3 specular;\
+	CubemapLightMapperData mapper;\
+	bool hasShadow;\
 };\
 struct DirectionalLight\
 {\
@@ -158,27 +120,21 @@ struct DirectionalLight\
 	vec3 ambient;\
 	vec3 diffuse;\
 	vec3 specular;\
+	LightMapper mapper;\
 	bool hasShadow;\
 };\
-struct LightMapper\
+layout (std140) uniform LightData\
 {\
-	mat4 viewProj;\
-	vec2 start;\
-	vec2 end;\
-};\
-uniform LightData\
-{\
-	LightMapper mapped;\
 	PointLight pointLights[MAX_NUM_LIGHTS];\
 	DirectionalLight dirLights[MAX_NUM_LIGHTS];\
 	int numPointLights;\
 	int numDirLights;\
 }_lightData;\
-in vec4 shadowFragLightPos;\
 uniform sampler2DShadow shadowMap;\
-float CalculateShadowValue(LightMapper mapper, vec4 fragLightPos)\
+float CalculateShadowValue(LightMapper mapper, vec4 fragWorldPos)\
 {\
 	vec2 ts = vec2(1.0f) / vec2(textureSize(shadowMap, 0));\
+	vec4 fragLightPos = mapper.viewProj * fragWorldPos;\
 	vec3 projCoords = fragLightPos.xyz / fragLightPos.w;\
 	projCoords = (projCoords * 0.5 + 0.5) * vec3(mapper.end, 1.0f) + vec3(mapper.start, 0.0f);\
 	float shadow = 0.0f;\
@@ -188,11 +144,69 @@ float CalculateShadowValue(LightMapper mapper, vec4 fragLightPos)\
 		{\
 			vec3 testPos = projCoords + vec3(ts.x * float(x), ts.y * float(y), 0.0f);\
 			if(testPos.x < mapper.start.x || testPos.y < mapper.start.y || testPos.x > mapper.end.x || testPos.y > mapper.end.y) shadow += 1.0f;\
-			shadow += texture(shadowMap, testPos.xyz);\
+			else shadow += texture(shadowMap, testPos.xyz);\
 		}\
 	}\
 	shadow /= 9.0f;\
 	return shadow;\
+}\
+vec3 convert_xyz_to_cube_uv(vec3 xyz)\
+{\
+	vec3 indexUVout = vec3(0.0f);\
+	float absX = abs(xyz.x);\
+	float absY = abs(xyz.y);\
+	float absZ = abs(xyz.z);\
+	int isXPositive = xyz.x > 0.0f ? 1 : 0;\
+	int isYPositive = xyz.y > 0.0f ? 1 : 0;\
+	int isZPositive = xyz.z > 0.0f ? 1 : 0;\
+	float maxAxis = 0.0f;\
+	float uc = 0.0f;\
+	float vc = 0.0f;\
+	if (isXPositive != 0 && absX >= absY && absX >= absZ) {\
+		maxAxis = absX;\
+		uc = -xyz.z;\
+		vc = xyz.y;\
+		indexUVout.x = 0.0f;\
+	}\
+	if (isXPositive == 0 && absX >= absY && absX >= absZ) {\
+		maxAxis = absX;\
+		uc = xyz.z;\
+		vc = xyz.y;\
+		indexUVout.x = 1.0f;\
+	}\
+	if (isYPositive != 0 && absY >= absX && absY >= absZ) {\
+		maxAxis = absY;\
+		uc = xyz.x;\
+		vc = -xyz.z;\
+		indexUVout.x = 2.0f;\
+	}\
+	if (isYPositive == 0 && absY >= absX && absY >= absZ) {\
+		maxAxis = absY;\
+		uc = xyz.x;\
+		vc = xyz.z;\
+		indexUVout.x = 3.0f;\
+	}\
+	if (isZPositive != 0 && absZ >= absX && absZ >= absY) {\
+		maxAxis = absZ;\
+		uc = xyz.x;\
+		vc = xyz.y;\
+		indexUVout.x = 4.0f;\
+	}\
+	if (isZPositive == 0 && absZ >= absX && absZ >= absY) {\
+		maxAxis = absZ;\
+		uc = -xyz.x;\
+		vc = xyz.y;\
+		indexUVout.x = 5.0f;\
+	}\
+	indexUVout.y = 0.5f * (uc / maxAxis + 1.0f);\
+	indexUVout.z = 0.5f * (vc / maxAxis + 1.0f);\
+	return indexUVout;\
+}\n\
+float CalculateCubeShadowValue(CubemapLightMapperData mapper, vec3 fragToLight, float fragPosWorld)\
+{\
+	vec2 ts = vec2(1.0f) / vec2(textureSize(shadowMap, 0));\
+	vec3 indexUV = convert_xyz_to_cube_uv(fragToLight);\n\
+	return 1.0f;\
 }\
 vec3 CalculatePointLightColor(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir, vec3 matDiffuseCol, vec3 matSpecCol, float shininess)\
 {\
@@ -227,7 +241,7 @@ vec3 CalculateLightsColor(vec4 fragWorldPos, vec3 normal, vec3 viewDir, vec3 mat
 	for(int i = 0; i < _lightData.numDirLights; i++)\
 	{\
 		float shadow = 1.0f;\
-		if(_lightData.dirLights[i].hasShadow) shadow = CalculateShadowValue(_lightData.mapped, shadowFragLightPos);\
+		if(_lightData.dirLights[i].hasShadow) shadow = CalculateShadowValue(_lightData.dirLights[i].mapper, fragWorldPos);\
 		result += CalculateDirectionalLightColor(_lightData.dirLights[i], normal, viewDir, matDiffuseCol, matSpecCol, shininess) * shadow;\
 	}\
 	for(int i = 0; i < _lightData.numPointLights; i++)\

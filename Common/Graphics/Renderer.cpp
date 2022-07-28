@@ -46,7 +46,6 @@ static void MirrorVectorAtPlane(glm::vec3* mirrorPos, const glm::vec4* plane)
 	glm::vec3 planeNormal = glm::normalize(glm::vec3(*plane));
 	*mirrorPos = *mirrorPos - 2 * (glm::dot(*mirrorPos, planeNormal) + plane->w) * planeNormal;
 }
-
 static void UpdateLightUniformFromCurrent()
 {
 	CurrentLightInformation* c = &g_render->cur;
@@ -58,17 +57,6 @@ static void UpdateLightUniformFromCurrent()
 	for (int i = 0; i < c->numCurDirLights; i++)
 	{
 		u.dirLights[i] = c->curDirLights[i].data;
-		if (!shadowFound && c->curDirLights[i].data.hasShadow)
-		{
-			u.mapped.viewProj = c->curDirLights[i].viewProj;
-			u.mapped.start = c->curDirLights[i].shadowAreaStart;
-			u.mapped.end = c->curDirLights[i].shadowAreaEnd;
-			shadowFound = true;
-		}
-		else
-		{
-			u.dirLights[i].hasShadow = false;
-		}
 	}
 	for (int i = 0; i < c->numCurPointLights; i++)
 	{
@@ -184,6 +172,8 @@ void RenderSceneShadow(PScene scene, const StandardRenderPassData* data)
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 
+	glEnable(GL_POLYGON_OFFSET_FILL);
+	glPolygonOffset(2.0f, 4.0f);
 	int num;
 	glm::mat4 camViewProj = *g_render->mainData.camProj * *g_render->mainData.camView;
 	SC_FillRenderList(scene, g_render->objs, &camViewProj, &num, TYPE_FUNCTION_GEOMETRY, SCENE_OBJECT_CAST_SHADOW);
@@ -196,6 +186,7 @@ void RenderSceneShadow(PScene scene, const StandardRenderPassData* data)
 		UpdateLightInformation(&middle, o->obj->base.lightGroups, nullptr);
 		o->DrawFunc(o->obj, (void*)&g_render->mainData);
 	}
+	glDisable(GL_POLYGON_OFFSET_FILL);
 }
 
 void RenderSceneReflectedOnPlane(PScene scene, const ReflectPlanePassData* data)

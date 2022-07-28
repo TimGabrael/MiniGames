@@ -14,7 +14,7 @@ void CleanUpOpenGL();
 
 GLuint CreateProgram(const char* vertexShader, const char* fragmentShader);
 GLuint CreateProgram(const char* vertexShader);	
-GLuint CreateProgramExtended(const char* vertexShaderExtension, const char* fragmentShaderExtension, GLuint* lightUniform, uint32_t shadowMapIdx);
+GLuint CreateProgramExtended(const char* vertexShader, const char* fragmentShaderExtension, GLuint* lightUniform, uint32_t shadowMapIdx);
 
 
 GLuint LoadCubemap(const char* right, const char* left, const char* bottom, const char* top, const char* front, const char* back);

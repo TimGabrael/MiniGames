@@ -52,6 +52,7 @@ UnoPlugin* GetInstance()
 
 
 #define ALLOW_FREEMOVEMENT
+ScenePointLight* pLight = nullptr;
 void UnoPlugin::Init(ApplicationData* data)
 {
 	initialized = true;
@@ -95,9 +96,10 @@ void UnoPlugin::Init(ApplicationData* data)
 		light->data.dir = { -1.0f / sqrtf(3.0f), -1.0f / sqrt(3.0f), -1.0f / sqrt(3.0f) };
 		light->data.specular = { 0.8f, 0.8f, 0.8f };
 		light->data.hasShadow = true;
-		light->shadowAreaStart = { 0.0f, 0.0f };
-		light->shadowAreaEnd = { 1.0f, 1.0f };
-		light->viewProj = g_objs->reflectionCam.viewProj;
+		light->data.mapper.start = { 0.0f, 0.0f };
+		light->data.mapper.end = { 1.0f, 1.0f };
+		light->data.mapper.viewProj = g_objs->reflectionCam.viewProj;
+
 	}
 	g_objs->skybox = LoadCubemap(
 		"Assets/CitySkybox/right.jpg",

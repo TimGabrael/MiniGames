@@ -35,34 +35,56 @@ GLuint GetMainFramebuffer();
 
 
 
-
-struct PointLightData
+// https://en.wikipedia.org/wiki/Cube_mapping
+struct CubemapLightMapperData
 {
-	glm::vec3 pos;
-	float constant;
-	float linear;
-	float quadratic;
-	glm::vec3 ambient;
-	glm::vec3 diffuse;
-	glm::vec3 specular;
+	glm::vec4 startEnd[6];
 };
-struct DirectionalLightData
-{
-	glm::vec3 dir;
-	glm::vec3 ambient;
-	glm::vec3 diffuse;
-	glm::vec3 specular;
-	bool hasShadow;
-};
-struct LightMapperData	// maps the light to a region in a shadow map
+struct LightMapperData
 {
 	glm::mat4 viewProj;
 	glm::vec2 start;
 	glm::vec2 end;
 };
+
+struct PointLightData
+{
+	glm::vec3 pos;
+	float _align1;
+	float constant;
+	float linear;
+	float quadratic;
+	float _align2;
+	glm::vec3 ambient;
+	float _align3;
+	glm::vec3 diffuse;
+	float _align4;
+	glm::vec3 specular;
+	float _align5;
+	CubemapLightMapperData mapper;
+	int hasShadow;
+	int _align6;
+	int _align7;
+	int _align8;
+};
+struct DirectionalLightData
+{
+	glm::vec3 dir;
+	float _align1;
+	glm::vec3 ambient;
+	float _align2;
+	glm::vec3 diffuse;
+	float _align3;
+	glm::vec3 specular;
+	float _align4;
+	LightMapperData mapper;
+	int hasShadow;
+	int _align5;
+	int _align6;
+	int _align7;
+};
 struct LightUniformData
 {
-	LightMapperData mapped;
 	PointLightData pointLights[MAX_NUM_LIGHTS];
 	DirectionalLightData dirLights[MAX_NUM_LIGHTS];
 	int numPointLights;
@@ -77,17 +99,9 @@ struct ScenePointLight
 struct SceneDirLight
 {
 	DirectionalLightData data;
-	glm::mat4 viewProj;
-	glm::vec2 shadowAreaStart;
-	glm::vec2 shadowAreaEnd;
 	uint16_t group;
 };
 
-
-const char* GetVertexShaderBase();
-// Predefined Functions: 
-// void SetShadowOutputVariable(vec4 worldPos)
-//
 
 const char* GetFragmentShaderBase();
 // Predefined Functions: 

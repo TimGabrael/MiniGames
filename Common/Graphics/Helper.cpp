@@ -336,30 +336,19 @@ GLuint CreateProgram(const char* vertexShader)
 {
 	return CreateProgram(vertexShader, emptyFragmentShader);
 }
-GLuint CreateProgramExtended(const char* vertexShaderExtension, const char* fragmentShaderExtension, GLuint* lightUniform, uint32_t shadowMapIdx)
+GLuint CreateProgramExtended(const char* vertexShader, const char* fragmentShaderExtension, GLuint* lightUniform, uint32_t shadowMapIdx)
 {
-	static constexpr uint32_t versionSize = 15;
-	const char* vtxBase = GetVertexShaderBase();
 	const char* fraBase = GetFragmentShaderBase();
 	uint32_t fraBaseSize = strnlen(fraBase, 100000);
 	uint32_t fragSize = strnlen(fragmentShaderExtension, 100000);
-
-	uint32_t vtxBaseSize = strnlen(vtxBase, 100000);
-	uint32_t vtxSize = strnlen(vertexShaderExtension, 100000);
 
 	char* fullFragmentShader = new char[fraBaseSize + fragSize + 1];
 	memcpy(fullFragmentShader, fraBase, fraBaseSize);
 	memcpy(fullFragmentShader + fraBaseSize, fragmentShaderExtension, fragSize);
 	fullFragmentShader[fraBaseSize + fragSize] = '\00';
 
-	char* fullVertexShader = new char[vtxBaseSize + vtxSize + 1];
-	memcpy(fullVertexShader, vtxBase, vtxBaseSize);
-	memcpy(fullVertexShader + vtxBaseSize, vertexShaderExtension, vtxSize);
-	fullVertexShader[vtxBaseSize + vtxSize] = '\00';
-
-	GLuint prog = CreateProgram(fullVertexShader, fullFragmentShader);
+	GLuint prog = CreateProgram(vertexShader, fullFragmentShader);
 	delete[] fullFragmentShader;
-	delete[] fullVertexShader;
 	GLuint shadowLoc = glGetUniformLocation(prog, "shadowMap");
 	glUseProgramWrapper(prog);
 	glUniform1i(shadowLoc, shadowMapIdx);

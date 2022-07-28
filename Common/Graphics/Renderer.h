@@ -15,7 +15,6 @@ struct StandardRenderPassData
 	const glm::mat4* camProj;
 	const glm::vec3* camPos;
 	const glm::mat4* camViewProj;
-	//DirectionalLightData light;
 	GLuint cameraUniform;
 	GLuint skyBox;
 	GLuint lightData;
