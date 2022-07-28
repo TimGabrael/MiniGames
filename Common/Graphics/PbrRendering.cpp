@@ -3,6 +3,7 @@
 #include "../logging.h"
 #include <vector>
 #include <stdint.h>
+#include "Renderer.h"
 
 #define TINYGLTF_IMPLEMENTATION
 #define TINYGLTF_NOEXCEPTION
@@ -1204,9 +1205,7 @@ void main()\n\
 }";
 
 
-const char* pbrFragmentShader = "#version 300 es\n\
-precision highp float;\n\
-\n\
+const char* pbrFragmentShaderExtension = "\n\
 in vec3 inWorldPos;\n\
 in vec3 inNormal;\n\
 in vec2 inUV0;\n\
@@ -1243,7 +1242,6 @@ uniform sampler2D physicalDescriptorMap;\n\
 uniform sampler2D normalMap;\n\
 uniform sampler2D aoMap;\n\
 uniform sampler2D emissiveMap;\n\
-uniform sampler2DShadow shadowMap;\n\
 \n\
 uniform Material {\n\
 	vec4 baseColorFactor;\n\
@@ -1428,14 +1426,9 @@ void main()\n\
 	}\n\
 \n\
 	if (material.workflow == PBR_WORKFLOW_METALLIC_ROUGHNESS) {\n\
-		// Metallic and Roughness material properties are packed together\n\
-		// In glTF, these factors can be specified by fixed scalar values\n\
-		// or from a metallic-roughness map\n\
 		perceptualRoughness = material.roughnessFactor;\n\
 		metallic = material.metallicFactor;\n\
 		if (material.physicalDescriptorTextureSet > -1) {\n\
-			// Roughness is stored in the 'g' channel, metallic is stored in the 'b' channel.\n\
-			// This layout intentionally reserves the 'r' channel for (optional) occlusion map data\n\
 			vec4 mrSample = texture(physicalDescriptorMap, material.physicalDescriptorTextureSet == 0 ? inUV0 : inUV1);\n\
 			perceptualRoughness = mrSample.g * perceptualRoughness;\n\
 			metallic = mrSample.b * metallic;\n\
@@ -1444,10 +1437,6 @@ void main()\n\
 			perceptualRoughness = clamp(perceptualRoughness, c_MinRoughness, 1.0);\n\
 			metallic = clamp(metallic, 0.0, 1.0);\n\
 		}\n\
-		// Roughness is authored as perceptual roughness; as is convention,\n\
-		// convert to material roughness by squaring the perceptual roughness [2].\n\
-\n\
-		// The albedo may be defined from a base texture or a flat color\n\
 		if (material.baseColorTextureSet > -1) {\n\
 			baseColor = SRGBtoLINEAR(texture(colorMap, material.baseColorTextureSet == 0 ? inUV0 : inUV1)) * material.baseColorFactor;\n\
 		}\n\
@@ -1525,20 +1514,18 @@ void main()\n\
 	vec3 F = specularReflection(pbrInputs);\n\
 	float G = geometricOcclusion(pbrInputs);\n\
 	float D = microfacetDistribution(pbrInputs);\n\
+	vec3 color = CalculateLightsColor(vec4(inWorldPos, 1.0f), n, v, diffuseColor, specularColor, perceptualRoughness);\
 \n\
-	const vec3 u_LightColor = vec3(1.0);\n\
+	//const vec3 u_LightColor = vec3(1.0);\n\
 \n\
 	// Calculation of analytical lighting contribution\n\
 	vec3 diffuseContrib = (1.0 - F) * diffuse(pbrInputs);\n\
 	vec3 specContrib = F * G * D / (4.0 * NdotL * NdotV);\n\
-	// Obtain final intensity as reflectance (BRDF) scaled by the energy of the light (cosine law)\n\
-	vec3 color = NdotL * u_LightColor * (diffuseContrib + specContrib);\n\
 \n\
 	// Calculate lighting contribution from image based lighting source (IBL)\n\
 	color += getIBLContribution(pbrInputs, n, reflection);\n\
 \n\
 	const float u_OcclusionStrength = 1.0f;\n\
-	// Apply optional PBR terms for additional (optional) shading\n\
 	if (material.occlusionTextureSet > -1) {\n\
 		float ao = texture(aoMap, (material.occlusionTextureSet == 0 ? inUV0 : inUV1)).r;\n\
 		color = mix(color, color * ao, u_OcclusionStrength);\n\
@@ -1627,12 +1614,13 @@ enum GLTF_Textures
 
 struct GLTFUniforms
 {
-	GLint UBOLoc;
-	GLint ModelMatrixLoc;
-	GLint UBONodeLoc;
-	GLint UBOParamsLoc;
-	GLint MaterialLoc;
-	GLint clipPlaneLoc;
+	GLuint UBOLoc;
+	GLuint ModelMatrixLoc;
+	GLuint UBONodeLoc;
+	GLuint UBOParamsLoc;
+	GLuint MaterialLoc;
+	GLuint clipPlaneLoc;
+	GLuint lightDataLoc;
 };
 
 struct OpenGlPipelineObjects
@@ -1653,7 +1641,7 @@ void InitializePbrPipeline(void* assetManager)
 	tinygltf::asset_manager = (AAssetManager*)assetManager;
 #endif
 	g_pipeline.geomProgram = CreateProgram(pbrVertexShader);
-	g_pipeline.shaderProgram = CreateProgram(pbrVertexShader, pbrFragmentShader);
+	g_pipeline.shaderProgram = CreateProgramExtended(pbrVertexShader, pbrFragmentShaderExtension, &g_pipeline.unis.lightDataLoc, SHADOW_MAP);
 	glGenTextures(1, &g_pipeline.defTex);
 	glBindTexture(GL_TEXTURE_2D, g_pipeline.defTex);
 	uint32_t defTexColorData[2];
@@ -1681,13 +1669,14 @@ void InitializePbrPipeline(void* assetManager)
 	g_pipeline.geomUnis.UBOLoc = glGetUniformBlockIndex(g_pipeline.geomProgram, "UBO");
 	glUniformBlockBinding(g_pipeline.geomProgram, g_pipeline.geomUnis.UBOLoc, g_pipeline.geomUnis.UBOLoc);
 	g_pipeline.geomUnis.UBONodeLoc = glGetUniformBlockIndex(g_pipeline.geomProgram, "UBONode");
-	glUniformBlockBinding(g_pipeline.geomProgram, g_pipeline.geomUnis.UBONodeLoc, g_pipeline.unis.UBONodeLoc);
+	glUniformBlockBinding(g_pipeline.geomProgram, g_pipeline.geomUnis.UBONodeLoc, g_pipeline.geomUnis.UBONodeLoc);
 	g_pipeline.geomUnis.UBOParamsLoc = glGetUniformBlockIndex(g_pipeline.geomProgram, "UBOParams");
 	glUniformBlockBinding(g_pipeline.geomProgram, g_pipeline.geomUnis.UBOParamsLoc, g_pipeline.geomUnis.UBOParamsLoc);
 	g_pipeline.geomUnis.MaterialLoc = glGetUniformBlockIndex(g_pipeline.geomProgram, "Material");
 	glUniformBlockBinding(g_pipeline.geomProgram, g_pipeline.geomUnis.MaterialLoc, g_pipeline.geomUnis.MaterialLoc);
 	g_pipeline.geomUnis.ModelMatrixLoc = glGetUniformLocation(g_pipeline.geomProgram, "model");
 	g_pipeline.geomUnis.clipPlaneLoc = glGetUniformLocation(g_pipeline.geomProgram, "clipPlane");
+	g_pipeline.geomUnis.lightDataLoc = -1;
 
 	glGenBuffers(1, &g_pipeline.SharedUBOUniform);
 
@@ -1718,10 +1707,6 @@ void InitializePbrPipeline(void* assetManager)
 	curTexture = glGetUniformLocation(g_pipeline.shaderProgram, "emissiveMap");
 	if (curTexture == -1) { LOG("failed to Get Texture Loaction of GLTF shader program\n"); }
 	glUniform1i(curTexture, EMISSIVE_MAP);
-	curTexture = glGetUniformLocation(g_pipeline.shaderProgram, "shadowMap");
-	if (curTexture == -1) { LOG("failed to Get Texture Loaction of GLTF shader program\n"); }
-	glUniform1i(curTexture, SHADOW_MAP);
-
 	glUseProgram(0);
 
 	g_pipeline.brdfLutMap = GenerateBRDF_LUT(512);
@@ -1794,7 +1779,7 @@ void DrawNode(InternalPBR* realObj, Node* node, bool drawOpaque, GLTFUniforms* u
 		DrawNode(realObj, child, drawOpaque, unis);
 	}
 }
-void DrawPBRModel(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform, GLuint environmentMap, const glm::mat4* model, const glm::vec4* clipPlane, bool drawOpaque, bool geomOnly)
+void DrawPBRModel(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform, GLuint environmentMap, GLuint lightDataUniform, const glm::mat4* model, const glm::vec4* clipPlane, bool drawOpaque, bool geomOnly)
 {
 	GLTFUniforms* unis = nullptr;
 	if (geomOnly) unis = &g_pipeline.geomUnis;
@@ -1803,15 +1788,21 @@ void DrawPBRModel(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform,
 
 	InternalPBR* realObj = (InternalPBR*)internalObj;
 
-	glUseProgramWrapper(g_pipeline.shaderProgram);
+	glUseProgramWrapper(geomOnly ? g_pipeline.geomProgram : g_pipeline.shaderProgram);
 
 	glBindVertexArray(realObj->vao);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, realObj->indices.indexBuffer);
 
-	glBindBufferRange(GL_UNIFORM_BUFFER, unis->UBOLoc, UboUniform, 0, sizeof(UBO));
+	
+	glBindBufferBase(GL_UNIFORM_BUFFER, unis->UBOLoc, UboUniform);
+	
 	glUniformMatrix4fv(unis->ModelMatrixLoc, 1, GL_FALSE, (const GLfloat*)model);
 	glBindBufferRange(GL_UNIFORM_BUFFER, unis->UBOParamsLoc, UBOParamsUniform, 0, sizeof(UBOParams));
+
+	if (!geomOnly)
+		glBindBufferBase(GL_UNIFORM_BUFFER, unis->lightDataLoc, lightDataUniform);
+
 	if (clipPlane) glUniform4fv(unis->clipPlaneLoc, 1, (const GLfloat*)clipPlane);
 	else glUniform4f(unis->clipPlaneLoc, 0.0f, 1.0f, 0.0f, 100000000.0f);
 
@@ -1830,7 +1821,7 @@ void DrawPBRModel(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform,
 		DrawNode(realObj, node, drawOpaque, unis);
 	}
 }
-void DrawPBRModelNode(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform, GLuint environmentMap, const glm::mat4* model, const glm::vec4* clipPlane, int nodeIdx, bool drawOpaque, bool geomOnly)
+void DrawPBRModelNode(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform, GLuint environmentMap, GLuint lightDataUniform, const glm::mat4* model, const glm::vec4* clipPlane, int nodeIdx, bool drawOpaque, bool geomOnly)
 {
 	GLTFUniforms* unis = nullptr;
 	if (geomOnly) unis = &g_pipeline.geomUnis;
@@ -1840,13 +1831,18 @@ void DrawPBRModelNode(void* internalObj, GLuint UboUniform, GLuint UBOParamsUnif
 	InternalPBR* realObj = (InternalPBR*)internalObj;
 	if (realObj->nodes.size() <= nodeIdx) return;
 
-	glUseProgram(g_pipeline.shaderProgram);
+	glUseProgramWrapper(g_pipeline.shaderProgram);
 	glBindVertexArray(realObj->vao);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, realObj->indices.indexBuffer);
 	glBindBufferRange(GL_UNIFORM_BUFFER, unis->UBOLoc, UboUniform, 0, sizeof(UBO));
 	glUniformMatrix4fv(unis->ModelMatrixLoc, 1, GL_FALSE, (const GLfloat*)model);
 	glBindBufferRange(GL_UNIFORM_BUFFER, unis->UBOParamsLoc, UBOParamsUniform, 0, sizeof(UBOParams));
 
+	if (!geomOnly)
+		glBindBufferBase(GL_UNIFORM_BUFFER, unis->lightDataLoc, lightDataUniform);
+
+	if (clipPlane) glUniform4fv(unis->clipPlaneLoc, 1, (const GLfloat*)clipPlane);
+	else glUniform4f(unis->clipPlaneLoc, 0.0f, 1.0f, 0.0f, 100000000.0f);
 
 	glActiveTexture(GL_TEXTURE0 + GLTF_Textures::PREFILTERED_MAP);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, environmentMap);
@@ -1928,4 +1924,66 @@ void UpdateAnimation(void* internalObj, uint32_t index, float time)
 	{
 		realObj->animationTime = 0.0f;
 	}
+}
+
+void DrawScenePBRGeometry(SceneObject* obj, void* renderPassData)
+{
+	PBRSceneObject* o = (PBRSceneObject*)obj;
+	StandardRenderPassData* passData = (StandardRenderPassData*)renderPassData;
+	DrawPBRModel(o->model, passData->cameraUniform, o->uboParamsUniform, passData->skyBox, passData->lightData, o->transform, nullptr, true, true);
+}
+void DrawScenePBROpaque(SceneObject* obj, void* renderPassData)
+{
+	PBRSceneObject* o = (PBRSceneObject*)obj;
+	StandardRenderPassData* passData = (StandardRenderPassData*)renderPassData;
+	DrawPBRModel(o->model, passData->cameraUniform, o->uboParamsUniform, passData->skyBox, passData->lightData, o->transform, nullptr, true, false);
+
+}
+void DrawScenePBRBlend(SceneObject* obj, void* renderPassData)
+{
+	PBRSceneObject* o = (PBRSceneObject*)obj;
+	StandardRenderPassData* passData = (StandardRenderPassData*)renderPassData;
+	DrawPBRModel(o->model, passData->cameraUniform, o->uboParamsUniform, passData->skyBox, passData->lightData, o->transform, nullptr, false, false);
+}
+void DrawScenePBROpaqueClip(SceneObject* obj, void* renderPassData)
+{
+	PBRSceneObject* o = (PBRSceneObject*)obj;
+	ReflectPlanePassData* passData = (ReflectPlanePassData*)renderPassData;
+	DrawPBRModel(o->model, passData->base->cameraUniform, o->uboParamsUniform, passData->base->skyBox, passData->base->lightData, o->transform, passData->planeEquation, true, false);
+}
+void DrawScenePBRBlendClip(SceneObject* obj, void* renderPassData)
+{
+	PBRSceneObject* o = (PBRSceneObject*)obj; 
+	ReflectPlanePassData* passData = (ReflectPlanePassData*)renderPassData;
+	DrawPBRModel(o->model, passData->base->cameraUniform, o->uboParamsUniform, passData->base->skyBox, passData->base->lightData, o->transform, passData->planeEquation, false, false);
+}
+
+PFUNCDRAWSCENEOBJECT PBRModelGetDrawFunction(TYPE_FUNCTION f)
+{
+	if (f == TYPE_FUNCTION::TYPE_FUNCTION_GEOMETRY) return DrawScenePBRGeometry;
+	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_OPAQUE) return DrawScenePBROpaque;
+	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_BLEND) return DrawScenePBRBlend;
+	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_CLIP_PLANE_OPAQUE) return DrawScenePBROpaqueClip;
+	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_CLIP_PLANE_BLEND) return DrawScenePBRBlendClip;
+	return nullptr;
+}
+
+
+PBRSceneObject* AddPbrModelToScene(PScene scene, void* internalObj, UBOParams params, const glm::mat4& transform)
+{
+	InternalPBR* realObj = (InternalPBR*)internalObj;
+	PBRSceneObject* pbr = (PBRSceneObject*)SC_AddSceneObject(scene, PBR_RENDERABLE);
+	pbr->model = internalObj;
+	pbr->base.bbox.leftTopFront = glm::vec3(-4.0f);
+	pbr->base.bbox.rightBottomBack = glm::vec3(4.0f);
+
+	pbr->transform = (glm::mat4*)SC_AddTransform(scene, PBR_RENDERABLE, sizeof(glm::mat4));
+	*pbr->transform = transform;
+
+	glGenBuffers(1, &pbr->uboParamsUniform);
+	glBindBuffer(GL_UNIFORM_BUFFER, pbr->uboParamsUniform);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(UBOParams), &params, GL_STATIC_DRAW);
+	
+	pbr->base.flags = SCENE_OBJECT_OPAQUE | SCENE_OBJECT_BLEND | SCENE_OBJECT_CAST_SHADOW | SCENE_OBJECT_REFLECTED | SCENE_OBJECT_SURFACE_REFLECTED;
+	return pbr;
 }

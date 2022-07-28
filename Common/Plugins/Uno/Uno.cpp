@@ -76,6 +76,27 @@ void UnoPlugin::Init(ApplicationData* data)
 	g_objs->reflectionCam.proj = glm::ortho(-4.0f, 4.0f, -4.0f, 4.0f, -10.0f, 10.0f);
 	g_objs->reflectionCam.viewProj = g_objs->reflectionCam.proj * g_objs->reflectionCam.view;
 
+	
+	{
+		glGenBuffers(1, &g_objs->reflectionCam.uniform);
+		glBindBuffer(GL_UNIFORM_BUFFER, g_objs->reflectionCam.uniform);
+
+		CameraData camData;
+		camData.camPos = g_objs->reflectionCam.pos;
+		camData.projection = g_objs->reflectionCam.proj;
+		camData.view = g_objs->reflectionCam.view;
+
+		glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraData), &camData, GL_STATIC_DRAW);
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	}
+	{
+		glGenBuffers(1, &g_objs->playerCam.uniform);
+		glBindBuffer(GL_UNIFORM_BUFFER, g_objs->playerCam.uniform);
+		glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraData), nullptr, GL_DYNAMIC_DRAW);
+	}
+	void* pbrModel = CreateInternalPBRFromFile("Assets/Helmet.gltf", 1.0f);
+
+
 	// CREATE SCENE
 	{
 		g_objs->UnoScene = CreateAndInitializeSceneAsDefault();
@@ -98,6 +119,10 @@ void UnoPlugin::Init(ApplicationData* data)
 		light->data.mapper.start = { 0.0f, 0.0f };
 		light->data.mapper.end = { 1.0f, 1.0f };
 		light->data.mapper.viewProj = g_objs->reflectionCam.viewProj;
+
+		UBOParams params = UBOParams();
+		AddPbrModelToScene(g_objs->UnoScene, pbrModel, params, glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.4f, 0.0f)));
+
 
 	}
 	g_objs->skybox = LoadCubemap(
@@ -173,7 +198,7 @@ static ColorPicker picker;
 void UnoPlugin::Render(ApplicationData* data)
 {
 	if (!(sizeX && sizeY)) return;
-	
+
 	static auto prev = std::chrono::high_resolution_clock::now();
 	auto now = std::chrono::high_resolution_clock::now();
 
@@ -201,9 +226,11 @@ void UnoPlugin::Render(ApplicationData* data)
 		g_objs->deck.Draw();
 		g_objs->stack.Draw();
 		g_objs->anims.Update(g_objs->hands, g_objs->stack, dt);
-		
+
 		g_objs->localPlayer->Draw(g_objs->playerCam);
 	}
+
+
 
 
 
@@ -211,7 +238,6 @@ void UnoPlugin::Render(ApplicationData* data)
 
 
 	StandardRenderPassData stdData;
-	stdData.cameraUniform = 0;
 
 	glm::vec4 plane = { 0.0f, 1.0f, 0.0f, 0.0f };
 	glBindFramebuffer(GL_FRAMEBUFFER, g_objs->shadowFBO.fbo);
@@ -225,6 +251,7 @@ void UnoPlugin::Render(ApplicationData* data)
 	stdData.camProj = &g_objs->reflectionCam.proj;
 	stdData.camView = &g_objs->reflectionCam.view;
 	stdData.shadowMap = 0;
+	stdData.cameraUniform = g_objs->reflectionCam.uniform;
 	RenderSceneShadow(g_objs->UnoScene, &stdData);
 	stdData.shadowMap = g_objs->shadowFBO.depth;
 
@@ -235,9 +262,16 @@ void UnoPlugin::Render(ApplicationData* data)
 	glClearDepthf(1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-
-
 	Camera reflected = Camera::GetReflected(&g_objs->playerCam, plane);
+	{
+		glBindBuffer(GL_UNIFORM_BUFFER, g_objs->playerCam.uniform);
+		CameraData camData;
+		camData.camPos = reflected.pos;
+		camData.view = reflected.view;
+		camData.projection = reflected.perspective;
+		glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraData), &camData, GL_DYNAMIC_DRAW);
+	}
+	stdData.cameraUniform = g_objs->playerCam.uniform;
 	plane.w = 0.1f;
 	stdData.camView = &reflected.view;
 	stdData.camProj = &reflected.perspective;
@@ -247,7 +281,14 @@ void UnoPlugin::Render(ApplicationData* data)
 	reflectData.planeEquation = &plane;
 
 	RenderSceneReflectedOnPlane(g_objs->UnoScene, &reflectData);
-
+	{
+		glBindBuffer(GL_UNIFORM_BUFFER, g_objs->playerCam.uniform);
+		CameraData camData;
+		camData.camPos = g_objs->playerCam.pos;
+		camData.view = g_objs->playerCam.view;
+		camData.projection = g_objs->playerCam.perspective;
+		glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraData), &camData, GL_DYNAMIC_DRAW);
+	}
 
 	stdData.camView = &g_objs->playerCam.view;
 	stdData.camProj = &g_objs->playerCam.perspective;

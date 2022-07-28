@@ -175,7 +175,6 @@ void RenderSceneShadow(PScene scene, const StandardRenderPassData* data)
 		ObjectRenderStruct* o = &g_render->objs[i];
 		BoundingBox* bbox = &o->obj->base.bbox;
 		glm::vec3 middle = (bbox->leftTopFront + bbox->rightBottomBack) / 2.0f;
-		UpdateLightInformation(&middle, o->obj->base.lightGroups, nullptr);
 		o->DrawFunc(o->obj, (void*)&g_render->mainData);
 	}
 	glDisable(GL_POLYGON_OFFSET_FILL);
@@ -184,13 +183,6 @@ void RenderSceneShadow(PScene scene, const StandardRenderPassData* data)
 void RenderSceneReflectedOnPlane(PScene scene, const ReflectPlanePassData* data)
 {
 	UpdateTemporary(data->base);
-	// ReflectVectorAtPlane(&g_render->mainData.light.dir, data->planeEquation);
-	// for (int i = 0; i < g_render->mainData.numPointLights; i++)
-	// {
-	// 	MirrorVectorAtPlane(&g_render->mainData.pointLights[i].point, data->planeEquation);
-	// }
-
-
 
 	ReflectPlanePassData reflectPassData;
 	reflectPassData.base = &g_render->mainData;

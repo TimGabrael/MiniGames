@@ -1,6 +1,6 @@
 #pragma once
 #include <glm/glm.hpp>
-
+#include "GLCompat.h"
 
 struct MovementComponent
 {
@@ -78,6 +78,8 @@ struct Camera
 	glm::vec3 pos = glm::vec3(0.0f, 0.0f, 0.0f);
 
 	glm::mat4 viewProj;
+	GLuint uniform;
+
 	int screenX, screenY;
 private:
 
@@ -105,4 +107,7 @@ struct OrthographicCamera
 	glm::vec3 pos;
 
 	glm::mat4 viewProj;
+
+	GLuint uniform;
+
 };

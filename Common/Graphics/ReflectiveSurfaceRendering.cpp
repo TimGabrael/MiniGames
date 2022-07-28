@@ -49,25 +49,6 @@ uniform sampler2D reflectTexture;\
 uniform sampler2D refractTexture;\
 uniform sampler2D dvdu;\
 out vec4 outCol;\
-float shadowCalculation()\
-{\
-	vec2 ts = vec2(1.0f) / vec2(textureSize(shadowMap, 0));\
-	vec4 wPos = _lightData.dirLights[0].mapper.viewProj * fragPosWorld;\
-	vec3 projCoords = wPos.xyz / wPos.w;\
-	projCoords = projCoords * 0.5f + 0.5f;\
-	float shadow = 0.0f;\
-	for(int x = -1; x <= 1; ++x)\
-	{\
-		for(int y = -1; y <= 1; ++y)\
-		{\
-			vec3 testPos = projCoords + vec3(ts.x * float(x), ts.y * float(y), 0.0f);\
-			if(testPos.x < 0.0f || testPos.y < 0.0f || testPos.x > 1.0f || testPos.y > 1.0f) shadow += 1.0f;\
-			else shadow += texture(shadowMap, testPos.xyz);\
-		}\
-	}\
-	shadow /= 9.0f;\
-	return shadow;\
-}\
 void main(){\
 	if(clipDist < 0.0f) discard;\
 	vec2 refract = clipSpace.xy/clipSpace.w * 0.5f + 0.5f;\
@@ -77,8 +58,7 @@ void main(){\
 	vec3 col = CalculateLightsColor(fragPosWorld, normalize(normal), vec3(0.0f), diffuseColor, vec3(0.0f), 0.0f);\
 	outCol = vec4(col, 1.0f);\n\
 }\
-"; // (shadow + 0.2f)
-// CalculateLightsColor(vec4 fragWorldPos, vec3 normal, vec3 viewDir, vec3 matDiffuseCol, vec3 matSpecCol, float shininess)
+";
 
 enum RS_TEXTURES
 {

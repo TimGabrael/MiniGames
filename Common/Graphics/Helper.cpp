@@ -582,18 +582,14 @@ void StreamArrayBuffer::Append(const void* data, uint32_t dataSize, uint32_t siz
 
 
 
-PFUNCDRAWSCENEOBJECT TEMPORARY_DRAW_RETRIEVER(TYPE_FUNCTION f)
-{
-	return nullptr;
-}
 PScene CreateAndInitializeSceneAsDefault()
 {
 	PScene scene = SC_CreateScene();
 	const uint32_t indexS3D = SC_AddType(scene, S3DGetDrawFunctions);
 	assert(indexS3D == 0);
-	const uint32_t indexPBR = SC_AddType(scene, TEMPORARY_DRAW_RETRIEVER);		// TODO ADD GET DRAW FUNCTION 
+	const uint32_t indexPBR = SC_AddType(scene, PBRModelGetDrawFunction);
 	assert(indexPBR == 1);
-	const uint32_t indexReflect = SC_AddType(scene, ReflectiveSurfaceGetDrawFunction);	// TODO ADD GET DRAW FUNCTION 
+	const uint32_t indexReflect = SC_AddType(scene, ReflectiveSurfaceGetDrawFunction);
 	assert(indexReflect == 2);
 
 	return scene;
