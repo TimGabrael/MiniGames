@@ -24,6 +24,7 @@
 #include "Simple3DRendering.h"
 #include "ReflectiveSurfaceRendering.h"
 #include "BloomRendering.h"
+#include "Renderer.h"
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -243,6 +244,8 @@ void InitializeOpenGL(void* assetManager)
 	InitializeReflectiveSurfacePipeline();
 	InitializeBloomPipeline();
 
+	InitializeRendererBackendData();
+	
 	
 	g_helper.cubemapProgram = CreateProgram(cubemapVS, cubemapFS);
 	
@@ -274,6 +277,7 @@ void CleanUpOpenGL()
 	CleanUpPbrPipeline();
 	CleanUpUiPipeline();
 	CleanUpSimple3DPipeline();
+	CleanUpRendererBackendData();
 	glDeleteBuffers(1, &g_helper.cubeVertexBuffer);
 	glDeleteProgram(g_helper.cubemapProgram);
 	glDeleteVertexArrays(1, &g_helper.skyboxVAO);
@@ -331,6 +335,38 @@ GLuint CreateProgram(const char* vertexShaderSrc, const char* fragmentShaderSrc)
 GLuint CreateProgram(const char* vertexShader)
 {
 	return CreateProgram(vertexShader, emptyFragmentShader);
+}
+GLuint CreateProgramExtended(const char* vertexShaderExtension, const char* fragmentShaderExtension, GLuint* lightUniform, uint32_t shadowMapIdx)
+{
+	static constexpr uint32_t versionSize = 15;
+	const char* vtxBase = GetVertexShaderBase();
+	const char* fraBase = GetFragmentShaderBase();
+	uint32_t fraBaseSize = strnlen(fraBase, 100000);
+	uint32_t fragSize = strnlen(fragmentShaderExtension, 100000);
+
+	uint32_t vtxBaseSize = strnlen(vtxBase, 100000);
+	uint32_t vtxSize = strnlen(vertexShaderExtension, 100000);
+
+	char* fullFragmentShader = new char[fraBaseSize + fragSize + 1];
+	memcpy(fullFragmentShader, fraBase, fraBaseSize);
+	memcpy(fullFragmentShader + fraBaseSize, fragmentShaderExtension, fragSize);
+	fullFragmentShader[fraBaseSize + fragSize] = '\00';
+
+	char* fullVertexShader = new char[vtxBaseSize + vtxSize + 1];
+	memcpy(fullVertexShader, vtxBase, vtxBaseSize);
+	memcpy(fullVertexShader + vtxBaseSize, vertexShaderExtension, vtxSize);
+	fullVertexShader[vtxBaseSize + vtxSize] = '\00';
+
+	GLuint prog = CreateProgram(fullVertexShader, fullFragmentShader);
+	delete[] fullFragmentShader;
+	delete[] fullVertexShader;
+	GLuint shadowLoc = glGetUniformLocation(prog, "shadowMap");
+	glUseProgramWrapper(prog);
+	glUniform1i(shadowLoc, shadowMapIdx);
+
+	*lightUniform = glGetUniformBlockIndex(prog, "LightData");
+	glUniformBlockBinding(prog, *lightUniform, *lightUniform);
+	return prog;
 }
 
 
@@ -433,7 +469,7 @@ GLuint GenerateBRDF_LUT(int dim)
 
 	glDrawArraysWrapper(GL_TRIANGLES, 0, 3);
 
-	glBindFramebuffer(GL_FRAMEBUFFER, GetDefaultFramebuffer());
+	glBindFramebuffer(GL_FRAMEBUFFER, GetScreenFramebuffer());
 
 
 	glDeleteProgram(shader);
@@ -607,7 +643,7 @@ SingleFBO CreateSingleFBO(int width, int height)
 		LOG("FAILED  TO CREATE FRAMEBUFFER\n");
 	}
 
-	glBindFramebuffer(GL_FRAMEBUFFER, GetDefaultFramebuffer());
+	glBindFramebuffer(GL_FRAMEBUFFER, GetScreenFramebuffer());
 
 	return out;
 }
@@ -648,7 +684,7 @@ DepthFBO CreateDepthFBO(int width, int height)
 		LOG("FAILED TO CREATE FRAMEBUFFER OBJECT, STATUS: %d\n", status);
 	}
 
-	glBindFramebuffer(GL_FRAMEBUFFER, GetDefaultFramebuffer());
+	glBindFramebuffer(GL_FRAMEBUFFER, GetScreenFramebuffer());
 
 	return out;
 }
@@ -662,6 +698,7 @@ void DestroySingleFBO(SingleFBO* fbo)
 	glDeleteFramebuffers(1, &fbo->fbo);
 	glDeleteTextures(1, &fbo->texture);
 	glDeleteTextures(1, &fbo->depth);
+	memset(fbo, 0, sizeof(SingleFBO));
 }
 void DestroyDepthFBO(DepthFBO* fbo)
 {
@@ -759,7 +796,7 @@ void BloomFBO::Create(int drawFboSx, int drawFboSy, int sx, int sy)
 	}
 
 
-	glBindFramebuffer(GL_FRAMEBUFFER, GetDefaultFramebuffer());
+	glBindFramebuffer(GL_FRAMEBUFFER, GetScreenFramebuffer());
 
 }
 void BloomFBO::Resize(int drawFboSx, int drawFboSy, int sx, int sy)

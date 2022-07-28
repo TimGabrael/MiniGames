@@ -72,8 +72,7 @@ void main(){\
 	vec3 norm = normalize(outNormal);\
 	float diff = min(max(dot(norm, lDir), 0.0), 0.8);\
 	outCol = vec4((diff+0.2) * c.rgb, c.a);\n\
-}\
-";
+}";
 static const char* cardGeometryFragmentShader = "#version 300 es\n\
 precision highp float;\n\
 \n\
@@ -82,13 +81,10 @@ in vec2 tPos;\
 in vec4 addCol;\
 uniform vec3 lDir;\
 uniform sampler2D tex;\
-out vec4 outCol;\
 void main(){\
 	vec4 c = texture(tex, tPos);\
-	if (c.a < 0.9f) discard;\n\
-	outCol = c;\
-}\
-";
+	if (c.a < 1.0f) discard;\n\
+}";
 
 
 static glm::vec2 CardIDToTextureIndex(uint32_t id)
@@ -334,6 +330,7 @@ CardSceneObject* CreateCardBatchSceneObject(PScene scene)
 	obj->base.flags = SCENE_OBJECT_BLEND | SCENE_OBJECT_REFLECTED | SCENE_OBJECT_CAST_SHADOW | SCENE_OBJECT_SURFACE_REFLECTED;
 	obj->base.bbox.leftTopFront = { -3.0f, -3.0f, -3.0f };
 	obj->base.bbox.rightBottomBack = { 3.0f, 3.0f, 3.0f };
+	obj->base.lightGroups = 0xFFFF;
 	return obj;
 }
 
@@ -362,24 +359,26 @@ int FillCardListAndMapToBuffer(const glm::vec3& pos, bool backwards)
 void DrawCardsInSceneBlended(SceneObject* obj, void* renderPassData)
 {
 	StandardRenderPassData* data = (StandardRenderPassData*)renderPassData;
-	DrawCards(*data->camProj, *data->camView, *data->camPos, *data->light.dir, false);
+	DrawCards(*data->camProj, *data->camView, *data->camPos, glm::vec3(-1.0f / sqrt(3.0f)), false);
 }
 void DrawCardsInSceneGeometry(SceneObject* obj, void* renderPassData)
 {
 	StandardRenderPassData* data = (StandardRenderPassData*)renderPassData;
-	DrawCards(*data->camProj, *data->camView, *data->camPos, *data->light.dir, true);
+	DrawCards(*data->camProj, *data->camView, *data->camPos, glm::vec3(-1.0f / sqrt(3.0f)), true);
 }
 void DrawCardsInSceneBlendedClip(SceneObject* obj, void* renderPassData)
 {
 	ReflectPlanePassData* rData = (ReflectPlanePassData*)renderPassData;
 	const glm::vec3* camPos = rData->base->camPos;
 
+	const glm::vec3 lightDir = glm::vec3(-1.0f / sqrt(3.0f));
+
 	glUseProgramWrapper(g_cards.program);
 	glBindVertexArray(g_cards.bufs.vao);
 	glUniformMatrix4fv(g_cards.unis.projection, 1, GL_FALSE, (const GLfloat*)rData->base->camProj);
 	glUniformMatrix4fv(g_cards.unis.view, 1, GL_FALSE, (const GLfloat*)rData->base->camView);
 	glUniform4fv(g_cards.unis.plane, 1, (const GLfloat*)rData->planeEquation);
-	glUniform3fv(g_cards.unis.lightDir, 1, (const GLfloat*)rData->base->light.dir);
+	glUniform3fv(g_cards.unis.lightDir, 1, (const GLfloat*)&lightDir);
 
 	int numInds = FillCardListAndMapToBuffer(*rData->base->camPos, true);
 

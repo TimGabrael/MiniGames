@@ -15,7 +15,7 @@
 #include <math.h>
 
 PLUGIN_EXPORT_DEFINITION(UnoPlugin, "a3fV-6giK-10Eb-2rdT");
-#define SHADOW_TEXTURE_SIZE 1024
+#define SHADOW_TEXTURE_SIZE 512
 
 PLUGIN_INFO UnoPlugin::GetPluginInfos()
 {
@@ -50,11 +50,10 @@ UnoPlugin* GetInstance()
 
 
 
-GLuint lut;
+
 #define ALLOW_FREEMOVEMENT
 void UnoPlugin::Init(ApplicationData* data)
 {
-
 	initialized = true;
 	this->backendData = data;
 
@@ -68,6 +67,15 @@ void UnoPlugin::Init(ApplicationData* data)
 
 	g_objs->shadowFBO = CreateDepthFBO(SHADOW_TEXTURE_SIZE, SHADOW_TEXTURE_SIZE);
 	g_objs->bloomFBO.Create(10, 10, 10, 10);
+	g_objs->reflectFBO = CreateSingleFBO(10, 10);
+
+	g_objs->lightDir = { -1.0f / sqrtf(3.0f), -1.0f / sqrt(3.0f), -1.0f / sqrt(3.0f) };
+
+	g_objs->reflectionCam.pos = { 2.0f, 4.0f, 2.0f };
+	g_objs->reflectionCam.view = glm::lookAtLH(g_objs->reflectionCam.pos, g_objs->reflectionCam.pos - g_objs->lightDir, glm::vec3(0.0f, 1.0f, 0.0f));
+	g_objs->reflectionCam.proj = glm::ortho(-4.0f, 4.0f, -4.0f, 4.0f, -10.0f, 10.0f);
+	g_objs->reflectionCam.viewProj = g_objs->reflectionCam.proj * g_objs->reflectionCam.view;
+
 	// CREATE SCENE
 	{
 		g_objs->UnoScene = CreateAndInitializeSceneAsDefault();
@@ -80,6 +88,16 @@ void UnoPlugin::Init(ApplicationData* data)
 		ReflectiveSurfaceMaterialData data{ };
 		data.tintColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 		g_objs->basePlatform = AddReflectiveSurface(g_objs->UnoScene, &reflectPos, &normal, 8.0f, 8.0f, &data, nullptr);
+
+		SceneDirLight* light = SC_AddDirectionalLight(g_objs->UnoScene);
+		light->data.ambient = { 0.2f, 0.2f, 0.2f };
+		light->data.diffuse = { 0.8f, 0.8f, 1.0f };
+		light->data.dir = { -1.0f / sqrtf(3.0f), -1.0f / sqrt(3.0f), -1.0f / sqrt(3.0f) };
+		light->data.specular = { 0.8f, 0.8f, 0.8f };
+		light->data.hasShadow = true;
+		light->shadowAreaStart = { 0.0f, 0.0f };
+		light->shadowAreaEnd = { 1.0f, 1.0f };
+		light->viewProj = g_objs->reflectionCam.viewProj;
 	}
 	g_objs->skybox = LoadCubemap(
 		"Assets/CitySkybox/right.jpg",
@@ -88,6 +106,27 @@ void UnoPlugin::Init(ApplicationData* data)
 		"Assets/CitySkybox/bottom.jpg",
 		"Assets/CitySkybox/front.jpg",
 		"Assets/CitySkybox/back.jpg");
+
+
+	GLuint colTex;
+	glGenTextures(1, &colTex);
+	glBindTexture(GL_TEXTURE_2D, colTex);
+	uint32_t cols[4] = {
+		0xFF0000FF, 0xFF00FF00,
+		0xFF00FFFF, 0xFFFF0000
+	};
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, cols);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	g_objs->refGroundTexture = colTex;
+	ReflectiveSurfaceTextures texs;
+	texs.reflect = g_objs->reflectFBO.texture;
+	texs.refract = colTex;
+	texs.dudv = 0;
+	ReflectiveSurfaceSetTextureData(g_objs->basePlatform, &texs);
+
 
 	g_objs->hands.emplace_back(-1);
 	g_objs->localPlayer = &g_objs->hands.at(0);
@@ -108,40 +147,24 @@ void UnoPlugin::Init(ApplicationData* data)
 
 void UnoPlugin::Resize(ApplicationData* data)
 {
-	static bool once = true;
 	if(sizeY && sizeX)
 		g_objs->playerCam.SetPerspective(90.0f, (float)this->sizeX / (float)this->sizeY, 0.1f, 20.0f);
 	g_objs->playerCam.screenX = sizeX;
 	g_objs->playerCam.screenY = sizeY;
 	GLint defaultFBO;
 	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &defaultFBO);
-	SetDefaultFramebuffer(defaultFBO);
-	if (once) {
-		g_objs->offscreenX = sizeX;
-		g_objs->offscreenY = sizeY;
-		g_objs->reflectFBO = CreateSingleFBO(sizeX, sizeY);
+	SetScreenFramebuffer(defaultFBO);
+	
+	g_objs->offscreenX = sizeX;
+	g_objs->offscreenY = sizeY;
+	RecreateSingleFBO(&g_objs->reflectFBO, sizeX, sizeY);
+	ReflectiveSurfaceTextures texs;
+	texs.reflect = g_objs->reflectFBO.texture;
+	texs.refract = g_objs->refGroundTexture;
+	texs.dudv = 0;
+	ReflectiveSurfaceSetTextureData(g_objs->basePlatform, &texs);
 
-		GLuint colTex;
-		glGenTextures(1, &colTex);
-		glBindTexture(GL_TEXTURE_2D, colTex);
-		uint32_t cols[4] = {
-			0xFF0000FF, 0xFF00FF00,
-			0xFF00FFFF, 0xFFFF0000
-		};
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, cols);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-		ReflectiveSurfaceTextures texs;
-		texs.reflect = g_objs->reflectFBO.texture;
-		texs.refract = colTex;
-		texs.dudv = 0;
-		ReflectiveSurfaceSetTextureData(g_objs->basePlatform, &texs);
-
-		once = false;
-	}
 	g_objs->bloomFBO.Resize(sizeX, sizeY, sizeX / 2, sizeY / 2);
 	SetMainFramebuffer(g_objs->bloomFBO.defaultFBO);
 }
@@ -190,30 +213,19 @@ void UnoPlugin::Render(ApplicationData* data)
 	stdData.cameraUniform = 0;
 
 	glm::vec4 plane = { 0.0f, 1.0f, 0.0f, 0.0f };
-	glm::vec3 lightDir = { -1.0f/sqrtf(3.0f), 1.0f/sqrt(3.0f), -1.0f/sqrt(3.0f) };
-	OrthographicCamera shadowCam = OrthographicCamera::CreateMinimalFit(g_objs->playerCam, lightDir, 4.0f);
 	glBindFramebuffer(GL_FRAMEBUFFER, g_objs->shadowFBO.fbo);
 	glViewport(0, 0, SHADOW_TEXTURE_SIZE, SHADOW_TEXTURE_SIZE);
 	glClearDepthf(1.0f);
 	glClear(GL_DEPTH_BUFFER_BIT);
-	stdData.camPos = &shadowCam.pos;
-	stdData.camProj = &shadowCam.proj;
-	stdData.camView = &shadowCam.view;
-	stdData.light.dir = &lightDir;
-	stdData.skyBox = g_objs->skybox;
 
-	
-	glm::vec3 testPos = { 2.0f, 4.0f, 2.0f };
-	glm::mat4 testView = glm::lookAtLH(testPos, testPos - glm::vec3(lightDir.x, -lightDir.y, lightDir.z), glm::vec3(0.0f, 1.0f, 0.0f));
-	glm::mat4 testProj = glm::ortho(-4.0f, 4.0f, -4.0f, 4.0f, -10.0f, 10.0f);
-	glm::mat4 testViewProj = testProj * testView;
-	stdData.camPos = &testPos;
-	stdData.camProj = &testProj;
-	stdData.camView = &testView;
-	stdData.light.viewProjMat = &testViewProj;
-	stdData.light.shadowMap = 0;
+
+	stdData.skyBox = g_objs->skybox;
+	stdData.camPos = &g_objs->reflectionCam.pos;
+	stdData.camProj = &g_objs->reflectionCam.proj;
+	stdData.camView = &g_objs->reflectionCam.view;
+	stdData.shadowMap = 0;
 	RenderSceneShadow(g_objs->UnoScene, &stdData);
-	stdData.light.shadowMap = g_objs->shadowFBO.depth;
+	stdData.shadowMap = g_objs->shadowFBO.depth;
 
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, g_objs->reflectFBO.fbo);
@@ -234,12 +246,11 @@ void UnoPlugin::Render(ApplicationData* data)
 	reflectData.planeEquation = &plane;
 
 	RenderSceneReflectedOnPlane(g_objs->UnoScene, &reflectData);
-	lightDir.y *= -1.0f;
+
 
 	stdData.camView = &g_objs->playerCam.view;
 	stdData.camProj = &g_objs->playerCam.perspective;
 	stdData.camPos = &g_objs->playerCam.pos;
-
 
 	glBindFramebuffer(GL_FRAMEBUFFER, GetMainFramebuffer());
 	glViewport(0, 0, sizeX, sizeY);
@@ -249,9 +260,9 @@ void UnoPlugin::Render(ApplicationData* data)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	RenderSceneStandard(g_objs->UnoScene, &stdData);
+	
 
-
-	RenderPostProcessingBloom(&g_objs->bloomFBO, GetDefaultFramebuffer(), sizeX, sizeY);
+	RenderPostProcessingBloom(&g_objs->bloomFBO, GetScreenFramebuffer(), sizeX, sizeY);
 
 	
 	DrawUI();
@@ -330,5 +341,4 @@ void UnoPlugin::CleanUp()
 	DestroySingleFBO(&g_objs->reflectFBO);
 	
 	delete g_objs;
-
 }

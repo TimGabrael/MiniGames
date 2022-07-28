@@ -8,27 +8,28 @@ struct CameraData
 	glm::mat4 view;
 	glm::vec3 camPos;
 };
-struct DirectionalLightData
-{
-	const glm::mat4* viewProjMat;
-	const glm::vec3* dir;
-	GLuint shadowMap;
-};
 
 struct StandardRenderPassData
 {
 	const glm::mat4* camView;
 	const glm::mat4* camProj;
 	const glm::vec3* camPos;
-	DirectionalLightData light;	// base light of the scene may be 0
+	const glm::mat4* camViewProj;
+	//DirectionalLightData light;
 	GLuint cameraUniform;
 	GLuint skyBox;
+	GLuint lightData;
+	GLuint shadowMap;
 };
 struct ReflectPlanePassData
 {
 	const StandardRenderPassData* base;
 	const glm::vec4* planeEquation;
 };
+
+void InitializeRendererBackendData();
+void CleanUpRendererBackendData();
+
 
 void BeginScene(PScene scene);
 void EndScene();

@@ -11,7 +11,7 @@
 PluginWidget::PluginWidget(QWidget* parent, PluginClass* plClass) : QOpenGLWidget(parent), plugin(plClass)
 {
 	QSurfaceFormat fmt = QSurfaceFormat::defaultFormat();
-	fmt.setSwapInterval(0);
+	fmt.setSwapInterval(2);
 	this->setFormat(fmt);
 	setMouseTracking(true);
 	this->setFocusPolicy(Qt::FocusPolicy::StrongFocus);

@@ -183,6 +183,7 @@ void Camera::Update(const MovementComponent* comp)
 	SetRotation(comp->yaw, comp->pitch, comp->roll);
 
 	view = glm::lookAtRH(pos, pos + front, up);
+	viewProj = perspective * view;
 }
 void Camera::SetViewMatrix()
 {

@@ -1157,10 +1157,11 @@ layout(location = 5) in vec4 inWeight0;\n\
 uniform UBO\n\
 {\n\
 	mat4 projection;\n\
-	mat4 model;\n\
 	mat4 view;\n\
 	vec3 camPos;\n\
 } ubo;\n\
+uniform mat4 model;\n\
+uniform vec4 clipPlane;\n\
 \n\
 #define MAX_NUM_JOINTS 128\n\
 \n\
@@ -1174,6 +1175,7 @@ out vec3 inWorldPos;\n\
 out vec3 inNormal;\n\
 out vec2 inUV0;\n\
 out vec2 inUV1;\n\
+out float clipDist;\n\
 \n\
 void main()\n\
 {\n\
@@ -1186,17 +1188,18 @@ void main()\n\
 			inWeight0.z * node.jointMatrix[int(inJoint0.z)] +\n\
 			inWeight0.w * node.jointMatrix[int(inJoint0.w)];\n\
 	\n\
-		locPos = ubo.model * node.matrix * skinMat * vec4(inPos, 1.0);\n\
-		inNormal = normalize(transpose(inverse(mat3(ubo.model * node.matrix * skinMat))) * inVNormal);\n\
+		locPos = model * node.matrix * skinMat * vec4(inPos, 1.0);\n\
+		inNormal = normalize(transpose(inverse(mat3(model * node.matrix * skinMat))) * inVNormal);\n\
 	}\n\
 	else {\n\
-		locPos = ubo.model * node.matrix * vec4(inPos, 1.0);\n\
-		inNormal = normalize(transpose(inverse(mat3(ubo.model * node.matrix))) * inVNormal);\n\
+		locPos = model * node.matrix * vec4(inPos, 1.0);\n\
+		inNormal = normalize(transpose(inverse(mat3(model * node.matrix))) * inVNormal);\n\
 	}\n\
 	locPos.y = -locPos.y;\n\
 	inWorldPos = locPos.xyz / locPos.w;\n\
 	inUV0 = inVUV0;\n\
 	inUV1 = inVUV1;\n\
+	clipDist = dot(vec4(inWorldPos, 1.0f), clipPlane);\n\
 	gl_Position = ubo.projection * ubo.view * vec4(inWorldPos, 1.0);\n\
 }";
 
@@ -1208,15 +1211,16 @@ in vec3 inWorldPos;\n\
 in vec3 inNormal;\n\
 in vec2 inUV0;\n\
 in vec2 inUV1;\n\
+in float clipDist;\n\
 \n\
 \n\
 \n\
 uniform UBO {\n\
 	mat4 projection;\n\
-	mat4 model;\n\
 	mat4 view;\n\
 	vec3 camPos;\n\
 } ubo;\n\
+uniform mat4 model;\n\
 \n\
 uniform UBOParams {\n\
 	vec4 lightDir;\n\
@@ -1239,6 +1243,7 @@ uniform sampler2D physicalDescriptorMap;\n\
 uniform sampler2D normalMap;\n\
 uniform sampler2D aoMap;\n\
 uniform sampler2D emissiveMap;\n\
+uniform sampler2DShadow shadowMap;\n\
 \n\
 uniform Material {\n\
 	vec4 baseColorFactor;\n\
@@ -1402,6 +1407,7 @@ float convertMetallic(vec3 diffuse, vec3 specular, float maxSpecular) {\n\
 \n\
 void main()\n\
 {\n\
+	if(clipDist < 0.0f) discard;\n\
 	float perceptualRoughness;\n\
 	float metallic;\n\
 	vec3 diffuseColor;\n\
@@ -1605,6 +1611,7 @@ void main()\n\
 // uniform sampler2D normalMap; 
 // uniform sampler2D aoMap; 
 // uniform sampler2D emissiveMap;
+// uniform sampler2DShadow shadowMap;
 enum GLTF_Textures
 {
 	IRRADIANCE,
@@ -1615,24 +1622,37 @@ enum GLTF_Textures
 	NORMAL_MAP,
 	AO_MAP,
 	EMISSIVE_MAP,
+	SHADOW_MAP,
 };
 
+struct GLTFUniforms
+{
+	GLint UBOLoc;
+	GLint ModelMatrixLoc;
+	GLint UBONodeLoc;
+	GLint UBOParamsLoc;
+	GLint MaterialLoc;
+	GLint clipPlaneLoc;
+};
 
 struct OpenGlPipelineObjects
 {
+	GLuint geomProgram;
 	GLuint shaderProgram;
 	GLuint brdfLutMap;
 	GLuint defTex;
-	GLint UBOLoc; GLint UBONodeLoc; GLint UBOParamsLoc;
-	GLint MaterialLoc;
+	GLuint SharedUBOUniform;
+	GLTFUniforms unis;
+	GLTFUniforms geomUnis;
 	MaterialPbr* currentBoundMaterial = nullptr;
 }g_pipeline;
-static constexpr size_t sd = sizeof(UBO);
+
 void InitializePbrPipeline(void* assetManager)
 {
 #ifdef ANDROID
 	tinygltf::asset_manager = (AAssetManager*)assetManager;
 #endif
+	g_pipeline.geomProgram = CreateProgram(pbrVertexShader);
 	g_pipeline.shaderProgram = CreateProgram(pbrVertexShader, pbrFragmentShader);
 	glGenTextures(1, &g_pipeline.defTex);
 	glBindTexture(GL_TEXTURE_2D, g_pipeline.defTex);
@@ -1647,14 +1667,30 @@ void InitializePbrPipeline(void* assetManager)
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 
-	g_pipeline.UBOLoc = glGetUniformBlockIndex(g_pipeline.shaderProgram, "UBO");
-	glUniformBlockBinding(g_pipeline.shaderProgram, g_pipeline.UBOLoc, g_pipeline.UBOLoc);
-	g_pipeline.UBONodeLoc = glGetUniformBlockIndex(g_pipeline.shaderProgram, "UBONode");
-	glUniformBlockBinding(g_pipeline.shaderProgram, g_pipeline.UBONodeLoc, g_pipeline.UBONodeLoc);
-	g_pipeline.UBOParamsLoc = glGetUniformBlockIndex(g_pipeline.shaderProgram, "UBOParams");
-	glUniformBlockBinding(g_pipeline.shaderProgram, g_pipeline.UBOParamsLoc, g_pipeline.UBOParamsLoc);
-	g_pipeline.MaterialLoc = glGetUniformBlockIndex(g_pipeline.shaderProgram, "Material");
-	glUniformBlockBinding(g_pipeline.shaderProgram, g_pipeline.MaterialLoc, g_pipeline.MaterialLoc);
+	g_pipeline.unis.UBOLoc = glGetUniformBlockIndex(g_pipeline.shaderProgram, "UBO");
+	glUniformBlockBinding(g_pipeline.shaderProgram, g_pipeline.unis.UBOLoc, g_pipeline.unis.UBOLoc);
+	g_pipeline.unis.UBONodeLoc = glGetUniformBlockIndex(g_pipeline.shaderProgram, "UBONode");
+	glUniformBlockBinding(g_pipeline.shaderProgram, g_pipeline.unis.UBONodeLoc, g_pipeline.unis.UBONodeLoc);
+	g_pipeline.unis.UBOParamsLoc = glGetUniformBlockIndex(g_pipeline.shaderProgram, "UBOParams");
+	glUniformBlockBinding(g_pipeline.shaderProgram, g_pipeline.unis.UBOParamsLoc, g_pipeline.unis.UBOParamsLoc);
+	g_pipeline.unis.MaterialLoc = glGetUniformBlockIndex(g_pipeline.shaderProgram, "Material");
+	glUniformBlockBinding(g_pipeline.shaderProgram, g_pipeline.unis.MaterialLoc, g_pipeline.unis.MaterialLoc);
+	g_pipeline.unis.ModelMatrixLoc = glGetUniformLocation(g_pipeline.shaderProgram, "model");
+	g_pipeline.unis.clipPlaneLoc = glGetUniformLocation(g_pipeline.shaderProgram, "clipPlane");
+
+	g_pipeline.geomUnis.UBOLoc = glGetUniformBlockIndex(g_pipeline.geomProgram, "UBO");
+	glUniformBlockBinding(g_pipeline.geomProgram, g_pipeline.geomUnis.UBOLoc, g_pipeline.geomUnis.UBOLoc);
+	g_pipeline.geomUnis.UBONodeLoc = glGetUniformBlockIndex(g_pipeline.geomProgram, "UBONode");
+	glUniformBlockBinding(g_pipeline.geomProgram, g_pipeline.geomUnis.UBONodeLoc, g_pipeline.unis.UBONodeLoc);
+	g_pipeline.geomUnis.UBOParamsLoc = glGetUniformBlockIndex(g_pipeline.geomProgram, "UBOParams");
+	glUniformBlockBinding(g_pipeline.geomProgram, g_pipeline.geomUnis.UBOParamsLoc, g_pipeline.geomUnis.UBOParamsLoc);
+	g_pipeline.geomUnis.MaterialLoc = glGetUniformBlockIndex(g_pipeline.geomProgram, "Material");
+	glUniformBlockBinding(g_pipeline.geomProgram, g_pipeline.geomUnis.MaterialLoc, g_pipeline.geomUnis.MaterialLoc);
+	g_pipeline.geomUnis.ModelMatrixLoc = glGetUniformLocation(g_pipeline.geomProgram, "model");
+	g_pipeline.geomUnis.clipPlaneLoc = glGetUniformLocation(g_pipeline.geomProgram, "clipPlane");
+
+	glGenBuffers(1, &g_pipeline.SharedUBOUniform);
+
 	//LOG("UBO/UBONode/UBOParams/Material Locs: %d, %d, %d, %d\n", g_pipeline.UBOLoc, g_pipeline.UBONodeLoc, g_pipeline.UBOParamsLoc, g_pipeline.MaterialLoc);
 
 	glUseProgram(g_pipeline.shaderProgram);
@@ -1682,6 +1718,9 @@ void InitializePbrPipeline(void* assetManager)
 	curTexture = glGetUniformLocation(g_pipeline.shaderProgram, "emissiveMap");
 	if (curTexture == -1) { LOG("failed to Get Texture Loaction of GLTF shader program\n"); }
 	glUniform1i(curTexture, EMISSIVE_MAP);
+	curTexture = glGetUniformLocation(g_pipeline.shaderProgram, "shadowMap");
+	if (curTexture == -1) { LOG("failed to Get Texture Loaction of GLTF shader program\n"); }
+	glUniform1i(curTexture, SHADOW_MAP);
 
 	glUseProgram(0);
 
@@ -1697,10 +1736,10 @@ void CleanUpPbrPipeline()
 }
 
 
-void BindMaterial(MaterialPbr* mat)
+void BindMaterial(MaterialPbr* mat, GLTFUniforms* unis)
 {
 	glBindBuffer(GL_UNIFORM_BUFFER, mat->uniformBuffer);
-	glBindBufferBase(GL_UNIFORM_BUFFER, g_pipeline.MaterialLoc, mat->uniformBuffer);
+	glBindBufferBase(GL_UNIFORM_BUFFER, unis->MaterialLoc, mat->uniformBuffer);
 
 	glActiveTexture(GL_TEXTURE0 + GLTF_Textures::AO_MAP);
 	glBindTexture(GL_TEXTURE_2D, mat->occlusionTexture ? mat->occlusionTexture : g_pipeline.defTex);
@@ -1734,10 +1773,10 @@ void BindMaterial(MaterialPbr* mat)
 	}
 	
 }
-void DrawNode(InternalPBR* realObj, Node* node, bool drawOpaque)
-{	
+void DrawNode(InternalPBR* realObj, Node* node, bool drawOpaque, GLTFUniforms* unis)
+{
 	if (node->mesh) {
-		glBindBufferRange(GL_UNIFORM_BUFFER, g_pipeline.UBONodeLoc, node->mesh->uniformBuffer.handle, 0, sizeof(MeshPbr::UniformBlock));
+		glBindBufferRange(GL_UNIFORM_BUFFER, unis->UBONodeLoc, node->mesh->uniformBuffer.handle, 0, sizeof(MeshPbr::UniformBlock));
 		for (Primitive* primitive : node->mesh->primitives)
 		{
 			if (drawOpaque && primitive->material.alphaMode == MaterialPbr::ALPHAMODE_BLEND) continue;
@@ -1745,34 +1784,36 @@ void DrawNode(InternalPBR* realObj, Node* node, bool drawOpaque)
 
 			if (g_pipeline.currentBoundMaterial != &primitive->material)
 			{
-				BindMaterial(&primitive->material);
+				BindMaterial(&primitive->material, unis);
 				g_pipeline.currentBoundMaterial = &primitive->material;
 			}
 			glDrawElementsWrapper(GL_TRIANGLES, primitive->indexCount, GL_UNSIGNED_INT, (const void*)(primitive->firstIndex * sizeof(uint32_t)));
 		}
 	}
 	for (auto& child : node->children) {
-		DrawNode(realObj, child, drawOpaque);
+		DrawNode(realObj, child, drawOpaque, unis);
 	}
 }
-void DrawPBRModel(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform, GLuint environmentMap, bool drawOpaque)
+void DrawPBRModel(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform, GLuint environmentMap, const glm::mat4* model, const glm::vec4* clipPlane, bool drawOpaque, bool geomOnly)
 {
+	GLTFUniforms* unis = nullptr;
+	if (geomOnly) unis = &g_pipeline.geomUnis;
+	else unis = &g_pipeline.unis;
 	g_pipeline.currentBoundMaterial = nullptr;
 
 	InternalPBR* realObj = (InternalPBR*)internalObj;
 
-	glUseProgram(g_pipeline.shaderProgram);
+	glUseProgramWrapper(g_pipeline.shaderProgram);
 
 	glBindVertexArray(realObj->vao);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, realObj->indices.indexBuffer);
 
-	glBindBufferRange(GL_UNIFORM_BUFFER, g_pipeline.UBOLoc, UboUniform, 0, sizeof(UBO));
-
-
-	glBindBufferRange(GL_UNIFORM_BUFFER, g_pipeline.UBOParamsLoc, UBOParamsUniform, 0, sizeof(UBOParams));
-
-
+	glBindBufferRange(GL_UNIFORM_BUFFER, unis->UBOLoc, UboUniform, 0, sizeof(UBO));
+	glUniformMatrix4fv(unis->ModelMatrixLoc, 1, GL_FALSE, (const GLfloat*)model);
+	glBindBufferRange(GL_UNIFORM_BUFFER, unis->UBOParamsLoc, UBOParamsUniform, 0, sizeof(UBOParams));
+	if (clipPlane) glUniform4fv(unis->clipPlaneLoc, 1, (const GLfloat*)clipPlane);
+	else glUniform4f(unis->clipPlaneLoc, 0.0f, 1.0f, 0.0f, 100000000.0f);
 
 
 	glActiveTexture(GL_TEXTURE0 + GLTF_Textures::PREFILTERED_MAP);
@@ -1786,11 +1827,15 @@ void DrawPBRModel(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform,
 	glBindTexture(GL_TEXTURE_2D, g_pipeline.brdfLutMap);
 
 	for (auto& node : realObj->nodes) {
-		DrawNode(realObj, node, drawOpaque);
+		DrawNode(realObj, node, drawOpaque, unis);
 	}
 }
-void DrawPBRModelNode(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform, GLuint environmentMap, int nodeIdx, bool drawOpaque)
+void DrawPBRModelNode(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform, GLuint environmentMap, const glm::mat4* model, const glm::vec4* clipPlane, int nodeIdx, bool drawOpaque, bool geomOnly)
 {
+	GLTFUniforms* unis = nullptr;
+	if (geomOnly) unis = &g_pipeline.geomUnis;
+	else unis = &g_pipeline.unis;
+
 	g_pipeline.currentBoundMaterial = nullptr;
 	InternalPBR* realObj = (InternalPBR*)internalObj;
 	if (realObj->nodes.size() <= nodeIdx) return;
@@ -1798,9 +1843,9 @@ void DrawPBRModelNode(void* internalObj, GLuint UboUniform, GLuint UBOParamsUnif
 	glUseProgram(g_pipeline.shaderProgram);
 	glBindVertexArray(realObj->vao);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, realObj->indices.indexBuffer);
-	glBindBufferRange(GL_UNIFORM_BUFFER, g_pipeline.UBOLoc, UboUniform, 0, sizeof(UBO));
-
-	glBindBufferRange(GL_UNIFORM_BUFFER, g_pipeline.UBOParamsLoc, UBOParamsUniform, 0, sizeof(UBOParams));
+	glBindBufferRange(GL_UNIFORM_BUFFER, unis->UBOLoc, UboUniform, 0, sizeof(UBO));
+	glUniformMatrix4fv(unis->ModelMatrixLoc, 1, GL_FALSE, (const GLfloat*)model);
+	glBindBufferRange(GL_UNIFORM_BUFFER, unis->UBOParamsLoc, UBOParamsUniform, 0, sizeof(UBOParams));
 
 
 	glActiveTexture(GL_TEXTURE0 + GLTF_Textures::PREFILTERED_MAP);
@@ -1813,7 +1858,7 @@ void DrawPBRModelNode(void* internalObj, GLuint UboUniform, GLuint UBOParamsUnif
 	glActiveTexture(GL_TEXTURE0 + GLTF_Textures::BRDF_LUT);
 	glBindTexture(GL_TEXTURE_2D, g_pipeline.brdfLutMap);
 
-	DrawNode(realObj, realObj->nodes.at(nodeIdx), drawOpaque);
+	DrawNode(realObj, realObj->nodes.at(nodeIdx), drawOpaque, unis);
 }
 
 void UpdateAnimation(void* internalObj, uint32_t index, float time)

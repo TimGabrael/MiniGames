@@ -5,7 +5,6 @@
 #include "logging.h"
 
 const char* vertexShader = "#version 300 es\n\
-\n\
 vec2 pos[6] = vec2[6](\
 	vec2(-0.5f, -0.5f),\
 	vec2( 0.5f, -0.5f),\
@@ -17,25 +16,48 @@ vec2 pos[6] = vec2[6](\
 uniform mat4 projection;\n\
 uniform mat4 view;\n\
 uniform mat4 model;\n\
-uniform mat4 lightSpaceMatrix;\n\
 uniform vec4 clipPlane;\n\
 out vec4 clipSpace;\
 out vec2 texCoord;\
-out vec4 fragPosLightSpace;\
+out vec4 fragPosWorld;\
 out float clipDist;\
 void main(){\
 	vec4 worldPos = model * vec4(pos[gl_VertexID], 0.0f, 1.0f);\
-	fragPosLightSpace = lightSpaceMatrix * vec4(worldPos.xyz, 1.0f);\
+	fragPosWorld = worldPos;\
 	clipSpace = projection * view * worldPos;\
 	gl_Position = clipSpace;\
 	clipDist = dot(worldPos, clipPlane);\
 	texCoord = pos[gl_VertexID] + vec2(0.5f);\
 }\
 ";
-static const char* fragmentShader = "#version 300 es\n\
-precision highp float;\n\
-precision highp sampler2DShadow;\n\
-\n\
+const char* vertexShaderExtension = "\n\
+vec2 pos[6] = vec2[6](\
+	vec2(-0.5f, -0.5f),\
+	vec2( 0.5f, -0.5f),\
+	vec2( 0.5f,  0.5f),\
+	vec2( 0.5f,  0.5f),\
+	vec2(-0.5f,  0.5f),\
+	vec2(-0.5f, -0.5f)\
+);\
+uniform mat4 projection;\n\
+uniform mat4 view;\n\
+uniform mat4 model;\n\
+uniform vec4 clipPlane;\n\
+out vec4 clipSpace;\
+out vec2 texCoord;\
+out vec4 fragPosWorld;\
+out float clipDist;\
+void main(){\
+	vec4 worldPos = model * vec4(pos[gl_VertexID], 0.0f, 1.0f);\
+	SetShadowOutputVariable(worldPos);\n\
+	fragPosWorld = worldPos;\
+	clipSpace = projection * view * worldPos;\
+	gl_Position = clipSpace;\
+	clipDist = dot(worldPos, clipPlane);\
+	texCoord = pos[gl_VertexID] + vec2(0.5f);\
+}\
+";
+static const char* fragmentShaderExtension = "\n\
 uniform Material {\n\
 	vec4 tintColor;\n\
 	float moveFactor;\n\
@@ -44,30 +66,40 @@ uniform Material {\n\
 } material;\n\
 in vec4 clipSpace;\
 in vec2 texCoord;\
-in vec4 fragPosLightSpace;\
+in vec4 fragPosWorld;\
 in float clipDist;\
 uniform sampler2D reflectTexture;\
 uniform sampler2D refractTexture;\
 uniform sampler2D dvdu;\
-uniform sampler2DShadow shadowMap;\
 out vec4 outCol;\
 float shadowCalculation()\
 {\
-	vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;\
-	projCoords = projCoords * 0.5 + 0.5;\
-	return texture(shadowMap, projCoords.xyz);\
+	vec2 ts = vec2(1.0f) / vec2(textureSize(shadowMap, 0));\
+	vec3 projCoords = vec3(shadowFragLightPos.xy, shadowFragLightPos.z + 0.00005f) / shadowFragLightPos.w;\
+	projCoords = projCoords * 0.5f + 0.5f;\
+	float shadow = 0.0f;\
+	for(int x = -1; x <= 1; ++x)\
+	{\
+		for(int y = -1; y <= 1; ++y)\
+		{\
+			vec3 testPos = projCoords + vec3(ts.x * float(x), ts.y * float(y), 0.0f);\
+			if(testPos.x < 0.0f || testPos.y < 0.0f || testPos.x > 1.0f || testPos.y > 1.0f) shadow += 1.0f;\
+			else shadow += texture(shadowMap, testPos.xyz);\
+		}\
+	}\
+	shadow /= 9.0f;\
+	return shadow;\
 }\
 void main(){\
 	if(clipDist < 0.0f) discard;\
-	vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;\
-	projCoords = projCoords * 0.5 + 0.5;\
 	vec2 refract = clipSpace.xy/clipSpace.w * 0.5f + 0.5f;\
 	vec2 reflect = vec2(refract.x, -refract.y);\
 	outCol = texture(reflectTexture, reflect);\n\
 	float shadow = shadowCalculation();\n\
 	outCol = (shadow + 0.2f) * (vec4(0.8f) * outCol + vec4(0.2f) * texture(refractTexture, texCoord)) * material.tintColor;\n\
 }\
-";	
+";
+
 // THE texture(shadowMap, projCoords) already applys a little bit of antialiasing (2x2 Kernel)
 // might be sufficient for my uses
 
@@ -88,7 +120,9 @@ struct ReflectiveSurfaceUniforms
 	GLint modelLoc;
 	GLint clipPlaneLoc;
 	GLint materialLoc;
-	GLint lightSpaceMatrixLoc;
+	GLuint lightDataLoc;
+
+	GLuint testUniLoc;
 };
 
 
@@ -122,7 +156,8 @@ static_assert(sizeof(ReflectiveSurfaceSceneObject) <= sizeof(SceneObject), "INVA
 void InitializeReflectiveSurfacePipeline()
 {
 	g_reflect.geometryProgram = CreateProgram(vertexShader);
-	g_reflect.program = CreateProgram(vertexShader, fragmentShader);
+
+	g_reflect.program = CreateProgramExtended(vertexShaderExtension, fragmentShaderExtension, &g_reflect.unis.lightDataLoc, RS_TEXTURE_SHADOWMAP);
 
 	glUseProgramWrapper(g_reflect.program);
 	GLint index = glGetUniformLocation(g_reflect.program, "reflectTexture");
@@ -131,13 +166,13 @@ void InitializeReflectiveSurfacePipeline()
 	glUniform1i(index, RS_TEXTURE_REFRACT);
 	index = glGetUniformLocation(g_reflect.program, "dvdu");
 	glUniform1i(index, RS_TEXTURE_DVDU);
-	index = glGetUniformLocation(g_reflect.program, "shadowMap");
-	glUniform1i(index, RS_TEXTURE_SHADOWMAP);
 
 	g_reflect.unis.projLoc = glGetUniformLocation(g_reflect.program, "projection");
 	g_reflect.unis.viewLoc = glGetUniformLocation(g_reflect.program, "view");
 	g_reflect.unis.modelLoc = glGetUniformLocation(g_reflect.program, "model");
-	g_reflect.unis.lightSpaceMatrixLoc = glGetUniformLocation(g_reflect.program, "lightSpaceMatrix");
+	
+	g_reflect.unis.testUniLoc = glGetUniformLocation(g_reflect.program, "testLightUniform");
+
 	g_reflect.unis.clipPlaneLoc = glGetUniformLocation(g_reflect.program, "clipPlane");
 	g_reflect.unis.materialLoc = glGetUniformBlockIndex(g_reflect.program, "Material");
 	glUniformBlockBinding(g_reflect.program, g_reflect.unis.materialLoc, g_reflect.unis.materialLoc);
@@ -212,7 +247,9 @@ static void DrawReflectiveSurface(ReflectiveSurfaceSceneObject* obj, const Stand
 {
 	ReflectiveSurfaceUniforms* unis = geometryOnly ? &g_reflect.geomUnis : &g_reflect.unis;
 	glUseProgramWrapper(geometryOnly ? g_reflect.geometryProgram : g_reflect.program);
-	glBindBufferBase(GL_UNIFORM_BUFFER, unis->materialLoc, obj->material->dataUniform);
+	if(!geometryOnly)
+		glBindBufferBase(GL_UNIFORM_BUFFER, unis->materialLoc, obj->material->dataUniform);
+	
 	glActiveTexture(GL_TEXTURE0 + RS_TEXTURE_REFLECT);
 	glBindTexture(GL_TEXTURE_2D, obj->material->reflectionTexture);
 	glActiveTexture(GL_TEXTURE0 + RS_TEXTURE_REFRACT);
@@ -220,19 +257,26 @@ static void DrawReflectiveSurface(ReflectiveSurfaceSceneObject* obj, const Stand
 	glActiveTexture(GL_TEXTURE0 + RS_TEXTURE_DVDU);
 	glBindTexture(GL_TEXTURE_2D, obj->material->dudv);
 	glActiveTexture(GL_TEXTURE0 + RS_TEXTURE_SHADOWMAP);
-	glBindTexture(GL_TEXTURE_2D, stdData->light.shadowMap);
+	glBindTexture(GL_TEXTURE_2D, stdData->shadowMap);
+	
 
 	glUniformMatrix4fv(unis->projLoc, 1, GL_FALSE, (const GLfloat*)stdData->camProj);
 	glUniformMatrix4fv(unis->viewLoc, 1, GL_FALSE, (const GLfloat*)stdData->camView);
 	glUniformMatrix4fv(unis->modelLoc, 1, GL_FALSE, (const GLfloat*)obj->modelTransform);
-	glUniformMatrix4fv(unis->lightSpaceMatrixLoc, 1, GL_FALSE, (const GLfloat*)stdData->light.viewProjMat);
+	glBindBufferBase(GL_UNIFORM_BUFFER, unis->lightDataLoc, stdData->lightData);
+	
+
+	glm::vec3 pos = { 2.0f, 4.0f, 2.0f };
+	glm::vec3 lightDir = glm::vec3(-1.0f / sqrt(3));
+	glm::mat4 view = glm::lookAtLH(pos, pos - lightDir, glm::vec3(0.0f, 1.0f, 0.0f));
+	glm::mat4 proj = glm::ortho(-4.0f, 4.0f, -4.0f, 4.0f, -10.0f, 10.0f);
+	glm::mat4 viewProj = proj * view;
+
+	glUniformMatrix4fv(unis->testUniLoc, 1, GL_FALSE, (const GLfloat*)&viewProj);
 	if (clipPlane)
 		glUniform4fv(unis->clipPlaneLoc, 1, (const GLfloat*)clipPlane);
 	else
 		glUniform4f(unis->clipPlaneLoc, 0.0f, 1.0f, 0.0f, 10000000.0f);
-	
-	
-
 
 
 	glDrawArrays(GL_TRIANGLES, 0, 6);

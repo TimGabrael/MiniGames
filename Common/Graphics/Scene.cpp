@@ -137,12 +137,17 @@ struct _ImplScene
 	PtrSafeBatchListHeader64** materials;
 	PtrSafeBatchListHeader64** transforms;
 
+	PtrSafeBatchListHeader64* pointLights;
+	PtrSafeBatchListHeader64* directionalLights;
+
 	PFUNCGETDRAWFUNCTION* functions;
 
 	int numTypes;
 	int capacityTypes;
 
 	int numObjects;
+	int numPointLights;
+	int numDirectionalLights;
 };
 
 
@@ -152,6 +157,8 @@ PScene SC_CreateScene()
 	_ImplScene* scene = (_ImplScene*)malloc(sizeof(_ImplScene));
 	assert(scene != nullptr);
 	memset(scene, 0, sizeof(_ImplScene));
+	scene->pointLights = CreateBatchList(sizeof(PointLightData));
+	scene->directionalLights = CreateBatchList(sizeof(DirectionalLightData));
 	return scene;
 }
 uint32_t SC_AddType(PScene scene, PFUNCGETDRAWFUNCTION function)
@@ -247,9 +254,38 @@ SceneObject* SC_AddSceneObject(PScene scene, uint32_t typeIndex)
 	if (typeIndex >= sc->numTypes) return nullptr;
 	if (!sc->objectDatas[typeIndex]) sc->objectDatas[typeIndex] = CreateBatchList(sizeof(SceneObject));
 	SceneObject* obj = (SceneObject*)AddElementToBatchList(sc->objectDatas[typeIndex], sizeof(SceneObject));
-	if (obj) sc->numObjects = sc->numObjects + 1;
+	if (obj) {
+		sc->numObjects = sc->numObjects + 1;
+		obj->base.lightGroups = 0xFFFF;
+	}
 	return obj;
 }
+
+ScenePointLight* SC_AddPointLight(PScene scene)
+{
+	assert(scene != nullptr);
+	_ImplScene* sc = (_ImplScene*)scene;
+	ScenePointLight* out = (ScenePointLight*)AddElementToBatchList(sc->pointLights, sizeof(ScenePointLight));
+	if (out)
+	{
+		sc->numPointLights = sc->numPointLights + 1;
+		out->group = 1;
+	}
+	return out;
+}
+SceneDirLight* SC_AddDirectionalLight(PScene scene)
+{
+	assert(scene != nullptr);
+	_ImplScene* sc = (_ImplScene*)scene;
+	SceneDirLight* out = (SceneDirLight*)AddElementToBatchList(sc->directionalLights, sizeof(SceneDirLight));
+	if (out)
+	{
+		sc->numDirectionalLights = sc->numDirectionalLights + 1;
+		out->group = 1;
+	}
+	return out;
+}
+
 
 
 
@@ -293,12 +329,46 @@ void SC_RemoveSceneObject(PScene scene, uint32_t typeIndex, SceneObject* rmObj)
 
 
 
+void SC_RemovePointLight(PScene scene, ScenePointLight* light)
+{
+	assert(scene != nullptr);
+	_ImplScene* sc = (_ImplScene*)scene;
+	if (RemoveFromList(sc->pointLights, light, sizeof(ScenePointLight)))
+	{
+		sc->numPointLights = sc->numPointLights - 1;
+	}
+}
+void SC_RemoveDirectionalLight(PScene scene, SceneDirLight* light)
+{
+	assert(scene != nullptr);
+	_ImplScene* sc = (_ImplScene*)scene;
+	if (RemoveFromList(sc->directionalLights, light, sizeof(SceneDirLight)))
+	{
+		sc->numDirectionalLights = sc->numDirectionalLights - 1;
+	}
+}
 
 
+int SC_GetNumLights(PScene scene)
+{
+	assert(scene != nullptr);
+	_ImplScene* sc = (_ImplScene*)scene;
+	return sc->numPointLights + sc->numDirectionalLights;
+}
 
-
-
-
+void SC_FillLights(PScene scene, ScenePointLight** pl, SceneDirLight** dl)
+{
+	assert(scene != nullptr);
+	_ImplScene* sc = (_ImplScene*)scene;
+	for (int i = 0; i < sc->numPointLights; i++)
+	{
+		pl[i] = (ScenePointLight*)GetElementFromList(sc->pointLights, i, sizeof(ScenePointLight));
+	}
+	for (int i = 0; i < sc->numDirectionalLights; i++)
+	{
+		dl[i] = (SceneDirLight*)GetElementFromList(sc->directionalLights, i, sizeof(SceneDirLight));
+	}
+}
 
 
 

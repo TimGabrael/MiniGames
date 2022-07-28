@@ -39,7 +39,8 @@ typedef PFUNCDRAWSCENEOBJECT(*PFUNCGETDRAWFUNCTION)(TYPE_FUNCTION f);
 struct BaseSceneObject
 {
 	BoundingBox bbox;
-	uint32_t flags;
+	uint16_t lightGroups;	// bit field
+	uint16_t flags;
 	uint32_t additionalFlags;
 };
 
@@ -70,11 +71,21 @@ PMesh SC_AddMesh(PScene scene, uint32_t typeIndex, uint32_t meshSize);
 PTransform SC_AddTransform(PScene scene, uint32_t typeIndex, uint32_t transformSize);
 SceneObject* SC_AddSceneObject(PScene scene, uint32_t typeIndex);
 
+ScenePointLight* SC_AddPointLight(PScene scene);
+SceneDirLight* SC_AddDirectionalLight(PScene scene);
+
+
 void SC_RemoveType(PScene scene, uint32_t typeIndex);
 void SC_RemoveMaterial(PScene scene, uint32_t typeIndex, uint32_t materialSize, PMaterial rmMaterial);
 void SC_RemoveMesh(PScene scene, uint32_t typeIndex, uint32_t meshSize, PMesh rmMesh);
 void SC_RemoveTransform(PScene scene, uint32_t typeIndex, uint32_t transformSize, PTransform rmTransform);
 void SC_RemoveSceneObject(PScene scene, uint32_t typeIndex, SceneObject* rmObj);
+
+void SC_RemovePointLight(PScene scene, ScenePointLight* light);
+void SC_RemoveDirectionalLight(PScene scene, SceneDirLight* light);
+
+int SC_GetNumLights(PScene scene);
+void SC_FillLights(PScene scene, ScenePointLight** pl, SceneDirLight** dl);
 
 
 ObjectRenderStruct* SC_GenerateRenderList(PScene scene);

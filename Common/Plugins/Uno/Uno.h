@@ -16,11 +16,14 @@ struct PlayerInfo
 struct UnoGlobals
 {
 	Camera playerCam;
+	OrthographicCamera reflectionCam;
+	glm::vec3 lightDir;
 	MovementComponent moveComp;
 	SingleFBO reflectFBO;
 	DepthFBO shadowFBO;
 	BloomFBO bloomFBO;
 	GLuint skybox;
+	GLuint refGroundTexture;
 	S3DCombinedBuffer platform;
 	CardHand* localPlayer;
 	std::vector<CardHand> hands;

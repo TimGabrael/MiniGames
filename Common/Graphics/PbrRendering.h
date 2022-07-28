@@ -12,7 +12,6 @@
 struct UBO
 {
 	glm::mat4 projection;
-	glm::mat4 model;
 	glm::mat4 view;
 	glm::vec3 camPos;
 };
@@ -34,6 +33,6 @@ void CleanUpPbrPipeline();
 void* CreateInternalPBRFromFile(const char* filename, float scale);
 void CleanUpInternal(void* internalObj);
 
-void DrawPBRModel(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform, GLuint environmentMap, bool drawOpaque);
-void DrawPBRModelNode(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform, GLuint environmentMap, int nodeIdx, bool drawOpaque);
+void DrawPBRModel(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform, GLuint environmentMap, const glm::mat4* model, const glm::vec4* clipPlane, bool drawOpaque, bool geomOnly);
+void DrawPBRModelNode(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform, GLuint environmentMap, const glm::mat4* model, const glm::vec4* clipPlane, int nodeIdx, bool drawOpaque, bool geomOnly);
 void UpdateAnimation(void* internalObj, uint32_t index, float time);
