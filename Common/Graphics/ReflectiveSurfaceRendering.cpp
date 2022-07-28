@@ -16,6 +16,7 @@ vec2 pos[6] = vec2[6](\
 uniform mat4 projection;\n\
 uniform mat4 view;\n\
 uniform mat4 model;\n\
+uniform mat4 testLightUniform;\n\
 uniform vec4 clipPlane;\n\
 out vec4 clipSpace;\
 out vec2 texCoord;\
@@ -42,15 +43,17 @@ vec2 pos[6] = vec2[6](\
 uniform mat4 projection;\n\
 uniform mat4 view;\n\
 uniform mat4 model;\n\
+uniform mat4 testLightUniform;\n\
 uniform vec4 clipPlane;\n\
 out vec4 clipSpace;\
 out vec2 texCoord;\
 out vec4 fragPosWorld;\
 out float clipDist;\
+out vec4 fragLightCoord;\
 void main(){\
 	vec4 worldPos = model * vec4(pos[gl_VertexID], 0.0f, 1.0f);\
-	SetShadowOutputVariable(worldPos);\n\
 	fragPosWorld = worldPos;\
+	fragLightCoord = testLightUniform * worldPos;\
 	clipSpace = projection * view * worldPos;\
 	gl_Position = clipSpace;\
 	clipDist = dot(worldPos, clipPlane);\
@@ -68,6 +71,7 @@ in vec4 clipSpace;\
 in vec2 texCoord;\
 in vec4 fragPosWorld;\
 in float clipDist;\
+in vec4 fragLightCoord;\
 uniform sampler2D reflectTexture;\
 uniform sampler2D refractTexture;\
 uniform sampler2D dvdu;\
@@ -75,8 +79,10 @@ out vec4 outCol;\
 float shadowCalculation()\
 {\
 	vec2 ts = vec2(1.0f) / vec2(textureSize(shadowMap, 0));\
-	vec3 projCoords = shadowFragLightPos.xyz / shadowFragLightPos.w;\
+	vec4 wPos = _lightData.mapped.viewProj * fragPosWorld;\
+	vec3 projCoords = fragLightCoord.xyz / fragLightCoord.w;\
 	projCoords = projCoords * 0.5f + 0.5f;\
+	projCoords.z -= 0.002f;\
 	float shadow = 0.0f;\
 	for(int x = -1; x <= 1; ++x)\
 	{\
@@ -180,6 +186,9 @@ void InitializeReflectiveSurfacePipeline()
 	g_reflect.geomUnis.projLoc = glGetUniformLocation(g_reflect.geometryProgram, "projection");
 	g_reflect.geomUnis.viewLoc = glGetUniformLocation(g_reflect.geometryProgram, "view");
 	g_reflect.geomUnis.modelLoc = glGetUniformLocation(g_reflect.geometryProgram, "model");
+
+	g_reflect.geomUnis.testUniLoc = glGetUniformLocation(g_reflect.geometryProgram, "testLightUniform");
+
 	g_reflect.geomUnis.clipPlaneLoc = glGetUniformLocation(g_reflect.geometryProgram, "clipPlane");
 	g_reflect.geomUnis.materialLoc = glGetUniformBlockIndex(g_reflect.geometryProgram, "Material");
 	glUniformBlockBinding(g_reflect.geometryProgram, g_reflect.geomUnis.materialLoc, g_reflect.geomUnis.materialLoc);
@@ -271,7 +280,6 @@ static void DrawReflectiveSurface(ReflectiveSurfaceSceneObject* obj, const Stand
 	glm::mat4 view = glm::lookAtLH(pos, pos - lightDir, glm::vec3(0.0f, 1.0f, 0.0f));
 	glm::mat4 proj = glm::ortho(-4.0f, 4.0f, -4.0f, 4.0f, -10.0f, 10.0f);
 	glm::mat4 viewProj = proj * view;
-
 	glUniformMatrix4fv(unis->testUniLoc, 1, GL_FALSE, (const GLfloat*)&viewProj);
 	if (clipPlane)
 		glUniform4fv(unis->clipPlaneLoc, 1, (const GLfloat*)clipPlane);
