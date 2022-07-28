@@ -214,9 +214,6 @@ void UnoPlugin::Render(ApplicationData* data)
 	ray = g_objs->playerCam.ScreenToWorld(g_objs->p.x, g_objs->p.y);
 
 
-	light->data.dir = glm::vec3(0.0f, -1.0f, 0.0f);
-
-
 	g_objs->localPlayer->Update(g_objs->stack, g_objs->anims, g_objs->picker, g_objs->playerCam, g_objs->moveComp.mouseRay, g_objs->p, g_objs->anims.list.empty());
 
 	if (g_objs->localPlayer->choosingCardColor) {

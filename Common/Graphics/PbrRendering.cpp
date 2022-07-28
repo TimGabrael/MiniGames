@@ -1481,7 +1481,7 @@ void main()\n\
 	vec3 specularEnvironmentR90 = vec3(1.0f, 1.0f, 1.0f) * reflectance90;\n\
 \n\
 	vec3 n = (material.normalTextureSet > -1) ? getNormal() : normalize(inNormal);\n\
-	vec3 v = -normalize(ubo.camPos - inWorldPos);    // Vector from surface point to camera\n\
+	vec3 v = normalize(ubo.camPos - inWorldPos);    // Vector from surface point to camera\n\
 	vec3 l = normalize(uboParams.lightDir.xyz);     // Vector from surface point to light\n\
 	vec3 h = normalize(l + v);                        // Half vector between both l and v\n\
 	vec3 reflection = -normalize(reflect(v, n));\n\
@@ -1512,13 +1512,7 @@ void main()\n\
 	vec3 F = specularReflection(pbrInputs);\n\
 	float G = geometricOcclusion(pbrInputs);\n\
 	float D = microfacetDistribution(pbrInputs);\n\
-	vec3 color = CalculateLightsColor(vec4(inWorldPos, 1.0f), n, v, diffuseColor, specularColor, perceptualRoughness);\
-\n\
-	//const vec3 u_LightColor = vec3(1.0);\n\
-\n\
-	// Calculation of analytical lighting contribution\n\
-	vec3 diffuseContrib = (1.0 - F) * diffuse(pbrInputs);\n\
-	vec3 specContrib = F * G * D / (4.0 * NdotL * NdotV);\n\
+	vec3 color = CalculateLightsColor(vec4(inWorldPos, 1.0f), n, v, diffuseColor, specularColor, reflectance90);\
 \n\
 	// Calculate lighting contribution from image based lighting source (IBL)\n\
 	color += getIBLContribution(pbrInputs, n, reflection);\n\
@@ -1526,7 +1520,7 @@ void main()\n\
 	const float u_OcclusionStrength = 1.0f;\n\
 	if (material.occlusionTextureSet > -1) {\n\
 		float ao = texture(aoMap, (material.occlusionTextureSet == 0 ? inUV0 : inUV1)).r;\n\
-		//color = mix(color, color * ao, u_OcclusionStrength);\n\
+		color = mix(color, color * ao, u_OcclusionStrength);\n\
 	}\n\
 \n\
 	const float u_EmissiveFactor = 1.0f;\n\
@@ -1568,19 +1562,13 @@ void main()\n\
 		int index = int(uboParams.debugViewEquation);\n\
 		switch (index) {\n\
 		case 1:\n\
-			outColor.rgb = diffuseContrib;\n\
-			break;\n\
-		case 2:\n\
 			outColor.rgb = F;\n\
 			break;\n\
-		case 3:\n\
+		case 2:\n\
 			outColor.rgb = vec3(G);\n\
 			break;\n\
-		case 4:\n\
+		case 3:\n\
 			outColor.rgb = vec3(D);\n\
-			break;\n\
-		case 5:\n\
-			outColor.rgb = specContrib;\n\
 			break;\n\
 		}\n\
 	}\n\

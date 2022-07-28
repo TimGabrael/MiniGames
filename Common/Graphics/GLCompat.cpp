@@ -227,7 +227,7 @@ vec3 CalculatePointLightColor(PointLight light, vec3 normal, vec3 fragPos, vec3 
 vec3 CalculateDirectionalLightColor(DirectionalLight light, vec3 normal, vec3 viewDir, vec3 matDiffuseCol, vec3 matSpecCol, float shininess)\
 {\
 	vec3 lightDir = normalize(-light.dir);\
-	float diff = max(dot(normal, lightDir), 0.0);\
+	float diff = max(dot(normal, lightDir), 0.0f);\
 	vec3 reflectDir = reflect(-lightDir, normal);\
 	float spec = pow(max(dot(viewDir, reflectDir), 0.0f), shininess);\
 	vec3 ambient = light.ambient * matDiffuseCol;\
@@ -241,7 +241,7 @@ vec3 CalculateLightsColor(vec4 fragWorldPos, vec3 normal, vec3 viewDir, vec3 mat
 	for(int i = 0; i < _lightData.numDirLights; i++)\
 	{\
 		float shadow = 1.0f;\
-		if(_lightData.dirLights[i].hasShadow) shadow = CalculateShadowValue(_lightData.dirLights[i].mapper, fragWorldPos);\
+		if(_lightData.dirLights[i].hasShadow) shadow = CalculateShadowValue(_lightData.dirLights[i].mapper, fragWorldPos);\n\
 		result += CalculateDirectionalLightColor(_lightData.dirLights[i], normal, viewDir, matDiffuseCol, matSpecCol, shininess) * shadow;\
 	}\
 	for(int i = 0; i < _lightData.numPointLights; i++)\
