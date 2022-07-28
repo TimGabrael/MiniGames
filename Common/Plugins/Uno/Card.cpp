@@ -359,19 +359,36 @@ int FillCardListAndMapToBuffer(const glm::vec3& pos, bool backwards)
 void DrawCardsInSceneBlended(SceneObject* obj, void* renderPassData)
 {
 	StandardRenderPassData* data = (StandardRenderPassData*)renderPassData;
-	DrawCards(*data->camProj, *data->camView, *data->camPos, glm::vec3(-1.0f / sqrt(3.0f)), false);
+	const CurrentLightInformation* cur = GetCurrentLightInformation();
+	glm::vec3 dir(0.0f);
+	if (cur->numCurDirLights > 0)
+	{
+		dir = cur->curDirLights[0].data.dir;
+	}
+	DrawCards(*data->camProj, *data->camView, *data->camPos, dir, false);
 }
 void DrawCardsInSceneGeometry(SceneObject* obj, void* renderPassData)
 {
 	StandardRenderPassData* data = (StandardRenderPassData*)renderPassData;
-	DrawCards(*data->camProj, *data->camView, *data->camPos, glm::vec3(-1.0f / sqrt(3.0f)), true);
+	const CurrentLightInformation* cur = GetCurrentLightInformation();
+	glm::vec3 dir(0.0f);
+	if (cur->numCurDirLights > 0)
+	{
+		dir = cur->curDirLights[0].data.dir;
+	}
+	DrawCards(*data->camProj, *data->camView, *data->camPos, dir, true);
 }
 void DrawCardsInSceneBlendedClip(SceneObject* obj, void* renderPassData)
 {
 	ReflectPlanePassData* rData = (ReflectPlanePassData*)renderPassData;
 	const glm::vec3* camPos = rData->base->camPos;
 
-	const glm::vec3 lightDir = glm::vec3(-1.0f / sqrt(3.0f));
+	const CurrentLightInformation* cur = GetCurrentLightInformation();
+	glm::vec3 lightDir(0.0f);
+	if (cur->numCurDirLights > 0)
+	{
+		lightDir = cur->curDirLights[0].data.dir;
+	}
 
 	glUseProgramWrapper(g_cards.program);
 	glBindVertexArray(g_cards.bufs.vao);

@@ -52,7 +52,6 @@ UnoPlugin* GetInstance()
 
 
 #define ALLOW_FREEMOVEMENT
-ScenePointLight* pLight = nullptr;
 void UnoPlugin::Init(ApplicationData* data)
 {
 	initialized = true;
@@ -264,11 +263,10 @@ void UnoPlugin::Render(ApplicationData* data)
 	RenderSceneStandard(g_objs->UnoScene, &stdData);
 	
 
+	DrawUI();
 	RenderPostProcessingBloom(&g_objs->bloomFBO, GetScreenFramebuffer(), sizeX, sizeY);
 
 	
-	DrawUI();
-
 	EndScene();
 
 	g_objs->ms.FrameEnd();

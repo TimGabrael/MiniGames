@@ -4,15 +4,6 @@
 #include "BloomRendering.h"
 
 
-struct CurrentLightInformation
-{
-	ScenePointLight curPointLights[MAX_NUM_LIGHTS];
-	SceneDirLight curDirLights[MAX_NUM_LIGHTS];
-	int numCurPointLights = 0;
-	int numCurDirLights = 0;
-	glm::vec4 reflectionPlane = { 0, 0, 0, 0 };
-	bool isReflected = false;
-};
 
 struct RendererBackendData
 {
@@ -27,6 +18,7 @@ struct RendererBackendData
 
 	GLuint lightDataUniform;
 };
+
 static RendererBackendData* g_render = nullptr;
 static constexpr int RENDER_ALLOC_STEPS = 10;
 static void UpdateTemporary(const StandardRenderPassData* data)
@@ -309,4 +301,10 @@ void RenderPostProcessingBloom(BloomFBO* bloomData, GLuint finalFBO, int finalSi
 	glViewport(0, 0, finalSizeX, finalSizeY);
 
 	CopyTexturesToFramebuffer(bloomData->bloomTexture1, 0, bloomData->defaultTexture, 0);
+}
+
+
+const CurrentLightInformation* GetCurrentLightInformation()
+{
+	return &g_render->cur;
 }
