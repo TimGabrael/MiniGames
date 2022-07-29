@@ -17,9 +17,22 @@ struct RendererBackendData
 	CurrentLightInformation cur;
 
 	GLuint lightDataUniform;
-};
 
+	GLuint whiteTexture;
+	GLuint blackTexture;
+};
 static RendererBackendData* g_render = nullptr;
+
+GLuint GetWhiteTexture2D()
+{
+	return g_render->whiteTexture;
+}
+GLuint GetBlackTexture2D()
+{
+	return g_render->blackTexture;
+}
+
+
 static constexpr int RENDER_ALLOC_STEPS = 10;
 static void UpdateTemporary(const StandardRenderPassData* data)
 {
@@ -118,6 +131,25 @@ void InitializeRendererBackendData()
 {
 	if(!g_render) g_render = new RendererBackendData;
 	glGenBuffers(1, &g_render->lightDataUniform);
+
+	glGenTextures(1, &g_render->whiteTexture);
+	glBindTexture(GL_TEXTURE_2D, g_render->whiteTexture);
+	uint32_t color = 0xFFFFFFFF;
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, &color);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	glGenTextures(1, &g_render->blackTexture);
+	glBindTexture(GL_TEXTURE_2D, g_render->blackTexture);
+	color = 0x0;
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, &color);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
 }
 void CleanUpRendererBackendData()
 {
@@ -126,6 +158,10 @@ void CleanUpRendererBackendData()
 		glDeleteBuffers(1, &g_render->lightDataUniform);
 		if (g_render->dirLightTemp) delete[] g_render->dirLightTemp;
 		if (g_render->pointLightTemp) delete[] g_render->pointLightTemp;
+
+		glDeleteTextures(1, &g_render->whiteTexture);
+		glDeleteTextures(1, &g_render->blackTexture);
+
 		delete g_render;
 		g_render = nullptr;
 	}
@@ -273,7 +309,6 @@ void RenderPostProcessingBloom(BloomFBO* bloomData, GLuint finalFBO, int finalSi
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, finalFBO);
 	glViewport(0, 0, finalSizeX, finalSizeY);
-
 	CopyTexturesToFramebuffer(bloomData->bloomTexture1, 0, bloomData->defaultTexture, 0);
 }
 

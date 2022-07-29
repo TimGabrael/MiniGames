@@ -109,10 +109,19 @@ uniform sampler2D tex1;\
 uniform sampler2D tex2;\
 uniform float mipLevel1;\
 uniform float mipLevel2;\
+vec3 aces(vec3 x) {\
+    const float a = 2.51;\
+    const float b = 0.03;\
+    const float c = 2.43;\
+    const float d = 0.59;\
+    const float e = 0.14;\
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);\
+}\
 out vec4 outCol;\
 void main()\
 {\
-    outCol = textureLod(tex1, UV, mipLevel1) + textureLod(tex2, UV, mipLevel2);\
+    vec4 c = textureLod(tex1, UV, mipLevel1) + textureLod(tex2, UV, mipLevel2);\
+    outCol = vec4(aces(c.xyz), 1.0f);\
 }";
 
 enum class BLUR_AXIS

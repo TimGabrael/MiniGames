@@ -1,6 +1,7 @@
 #pragma once
 #include "Scene.h"
 #include "Camera.h"
+#include "Helper.h"
 
 struct CameraData
 {
@@ -39,6 +40,10 @@ struct ReflectPlanePassData
 
 void InitializeRendererBackendData();
 void CleanUpRendererBackendData();
+
+GLuint GetWhiteTexture2D();
+GLuint GetBlackTexture2D();
+
 
 
 void BeginScene(PScene scene);

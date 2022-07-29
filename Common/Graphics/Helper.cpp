@@ -600,7 +600,6 @@ SingleFBO CreateSingleFBO(int width, int height)
 	glGenFramebuffers(1, &out.fbo);
 	glBindFramebuffer(GL_FRAMEBUFFER, out.fbo);
 
-
 	glGenTextures(1, &out.texture);
 	glBindTexture(GL_TEXTURE_2D, out.texture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
@@ -718,7 +717,7 @@ void BloomFBO::Create(int drawFboSx, int drawFboSy, int sx, int sy)
 
 	
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-		LOG("FAILED  TO CREATE FRAMEBUFFER\n");
+		LOG("FAILED  TO CREATE FRAMEBUFFER HIER\n");
 	}
 	
 

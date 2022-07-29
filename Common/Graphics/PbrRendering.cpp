@@ -1598,13 +1598,13 @@ enum GLTF_Textures
 
 struct GLTFUniforms
 {
-	GLuint UBOLoc;
-	GLuint ModelMatrixLoc;
-	GLuint UBONodeLoc;
-	GLuint UBOParamsLoc;
-	GLuint MaterialLoc;
-	GLuint clipPlaneLoc;
-	GLuint lightDataLoc;
+	GLuint UBOLoc = -1;
+	GLuint ModelMatrixLoc = -1;
+	GLuint UBONodeLoc = -1;
+	GLuint UBOParamsLoc = -1;
+	GLuint MaterialLoc = -1;
+	GLuint clipPlaneLoc = -1;
+	GLuint lightDataLoc = -1;
 };
 
 struct OpenGlPipelineObjects
