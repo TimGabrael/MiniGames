@@ -243,7 +243,6 @@ struct Node {
 			if (mapped)
 			{
 				glm::mat4 rot = glm::mat4(1.0f);
-				rot[1][1] = -1.0f;
 				glm::mat4 m = rot * getMatrix();
 				if (skin) {
 					mesh->uniformBlock.matrix = m;
@@ -1196,7 +1195,6 @@ void main()\n\
 		locPos = model * node.matrix * vec4(inPos, 1.0);\n\
 		inNormal = normalize(transpose(inverse(mat3(model * node.matrix))) * inVNormal);\n\
 	}\n\
-	locPos.y = -locPos.y;\n\
 	inWorldPos = locPos.xyz / locPos.w;\n\
 	inUV0 = inVUV0;\n\
 	inUV1 = inVUV1;\n\
@@ -1512,7 +1510,7 @@ void main()\n\
 	vec3 F = specularReflection(pbrInputs);\n\
 	float G = geometricOcclusion(pbrInputs);\n\
 	float D = microfacetDistribution(pbrInputs);\n\
-	vec3 color = CalculateLightsColor(vec4(inWorldPos, 1.0f), n, v, diffuseColor, specularColor, reflectance90);\
+	vec3 color = CalculateLightsColor(vec4(inWorldPos, 1.0f), n, v, diffuseColor, specularColor, reflectance90);\n\
 \n\
 	// Calculate lighting contribution from image based lighting source (IBL)\n\
 	color += getIBLContribution(pbrInputs, n, reflection);\n\

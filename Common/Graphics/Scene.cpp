@@ -477,7 +477,7 @@ ObjectRenderStruct* SC_FillRenderList(PScene scene, ObjectRenderStruct* list, co
 				SceneObject* sObj = (SceneObject*)GetElementFromList(cur, j, sizeof(SceneObject));
 				if (sObj)
 				{
-					if (sObj->base.flags & objFlag)
+					if ((sObj->base.flags & objFlag) == objFlag)
 					{
 						if (CubeCubeIntersectionTest(&viewSpace, &sObj->base.bbox))
 						{

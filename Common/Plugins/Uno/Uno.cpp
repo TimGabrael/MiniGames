@@ -95,7 +95,7 @@ void UnoPlugin::Init(ApplicationData* data)
 		glBindBuffer(GL_UNIFORM_BUFFER, g_objs->playerCam.uniform);
 		glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraData), nullptr, GL_DYNAMIC_DRAW);
 	}
-	void* pbrModel = CreateInternalPBRFromFile("Assets/Helmet.gltf", 1.0f);
+	void* pbrModel = CreateInternalPBRFromFile("Assets/Helmet.gltf", 0.5f);
 
 
 	// CREATE SCENE
@@ -121,9 +121,11 @@ void UnoPlugin::Init(ApplicationData* data)
 		light->data.mapper.end = { 1.0f, 1.0f };
 		light->data.mapper.viewProj = g_objs->reflectionCam.viewProj;
 
-		UBOParams params = UBOParams();
-		AddPbrModelToScene(g_objs->UnoScene, pbrModel, params, glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.4f, 0.0f)));
 
+		UBOParams params = UBOParams();
+		PBRSceneObject* o = AddPbrModelToScene(g_objs->UnoScene, pbrModel, params, glm::translate(glm::mat4(1.0f), glm::vec3(-2.0f, 0.7f, -2.0f)));
+		o->base.flags &= ~(SCENE_OBJECT_BLEND);
+		
 
 	}
 	g_objs->skybox = LoadCubemap(
@@ -229,8 +231,6 @@ void UnoPlugin::Render(ApplicationData* data)
 
 		g_objs->localPlayer->Draw(g_objs->playerCam);
 	}
-
-
 
 
 
