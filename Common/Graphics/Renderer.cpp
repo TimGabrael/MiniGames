@@ -134,8 +134,8 @@ void InitializeRendererBackendData()
 
 	glGenTextures(1, &g_render->whiteTexture);
 	glBindTexture(GL_TEXTURE_2D, g_render->whiteTexture);
-	uint32_t color = 0xFFFFFFFF;
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, &color);
+	uint32_t color[2] = { 0xFFFFFFFF, 0xFFFFFFFF };
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, color);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -143,7 +143,7 @@ void InitializeRendererBackendData()
 
 	glGenTextures(1, &g_render->blackTexture);
 	glBindTexture(GL_TEXTURE_2D, g_render->blackTexture);
-	color = 0x0;
+	color[0] = 0x0; color[1] = 0x0;
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, &color);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -166,6 +166,55 @@ void CleanUpRendererBackendData()
 		g_render = nullptr;
 	}
 }
+
+
+
+
+
+
+
+
+
+
+
+
+enum InternalSceneRenderDataInfo
+{
+	INTERNAL_SCENE_RENDER_DATA_MSAA_QUALITY_MASK = 0xFF,
+	INTERNAL_SCENE_RENDER_DATA_HAS_BLOOM = 1 << 8,
+	INTERNAL_SCENE_RENDER_DATA_HAS_AMBIENT_OCCLUSION = 1 << 9,
+};
+void SceneRenderData::Create(int width, int height, const RendererSettings* settings)
+{
+	GLenum requiredColorFormat = GL_RGBA8;
+	_internal = (uint8_t)settings->msaaQuality;
+	if (settings->bloomActive) {
+		requiredColorFormat = GL_RGBA16F;
+		_internal |= INTERNAL_SCENE_RENDER_DATA_HAS_BLOOM;
+	}
+	if (settings->ambientOcclusionActive)
+	{
+		_internal |= INTERNAL_SCENE_RENDER_DATA_HAS_AMBIENT_OCCLUSION;
+
+	}
+	if (_internal & INTERNAL_SCENE_RENDER_DATA_MSAA_QUALITY_MASK)
+	{
+		msaaFBO = CreateSingleFBO(width, height, requiredColorFormat, GL_RGBA, GL_DEPTH_COMPONENT32F, settings->msaaQuality);
+	}
+
+}
+void SceneRenderData::Recreate(int width, int size)
+{
+
+}
+
+
+
+
+
+
+
+
 
 
 void BeginScene(PScene scene)

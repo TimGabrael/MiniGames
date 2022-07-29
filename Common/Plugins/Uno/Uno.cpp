@@ -310,6 +310,8 @@ void UnoPlugin::Render(ApplicationData* data)
 	g_objs->ms.FrameEnd();
 	g_objs->p.EndFrame();
 	EndFrameAndResetData();
+
+	
 }
 
 

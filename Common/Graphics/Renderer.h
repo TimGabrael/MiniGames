@@ -3,6 +3,15 @@
 #include "Camera.h"
 #include "Helper.h"
 
+
+struct RendererSettings
+{
+	int msaaQuality;
+	int shadowRatio;
+	bool ambientOcclusionActive;
+	bool bloomActive;
+};
+
 struct CameraData
 {
 	glm::mat4 projection;
@@ -29,8 +38,8 @@ struct StandardRenderPassData
 	const glm::mat4* camViewProj;
 	GLuint cameraUniform;
 	GLuint skyBox;
-	GLuint lightData;
 	GLuint shadowMap;
+	GLuint lightData;
 };
 struct ReflectPlanePassData
 {
@@ -43,6 +52,24 @@ void CleanUpRendererBackendData();
 
 GLuint GetWhiteTexture2D();
 GLuint GetBlackTexture2D();
+
+
+struct PostProcessingFBO
+{
+	GLuint fbo;
+	GLuint texture;
+};
+struct SceneRenderData
+{
+	void Create(int width, int height, const RendererSettings* settings);
+	void Recreate(int width, int size);
+	SingleFBO msaaFBO;
+	SingleFBO aoFBO;
+	DepthFBO shadowFBO;
+	PostProcessingFBO ppFBO;
+	BloomFBO bloomFBO;
+	uint32_t _internal;
+};
 
 
 

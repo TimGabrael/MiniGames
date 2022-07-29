@@ -630,6 +630,80 @@ SingleFBO CreateSingleFBO(int width, int height)
 
 	return out;
 }
+SingleFBO CreateSingleFBO(int width, int height, GLenum internalFormatColor, GLenum formatColor, GLenum internalFormatDepth, int numSamples)
+{
+	SingleFBO out;
+	if (numSamples > 0)
+	{
+		glGenFramebuffers(1, &out.fbo);
+		glBindFramebuffer(GL_FRAMEBUFFER, out.fbo);
+
+		glGenTextures(1, &out.texture);
+		glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, out.texture);
+		glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, numSamples, internalFormatColor, width, height, GL_TRUE);
+		glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, out.texture, 0);
+
+
+
+		glGenTextures(1, &out.depth);
+		glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, out.depth);
+		glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, numSamples, internalFormatDepth, width, height, GL_TRUE);
+		glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, out.depth, 0);
+
+
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+			LOG("FAILED  TO CREATE FRAMEBUFFER\n");
+		}
+
+		glBindFramebuffer(GL_FRAMEBUFFER, GetScreenFramebuffer());
+	}
+	else
+	{
+		SingleFBO out;
+		glGenFramebuffers(1, &out.fbo);
+		glBindFramebuffer(GL_FRAMEBUFFER, out.fbo);
+
+		glGenTextures(1, &out.texture);
+		glBindTexture(GL_TEXTURE_2D, out.texture);
+		glTexImage2D(GL_TEXTURE_2D, 0, internalFormatColor, width, height, 0, formatColor, GL_UNSIGNED_BYTE, nullptr);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, out.texture, 0);
+
+
+
+		glGenTextures(1, &out.depth);
+		glBindTexture(GL_TEXTURE_2D, out.depth);
+		glTexImage2D(GL_TEXTURE_2D, 0, internalFormatDepth, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, out.depth, 0);
+
+
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+			LOG("FAILED  TO CREATE FRAMEBUFFER\n");
+		}
+
+		glBindFramebuffer(GL_FRAMEBUFFER, GetScreenFramebuffer());
+
+		return out;
+	}
+	return out;
+}
 DepthFBO CreateDepthFBO(int width, int height)
 {
 	DepthFBO out;

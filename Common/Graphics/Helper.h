@@ -76,6 +76,7 @@ struct BloomFBO
 
 PScene CreateAndInitializeSceneAsDefault();
 SingleFBO CreateSingleFBO(int width, int height);
+SingleFBO CreateSingleFBO(int width, int height, GLenum internalFormatColor, GLenum formatColor, GLenum internalFormatDepth, int numSamples);
 DepthFBO CreateDepthFBO(int width, int height);
 void RecreateSingleFBO(SingleFBO* fbo, int width, int height);
 void DestroySingleFBO(SingleFBO* fbo);
