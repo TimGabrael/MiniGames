@@ -158,11 +158,27 @@ void EndScene()
 {
 	SC_FreeRenderList(g_render->objs);
 }
+void RenderSceneGeometry(PScene scene, const StandardRenderPassData* data)
+{
+	UpdateTemporary(data);
+	SetDefaultOpaqueState();
+
+	int num;
+	glm::mat4 camViewProj = *g_render->mainData.camProj * *g_render->mainData.camView;
+	SC_FillRenderList(scene, g_render->objs, &camViewProj, &num, TYPE_FUNCTION_GEOMETRY, SCENE_OBJECT_CAST_SHADOW);
+
+	for (int i = 0; i < num; i++)
+	{
+		ObjectRenderStruct* o = &g_render->objs[i];
+		BoundingBox* bbox = &o->obj->base.bbox;
+		glm::vec3 middle = (bbox->leftTopFront + bbox->rightBottomBack) / 2.0f;
+		o->DrawFunc(o->obj, (void*)&g_render->mainData);
+	}
+}
 void RenderSceneShadow(PScene scene, const StandardRenderPassData* data)
 {
 	UpdateTemporary(data);
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);
+	SetDefaultOpaqueState();
 
 	glEnable(GL_POLYGON_OFFSET_FILL);
 	glPolygonOffset(2.0f, 4.0f);
@@ -183,35 +199,18 @@ void RenderSceneShadow(PScene scene, const StandardRenderPassData* data)
 void RenderSceneReflectedOnPlane(PScene scene, const ReflectPlanePassData* data)
 {
 	UpdateTemporary(data->base);
+	SetDefaultOpaqueState();
 
 	ReflectPlanePassData reflectPassData;
 	reflectPassData.base = &g_render->mainData;
 	reflectPassData.planeEquation = data->planeEquation;
 
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);
-	glDisable(GL_BLEND);
-
-
 	int num;
 	glm::mat4 camViewProj = *g_render->mainData.camProj * *g_render->mainData.camView;
-	SC_FillRenderList(scene, g_render->objs, &camViewProj, &num, TYPE_FUNCTION::TYPE_FUNCTION_CLIP_PLANE_OPAQUE, SCENE_OBJECT_FLAGS::SCENE_OBJECT_SURFACE_REFLECTED | SCENE_OBJECT_FLAGS::SCENE_OBJECT_OPAQUE);
-	
+	SC_FillRenderList(scene, g_render->objs, &camViewProj, &num, TYPE_FUNCTION::TYPE_FUNCTION_CLIP_PLANE_OPAQUE, SCENE_OBJECT_FLAGS::SCENE_OBJECT_SURFACE_REFLECTED);
+	SC_AppendRenderList(scene, g_render->objs, &camViewProj, &num, TYPE_FUNCTION::TYPE_FUNCTION_CLIP_PLANE_BLEND, SCENE_OBJECT_FLAGS::SCENE_OBJECT_SURFACE_REFLECTED, num);
 
-	for (int i = 0; i < num; i++)
-	{
-		ObjectRenderStruct* o = &g_render->objs[i];
-		BoundingBox* bbox = &o->obj->base.bbox;
-		glm::vec3 middle = (bbox->leftTopFront + bbox->rightBottomBack) / 2.0f;
-		UpdateLightInformation(&middle, o->obj->base.lightGroups, data->planeEquation);
-		o->DrawFunc(o->obj, (void*)&reflectPassData);
-	}
 	DrawSkybox(data->base->skyBox, camViewProj);
-
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glDisable(GL_DEPTH_TEST);
-	SC_FillRenderList(scene, g_render->objs, &camViewProj, &num, TYPE_FUNCTION::TYPE_FUNCTION_CLIP_PLANE_BLEND, SCENE_OBJECT_FLAGS::SCENE_OBJECT_SURFACE_REFLECTED | SCENE_OBJECT_FLAGS::SCENE_OBJECT_BLEND);
 	for (int i = 0; i < num; i++)
 	{
 		ObjectRenderStruct* o = &g_render->objs[i];
@@ -220,35 +219,19 @@ void RenderSceneReflectedOnPlane(PScene scene, const ReflectPlanePassData* data)
 		UpdateLightInformation(&middle, o->obj->base.lightGroups, data->planeEquation);
 		o->DrawFunc(o->obj, (void*)&reflectPassData);
 	}
-
 }
 
 void RenderSceneStandard(PScene scene, const StandardRenderPassData* data)
 {
 	UpdateTemporary(data);
-
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);
-	glDisable(GL_BLEND);
+	SetDefaultOpaqueState();
 
 	int num;
 	glm::mat4 camViewProj = *g_render->mainData.camProj * *g_render->mainData.camView;
 	SC_FillRenderList(scene, g_render->objs, &camViewProj, &num, TYPE_FUNCTION::TYPE_FUNCTION_OPAQUE, SCENE_OBJECT_FLAGS::SCENE_OBJECT_OPAQUE);
-	for (int i = 0; i < num; i++)
-	{
-		ObjectRenderStruct* o = &g_render->objs[i];
-		BoundingBox* bbox = &o->obj->base.bbox;
-		glm::vec3 middle = (bbox->leftTopFront + bbox->rightBottomBack) / 2.0f;
-		UpdateLightInformation(&middle, o->obj->base.lightGroups, nullptr);
-		o->DrawFunc(o->obj, (void*)&g_render->mainData);
-	}
+	SC_AppendRenderList(scene, g_render->objs, &camViewProj, &num, TYPE_FUNCTION::TYPE_FUNCTION_BLEND, SCENE_OBJECT_FLAGS::SCENE_OBJECT_BLEND, num);
+
 	DrawSkybox(data->skyBox, camViewProj);
-	
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glDisable(GL_DEPTH_TEST);
-	SC_FillRenderList(scene, g_render->objs, &camViewProj, &num, TYPE_FUNCTION::TYPE_FUNCTION_BLEND, SCENE_OBJECT_FLAGS::SCENE_OBJECT_BLEND);
-	
 	for (int i = 0; i < num; i++)
 	{
 		ObjectRenderStruct* o = &g_render->objs[i];
@@ -260,8 +243,7 @@ void RenderSceneStandard(PScene scene, const StandardRenderPassData* data)
 }
 void RenderPostProcessingBloom(BloomFBO* bloomData, GLuint finalFBO, int finalSizeX, int finalSizeY)
 {
-	glDisable(GL_BLEND);
-	glDisable(GL_DEPTH_TEST);
+	SetOpenGLWeakState(false, false);
 	float blurRadius = 4.0f;
 	float intensity = 1.0f;
 	if (bloomData->numBloomFbos == 0) return;
@@ -277,8 +259,8 @@ void RenderPostProcessingBloom(BloomFBO* bloomData, GLuint finalFBO, int finalSi
 		fboSizes[i] = { curSizeX, curSizeY };
 		BloomTextureToFramebuffer(bloomData->bloomFBOs1[i], curSizeX, curSizeY, bloomData->bloomFBOs2[i], curSizeX, curSizeY, bloomData->bloomTexture2, bloomData->bloomTexture1, blurRadius, 0.0f, i - 1, i);
 	}
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_ONE, GL_ONE);
+	SetOpenGLWeakState(false, true);
+	glBlendFuncWrapper(GL_ONE, GL_ONE);
 	for (int i = bloomData->numBloomFbos - 2; i >= 0; i--)
 	{
 		glBindFramebuffer(GL_FRAMEBUFFER, bloomData->bloomFBOs1[i]);
@@ -287,7 +269,7 @@ void RenderPostProcessingBloom(BloomFBO* bloomData, GLuint finalFBO, int finalSi
 		UpsampleTextureToFramebuffer(bloomData->bloomTexture1, i + 1);
 	}
 	
-	glDisable(GL_BLEND);
+	SetOpenGLWeakState(false, false);
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, finalFBO);
 	glViewport(0, 0, finalSizeX, finalSizeY);

@@ -7,6 +7,13 @@
 static GLuint currentlyBoundShaderProgram = 0;
 static GLuint screenFramebuffer = 0;
 static GLuint mainFramebuffer = 0;
+
+static bool depthTestEnabled = false;
+static bool blendTestEnabled = false;
+static GLenum activeDepthFunc = -1;
+static GLenum activeBlendFuncSrc = -1;
+static GLenum activeBlendFuncDst = -1;
+
 #if LOG_DRAW_CALLS
 static int numDrawCallsMadeThisFrame = 0;
 #endif
@@ -78,6 +85,50 @@ GLuint GetMainFramebuffer()
 
 
 
+
+void SetOpenGLWeakState(bool depthTest, bool blendTest)
+{
+	if (depthTestEnabled != depthTest)
+	{
+		if (depthTest) glEnable(GL_DEPTH_TEST);
+		else glDisable(GL_DEPTH_TEST);
+		depthTestEnabled = depthTest;
+	}
+	if (blendTestEnabled != blendTest)
+	{
+		if (blendTest) glEnable(GL_BLEND);
+		else glDisable(GL_BLEND);
+		blendTestEnabled = blendTest;
+	}
+	
+}
+void glDepthFuncWrapper(GLenum func)
+{
+	if (func != activeDepthFunc)
+	{
+		glDepthFunc(func);
+		activeDepthFunc = func;
+	}
+}
+void glBlendFuncWrapper(GLenum sfactor, GLenum dfactor)
+{
+	if (sfactor != activeBlendFuncSrc || dfactor != activeBlendFuncDst)
+	{
+		glBlendFunc(sfactor, dfactor);
+		activeBlendFuncSrc = sfactor;
+		activeBlendFuncDst = dfactor;
+	}
+}
+void SetDefaultBlendState()
+{
+	SetOpenGLWeakState(false, true);
+	glBlendFuncWrapper(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+}
+void SetDefaultOpaqueState()
+{
+	SetOpenGLWeakState(true, false);
+	glDepthFuncWrapper(GL_LESS);
+}
 
 
 

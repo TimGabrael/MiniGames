@@ -29,8 +29,12 @@ GLuint GetScreenFramebuffer();
 void SetMainFramebuffer(GLuint fb);
 GLuint GetMainFramebuffer();
 
+void SetOpenGLWeakState(bool depthTest, bool blendTest);
+void glDepthFuncWrapper(GLenum func);
+void glBlendFuncWrapper(GLenum sfactor, GLenum dfactor);
 
-
+void SetDefaultBlendState();
+void SetDefaultOpaqueState();
 
 
 

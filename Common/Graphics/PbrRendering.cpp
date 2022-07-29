@@ -1920,6 +1920,7 @@ void DrawScenePBROpaque(SceneObject* obj, void* renderPassData)
 {
 	PBRSceneObject* o = (PBRSceneObject*)obj;
 	StandardRenderPassData* passData = (StandardRenderPassData*)renderPassData;
+	SetDefaultOpaqueState();
 	DrawPBRModel(o->model, passData->cameraUniform, o->uboParamsUniform, passData->skyBox, passData->lightData, o->transform, nullptr, true, false);
 
 }
@@ -1927,18 +1928,21 @@ void DrawScenePBRBlend(SceneObject* obj, void* renderPassData)
 {
 	PBRSceneObject* o = (PBRSceneObject*)obj;
 	StandardRenderPassData* passData = (StandardRenderPassData*)renderPassData;
+	SetDefaultBlendState();
 	DrawPBRModel(o->model, passData->cameraUniform, o->uboParamsUniform, passData->skyBox, passData->lightData, o->transform, nullptr, false, false);
 }
 void DrawScenePBROpaqueClip(SceneObject* obj, void* renderPassData)
 {
 	PBRSceneObject* o = (PBRSceneObject*)obj;
 	ReflectPlanePassData* passData = (ReflectPlanePassData*)renderPassData;
+	SetDefaultOpaqueState();
 	DrawPBRModel(o->model, passData->base->cameraUniform, o->uboParamsUniform, passData->base->skyBox, passData->base->lightData, o->transform, passData->planeEquation, true, false);
 }
 void DrawScenePBRBlendClip(SceneObject* obj, void* renderPassData)
 {
 	PBRSceneObject* o = (PBRSceneObject*)obj; 
 	ReflectPlanePassData* passData = (ReflectPlanePassData*)renderPassData;
+	SetDefaultBlendState();
 	DrawPBRModel(o->model, passData->base->cameraUniform, o->uboParamsUniform, passData->base->skyBox, passData->base->lightData, o->transform, passData->planeEquation, false, false);
 }
 
@@ -1957,12 +1961,39 @@ PBRSceneObject* AddPbrModelToScene(PScene scene, void* internalObj, UBOParams pa
 {
 	InternalPBR* realObj = (InternalPBR*)internalObj;
 	PBRSceneObject* pbr = (PBRSceneObject*)SC_AddSceneObject(scene, PBR_RENDERABLE);
-	pbr->model = internalObj;
-	pbr->base.bbox.leftTopFront = glm::vec3(-4.0f);
-	pbr->base.bbox.rightBottomBack = glm::vec3(4.0f);
-
 	pbr->transform = (glm::mat4*)SC_AddTransform(scene, PBR_RENDERABLE, sizeof(glm::mat4));
 	*pbr->transform = transform;
+
+	pbr->model = internalObj;
+
+	glm::vec3 min(FLT_MAX);
+	glm::vec3 max(-FLT_MAX);
+
+	for (int i = 0; i < realObj->nodes.size(); i++)
+	{
+		BoundingBoxPbr pbrBB = realObj->nodes.at(i)->mesh->bb.getAABB(transform);
+		
+		glm::vec3& minRes = pbrBB.min;
+		glm::vec3& maxRes = pbrBB.max;
+
+		if (minRes.x < min.x) min.x = minRes.x;
+		if (maxRes.x < min.x) min.x = maxRes.x;
+		if (minRes.x > max.x) max.x = minRes.x;
+		if (maxRes.x > max.x) max.x = maxRes.x;
+		
+		if (minRes.y < min.y) min.y = minRes.y;
+		if (maxRes.y < min.y) min.y = maxRes.y;
+		if (minRes.y > max.y) max.y = minRes.y;
+		if (maxRes.y > max.y) max.y = maxRes.y;
+
+		if (minRes.z < min.z) min.z = minRes.z;
+		if (maxRes.z < min.z) min.z = maxRes.z;
+		if (minRes.z > max.z) max.z = minRes.z;
+		if (maxRes.z > max.z) max.z = maxRes.z;
+	}
+
+	pbr->base.bbox.leftTopFront = min;
+	pbr->base.bbox.rightBottomBack = max;
 
 	glGenBuffers(1, &pbr->uboParamsUniform);
 	glBindBuffer(GL_UNIFORM_BUFFER, pbr->uboParamsUniform);

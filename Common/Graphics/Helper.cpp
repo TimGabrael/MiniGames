@@ -494,7 +494,8 @@ void DrawSkybox(GLuint skybox, const glm::mat4& viewMat, const glm::mat4& projMa
 }
 void DrawSkybox(GLuint skybox, const glm::mat4& viewProjMat)
 {
-	glDepthFunc(GL_LEQUAL);
+	SetOpenGLWeakState(true, false);
+	glDepthFuncWrapper(GL_LEQUAL);
 	glUseProgramWrapper(g_helper.cubemapProgram);
 
 	glUniformMatrix4fv(g_helper.viewProjIdx, 1, false, (const GLfloat*)&viewProjMat);
@@ -505,8 +506,6 @@ void DrawSkybox(GLuint skybox, const glm::mat4& viewProjMat)
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, skybox);
 	glDrawArraysWrapper(GL_TRIANGLES, 0, 36);
-	glBindVertexArray(0);
-	glDepthFunc(GL_LESS);
 }
 
 

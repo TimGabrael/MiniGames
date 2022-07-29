@@ -43,6 +43,7 @@ void CleanUpRendererBackendData();
 
 void BeginScene(PScene scene);
 void EndScene();
+void RenderSceneGeometry(PScene scene, const StandardRenderPassData* data);
 void RenderSceneShadow(PScene scene, const StandardRenderPassData* data);
 void RenderSceneReflectedOnPlane(PScene scene, const ReflectPlanePassData* data);
 void RenderSceneStandard(PScene scene, const StandardRenderPassData* data);

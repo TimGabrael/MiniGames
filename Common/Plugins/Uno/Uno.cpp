@@ -232,10 +232,7 @@ void UnoPlugin::Render(ApplicationData* data)
 		g_objs->localPlayer->Draw(g_objs->playerCam);
 	}
 
-
-
 	BeginScene(g_objs->UnoScene);
-
 
 	StandardRenderPassData stdData;
 

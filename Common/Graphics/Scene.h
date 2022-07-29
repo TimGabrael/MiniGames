@@ -90,4 +90,5 @@ void SC_FillLights(PScene scene, ScenePointLight** pl, SceneDirLight** dl);
 
 ObjectRenderStruct* SC_GenerateRenderList(PScene scene);
 ObjectRenderStruct* SC_FillRenderList(PScene scene, ObjectRenderStruct* list, const glm::mat4* viewProjMatrix, int* num, TYPE_FUNCTION funcType, uint32_t objFlag);
+ObjectRenderStruct* SC_AppendRenderList(PScene scene, ObjectRenderStruct* list, const glm::mat4* viewProjMatrix, int* num, TYPE_FUNCTION funcType, uint32_t objFlag, int curNum);
 void SC_FreeRenderList(ObjectRenderStruct* list);

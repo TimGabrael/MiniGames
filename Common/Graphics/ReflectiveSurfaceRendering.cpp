@@ -235,11 +235,13 @@ static void DrawReflectGeoemtry(SceneObject* obj, void* data)
 static void DrawReflectStandard(SceneObject* obj, void* data)
 {
 	const StandardRenderPassData* d = (const StandardRenderPassData*)data;
+	SetDefaultOpaqueState();
 	DrawReflectiveSurface((ReflectiveSurfaceSceneObject*)obj, d, nullptr, false);
 }
 static void DrawReflectPlane(SceneObject* obj, void* data)
 {
 	const ReflectPlanePassData* planeData = (const ReflectPlanePassData*)data;
+	SetDefaultOpaqueState();
 	DrawReflectiveSurface((ReflectiveSurfaceSceneObject*)obj, planeData->base, planeData->planeEquation, false);
 }
 PFUNCDRAWSCENEOBJECT ReflectiveSurfaceGetDrawFunction(TYPE_FUNCTION f)

@@ -364,7 +364,8 @@ void DrawCardsInSceneBlended(SceneObject* obj, void* renderPassData)
 	if (cur->numCurDirLights > 0)
 	{
 		dir = cur->curDirLights[0].data.dir;
-	}
+	}	
+	SetDefaultBlendState();
 	DrawCards(*data->camProj, *data->camView, *data->camPos, dir, false);
 }
 void DrawCardsInSceneGeometry(SceneObject* obj, void* renderPassData)
@@ -382,6 +383,8 @@ void DrawCardsInSceneBlendedClip(SceneObject* obj, void* renderPassData)
 {
 	ReflectPlanePassData* rData = (ReflectPlanePassData*)renderPassData;
 	const glm::vec3* camPos = rData->base->camPos;
+
+	SetDefaultBlendState();
 
 	const CurrentLightInformation* cur = GetCurrentLightInformation();
 	glm::vec3 lightDir(0.0f);
@@ -405,8 +408,6 @@ void DrawCardsInSceneBlendedClip(SceneObject* obj, void* renderPassData)
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_cards.bufs.inds);
 
 	glDrawElementsWrapper(GL_TRIANGLES, numInds, GL_UNSIGNED_INT, nullptr);
-
-	glBindVertexArray(0);
 }
 void DrawCards(const glm::mat4& proj, const glm::mat4& view, const glm::vec3& camPos, const glm::vec3& lDir, bool geomOnly)
 {

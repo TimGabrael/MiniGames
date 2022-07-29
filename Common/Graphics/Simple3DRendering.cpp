@@ -333,6 +333,7 @@ void DrawSimple3DOpaque(SceneObject* sceneObject, void* renderPassData)
 	S3DSceneObject* obj = (S3DSceneObject*)sceneObject;
 	StandardRenderPassData* data = (StandardRenderPassData*)renderPassData;
 	glm::mat4 matrix(1.0f);
+	SetDefaultOpaqueState();
 	if (obj->transform)
 	{
 		matrix = *obj->transform;
@@ -354,6 +355,7 @@ void DrawSimple3DOpaqueClipPlane(SceneObject* sceneObject, void* renderPassData)
 	ReflectPlanePassData* planeData = (ReflectPlanePassData*)renderPassData;
 	const StandardRenderPassData* data = planeData->base;
 	glm::mat4 matrix(1.0f);
+	SetDefaultOpaqueState();
 	
 	if (obj->transform)
 	{
