@@ -1707,6 +1707,8 @@ void CleanUpPbrPipeline()
 
 void BindMaterial(MaterialPbr* mat, GLTFUniforms* unis)
 {
+	if (unis->lightDataLoc == -1) return;	// geometry pass
+
 	glBindBuffer(GL_UNIFORM_BUFFER, mat->uniformBuffer);
 	glBindBufferBase(GL_UNIFORM_BUFFER, unis->MaterialLoc, mat->uniformBuffer);
 
@@ -1778,29 +1780,31 @@ void DrawPBRModel(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform,
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, realObj->indices.indexBuffer);
 
+
+	if (clipPlane) glUniform4fv(unis->clipPlaneLoc, 1, (const GLfloat*)clipPlane);
+	else glUniform4f(unis->clipPlaneLoc, 0.0f, 1.0f, 0.0f, 100000000.0f);
 	
 	glBindBufferBase(GL_UNIFORM_BUFFER, unis->UBOLoc, UboUniform);
 	
 	glUniformMatrix4fv(unis->ModelMatrixLoc, 1, GL_FALSE, (const GLfloat*)model);
-	glBindBufferRange(GL_UNIFORM_BUFFER, unis->UBOParamsLoc, UBOParamsUniform, 0, sizeof(UBOParams));
+
 
 	if (!geomOnly)
+	{
 		glBindBufferBase(GL_UNIFORM_BUFFER, unis->lightDataLoc, lightDataUniform);
+		glBindBufferRange(GL_UNIFORM_BUFFER, unis->UBOParamsLoc, UBOParamsUniform, 0, sizeof(UBOParams));
 
-	if (clipPlane) glUniform4fv(unis->clipPlaneLoc, 1, (const GLfloat*)clipPlane);
-	else glUniform4f(unis->clipPlaneLoc, 0.0f, 1.0f, 0.0f, 100000000.0f);
+		glActiveTexture(GL_TEXTURE0 + GLTF_Textures::PREFILTERED_MAP);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, environmentMap);
 
-
-	glActiveTexture(GL_TEXTURE0 + GLTF_Textures::PREFILTERED_MAP);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, environmentMap);
-
-	glActiveTexture(GL_TEXTURE0 + GLTF_Textures::IRRADIANCE);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, environmentMap);
+		glActiveTexture(GL_TEXTURE0 + GLTF_Textures::IRRADIANCE);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, environmentMap);
 
 
-	glActiveTexture(GL_TEXTURE0 + GLTF_Textures::BRDF_LUT);
-	glBindTexture(GL_TEXTURE_2D, g_pipeline.brdfLutMap);
+		glActiveTexture(GL_TEXTURE0 + GLTF_Textures::BRDF_LUT);
+		glBindTexture(GL_TEXTURE_2D, g_pipeline.brdfLutMap);
 
+	}
 	for (auto& node : realObj->nodes) {
 		DrawNode(realObj, node, drawOpaque, unis);
 	}
