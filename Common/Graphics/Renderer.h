@@ -4,13 +4,7 @@
 #include "Helper.h"
 
 
-struct RendererSettings
-{
-	int msaaQuality;
-	int shadowRatio;
-	bool ambientOcclusionActive;
-	bool bloomActive;
-};
+
 
 struct CameraData
 {
@@ -58,27 +52,40 @@ struct PostProcessingFBO
 {
 	GLuint fbo;
 	GLuint texture;
+	GLuint maybeDepth;	// might not be initialized, depending on the state of the SceneRenderData
 };
 struct SceneRenderData
 {
-	void Create(int width, int height, const RendererSettings* settings);
-	void Recreate(int width, int size);
+	void Create(int width, int height, int shadowWidth, int shadowHeight, uint8_t msaaQuality, bool useAmbientOcclusion, bool useBloom);
+	void Recreate(int width, int height, int shadowWidth, int shadowHeight);
+	void CleanUp();
+
+	void MakeMainFramebuffer();
+
 	SingleFBO msaaFBO;
 	SingleFBO aoFBO;
 	DepthFBO shadowFBO;
 	PostProcessingFBO ppFBO;
 	BloomFBO bloomFBO;
-	uint32_t _internal;
+	int baseWidth;
+	int baseHeight;
+	int shadowWidth;
+	int shadowHeight;
+	uint8_t _internal_msaa_quality;
+	uint8_t _internal_flags;
 };
 
 
 
 void BeginScene(PScene scene);
 void EndScene();
+void RenderAmbientOcclusion(PScene scene, const StandardRenderPassData* data, const SceneRenderData* frameData);
 void RenderSceneGeometry(PScene scene, const StandardRenderPassData* data);
 void RenderSceneShadow(PScene scene, const StandardRenderPassData* data);
 void RenderSceneReflectedOnPlane(PScene scene, const ReflectPlanePassData* data);
 void RenderSceneStandard(PScene scene, const StandardRenderPassData* data);
-void RenderPostProcessingBloom(struct BloomFBO* bloomData, GLuint finalFBO, int finalSizeX, int finalSizeY);
+void RenderPostProcessingBloom(const struct BloomFBO* bloomData, GLuint finalFBO, int finalSizeX, int finalSizeY, GLuint ppFBOTexture, int ppSizeX, int ppSizeY);
+
+void RenderPostProcessing(const SceneRenderData* rendererData, GLuint finalFBO, int finalSizeX, int finalSizeY);
 
 const CurrentLightInformation* GetCurrentLightInformation();

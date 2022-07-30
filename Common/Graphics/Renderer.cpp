@@ -180,34 +180,124 @@ void CleanUpRendererBackendData()
 
 enum InternalSceneRenderDataInfo
 {
-	INTERNAL_SCENE_RENDER_DATA_MSAA_QUALITY_MASK = 0xFF,
-	INTERNAL_SCENE_RENDER_DATA_HAS_BLOOM = 1 << 8,
-	INTERNAL_SCENE_RENDER_DATA_HAS_AMBIENT_OCCLUSION = 1 << 9,
+	INTERNAL_SCENE_RENDER_DATA_HAS_BLOOM = 1,
+	INTERNAL_SCENE_RENDER_DATA_HAS_AMBIENT_OCCLUSION = 1<<1,
+	INTERNAL_SCENE_RENDER_DATA_HAS_AMBIENT_SHADOW = 1<<2,
 };
-void SceneRenderData::Create(int width, int height, const RendererSettings* settings)
+void SceneRenderData::Create(int width, int height, int shadowWidth, int shadowHeight, uint8_t msaaQuality, bool useAmbientOcclusion, bool useBloom)
 {
 	GLenum requiredColorFormat = GL_RGBA8;
-	_internal = (uint8_t)settings->msaaQuality;
-	if (settings->bloomActive) {
+	_internal_msaa_quality = std::min(msaaQuality, (uint8_t)16);
+#ifdef ANDROID
+	_internal_msaa_quality = 0;
+#endif
+	baseWidth = width;
+	baseHeight = height;
+	this->shadowWidth = shadowWidth;
+	this->shadowHeight = shadowHeight;
+	if (useBloom) {
 		requiredColorFormat = GL_RGBA16F;
-		_internal |= INTERNAL_SCENE_RENDER_DATA_HAS_BLOOM;
+		_internal_flags |= INTERNAL_SCENE_RENDER_DATA_HAS_BLOOM;
+		bloomFBO.Create(std::max(width / 2, 1), std::max(height / 2, 1));
 	}
-	if (settings->ambientOcclusionActive)
+	if (useAmbientOcclusion)
 	{
-		_internal |= INTERNAL_SCENE_RENDER_DATA_HAS_AMBIENT_OCCLUSION;
+		_internal_flags |= INTERNAL_SCENE_RENDER_DATA_HAS_AMBIENT_OCCLUSION;
+		this->aoFBO = CreateSingleFBO(width, height, GL_R8, GL_RED, GL_DEPTH_COMPONENT32F, 0);
+	}
+	if (_internal_msaa_quality > 0)
+	{
+		msaaFBO = CreateSingleFBO(width, height, requiredColorFormat, GL_RGBA, GL_DEPTH_COMPONENT32F, _internal_msaa_quality);
+	}
+	if (shadowWidth > 0 && shadowHeight > 0) // negative number is NO SHADOWS AT ALL
+	{
+		shadowFBO = CreateDepthFBO(shadowWidth, shadowHeight);
+	}
 
-	}
-	if (_internal & INTERNAL_SCENE_RENDER_DATA_MSAA_QUALITY_MASK)
+	if (_internal_flags & (INTERNAL_SCENE_RENDER_DATA_HAS_BLOOM | INTERNAL_SCENE_RENDER_DATA_HAS_AMBIENT_OCCLUSION)) // has Post Processing effect
 	{
-		msaaFBO = CreateSingleFBO(width, height, requiredColorFormat, GL_RGBA, GL_DEPTH_COMPONENT32F, settings->msaaQuality);
+		// create Post-Processing-FBO
+		glGenFramebuffers(1, &ppFBO.fbo);
+		glBindFramebuffer(GL_FRAMEBUFFER, ppFBO.fbo);
+		glGenTextures(1, &ppFBO.texture);
+		glBindTexture(GL_TEXTURE_2D, ppFBO.texture);
+		glTexImage2D(GL_TEXTURE_2D, 0, requiredColorFormat, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ppFBO.texture, 0);
+		
+
+		if (_internal_msaa_quality == 0)
+		{
+			glGenTextures(1, &ppFBO.maybeDepth);
+			glBindTexture(GL_TEXTURE_2D, ppFBO.maybeDepth);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, ppFBO.maybeDepth, 0);
+		}
+
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+			LOG("FAILED  TO CREATE POST PROCESSING FBO\n");
+		}
+
+		glBindFramebuffer(GL_FRAMEBUFFER, GetScreenFramebuffer());
 	}
+
 
 }
-void SceneRenderData::Recreate(int width, int size)
+void SceneRenderData::Recreate(int width, int height, int shadowWidth, int shadowHeight)
 {
-
+	CleanUp();
+	Create(width, height, shadowWidth, shadowHeight, _internal_msaa_quality, _internal_flags & INTERNAL_SCENE_RENDER_DATA_HAS_AMBIENT_OCCLUSION, _internal_flags & INTERNAL_SCENE_RENDER_DATA_HAS_BLOOM);
 }
-
+void SceneRenderData::CleanUp()
+{
+	if (_internal_msaa_quality)
+	{
+		DestroySingleFBO(&msaaFBO);
+	}
+	if (_internal_flags & INTERNAL_SCENE_RENDER_DATA_HAS_AMBIENT_OCCLUSION)
+	{
+		DestroySingleFBO(&aoFBO);
+	}
+	if (_internal_flags & INTERNAL_SCENE_RENDER_DATA_HAS_BLOOM)
+	{
+		bloomFBO.CleanUp();
+	}
+	if (_internal_flags & (INTERNAL_SCENE_RENDER_DATA_HAS_BLOOM | INTERNAL_SCENE_RENDER_DATA_HAS_AMBIENT_OCCLUSION)) 	// has Post Processing effect
+	{
+		glDeleteFramebuffers(1, &ppFBO.fbo);
+		glDeleteTextures(1, &ppFBO.texture);
+		if (_internal_msaa_quality == 0)
+		{
+			glDeleteTextures(1, &ppFBO.maybeDepth);
+		}
+	}
+	if (shadowWidth > 0 && shadowHeight > 0)
+	{
+		DestroyDepthFBO(&shadowFBO);
+	}
+}
+void SceneRenderData::MakeMainFramebuffer()
+{
+	if (_internal_msaa_quality > 0)
+	{
+		SetMainFramebuffer(msaaFBO.fbo, { baseWidth, baseHeight });
+	}
+	else if (_internal_flags & (INTERNAL_SCENE_RENDER_DATA_HAS_BLOOM | INTERNAL_SCENE_RENDER_DATA_HAS_AMBIENT_OCCLUSION)) 	// has Post Processing effect
+	{
+		SetMainFramebuffer(ppFBO.fbo, { baseWidth, baseHeight });
+	}
+	else
+	{
+		SetMainFramebuffer(GetScreenFramebuffer(), GetScreenFramebufferSize());
+	}
+}
 
 
 
@@ -242,6 +332,19 @@ void BeginScene(PScene scene)
 void EndScene()
 {
 	SC_FreeRenderList(g_render->objs);
+}
+void RenderAmbientOcclusion(PScene scene, const StandardRenderPassData* data, const SceneRenderData* frameData)
+{
+	UpdateTemporary(data);
+	
+	glBindFramebuffer(GL_FRAMEBUFFER, frameData->aoFBO.fbo);
+	glViewport(0, 0, frameData->baseWidth, frameData->baseHeight);
+	glClearDepthf(1.0f);
+	glClear(GL_DEPTH_BUFFER_BIT);
+	RenderSceneGeometry(scene, data);
+
+	// TODO: do the actual computation
+
 }
 void RenderSceneGeometry(PScene scene, const StandardRenderPassData* data)
 {
@@ -326,14 +429,14 @@ void RenderSceneStandard(PScene scene, const StandardRenderPassData* data)
 		o->DrawFunc(o->obj, (void*)&g_render->mainData);
 	}
 }
-void RenderPostProcessingBloom(BloomFBO* bloomData, GLuint finalFBO, int finalSizeX, int finalSizeY)
+void RenderPostProcessingBloom(const BloomFBO* bloomData, GLuint finalFBO, int finalSizeX, int finalSizeY, GLuint ppFBOTexture, int ppSizeX, int ppSizeY)
 {
 	SetOpenGLWeakState(false, false);
 	float blurRadius = 4.0f;
 	float intensity = 1.0f;
 	if (bloomData->numBloomFbos == 0) return;
 	glm::ivec2 fboSizes[MAX_BLOOM_MIPMAPS];
-	BloomTextureToFramebuffer(bloomData->bloomFBOs1[0], bloomData->sizeX, bloomData->sizeY, bloomData->bloomFBOs2[0], bloomData->sizeX, bloomData->sizeY, bloomData->bloomTexture2, bloomData->defaultTexture, blurRadius, intensity, 0, 0);
+	BloomTextureToFramebuffer(bloomData->bloomFBOs1[0], bloomData->sizeX, bloomData->sizeY, bloomData->bloomFBOs2[0], bloomData->sizeX, bloomData->sizeY, bloomData->bloomTexture2, ppFBOTexture, blurRadius, intensity, 0, 0);
 	
 	fboSizes[0] = { bloomData->sizeX, bloomData->sizeY };
 	int curSizeX = bloomData->sizeX;
@@ -358,7 +461,21 @@ void RenderPostProcessingBloom(BloomFBO* bloomData, GLuint finalFBO, int finalSi
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, finalFBO);
 	glViewport(0, 0, finalSizeX, finalSizeY);
-	CopyTexturesToFramebuffer(bloomData->bloomTexture1, 0, bloomData->defaultTexture, 0);
+	CopyTexturesToFramebuffer(bloomData->bloomTexture1, 0, ppFBOTexture, 0);
+}
+void RenderPostProcessing(const SceneRenderData* rendererData, GLuint finalFBO, int finalSizeX, int finalSizeY)
+{
+	if (rendererData->_internal_msaa_quality > 0)
+	{
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, rendererData->ppFBO.fbo);
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, rendererData->msaaFBO.fbo);
+		glBlitFramebuffer(0, 0, rendererData->baseWidth, rendererData->baseHeight, 0, 0, rendererData->baseWidth, rendererData->baseHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+	}
+	else if(!(rendererData->_internal_flags & (INTERNAL_SCENE_RENDER_DATA_HAS_BLOOM | INTERNAL_SCENE_RENDER_DATA_HAS_AMBIENT_OCCLUSION)))	// has no Post Processing
+	{
+		return;
+	}
+	RenderPostProcessingBloom(&rendererData->bloomFBO, GetScreenFramebuffer(), rendererData->baseWidth, rendererData->baseHeight, rendererData->ppFBO.texture, rendererData->baseWidth, rendererData->baseHeight);
 }
 
 

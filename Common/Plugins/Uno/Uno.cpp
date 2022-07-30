@@ -66,8 +66,8 @@ void UnoPlugin::Init(ApplicationData* data)
 	g_objs->moveComp.pos = { 0.0f, 1.6f, 2.0f };
 	g_objs->moveComp.SetRotation(-90.0f, -40.0f, 0.0f);
 
-	g_objs->shadowFBO = CreateDepthFBO(SHADOW_TEXTURE_SIZE, SHADOW_TEXTURE_SIZE);
-	g_objs->bloomFBO.Create(10, 10, 10, 10);
+	
+	g_objs->rendererData.Create(10, 10, 10, 10, 0, true, true);
 	g_objs->reflectFBO = CreateSingleFBO(10, 10);
 
 	g_objs->lightDir = { -1.0f / sqrtf(3.0f), -1.0f / sqrt(3.0f), -1.0f / sqrt(3.0f) };
@@ -182,7 +182,7 @@ void UnoPlugin::Resize(ApplicationData* data)
 	g_objs->playerCam.screenY = sizeY;
 	GLint defaultFBO;
 	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &defaultFBO);
-	SetScreenFramebuffer(defaultFBO);
+	SetScreenFramebuffer(defaultFBO, { sizeX, sizeY });
 	
 	g_objs->offscreenX = sizeX;
 	g_objs->offscreenY = sizeY;
@@ -194,8 +194,8 @@ void UnoPlugin::Resize(ApplicationData* data)
 	ReflectiveSurfaceSetTextureData(g_objs->basePlatform, &texs);
 
 
-	g_objs->bloomFBO.Resize(sizeX, sizeY, sizeX / 2, sizeY / 2);
-	SetMainFramebuffer(g_objs->bloomFBO.defaultFBO);
+	g_objs->rendererData.Recreate(sizeX, sizeY, SHADOW_TEXTURE_SIZE, SHADOW_TEXTURE_SIZE);
+	g_objs->rendererData.MakeMainFramebuffer();
 }
 static ColorPicker picker;
 void UnoPlugin::Render(ApplicationData* data)
@@ -237,8 +237,8 @@ void UnoPlugin::Render(ApplicationData* data)
 	StandardRenderPassData stdData;
 
 	glm::vec4 plane = { 0.0f, 1.0f, 0.0f, 0.0f };
-	glBindFramebuffer(GL_FRAMEBUFFER, g_objs->shadowFBO.fbo);
-	glViewport(0, 0, SHADOW_TEXTURE_SIZE, SHADOW_TEXTURE_SIZE);
+	glBindFramebuffer(GL_FRAMEBUFFER, g_objs->rendererData.shadowFBO.fbo);
+	glViewport(0, 0, g_objs->rendererData.shadowWidth, g_objs->rendererData.shadowHeight);
 	glClearDepthf(1.0f);
 	glClear(GL_DEPTH_BUFFER_BIT);
 
@@ -250,7 +250,7 @@ void UnoPlugin::Render(ApplicationData* data)
 	stdData.shadowMap = 0;
 	stdData.cameraUniform = g_objs->reflectionCam.uniform;
 	RenderSceneShadow(g_objs->UnoScene, &stdData);
-	stdData.shadowMap = g_objs->shadowFBO.depth;
+	stdData.shadowMap = g_objs->rendererData.shadowFBO.depth;
 
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, g_objs->reflectFBO.fbo);
@@ -302,9 +302,9 @@ void UnoPlugin::Render(ApplicationData* data)
 	
 
 	DrawUI();
-	RenderPostProcessingBloom(&g_objs->bloomFBO, GetScreenFramebuffer(), sizeX, sizeY);
 
-	
+	RenderPostProcessing(&g_objs->rendererData, GetScreenFramebuffer(), sizeX, sizeY);
+
 	EndScene();
 
 	g_objs->ms.FrameEnd();

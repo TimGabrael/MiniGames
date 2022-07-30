@@ -2,6 +2,7 @@
 #include "../PluginCommon.h"
 #include "Graphics/Camera.h"
 #include "Graphics/Simple3DRendering.h"
+#include "Graphics/Renderer.h"
 #include "Card.h"
 #include "../InputStates.h"
 #include "Animator.h"
@@ -20,8 +21,7 @@ struct UnoGlobals
 	glm::vec3 lightDir;
 	MovementComponent moveComp;
 	SingleFBO reflectFBO;
-	DepthFBO shadowFBO;
-	BloomFBO bloomFBO;
+	SceneRenderData rendererData;
 	GLuint skybox;
 	GLuint refGroundTexture;
 	S3DCombinedBuffer platform;

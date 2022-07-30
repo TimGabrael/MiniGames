@@ -633,6 +633,7 @@ SingleFBO CreateSingleFBO(int width, int height)
 SingleFBO CreateSingleFBO(int width, int height, GLenum internalFormatColor, GLenum formatColor, GLenum internalFormatDepth, int numSamples)
 {
 	SingleFBO out;
+#ifndef ANDROID
 	if (numSamples > 0)
 	{
 		glGenFramebuffers(1, &out.fbo);
@@ -667,6 +668,7 @@ SingleFBO CreateSingleFBO(int width, int height, GLenum internalFormatColor, GLe
 		glBindFramebuffer(GL_FRAMEBUFFER, GetScreenFramebuffer());
 	}
 	else
+#endif
 	{
 		SingleFBO out;
 		glGenFramebuffers(1, &out.fbo);
@@ -764,37 +766,10 @@ void DestroyDepthFBO(DepthFBO* fbo)
 }
 
 
-void BloomFBO::Create(int drawFboSx, int drawFboSy, int sx, int sy)
+void BloomFBO::Create(int sx, int sy)
 {
 	sizeX = sx;
 	sizeY = sy;
-	glGenFramebuffers(1, &defaultFBO);
-	glBindFramebuffer(GL_FRAMEBUFFER, defaultFBO);
-
-	glGenTextures(1, &defaultDepth);
-	glBindTexture(GL_TEXTURE_2D, defaultDepth);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, drawFboSx, drawFboSy, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, defaultDepth, 0);
-
-	glGenTextures(1, &defaultTexture);
-	glBindTexture(GL_TEXTURE_2D, defaultTexture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, drawFboSx, drawFboSy, 0, GL_RGBA, GL_FLOAT, nullptr);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, defaultTexture, 0);
-
-	
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-		LOG("FAILED  TO CREATE FRAMEBUFFER HIER\n");
-	}
-	
-
 
 	numBloomFbos = 1 + floor(log2(std::max(sx, sy)));
 	int curX = sx; int curY = sy;
@@ -856,10 +831,10 @@ void BloomFBO::Create(int drawFboSx, int drawFboSy, int sx, int sy)
 	glBindFramebuffer(GL_FRAMEBUFFER, GetScreenFramebuffer());
 
 }
-void BloomFBO::Resize(int drawFboSx, int drawFboSy, int sx, int sy)
+void BloomFBO::Resize(int sx, int sy)
 {
 	CleanUp();
-	Create(drawFboSx, drawFboSy, sx, sy);
+	Create(sx, sy);
 }
 void BloomFBO::CleanUp()
 {
@@ -875,9 +850,6 @@ void BloomFBO::CleanUp()
 		delete[] bloomFBOs2;
 		bloomFBOs2 = nullptr;
 	}
-	glDeleteFramebuffers(1, &defaultFBO);
 	glDeleteTextures(1, &bloomTexture1);
 	glDeleteTextures(1, &bloomTexture2);
-	glDeleteTextures(1, &defaultTexture);
-	glDeleteTextures(1, &defaultDepth);
 }

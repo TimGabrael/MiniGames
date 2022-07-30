@@ -7,6 +7,8 @@
 static GLuint currentlyBoundShaderProgram = 0;
 static GLuint screenFramebuffer = 0;
 static GLuint mainFramebuffer = 0;
+static glm::ivec2 screenFramebufferSize = { 0, 0 };
+static glm::ivec2 mainFramebufferSize = { 0, 0 };
 
 static bool depthTestEnabled = false;
 static bool blendTestEnabled = false;
@@ -65,22 +67,32 @@ void glDrawArraysInstancedWrapper(GLenum mode, GLint first, GLsizei count, GLsiz
 }
 
 
-void SetScreenFramebuffer(GLuint fb)
+void SetScreenFramebuffer(GLuint fb, const glm::ivec2& size)
 {
 	screenFramebuffer = fb;
+	screenFramebufferSize = size;
 }
 GLuint GetScreenFramebuffer()
 {
 	return screenFramebuffer;
 }
+glm::ivec2 GetScreenFramebufferSize()
+{
+	return screenFramebufferSize;
+}
 
-void SetMainFramebuffer(GLuint fb)
+void SetMainFramebuffer(GLuint fb, const glm::ivec2& size)
 {
 	mainFramebuffer = fb;
+	mainFramebufferSize = size;
 }
 GLuint GetMainFramebuffer()
 {
 	return mainFramebuffer;
+}
+glm::ivec2 GetMainFramebufferSize()
+{
+	return mainFramebufferSize;
 }
 
 

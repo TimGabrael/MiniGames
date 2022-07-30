@@ -22,12 +22,15 @@ void glDrawArraysInstancedWrapper(GLenum mode, GLint first, GLsizei count, GLsiz
 // THESE ARE NEEDED, AS QT/ANDROID_NATIVE_GLUE MAY FORCE A DIFFRENT SCREEN FRAMEBUFFER
 // IN THE CASE OF QT IT SHOWED THAT THE SCREEN FB IS 1 USUALLY
 // BUT THAT MAY ( MAY ) DIFFER ON EACH STARTUP WHO KNOWS WHAT QT IS UP TO :(
-void SetScreenFramebuffer(GLuint fb);
+void SetScreenFramebuffer(GLuint fb, const glm::ivec2& size);
 GLuint GetScreenFramebuffer();
+glm::ivec2 GetScreenFramebufferSize();
 
 // THE FRAMEBUFFER ALL OBJECTS ARE SUPPOSED TO BE DRAWN TO, may differ from DefaultFramebuffer for example in Compositing/Bloom
-void SetMainFramebuffer(GLuint fb);
+void SetMainFramebuffer(GLuint fb, const glm::ivec2& size);
 GLuint GetMainFramebuffer();
+glm::ivec2 GetMainFramebufferSize();
+
 
 void SetOpenGLWeakState(bool depthTest, bool blendTest);
 void glDepthFuncWrapper(GLenum func);
