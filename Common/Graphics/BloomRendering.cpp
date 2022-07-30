@@ -121,7 +121,7 @@ out vec4 outCol;\
 void main()\
 {\
     vec4 c = textureLod(tex1, UV, mipLevel1) + textureLod(tex2, UV, mipLevel2);\
-    outCol = vec4(aces(c.xyz), 1.0f);\
+    outCol = c;\
 }";
 
 enum class BLUR_AXIS

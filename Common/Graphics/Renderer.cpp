@@ -221,7 +221,7 @@ void SceneRenderData::Create(int width, int height, int shadowWidth, int shadowH
 		glBindFramebuffer(GL_FRAMEBUFFER, ppFBO.fbo);
 		glGenTextures(1, &ppFBO.texture);
 		glBindTexture(GL_TEXTURE_2D, ppFBO.texture);
-		glTexImage2D(GL_TEXTURE_2D, 0, requiredColorFormat, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+		glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA16F, width, height);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);

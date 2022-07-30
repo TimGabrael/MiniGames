@@ -67,7 +67,7 @@ void UnoPlugin::Init(ApplicationData* data)
 	g_objs->moveComp.SetRotation(-90.0f, -40.0f, 0.0f);
 
 	
-	g_objs->rendererData.Create(10, 10, 10, 10, 0, true, true);
+	g_objs->rendererData.Create(10, 10, 10, 10, 0, false, true);
 	g_objs->reflectFBO = CreateSingleFBO(10, 10);
 
 	g_objs->lightDir = { -1.0f / sqrtf(3.0f), -1.0f / sqrt(3.0f), -1.0f / sqrt(3.0f) };
@@ -113,7 +113,7 @@ void UnoPlugin::Init(ApplicationData* data)
 
 		light = SC_AddDirectionalLight(g_objs->UnoScene);
 		light->data.ambient = { 0.2f, 0.2f, 0.2f };
-		light->data.diffuse = { 0.8f, 0.8f, 1.0f };
+		light->data.diffuse = { 0.8f, 0.8f, 0.8f };
 		light->data.dir = { -1.0f / sqrtf(3.0f), -1.0f / sqrt(3.0f), -1.0f / sqrt(3.0f) };
 		light->data.specular = { 0.8f, 0.8f, 0.8f };
 		light->data.hasShadow = true;
