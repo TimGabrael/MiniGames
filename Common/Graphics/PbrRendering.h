@@ -42,7 +42,7 @@ void CleanUpPbrPipeline();
 void* CreateInternalPBRFromFile(const char* filename, float scale);
 void CleanUpInternal(void* internalObj);
 
-void DrawPBRModel(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform, GLuint lightDataUniform, GLuint environmentMap, const glm::mat4* model, const glm::vec4* clipPlane, bool drawOpaque, bool geomOnly);
+void DrawPBRModel(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform, GLuint environmentMap, GLuint shadowMap, GLuint globalAOMap, GLuint lightDataUniform, const glm::vec2& renderSz, const glm::mat4* model, const glm::vec4* clipPlane, bool drawOpaque, bool geomOnly);
 void DrawPBRModelNode(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform, GLuint lightDataUniform, GLuint environmentMap, const glm::mat4* model, const glm::vec4* clipPlane, int nodeIdx, bool drawOpaque, bool geomOnly);
 void UpdateAnimation(void* internalObj, uint32_t index, float time);
 

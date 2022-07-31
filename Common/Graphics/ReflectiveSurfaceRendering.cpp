@@ -66,6 +66,7 @@ enum RS_TEXTURES
 	RS_TEXTURE_REFRACT,
 	RS_TEXTURE_DVDU,
 	RS_TEXTURE_SHADOWMAP,
+	RS_TEXTURE_GLOBAL_AOMAP ,
 	NUM_RS_TEXTURES,
 };
 
@@ -77,6 +78,7 @@ struct ReflectiveSurfaceUniforms
 	GLint clipPlaneLoc;
 	GLint materialLoc;
 	GLuint lightDataLoc;
+	GLuint fboSizeLoc;
 };
 
 
@@ -111,7 +113,7 @@ void InitializeReflectiveSurfacePipeline()
 {
 	g_reflect.geometryProgram = CreateProgram(vertexShader);
 
-	g_reflect.program = CreateProgramExtended(vertexShader, fragmentShaderExtension, &g_reflect.unis.lightDataLoc, RS_TEXTURE_SHADOWMAP);
+	g_reflect.program = CreateProgramExtended(vertexShader, fragmentShaderExtension, &g_reflect.unis.lightDataLoc, &g_reflect.unis.fboSizeLoc, RS_TEXTURE_SHADOWMAP, RS_TEXTURE_GLOBAL_AOMAP);
 
 	glUseProgramWrapper(g_reflect.program);
 	GLint index = glGetUniformLocation(g_reflect.program, "reflectTexture");
@@ -209,7 +211,10 @@ static void DrawReflectiveSurface(ReflectiveSurfaceSceneObject* obj, const Stand
 	glBindTexture(GL_TEXTURE_2D, obj->material->dudv);
 	glActiveTexture(GL_TEXTURE0 + RS_TEXTURE_SHADOWMAP);
 	glBindTexture(GL_TEXTURE_2D, stdData->shadowMap);
+	glActiveTexture(GL_TEXTURE0 + RS_TEXTURE_GLOBAL_AOMAP);
+	glBindTexture(GL_TEXTURE_2D, stdData->ambientOcclusionMap);
 	
+	glUniform2f(g_reflect.unis.fboSizeLoc, stdData->renderSize.x, stdData->renderSize.y);
 
 	glUniformMatrix4fv(unis->projLoc, 1, GL_FALSE, (const GLfloat*)stdData->camProj);
 	glUniformMatrix4fv(unis->viewLoc, 1, GL_FALSE, (const GLfloat*)stdData->camView);

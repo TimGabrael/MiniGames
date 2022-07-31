@@ -14,17 +14,7 @@ void CleanUpOpenGL();
 
 GLuint CreateProgram(const char* vertexShader, const char* fragmentShader);
 GLuint CreateProgram(const char* vertexShader);	
-GLuint CreateProgramExtended(const char* vertexShader, const char* fragmentShaderExtension, GLuint* lightUniform, uint32_t shadowMapIdx);
-
-struct AmbientOcclucionUBO
-{
-	glm::vec4 samples[64];
-	glm::vec2 noiseScale;
-	float radius;
-	float bias;
-};
-// the special vertex shader needs to output the position as well as the normal of the geometry!
-GLuint CreateProgramAmbientOcclusion(const char* specialVertexShader, GLuint* AoUBOLoc, GLuint* projectionLoc, uint32_t texNoiseIdx, uint32_t depthMapIdx);
+GLuint CreateProgramExtended(const char* vertexShader, const char* fragmentShaderExtension, GLuint* lightUniform, GLuint* fboSizeUniformLoc, uint32_t shadowMapIdx, uint32_t globalAmbientOcclusionMapIdx);
 
 
 GLuint LoadCubemap(const char* right, const char* left, const char* bottom, const char* top, const char* front, const char* back);

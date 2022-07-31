@@ -125,75 +125,6 @@ void main()\
 
 
 
-// TODO: FIND A WAY TO MAKE AMBIENT OCCLUSION SOMEWHAT FEASABLE vec2(0.5f, 0.5f)
-static const char* ambientOcclusionFragmentShader = "#version 300 es\n\
-precision highp float;\n\
-in vec4 pos;\
-in vec3 normal;\
-uniform sampler2D texNoise;\
-uniform sampler2D depthMap;\
-uniform AO_Ubo\
-{\
-	vec4 samples[64];\
-	vec2 noiseScale;\
-	float radius;\
-	float bias;\
-}aoUBO;\
-uniform mat4 projection;\
-out float FragColor;\
-float CalcViewZ(vec2 Coords)\
-{\
-	float depth = texture(depthMap, Coords).r;\
-	float viewZ = projection[3][2] / (2.0f * depth - 1.0f - projection[2][2]);\
-	return viewZ;\
-}\
-void main()\
-{\
-	vec3 fragPos = (pos.xyz / pos.w);\
-	vec3 nor = normalize(normal);\
-	vec3 randomVec = normalize(texture(texNoise, (gl_FragCoord.xy - vec2(0.5f, 0.5f)) * aoUBO.noiseScale).xyz);\
-	vec3 tangent = normalize(randomVec - nor * dot(randomVec, nor));\
-	vec3 bitangent = cross(nor, tangent);\
-	mat3 TBN = mat3(tangent, bitangent, nor);\
-	float occlusion = 0.0f;\
-	for(int i = 0; i < 64; i++)\
-	{\
-		vec3 psample = TBN * aoUBO.samples[i].xyz;\
-		vec4 offset = vec4(psample, 1.0f);\
-		offset = projection * offset;\
-		offset.xyz /= offset.w;\
-		offset.xyz = offset.xyz * 0.5f + 0.5f;\
-		float occluderDepth = CalcViewZ(offset.xy);\n\
-		occlusion += (occluderDepth >= psample.z + aoUBO.bias ? 1.0f : 0.0f);\n\
-	}\
-	FragColor = pow(1.0f - (occlusion / 64.0f), 2.0);\
-}";
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -383,7 +314,7 @@ GLuint CreateProgram(const char* vertexShader)
 {
 	return CreateProgram(vertexShader, emptyFragmentShader);
 }
-GLuint CreateProgramExtended(const char* vertexShader, const char* fragmentShaderExtension, GLuint* lightUniform, uint32_t shadowMapIdx)
+GLuint CreateProgramExtended(const char* vertexShader, const char* fragmentShaderExtension, GLuint* lightUniform, GLuint* fboSizeUniformLoc, uint32_t shadowMapIdx, uint32_t globalAmbientOcclusionMapIdx)
 {
 	const char* fraBase = GetFragmentShaderBase();
 	uint32_t fraBaseSize = strnlen(fraBase, 100000);
@@ -396,25 +327,17 @@ GLuint CreateProgramExtended(const char* vertexShader, const char* fragmentShade
 
 	GLuint prog = CreateProgram(vertexShader, fullFragmentShader);
 	delete[] fullFragmentShader;
-	GLuint shadowLoc = glGetUniformLocation(prog, "shadowMap");
 	glUseProgramWrapper(prog);
-	glUniform1i(shadowLoc, shadowMapIdx);
+
+	GLuint index = glGetUniformLocation(prog, "shadowMap");
+	glUniform1i(index, shadowMapIdx);
+	index = glGetUniformLocation(prog, "_my_internalAOMap");
+	glUniform1i(index, globalAmbientOcclusionMapIdx);
 
 	*lightUniform = glGetUniformBlockIndex(prog, "LightData");
 	glUniformBlockBinding(prog, *lightUniform, *lightUniform);
-	return prog;
-}
-GLuint CreateProgramAmbientOcclusion(const char* specialVertexShader, GLuint* AoUBOLoc, GLuint* projectionLoc, uint32_t texNoiseIdx, uint32_t depthMapIdx)
-{
-	GLuint prog = CreateProgram(specialVertexShader, ambientOcclusionFragmentShader);
-	glUseProgram(prog);
-	GLuint index = glGetUniformLocation(prog, "texNoise");
-	glUniform1i(index, texNoiseIdx);
-	index = glGetUniformLocation(prog, "depthMap");
-	glUniform1i(index, depthMapIdx);
-	*projectionLoc = glGetUniformLocation(prog, "projection");
-	*AoUBOLoc = glGetUniformBlockIndex(prog, "AO_Ubo");
-	glUniformBlockBinding(prog, *AoUBOLoc, *AoUBOLoc);
+
+	*fboSizeUniformLoc = glGetUniformLocation(prog, "currentFBOSize");
 	return prog;
 }
 

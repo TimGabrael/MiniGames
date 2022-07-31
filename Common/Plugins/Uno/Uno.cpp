@@ -249,6 +249,8 @@ void UnoPlugin::Render(ApplicationData* data)
 	stdData.camProj = &g_objs->reflectionCam.proj;
 	stdData.camView = &g_objs->reflectionCam.view;
 	stdData.shadowMap = 0;
+	stdData.ambientOcclusionMap = 0;
+	stdData.renderSize = { g_objs->rendererData.shadowWidth, g_objs->rendererData.shadowHeight };
 	stdData.cameraUniform = g_objs->reflectionCam.uniform;
 	RenderSceneShadow(g_objs->UnoScene, &stdData);
 	stdData.shadowMap = g_objs->rendererData.shadowFBO.depth;
@@ -259,6 +261,7 @@ void UnoPlugin::Render(ApplicationData* data)
 	glClearColor(1.0f, 0.4f, 0.4f, 1.0f);
 	glClearDepthf(1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	stdData.renderSize = { g_objs->offscreenX, g_objs->offscreenY };
 
 	Camera reflected = Camera::GetReflected(&g_objs->playerCam, plane);
 	{
@@ -270,7 +273,6 @@ void UnoPlugin::Render(ApplicationData* data)
 		glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraData), &camData, GL_DYNAMIC_DRAW);
 	}
 	stdData.cameraUniform = g_objs->playerCam.uniform;
-	plane.w = 0.1f;
 	stdData.camView = &reflected.view;
 	stdData.camProj = &reflected.perspective;
 	stdData.camPos = &reflected.pos;
@@ -297,14 +299,19 @@ void UnoPlugin::Render(ApplicationData* data)
 	glClearColor(1.0f, 0.4f, 0.4f, 1.0f);
 	glClearDepthf(1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	
+	stdData.renderSize = { mainSize.x, mainSize.y };
 
 	RenderAmbientOcclusion(g_objs->UnoScene, &stdData, &g_objs->rendererData, sizeX, sizeY);
 	glBindFramebuffer(GL_FRAMEBUFFER, GetMainFramebuffer());
 	glViewport(0, 0, mainSize.x, mainSize.y);
+
+	if(!showDebugTexture)
+		stdData.ambientOcclusionMap = 0;
 	RenderSceneStandard(g_objs->UnoScene, &stdData);
 
-	if(showDebugTexture)
-		DrawQuad({ -1.0f, -1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF, g_objs->rendererData.aoFBO.texture);
+	//if(showDebugTexture)
+	//	DrawQuad({ -1.0f, -1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF, g_objs->rendererData.aoFBO.texture);
 
 	DrawUI();
 	RenderPostProcessing(&g_objs->rendererData, GetScreenFramebuffer(), sizeX, sizeY);

@@ -1643,6 +1643,7 @@ enum GLTF_Textures
 	AO_MAP,
 	EMISSIVE_MAP,
 	SHADOW_MAP,
+	GLOBAL_AO_MAP,
 };
 enum GLTF_AO_Textures
 {
@@ -1659,6 +1660,7 @@ struct GLTFUniforms
 	GLuint MaterialLoc = -1;
 	GLuint clipPlaneLoc = -1;
 	GLuint lightDataLoc = -1;
+	GLuint fboSizeLoc = -1;
 };
 
 
@@ -1679,7 +1681,7 @@ void InitializePbrPipeline(void* assetManager)
 	tinygltf::asset_manager = (AAssetManager*)assetManager;
 #endif
 	g_pipeline.geomProgram = CreateProgram(pbrVertexShader);
-	g_pipeline.shaderProgram = CreateProgramExtended(pbrVertexShader, pbrFragmentShaderExtension, &g_pipeline.unis.lightDataLoc, SHADOW_MAP);
+	g_pipeline.shaderProgram = CreateProgramExtended(pbrVertexShader, pbrFragmentShaderExtension, &g_pipeline.unis.lightDataLoc, &g_pipeline.unis.fboSizeLoc, SHADOW_MAP, GLOBAL_AO_MAP);
 	glGenTextures(1, &g_pipeline.defTex);
 	glBindTexture(GL_TEXTURE_2D, g_pipeline.defTex);
 	uint32_t defTexColorData[2];
@@ -1715,6 +1717,7 @@ void InitializePbrPipeline(void* assetManager)
 	g_pipeline.geomUnis.ModelMatrixLoc = glGetUniformLocation(g_pipeline.geomProgram, "model");
 	g_pipeline.geomUnis.clipPlaneLoc = glGetUniformLocation(g_pipeline.geomProgram, "clipPlane");
 	g_pipeline.geomUnis.lightDataLoc = -1;
+	g_pipeline.geomUnis.fboSizeLoc = -1;
 
 	
 	glUseProgram(g_pipeline.shaderProgram);
@@ -1816,7 +1819,7 @@ void DrawNode(InternalPBR* realObj, Node* node, bool drawOpaque, GLTFUniforms* u
 		DrawNode(realObj, child, drawOpaque, unis);
 	}
 }
-void DrawPBRModel(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform, GLuint environmentMap, GLuint lightDataUniform, const glm::mat4* model, const glm::vec4* clipPlane, bool drawOpaque, bool geomOnly)
+void DrawPBRModel(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform, GLuint environmentMap, GLuint shadowMap, GLuint globalAOMap, GLuint lightDataUniform, const glm::vec2& renderSz, const glm::mat4* model, const glm::vec4* clipPlane, bool drawOpaque, bool geomOnly)
 {
 	GLTFUniforms* unis = nullptr;
 	if (geomOnly) unis = &g_pipeline.geomUnis;
@@ -1845,6 +1848,8 @@ void DrawPBRModel(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform,
 		glBindBufferBase(GL_UNIFORM_BUFFER, unis->lightDataLoc, lightDataUniform);
 		glBindBufferRange(GL_UNIFORM_BUFFER, unis->UBOParamsLoc, UBOParamsUniform, 0, sizeof(UBOParams));
 
+		glUniform2f(unis->fboSizeLoc, renderSz.x, renderSz.y);
+
 		glActiveTexture(GL_TEXTURE0 + GLTF_Textures::PREFILTERED_MAP);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, environmentMap);
 
@@ -1854,6 +1859,12 @@ void DrawPBRModel(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform,
 
 		glActiveTexture(GL_TEXTURE0 + GLTF_Textures::BRDF_LUT);
 		glBindTexture(GL_TEXTURE_2D, g_pipeline.brdfLutMap);
+
+		glActiveTexture(GL_TEXTURE0 + GLTF_Textures::SHADOW_MAP);
+		glBindTexture(GL_TEXTURE_2D, shadowMap);
+
+		glActiveTexture(GL_TEXTURE0 + GLTF_Textures::GLOBAL_AO_MAP);
+		glBindTexture(GL_TEXTURE_2D, globalAOMap);
 
 	}
 	for (auto& node : realObj->nodes) {
@@ -1969,14 +1980,14 @@ void DrawScenePBRGeometry(SceneObject* obj, void* renderPassData)
 {
 	PBRSceneObject* o = (PBRSceneObject*)obj;
 	StandardRenderPassData* passData = (StandardRenderPassData*)renderPassData;
-	DrawPBRModel(o->model, passData->cameraUniform, o->uboParamsUniform, passData->skyBox, passData->lightData, o->transform, nullptr, true, true);
+	DrawPBRModel(o->model, passData->cameraUniform, o->uboParamsUniform, passData->skyBox, passData->shadowMap, passData->ambientOcclusionMap, passData->lightData, passData->renderSize, o->transform, nullptr, true, true);
 }
 void DrawScenePBROpaque(SceneObject* obj, void* renderPassData)
 {
 	PBRSceneObject* o = (PBRSceneObject*)obj;
 	StandardRenderPassData* passData = (StandardRenderPassData*)renderPassData;
 	SetDefaultOpaqueState();
-	DrawPBRModel(o->model, passData->cameraUniform, o->uboParamsUniform, passData->skyBox, passData->lightData, o->transform, nullptr, true, false);
+	DrawPBRModel(o->model, passData->cameraUniform, o->uboParamsUniform, passData->skyBox, passData->shadowMap, passData->ambientOcclusionMap, passData->lightData, passData->renderSize, o->transform, nullptr, true, false);
 
 }
 void DrawScenePBRBlend(SceneObject* obj, void* renderPassData)
@@ -1984,21 +1995,21 @@ void DrawScenePBRBlend(SceneObject* obj, void* renderPassData)
 	PBRSceneObject* o = (PBRSceneObject*)obj;
 	StandardRenderPassData* passData = (StandardRenderPassData*)renderPassData;
 	SetDefaultBlendState();
-	DrawPBRModel(o->model, passData->cameraUniform, o->uboParamsUniform, passData->skyBox, passData->lightData, o->transform, nullptr, false, false);
+	DrawPBRModel(o->model, passData->cameraUniform, o->uboParamsUniform, passData->skyBox, passData->shadowMap, passData->ambientOcclusionMap, passData->lightData, passData->renderSize, o->transform, nullptr, false, false);
 }
 void DrawScenePBROpaqueClip(SceneObject* obj, void* renderPassData)
 {
 	PBRSceneObject* o = (PBRSceneObject*)obj;
 	ReflectPlanePassData* passData = (ReflectPlanePassData*)renderPassData;
 	SetDefaultOpaqueState();
-	DrawPBRModel(o->model, passData->base->cameraUniform, o->uboParamsUniform, passData->base->skyBox, passData->base->lightData, o->transform, passData->planeEquation, true, false);
+	DrawPBRModel(o->model, passData->base->cameraUniform, o->uboParamsUniform, passData->base->skyBox, passData->base->shadowMap, passData->base->ambientOcclusionMap, passData->base->lightData, passData->base->renderSize, o->transform, passData->planeEquation, true, false);
 }
 void DrawScenePBRBlendClip(SceneObject* obj, void* renderPassData)
 {
 	PBRSceneObject* o = (PBRSceneObject*)obj; 
 	ReflectPlanePassData* passData = (ReflectPlanePassData*)renderPassData;
 	SetDefaultBlendState();
-	DrawPBRModel(o->model, passData->base->cameraUniform, o->uboParamsUniform, passData->base->skyBox, passData->base->lightData, o->transform, passData->planeEquation, false, false);
+	DrawPBRModel(o->model, passData->base->cameraUniform, o->uboParamsUniform, passData->base->skyBox, passData->base->shadowMap, passData->base->ambientOcclusionMap, passData->base->lightData, passData->base->renderSize, o->transform, passData->planeEquation, false, false);
 }
 
 PFUNCDRAWSCENEOBJECT PBRModelGetDrawFunction(TYPE_FUNCTION f)

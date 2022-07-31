@@ -7,6 +7,63 @@
 #include <cmath>
 
 
+enum INTERMEDIATE_TEXTURE_FLAGS
+{
+	INTERMEDIATE_TEXTURE_RED_FLAG = 1,
+	INTERMEDIATE_TEXTURE_GREEN_FLAG = 1 << 1,
+	INTERMEDIATE_TEXTURE_BLUE_FLAG = 1 << 2,
+	INTERMEDIATE_TEXTURE_ALPHA_FLAG = 1 << 3,
+};
+IntermediateTextureData IntermediateTextureData::Create(int requiredX, int requiredY, uint8_t requiredPrecision, bool reqR, bool reqG, bool reqB, bool reqA)
+{
+	IntermediateTextureData out;
+	out.rgbaFlags = 0;
+	if (reqR) out.rgbaFlags |= INTERMEDIATE_TEXTURE_RED_FLAG;
+	if (reqG) out.rgbaFlags |= INTERMEDIATE_TEXTURE_GREEN_FLAG;
+	if (reqB) out.rgbaFlags |= INTERMEDIATE_TEXTURE_BLUE_FLAG;
+	if (reqA) out.rgbaFlags |= INTERMEDIATE_TEXTURE_ALPHA_FLAG;
+
+	out.sizeX = requiredX;
+	out.sizeY = requiredY;
+	out.precision = requiredPrecision;
+	
+
+	GLenum internalFmt = out.precision > 8 ? GL_R32F : GL_R8;
+	if ((out.rgbaFlags & 0xFF) != INTERMEDIATE_TEXTURE_RED_FLAG)
+	{
+		internalFmt = out.precision > 8 ? GL_RGBA32F : GL_RGBA8;
+		out.precision = 32;
+		out.rgbaFlags |= INTERMEDIATE_TEXTURE_RED_FLAG;
+		out.rgbaFlags |= INTERMEDIATE_TEXTURE_GREEN_FLAG;
+		out.rgbaFlags |= INTERMEDIATE_TEXTURE_BLUE_FLAG;
+		out.rgbaFlags |= INTERMEDIATE_TEXTURE_ALPHA_FLAG;
+	}
+
+	glGenFramebuffers(1, &out.fbo);
+	glBindFramebuffer(GL_FRAMEBUFFER, out.fbo);
+
+	glGenTextures(1, &out.texture);
+	glBindTexture(GL_TEXTURE_2D, out.texture);
+	glTexStorage2D(GL_TEXTURE_2D, 1, internalFmt, requiredX, requiredY);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, out.texture, 0);
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+		LOG("FAILED TO CREATE INTERMEDIATE FBO\n");
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, GetScreenFramebuffer());
+	return out;
+}
+void IntermediateTextureData::CleanUp()
+{
+	sizeX = -1; sizeY = -1; precision = 0; rgbaFlags = 0;
+	glDeleteFramebuffers(1, &fbo);
+	glDeleteTextures(1, &texture);
+}
+
 struct RendererBackendData
 {
 	StandardRenderPassData mainData;
@@ -22,6 +79,8 @@ struct RendererBackendData
 
 	GLuint whiteTexture;
 	GLuint blackTexture;
+
+	IntermediateTextureData intermediate; // usually for blur
 };
 static RendererBackendData* g_render = nullptr;
 
@@ -33,6 +92,21 @@ GLuint GetBlackTexture2D()
 {
 	return g_render->blackTexture;
 }
+const IntermediateTextureData* GetIntermediateTexture(int requiredX, int requiredY, uint8_t requiredPrecision, bool reqR, bool reqG, bool reqB, bool reqA)
+{
+	uint8_t flag = 0;
+	if (reqR) flag |= INTERMEDIATE_TEXTURE_RED_FLAG;
+	if (reqG) flag |= INTERMEDIATE_TEXTURE_GREEN_FLAG;
+	if (reqB) flag |= INTERMEDIATE_TEXTURE_BLUE_FLAG;
+	if (reqA) flag |= INTERMEDIATE_TEXTURE_ALPHA_FLAG;
+
+	if (g_render->intermediate.sizeX < requiredX || g_render->intermediate.sizeY < requiredY || g_render->intermediate.precision < requiredPrecision || (g_render->intermediate.rgbaFlags & flag) != flag)
+	{
+		if (g_render->intermediate.sizeX >= 0 && g_render->intermediate.sizeY >= 0) g_render->intermediate.CleanUp();
+		g_render->intermediate = IntermediateTextureData::Create(requiredX, requiredY, requiredPrecision, reqR, reqG, reqB, reqA);
+	}
+	return &g_render->intermediate;
+}
 
 
 static constexpr int RENDER_ALLOC_STEPS = 10;
@@ -40,6 +114,7 @@ static void UpdateTemporary(const StandardRenderPassData* data)
 {
 	memcpy(&g_render->mainData, data, sizeof(StandardRenderPassData));
 	g_render->mainData.lightData = g_render->lightDataUniform;
+	if (data->ambientOcclusionMap == 0) g_render->mainData.ambientOcclusionMap = g_render->whiteTexture;
 }
 static void ReflectVectorAtPlane(glm::vec3* reflecting, const glm::vec4* plane)
 {
@@ -128,9 +203,7 @@ static void UpdateLightInformation(const glm::vec3* middle, uint16_t lightGroups
 
 
 
-float lerp(float v0, float v1, float t) {
-	return (1.0f - t) * v0 + t * v1;
-}
+
 void InitializeRendererBackendData()
 {
 	if(!g_render) g_render = new RendererBackendData;
@@ -153,6 +226,8 @@ void InitializeRendererBackendData()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	g_render->intermediate.sizeX = -1; g_render->intermediate.sizeY = -1;
 
 }
 void CleanUpRendererBackendData()
@@ -367,11 +442,8 @@ void EndScene()
 {
 	SC_FreeRenderList(g_render->objs);
 }
-void SetOpenGLWeakState(bool depthTest, bool blendTest);
-void SetOpenGLDepthWrite(bool enable);
-void glDepthFuncWrapper(GLenum func);
-void glBlendFuncWrapper(GLenum sfactor, GLenum dfactor);
-void RenderAmbientOcclusion(PScene scene, const StandardRenderPassData* data, const SceneRenderData* frameData, float screenSizeX, float screenSizeY)
+
+void RenderAmbientOcclusion(PScene scene, StandardRenderPassData* data, const SceneRenderData* frameData, float screenSizeX, float screenSizeY)
 {
 	GLuint mainFBO = frameData->GetFramebuffer();
 	glm::ivec2 size = frameData->GetFramebufferSize();
@@ -379,6 +451,7 @@ void RenderAmbientOcclusion(PScene scene, const StandardRenderPassData* data, co
 	RenderSceneGeometry(scene, data);
 	if (frameData->_internal_flags & INTERNAL_SCENE_RENDER_DATA_HAS_AMBIENT_OCCLUSION)
 	{
+		data->ambientOcclusionMap = frameData->aoFBO.texture;
 		glm::ivec2 sao = { frameData->baseWidth, frameData->baseHeight };
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frameData->aoFBO.fbo);
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, mainFBO);
@@ -390,6 +463,14 @@ void RenderAmbientOcclusion(PScene scene, const StandardRenderPassData* data, co
 		SetOpenGLDepthWrite(false);
 
 		RenderAmbientOcclusionQuad(frameData->aoFBO.depth, screenSizeX, screenSizeY);
+
+		const IntermediateTextureData* data = GetIntermediateTexture(screenSizeX, screenSizeY, 8, true, false, false, false);
+		BlurTextureToFramebuffer(frameData->aoFBO.fbo, frameData->baseWidth, frameData->baseHeight, frameData->aoFBO.texture, 8.0f, data->fbo, data->texture);
+		
+	}
+	else
+	{
+		data->ambientOcclusionMap = 0;
 	}
 }
 void RenderSceneGeometry(PScene scene, const StandardRenderPassData* data)

@@ -49,15 +49,15 @@ vec3(0.0103, -0.5869, 0.0046), vec3(-0.0897, -0.4940, 0.3287),\
 vec3(0.7119, -0.0154, -0.0918), vec3(-0.0533, 0.0596, -0.5411),\
 vec3(0.0352, -0.0631, 0.5460), vec3(-0.4776, 0.2847, -0.0271)\
 );\
-const float total_strength = 1.5;\
-const float base = 0.75;\
+const float total_strength = 1.4;\
+const float base = 0.6;\
 const float area = 0.025;\
 const float falloff = 0.000001;\
-const float radius = 0.025;\
+const float radius = 0.00125;\
 void main()\
 {\
     float depth = texture(gDepthMap, TexCoord).r;\
-    vec3 random = normalize(texture(gRandTex, TexCoord * 64.0).rgb);\
+    vec3 random = normalize(texture(gRandTex, TexCoord * screenResolution).rgb);\
     vec3 position = vec3(TexCoord, depth);\
     vec3 normal = NormalFromDepth(depth, TexCoord);\
     float radiusDepth = radius / depth;\
@@ -81,7 +81,6 @@ struct AmbientOcclusionPipelineData
     GLuint screenResolutionLoc;
     GLuint noiseTexture;
 }g_AOpipeline;
-float lerp(float v0, float v1, float t);    // currently defined in renderer.cpp
 void InitializeAmbientOcclusionPipeline()
 {
     g_AOpipeline.program = CreateProgram(ambientOcclusionVertexShader, ambientOcclusionFragmentShader);

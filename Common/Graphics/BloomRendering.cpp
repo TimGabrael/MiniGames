@@ -210,8 +210,7 @@ void BlurTextureToFramebuffer(GLuint endFbo, int fboX, int fboY, GLuint tex, flo
     glBindFramebuffer(GL_FRAMEBUFFER, intermediateFBO);
     glViewport(0, 0, fboX, fboY);
     glClear(GL_COLOR_BUFFER_BIT);
-    glDisable(GL_BLEND);
-    glDisable(GL_DEPTH_TEST);
+    SetOpenGLWeakState(false, false);
     glUseProgramWrapper(g_bloom.blurProgram);
 
     glActiveTexture(GL_TEXTURE0);
@@ -223,7 +222,7 @@ void BlurTextureToFramebuffer(GLuint endFbo, int fboX, int fboY, GLuint tex, flo
     glDrawArraysWrapper(GL_TRIANGLES, 0, 3);
     
     glBindFramebuffer(GL_FRAMEBUFFER, endFbo);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT);
 
     glBindTexture(GL_TEXTURE_2D, intermediateTexture);
     glUniform1i(g_bloom.blurUnis.blurAxisLoc, (int)BLUR_AXIS::Y_AXIS);

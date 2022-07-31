@@ -208,6 +208,8 @@ layout (std140) uniform LightData\
 	int numDirLights;\
 }_lightData;\
 uniform sampler2DShadow shadowMap;\
+uniform sampler2D _my_internalAOMap;\
+uniform vec2 currentFBOSize;\
 float CalculateShadowValue(LightMapper mapper, vec4 fragWorldPos)\
 {\
 	vec2 ts = vec2(1.0f) / vec2(textureSize(shadowMap, 0));\
@@ -315,11 +317,12 @@ vec3 CalculateDirectionalLightColor(DirectionalLight light, vec3 normal, vec3 vi
 vec3 CalculateLightsColor(vec4 fragWorldPos, vec3 normal, vec3 viewDir, vec3 matDiffuseCol, vec3 matSpecCol, float shininess)\
 {\
 	vec3 result = vec3(0.0f);\
+	float occludedValue = texture(_my_internalAOMap, (gl_FragCoord.xy - vec2(0.5)) / currentFBOSize).r;\
 	for(int i = 0; i < _lightData.numDirLights; i++)\
 	{\
 		float shadow = 1.0f;\
 		if(_lightData.dirLights[i].hasShadow) shadow = CalculateShadowValue(_lightData.dirLights[i].mapper, fragWorldPos);\n\
-		result += CalculateDirectionalLightColor(_lightData.dirLights[i], normal, viewDir, matDiffuseCol, matSpecCol, shininess) * shadow;\
+		result += CalculateDirectionalLightColor(_lightData.dirLights[i], normal, viewDir, matDiffuseCol, matSpecCol, shininess) * shadow * occludedValue;\
 	}\
 	for(int i = 0; i < _lightData.numPointLights; i++)\
 	{\

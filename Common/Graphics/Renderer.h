@@ -22,6 +22,17 @@ struct CurrentLightInformation
 	glm::vec4 reflectionPlane = { 0, 0, 0, 0 };
 	bool isReflected = false;
 };
+struct IntermediateTextureData
+{
+	static IntermediateTextureData Create(int sx, int sy, uint8_t precision, bool hasR, bool hasG, bool hasB, bool hasA);
+	void CleanUp();
+	GLuint fbo;
+	GLuint texture;
+	int sizeX;
+	int sizeY;
+	uint8_t precision;
+	uint8_t rgbaFlags;
+};
 
 
 struct StandardRenderPassData
@@ -30,9 +41,14 @@ struct StandardRenderPassData
 	const glm::mat4* camProj;
 	const glm::vec3* camPos;
 	const glm::mat4* camViewProj;
+	glm::vec2 renderSize;
+
 	GLuint cameraUniform;
 	GLuint skyBox;
 	GLuint shadowMap;
+	GLuint ambientOcclusionMap;
+
+	// These will be set by the renderer
 	GLuint lightData;
 };
 struct ReflectPlanePassData
@@ -53,6 +69,7 @@ void CleanUpRendererBackendData();
 
 GLuint GetWhiteTexture2D();
 GLuint GetBlackTexture2D();
+const IntermediateTextureData* GetIntermediateTexture(int requiredX, int requiredY, uint8_t requiredPrecision, bool reqR, bool reqG, bool reqB, bool reqA);
 
 
 struct PostProcessingFBO
@@ -90,7 +107,7 @@ struct SceneRenderData
 
 void BeginScene(PScene scene);
 void EndScene();
-void RenderAmbientOcclusion(PScene scene, const StandardRenderPassData* data, const SceneRenderData* frameData, float screeSizeX, float screenSizeY);
+void RenderAmbientOcclusion(PScene scene, StandardRenderPassData* data, const SceneRenderData* frameData, float screeSizeX, float screenSizeY);// will set the ao texture in data or 0 if no occlusion available
 void RenderSceneGeometry(PScene scene, const StandardRenderPassData* data);
 void RenderSceneShadow(PScene scene, const StandardRenderPassData* data);
 void RenderSceneReflectedOnPlane(PScene scene, const ReflectPlanePassData* data);
