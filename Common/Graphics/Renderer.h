@@ -90,7 +90,7 @@ struct SceneRenderData
 
 void BeginScene(PScene scene);
 void EndScene();
-void RenderAmbientOcclusion(PScene scene, const StandardRenderPassData* data, const SceneRenderData* frameData);
+void RenderAmbientOcclusion(PScene scene, const StandardRenderPassData* data, const SceneRenderData* frameData, float screeSizeX, float screenSizeY);
 void RenderSceneGeometry(PScene scene, const StandardRenderPassData* data);
 void RenderSceneShadow(PScene scene, const StandardRenderPassData* data);
 void RenderSceneReflectedOnPlane(PScene scene, const ReflectPlanePassData* data);

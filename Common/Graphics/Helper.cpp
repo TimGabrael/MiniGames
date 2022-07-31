@@ -24,6 +24,7 @@
 #include "Simple3DRendering.h"
 #include "ReflectiveSurfaceRendering.h"
 #include "BloomRendering.h"
+#include "AmbientOcclusionRendering.h"
 #include "Renderer.h"
 
 #define _USE_MATH_DEFINES
@@ -140,6 +141,12 @@ uniform AO_Ubo\
 }aoUBO;\
 uniform mat4 projection;\
 out float FragColor;\
+float CalcViewZ(vec2 Coords)\
+{\
+	float depth = texture(depthMap, Coords).r;\
+	float viewZ = projection[3][2] / (2.0f * depth - 1.0f - projection[2][2]);\
+	return viewZ;\
+}\
 void main()\
 {\
 	vec3 fragPos = (pos.xyz / pos.w);\
@@ -152,16 +159,14 @@ void main()\
 	for(int i = 0; i < 64; i++)\
 	{\
 		vec3 psample = TBN * aoUBO.samples[i].xyz;\
-		psample = fragPos + psample * aoUBO.radius;\
 		vec4 offset = vec4(psample, 1.0f);\
 		offset = projection * offset;\
 		offset.xyz /= offset.w;\
 		offset.xyz = offset.xyz * 0.5f + 0.5f;\
-		float occluderDepth = texture(depthMap, offset.xy).r;\
-		psample = (projection * vec4(psample, 1.0f)).xyz;\
-		occlusion += (occluderDepth >= psample.z - aoUBO.bias ? 1.0f : 0.0f);\
+		float occluderDepth = CalcViewZ(offset.xy);\n\
+		occlusion += (occluderDepth >= psample.z + aoUBO.bias ? 1.0f : 0.0f);\n\
 	}\
-	FragColor = 1.0f - (occlusion / 64.0f);\
+	FragColor = pow(1.0f - (occlusion / 64.0f), 2.0);\
 }";
 
 
@@ -284,6 +289,7 @@ void InitializeOpenGL(void* assetManager)
 	InitializeSimple3DPipeline();
 	InitializeReflectiveSurfacePipeline();
 	InitializeBloomPipeline();
+	InitializeAmbientOcclusionPipeline();
 
 	InitializeRendererBackendData();
 	

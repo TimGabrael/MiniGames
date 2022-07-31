@@ -2,6 +2,7 @@
 #include "Helper.h"
 #include "logging.h"
 #include "BloomRendering.h"
+#include "AmbientOcclusionRendering.h"
 #include <random>
 #include <cmath>
 
@@ -21,9 +22,6 @@ struct RendererBackendData
 
 	GLuint whiteTexture;
 	GLuint blackTexture;
-
-	GLuint AOUbo;
-	GLuint AONoiseTexture;
 };
 static RendererBackendData* g_render = nullptr;
 
@@ -153,49 +151,6 @@ void InitializeRendererBackendData()
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, &color);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-
-	AmbientOcclucionUBO data;
-	data.bias = 0.025f;
-	data.radius = 0.5f;
-	data.noiseScale = { 1.0f / 4.0f, 1.0f / 4.0f };
-
-	std::uniform_real_distribution<float> randomFloats(0.0f, 1.0f);
-	std::default_random_engine generator;
-	for (uint32_t i = 0; i < 64; i++)
-	{
-		glm::vec3 sample(
-			randomFloats(generator) * 2.0f - 1.0f,
-			randomFloats(generator) * 2.0f - 1.0f,
-			randomFloats(generator)
-		);
-		sample = glm::normalize(sample);
-		sample *= randomFloats(generator);
-		float scale = (float)i / 64.0f;
-		sample *= lerp(0.1f, 1.0f, scale * scale);
-		data.samples[i] = glm::vec4(sample, 0.0f);
-	}
-
-	glGenBuffers(1, &g_render->AOUbo);
-	glBindBuffer(GL_UNIFORM_BUFFER, g_render->AOUbo);
-	glBufferData(GL_UNIFORM_BUFFER, sizeof(AmbientOcclucionUBO), &data, GL_STATIC_DRAW);
-
-
-	glm::vec3 noiseData[16];
-	for (int y = 0; y < 4; y++)
-	{
-		for (int x = 0; x < 4; x++)
-		{
-			noiseData[y * 4 + x] = glm::vec3(randomFloats(generator) * 2.0f - 1.0f, randomFloats(generator) * 2.0f - 1.0f, 0.0f);
-		}
-	}
-	glGenTextures(1, &g_render->AONoiseTexture);
-	glBindTexture(GL_TEXTURE_2D, g_render->AONoiseTexture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, 4, 4, 0, GL_RGB, GL_FLOAT, noiseData);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
@@ -416,7 +371,7 @@ void SetOpenGLWeakState(bool depthTest, bool blendTest);
 void SetOpenGLDepthWrite(bool enable);
 void glDepthFuncWrapper(GLenum func);
 void glBlendFuncWrapper(GLenum sfactor, GLenum dfactor);
-void RenderAmbientOcclusion(PScene scene, const StandardRenderPassData* data, const SceneRenderData* frameData)
+void RenderAmbientOcclusion(PScene scene, const StandardRenderPassData* data, const SceneRenderData* frameData, float screenSizeX, float screenSizeY)
 {
 	GLuint mainFBO = frameData->GetFramebuffer();
 	glm::ivec2 size = frameData->GetFramebufferSize();
@@ -431,25 +386,10 @@ void RenderAmbientOcclusion(PScene scene, const StandardRenderPassData* data, co
 		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 		glViewport(0, 0, sao.x, sao.y);
-		SetOpenGLWeakState(true, false);
+		SetOpenGLWeakState(false, false);
 		SetOpenGLDepthWrite(false);
-		glDepthFuncWrapper(GL_LEQUAL);
 
-		AmbientOcclusionPassData aoData;
-		aoData.std = data;
-		aoData.depthMap = frameData->aoFBO.depth;
-		aoData.noiseTexture = g_render->AONoiseTexture;
-		aoData.aoUBO = g_render->AOUbo;
-
-		int num;
-		glm::mat4 camViewProj = *g_render->mainData.camProj * *g_render->mainData.camView;
-		SC_FillRenderList(scene, g_render->objs, &camViewProj, &num, TYPE_FUNCTION_AMBIENT_OCCLUSION, SCENE_OBJECT_OPAQUE);
-
-		for (int i = 0; i < num; i++)
-		{
-			ObjectRenderStruct* o = &g_render->objs[i];
-			o->DrawFunc(o->obj, (void*)&aoData);
-		}
+		RenderAmbientOcclusionQuad(frameData->aoFBO.depth, screenSizeX, screenSizeY);
 	}
 }
 void RenderSceneGeometry(PScene scene, const StandardRenderPassData* data)

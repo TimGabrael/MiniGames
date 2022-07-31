@@ -95,7 +95,7 @@ void UnoPlugin::Init(ApplicationData* data)
 		glBindBuffer(GL_UNIFORM_BUFFER, g_objs->playerCam.uniform);
 		glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraData), nullptr, GL_DYNAMIC_DRAW);
 	}
-	void* pbrModel = CreateInternalPBRFromFile("Assets/Helmet.gltf", 20.0f);
+	void* pbrModel = CreateInternalPBRFromFile("Assets/Helmet.gltf", 1.0f);
 
 
 	// CREATE SCENE
@@ -298,7 +298,7 @@ void UnoPlugin::Render(ApplicationData* data)
 	glClearDepthf(1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	RenderAmbientOcclusion(g_objs->UnoScene, &stdData, &g_objs->rendererData);
+	RenderAmbientOcclusion(g_objs->UnoScene, &stdData, &g_objs->rendererData, sizeX, sizeY);
 	glBindFramebuffer(GL_FRAMEBUFFER, GetMainFramebuffer());
 	glViewport(0, 0, mainSize.x, mainSize.y);
 	RenderSceneStandard(g_objs->UnoScene, &stdData);

@@ -1660,24 +1660,16 @@ struct GLTFUniforms
 	GLuint clipPlaneLoc = -1;
 	GLuint lightDataLoc = -1;
 };
-struct GLTFAOUniforms
-{
-	GLTFUniforms unis;
-	GLuint AoUBOLoc;
-	GLuint projectionLoc;
-};
+
 
 struct OpenGlPipelineObjects
 {
 	GLuint geomProgram;
 	GLuint shaderProgram;
-	GLuint aoProgram;
 	GLuint brdfLutMap;
 	GLuint defTex;
-	GLuint SharedUBOUniform;
 	GLTFUniforms unis;
 	GLTFUniforms geomUnis;
-	GLTFAOUniforms aoUnis;
 	MaterialPbr* currentBoundMaterial = nullptr;
 }g_pipeline;
 
@@ -1688,7 +1680,6 @@ void InitializePbrPipeline(void* assetManager)
 #endif
 	g_pipeline.geomProgram = CreateProgram(pbrVertexShader);
 	g_pipeline.shaderProgram = CreateProgramExtended(pbrVertexShader, pbrFragmentShaderExtension, &g_pipeline.unis.lightDataLoc, SHADOW_MAP);
-	g_pipeline.aoProgram = CreateProgramAmbientOcclusion(pbrAmbientOcclusionVertexShader, &g_pipeline.aoUnis.AoUBOLoc, &g_pipeline.aoUnis.projectionLoc, GLTF_AO_NOISE, GLTF_AO_DEPTH);
 	glGenTextures(1, &g_pipeline.defTex);
 	glBindTexture(GL_TEXTURE_2D, g_pipeline.defTex);
 	uint32_t defTexColorData[2];
@@ -1724,21 +1715,6 @@ void InitializePbrPipeline(void* assetManager)
 	g_pipeline.geomUnis.ModelMatrixLoc = glGetUniformLocation(g_pipeline.geomProgram, "model");
 	g_pipeline.geomUnis.clipPlaneLoc = glGetUniformLocation(g_pipeline.geomProgram, "clipPlane");
 	g_pipeline.geomUnis.lightDataLoc = -1;
-
-
-	g_pipeline.aoUnis.unis.ModelMatrixLoc = glGetUniformLocation(g_pipeline.aoProgram, "model");
-	g_pipeline.aoUnis.unis.UBOLoc = glGetUniformBlockIndex(g_pipeline.aoProgram, "UBO");
-	glUniformBlockBinding(g_pipeline.aoProgram, g_pipeline.aoUnis.unis.UBOLoc, g_pipeline.aoUnis.unis.UBOLoc);
-	g_pipeline.aoUnis.unis.UBONodeLoc = glGetUniformBlockIndex(g_pipeline.aoProgram, "UBONode");
-	glUniformBlockBinding(g_pipeline.aoProgram, g_pipeline.aoUnis.unis.UBONodeLoc, g_pipeline.aoUnis.unis.UBONodeLoc);
-	g_pipeline.aoUnis.unis.lightDataLoc = -1;
-	g_pipeline.aoUnis.unis.clipPlaneLoc = -1;
-	g_pipeline.aoUnis.unis.MaterialLoc = -1;
-	g_pipeline.aoUnis.unis.UBOParamsLoc = -1;
-
-
-
-	glGenBuffers(1, &g_pipeline.SharedUBOUniform);
 
 	
 	glUseProgram(g_pipeline.shaderProgram);
@@ -1989,32 +1965,6 @@ void UpdateAnimation(void* internalObj, uint32_t index, float time)
 	}
 }
 
-void DrawScenePBRAmbientOcclusion(SceneObject* obj, void* renderPassData)
-{
-	PBRSceneObject* o = (PBRSceneObject*)obj;
-	AmbientOcclusionPassData* passData = (AmbientOcclusionPassData*)renderPassData;
-	
-	GLTFUniforms* unis = &g_pipeline.aoUnis.unis;
-
-	InternalPBR* realObj = (InternalPBR*)o->model;
-
-	glUseProgramWrapper(g_pipeline.aoProgram);
-	glBindVertexArray(realObj->vao);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, realObj->indices.indexBuffer);
-
-	glBindBufferBase(GL_UNIFORM_BUFFER, unis->UBOLoc, passData->std->cameraUniform);
-	glUniformMatrix4fv(unis->ModelMatrixLoc, 1, GL_FALSE, (const GLfloat*)o->transform);
-
-	glBindBufferBase(GL_UNIFORM_BUFFER, g_pipeline.aoUnis.AoUBOLoc, passData->aoUBO);
-	glUniformMatrix4fv(g_pipeline.aoUnis.projectionLoc, 1, GL_FALSE, (const GLfloat*)passData->std->camProj);
-
-
-	for (auto& node : realObj->nodes) {
-		DrawNode(realObj, node, true, unis);
-	}
-
-}
-
 void DrawScenePBRGeometry(SceneObject* obj, void* renderPassData)
 {
 	PBRSceneObject* o = (PBRSceneObject*)obj;
@@ -2054,7 +2004,6 @@ void DrawScenePBRBlendClip(SceneObject* obj, void* renderPassData)
 PFUNCDRAWSCENEOBJECT PBRModelGetDrawFunction(TYPE_FUNCTION f)
 {
 	if (f == TYPE_FUNCTION::TYPE_FUNCTION_SHADOW) return DrawScenePBRGeometry;
-	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_AMBIENT_OCCLUSION) return DrawScenePBRAmbientOcclusion;
 	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_GEOMETRY) return DrawScenePBRGeometry;
 	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_OPAQUE) return DrawScenePBROpaque;
 	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_BLEND) return DrawScenePBRBlend;
@@ -2079,7 +2028,8 @@ PBRSceneObject* AddPbrModelToScene(PScene scene, void* internalObj, UBOParams pa
 	for (int i = 0; i < realObj->nodes.size(); i++)
 	{
 		BoundingBoxPbr pbrBB = realObj->nodes.at(i)->mesh->bb.getAABB(transform);
-		
+		auto& s = realObj->nodes.at(i)->scale;
+
 		glm::vec3& minRes = pbrBB.min;
 		glm::vec3& maxRes = pbrBB.max;
 
