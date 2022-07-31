@@ -11,6 +11,7 @@ static glm::ivec2 screenFramebufferSize = { 0, 0 };
 static glm::ivec2 mainFramebufferSize = { 0, 0 };
 
 static bool depthTestEnabled = false;
+static bool writeToDepthEnabled = true;
 static bool blendTestEnabled = false;
 static GLenum activeDepthFunc = -1;
 static GLenum activeBlendFuncSrc = -1;
@@ -27,6 +28,8 @@ void EndFrameAndResetData()
 	numDrawCallsMadeThisFrame = 0;
 #endif
 	currentlyBoundShaderProgram = 0;
+	glDepthMask(GL_TRUE);
+	writeToDepthEnabled = true;
 }
 
 void glUseProgramWrapper(GLuint program)
@@ -114,6 +117,14 @@ void SetOpenGLWeakState(bool depthTest, bool blendTest)
 	}
 	
 }
+void SetOpenGLDepthWrite(bool enable)
+{
+	if (writeToDepthEnabled != enable)
+	{
+		glDepthMask(enable);
+		writeToDepthEnabled = enable;
+	}
+}
 void glDepthFuncWrapper(GLenum func)
 {
 	if (func != activeDepthFunc)
@@ -133,13 +144,16 @@ void glBlendFuncWrapper(GLenum sfactor, GLenum dfactor)
 }
 void SetDefaultBlendState()
 {
-	SetOpenGLWeakState(false, true);
+	SetOpenGLWeakState(true, true);
+	SetOpenGLDepthWrite(false);
+	glDepthFuncWrapper(GL_LEQUAL);
 	glBlendFuncWrapper(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 void SetDefaultOpaqueState()
 {
 	SetOpenGLWeakState(true, false);
-	glDepthFuncWrapper(GL_LESS);
+	SetOpenGLDepthWrite(true);
+	glDepthFuncWrapper(GL_LEQUAL);
 }
 
 

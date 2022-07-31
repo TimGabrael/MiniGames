@@ -33,6 +33,7 @@ glm::ivec2 GetMainFramebufferSize();
 
 
 void SetOpenGLWeakState(bool depthTest, bool blendTest);
+void SetOpenGLDepthWrite(bool enable);
 void glDepthFuncWrapper(GLenum func);
 void glBlendFuncWrapper(GLenum sfactor, GLenum dfactor);
 

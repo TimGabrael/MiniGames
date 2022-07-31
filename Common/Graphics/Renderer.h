@@ -40,6 +40,13 @@ struct ReflectPlanePassData
 	const StandardRenderPassData* base;
 	const glm::vec4* planeEquation;
 };
+struct AmbientOcclusionPassData
+{
+	const StandardRenderPassData* std;
+	GLuint noiseTexture;
+	GLuint depthMap;
+	GLuint aoUBO;
+};
 
 void InitializeRendererBackendData();
 void CleanUpRendererBackendData();
@@ -59,6 +66,10 @@ struct SceneRenderData
 	void Create(int width, int height, int shadowWidth, int shadowHeight, uint8_t msaaQuality, bool useAmbientOcclusion, bool useBloom);
 	void Recreate(int width, int height, int shadowWidth, int shadowHeight);
 	void CleanUp();
+
+	// framebuffer all objects are rendered to
+	GLuint GetFramebuffer() const;
+	glm::ivec2 GetFramebufferSize() const;
 
 	void MakeMainFramebuffer();
 

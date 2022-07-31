@@ -121,32 +121,47 @@ precision highp float;\n\
 void main()\
 {\
 }";
+
+
+
+// TODO: FIND A WAY TO MAKE AMBIENT OCCLUSION SOMEWHAT FEASABLE vec2(0.5f, 0.5f)
 static const char* ambientOcclusionFragmentShader = "#version 300 es\n\
 precision highp float;\n\
-in vec2 TexCoord;\
-out vec4 FragColor;\
-uniform sampler2D gPositionMap;\
-uniform float gSampleRad;\
-uniform mat4 gProj;\
-const int MAX_KERNEL_SIZE = 128;\
-uniform vec3 gKernel[MAX_KERNEL_SIZE];\
+in vec4 pos;\
+in vec3 normal;\
+uniform sampler2D texNoise;\
+uniform sampler2D depthMap;\
+uniform AO_Ubo\
+{\
+	vec4 samples[64];\
+	vec2 noiseScale;\
+	float radius;\
+	float bias;\
+}aoUBO;\
+uniform mat4 projection;\
+out float FragColor;\
 void main()\
 {\
-	vec3 Pos = texture(gPositionMap, TexCoord).xyz;\
-	float AO = 0.0;\
-	for (int i = 0; i < MAX_KERNEL_SIZE; i++) {\
-		vec3 samplePos = Pos + gKernel[i];\
-		vec4 offset = vec4(samplePos, 1.0);\
-		offset = gProj * offset;\
-		offset.xy /= offset.w;\
-		offset.xy = offset.xy * 0.5 + vec2(0.5);\
-		float sampleDepth = texture(gPositionMap, offset.xy).b;\
-		if (abs(Pos.z - sampleDepth) < gSampleRad) {\
-			AO += step(sampleDepth, samplePos.z);\
-		}\
+	vec3 fragPos = (pos.xyz / pos.w);\
+	vec3 nor = normalize(normal);\
+	vec3 randomVec = normalize(texture(texNoise, (gl_FragCoord.xy - vec2(0.5f, 0.5f)) * aoUBO.noiseScale).xyz);\
+	vec3 tangent = normalize(randomVec - nor * dot(randomVec, nor));\
+	vec3 bitangent = cross(nor, tangent);\
+	mat3 TBN = mat3(tangent, bitangent, nor);\
+	float occlusion = 0.0f;\
+	for(int i = 0; i < 64; i++)\
+	{\
+		vec3 psample = TBN * aoUBO.samples[i].xyz;\
+		psample = fragPos + psample * aoUBO.radius;\
+		vec4 offset = vec4(psample, 1.0f);\
+		offset = projection * offset;\
+		offset.xyz /= offset.w;\
+		offset.xyz = offset.xyz * 0.5f + 0.5f;\
+		float occluderDepth = texture(depthMap, offset.xy).r;\
+		psample = (projection * vec4(psample, 1.0f)).xyz;\
+		occlusion += (occluderDepth >= psample.z - aoUBO.bias ? 1.0f : 0.0f);\
 	}\
-	AO = 1.0 - AO / 128.0;\
-	FragColor = vec4(pow(AO, 2.0));\
+	FragColor = 1.0f - (occlusion / 64.0f);\
 }";
 
 
@@ -381,6 +396,19 @@ GLuint CreateProgramExtended(const char* vertexShader, const char* fragmentShade
 
 	*lightUniform = glGetUniformBlockIndex(prog, "LightData");
 	glUniformBlockBinding(prog, *lightUniform, *lightUniform);
+	return prog;
+}
+GLuint CreateProgramAmbientOcclusion(const char* specialVertexShader, GLuint* AoUBOLoc, GLuint* projectionLoc, uint32_t texNoiseIdx, uint32_t depthMapIdx)
+{
+	GLuint prog = CreateProgram(specialVertexShader, ambientOcclusionFragmentShader);
+	glUseProgram(prog);
+	GLuint index = glGetUniformLocation(prog, "texNoise");
+	glUniform1i(index, texNoiseIdx);
+	index = glGetUniformLocation(prog, "depthMap");
+	glUniform1i(index, depthMapIdx);
+	*projectionLoc = glGetUniformLocation(prog, "projection");
+	*AoUBOLoc = glGetUniformBlockIndex(prog, "AO_Ubo");
+	glUniformBlockBinding(prog, *AoUBOLoc, *AoUBOLoc);
 	return prog;
 }
 

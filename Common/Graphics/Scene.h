@@ -21,12 +21,14 @@ enum SCENE_OBJECT_FLAGS
 {
 	SCENE_OBJECT_OPAQUE = 1,				// requires		Opaque Draw					Function
 	SCENE_OBJECT_BLEND = 1 << 1,			// requires		Blend Draw					Function
-	SCENE_OBJECT_CAST_SHADOW = 1 << 2,		// requires		Geometry Draw				Function
+	SCENE_OBJECT_CAST_SHADOW = 1 << 2,		// requires		Shadow Draw					Function
 	SCENE_OBJECT_REFLECTED = 1 << 3,		// requires		Opaque or Blend Draw		Function
 	SCENE_OBJECT_SURFACE_REFLECTED = 1 << 4,// requires		Clip Plane Draw				Function 
 };
 enum TYPE_FUNCTION
 {
+	TYPE_FUNCTION_SHADOW,
+	TYPE_FUNCTION_AMBIENT_OCCLUSION,
 	TYPE_FUNCTION_GEOMETRY,
 	TYPE_FUNCTION_OPAQUE,
 	TYPE_FUNCTION_BLEND,

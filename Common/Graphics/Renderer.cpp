@@ -2,7 +2,8 @@
 #include "Helper.h"
 #include "logging.h"
 #include "BloomRendering.h"
-
+#include <random>
+#include <cmath>
 
 
 struct RendererBackendData
@@ -20,6 +21,9 @@ struct RendererBackendData
 
 	GLuint whiteTexture;
 	GLuint blackTexture;
+
+	GLuint AOUbo;
+	GLuint AONoiseTexture;
 };
 static RendererBackendData* g_render = nullptr;
 
@@ -126,7 +130,9 @@ static void UpdateLightInformation(const glm::vec3* middle, uint16_t lightGroups
 
 
 
-
+float lerp(float v0, float v1, float t) {
+	return (1.0f - t) * v0 + t * v1;
+}
 void InitializeRendererBackendData()
 {
 	if(!g_render) g_render = new RendererBackendData;
@@ -147,6 +153,49 @@ void InitializeRendererBackendData()
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, &color);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+
+	AmbientOcclucionUBO data;
+	data.bias = 0.025f;
+	data.radius = 0.5f;
+	data.noiseScale = { 1.0f / 4.0f, 1.0f / 4.0f };
+
+	std::uniform_real_distribution<float> randomFloats(0.0f, 1.0f);
+	std::default_random_engine generator;
+	for (uint32_t i = 0; i < 64; i++)
+	{
+		glm::vec3 sample(
+			randomFloats(generator) * 2.0f - 1.0f,
+			randomFloats(generator) * 2.0f - 1.0f,
+			randomFloats(generator)
+		);
+		sample = glm::normalize(sample);
+		sample *= randomFloats(generator);
+		float scale = (float)i / 64.0f;
+		sample *= lerp(0.1f, 1.0f, scale * scale);
+		data.samples[i] = glm::vec4(sample, 0.0f);
+	}
+
+	glGenBuffers(1, &g_render->AOUbo);
+	glBindBuffer(GL_UNIFORM_BUFFER, g_render->AOUbo);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(AmbientOcclucionUBO), &data, GL_STATIC_DRAW);
+
+
+	glm::vec3 noiseData[16];
+	for (int y = 0; y < 4; y++)
+	{
+		for (int x = 0; x < 4; x++)
+		{
+			noiseData[y * 4 + x] = glm::vec3(randomFloats(generator) * 2.0f - 1.0f, randomFloats(generator) * 2.0f - 1.0f, 0.0f);
+		}
+	}
+	glGenTextures(1, &g_render->AONoiseTexture);
+	glBindTexture(GL_TEXTURE_2D, g_render->AONoiseTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, 4, 4, 0, GL_RGB, GL_FLOAT, noiseData);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
@@ -283,6 +332,36 @@ void SceneRenderData::CleanUp()
 		DestroyDepthFBO(&shadowFBO);
 	}
 }
+GLuint SceneRenderData::GetFramebuffer() const
+{
+	if (_internal_msaa_quality > 0)
+	{
+		return msaaFBO.fbo;
+	}
+	else if (_internal_flags & (INTERNAL_SCENE_RENDER_DATA_HAS_BLOOM | INTERNAL_SCENE_RENDER_DATA_HAS_AMBIENT_OCCLUSION)) 	// has Post Processing effect
+	{
+		return ppFBO.fbo;
+	}
+	else
+	{
+		return GetMainFramebuffer();
+	}
+}
+glm::ivec2 SceneRenderData::GetFramebufferSize() const
+{
+	if (_internal_msaa_quality > 0)
+	{
+		return { baseWidth, baseHeight };
+	}
+	else if (_internal_flags & (INTERNAL_SCENE_RENDER_DATA_HAS_BLOOM | INTERNAL_SCENE_RENDER_DATA_HAS_AMBIENT_OCCLUSION)) 	// has Post Processing effect
+	{
+		return { baseWidth, baseHeight };
+	}
+	else
+	{
+		return GetMainFramebufferSize();
+	}
+}
 void SceneRenderData::MakeMainFramebuffer()
 {
 	if (_internal_msaa_quality > 0)
@@ -333,18 +412,45 @@ void EndScene()
 {
 	SC_FreeRenderList(g_render->objs);
 }
+void SetOpenGLWeakState(bool depthTest, bool blendTest);
+void SetOpenGLDepthWrite(bool enable);
+void glDepthFuncWrapper(GLenum func);
+void glBlendFuncWrapper(GLenum sfactor, GLenum dfactor);
 void RenderAmbientOcclusion(PScene scene, const StandardRenderPassData* data, const SceneRenderData* frameData)
 {
-	UpdateTemporary(data);
+	GLuint mainFBO = frameData->GetFramebuffer();
+	glm::ivec2 size = frameData->GetFramebufferSize();
 	
-	glBindFramebuffer(GL_FRAMEBUFFER, frameData->aoFBO.fbo);
-	glViewport(0, 0, frameData->baseWidth, frameData->baseHeight);
-	glClearDepthf(1.0f);
-	glClear(GL_DEPTH_BUFFER_BIT);
 	RenderSceneGeometry(scene, data);
+	if (frameData->_internal_flags & INTERNAL_SCENE_RENDER_DATA_HAS_AMBIENT_OCCLUSION)
+	{
+		glm::ivec2 sao = { frameData->baseWidth, frameData->baseHeight };
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frameData->aoFBO.fbo);
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, mainFBO);
+		glBlitFramebuffer(0, 0, size.x, size.y, 0, 0, sao.x, sao.y, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+		glViewport(0, 0, sao.x, sao.y);
+		SetOpenGLWeakState(true, false);
+		SetOpenGLDepthWrite(false);
+		glDepthFuncWrapper(GL_LEQUAL);
 
-	// TODO: do the actual computation
+		AmbientOcclusionPassData aoData;
+		aoData.std = data;
+		aoData.depthMap = frameData->aoFBO.depth;
+		aoData.noiseTexture = g_render->AONoiseTexture;
+		aoData.aoUBO = g_render->AOUbo;
 
+		int num;
+		glm::mat4 camViewProj = *g_render->mainData.camProj * *g_render->mainData.camView;
+		SC_FillRenderList(scene, g_render->objs, &camViewProj, &num, TYPE_FUNCTION_AMBIENT_OCCLUSION, SCENE_OBJECT_OPAQUE);
+
+		for (int i = 0; i < num; i++)
+		{
+			ObjectRenderStruct* o = &g_render->objs[i];
+			o->DrawFunc(o->obj, (void*)&aoData);
+		}
+	}
 }
 void RenderSceneGeometry(PScene scene, const StandardRenderPassData* data)
 {
@@ -358,10 +464,9 @@ void RenderSceneGeometry(PScene scene, const StandardRenderPassData* data)
 	for (int i = 0; i < num; i++)
 	{
 		ObjectRenderStruct* o = &g_render->objs[i];
-		BoundingBox* bbox = &o->obj->base.bbox;
-		glm::vec3 middle = (bbox->leftTopFront + bbox->rightBottomBack) / 2.0f;
 		o->DrawFunc(o->obj, (void*)&g_render->mainData);
 	}
+	SetOpenGLDepthWrite(true);
 }
 void RenderSceneShadow(PScene scene, const StandardRenderPassData* data)
 {
@@ -372,7 +477,7 @@ void RenderSceneShadow(PScene scene, const StandardRenderPassData* data)
 	glPolygonOffset(2.0f, 4.0f);
 	int num;
 	glm::mat4 camViewProj = *g_render->mainData.camProj * *g_render->mainData.camView;
-	SC_FillRenderList(scene, g_render->objs, &camViewProj, &num, TYPE_FUNCTION_GEOMETRY, SCENE_OBJECT_CAST_SHADOW);
+	SC_FillRenderList(scene, g_render->objs, &camViewProj, &num, TYPE_FUNCTION_SHADOW, SCENE_OBJECT_CAST_SHADOW);
 	
 	for (int i = 0; i < num; i++)
 	{
@@ -382,6 +487,8 @@ void RenderSceneShadow(PScene scene, const StandardRenderPassData* data)
 		o->DrawFunc(o->obj, (void*)&g_render->mainData);
 	}
 	glDisable(GL_POLYGON_OFFSET_FILL);
+
+	SetOpenGLDepthWrite(true);
 }
 
 void RenderSceneReflectedOnPlane(PScene scene, const ReflectPlanePassData* data)
@@ -407,6 +514,7 @@ void RenderSceneReflectedOnPlane(PScene scene, const ReflectPlanePassData* data)
 		UpdateLightInformation(&middle, o->obj->base.lightGroups, data->planeEquation);
 		o->DrawFunc(o->obj, (void*)&reflectPassData);
 	}
+	SetOpenGLDepthWrite(true);
 }
 
 void RenderSceneStandard(PScene scene, const StandardRenderPassData* data)
@@ -428,6 +536,7 @@ void RenderSceneStandard(PScene scene, const StandardRenderPassData* data)
 		UpdateLightInformation(&middle, o->obj->base.lightGroups, nullptr);
 		o->DrawFunc(o->obj, (void*)&g_render->mainData);
 	}
+	SetOpenGLDepthWrite(true);
 }
 void RenderPostProcessingBloom(const BloomFBO* bloomData, GLuint finalFBO, int finalSizeX, int finalSizeY, GLuint ppFBOTexture, int ppSizeX, int ppSizeY)
 {
@@ -475,7 +584,7 @@ void RenderPostProcessing(const SceneRenderData* rendererData, GLuint finalFBO, 
 	{
 		return;
 	}
-	RenderPostProcessingBloom(&rendererData->bloomFBO, GetScreenFramebuffer(), rendererData->baseWidth, rendererData->baseHeight, rendererData->ppFBO.texture, rendererData->baseWidth, rendererData->baseHeight);
+	RenderPostProcessingBloom(&rendererData->bloomFBO, GetScreenFramebuffer(), finalSizeX, finalSizeY, rendererData->ppFBO.texture, rendererData->baseWidth, rendererData->baseHeight);
 }
 
 

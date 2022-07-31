@@ -376,8 +376,9 @@ void DrawSimple3DOpaqueClipPlane(SceneObject* sceneObject, void* renderPassData)
 
 PFUNCDRAWSCENEOBJECT S3DGetDrawFunctions(TYPE_FUNCTION f)
 {
-	if (f == TYPE_FUNCTION::TYPE_FUNCTION_OPAQUE) return DrawSimple3DOpaque;
-	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_CLIP_PLANE_OPAQUE) return DrawSimple3DOpaqueClipPlane;
+	if (f == TYPE_FUNCTION::TYPE_FUNCTION_SHADOW) return DrawSimple3DGeometry;
 	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_GEOMETRY) return DrawSimple3DGeometry;
+	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_OPAQUE) return DrawSimple3DOpaque;
+	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_CLIP_PLANE_OPAQUE) return DrawSimple3DOpaqueClipPlane;
 	return nullptr;
 }

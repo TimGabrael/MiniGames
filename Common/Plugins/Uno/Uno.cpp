@@ -67,7 +67,7 @@ void UnoPlugin::Init(ApplicationData* data)
 	g_objs->moveComp.SetRotation(-90.0f, -40.0f, 0.0f);
 
 	
-	g_objs->rendererData.Create(10, 10, 10, 10, 0, false, true);
+	g_objs->rendererData.Create(10, 10, 10, 10, 0, true, true);
 	g_objs->reflectFBO = CreateSingleFBO(10, 10);
 
 	g_objs->lightDir = { -1.0f / sqrtf(3.0f), -1.0f / sqrt(3.0f), -1.0f / sqrt(3.0f) };
@@ -95,7 +95,7 @@ void UnoPlugin::Init(ApplicationData* data)
 		glBindBuffer(GL_UNIFORM_BUFFER, g_objs->playerCam.uniform);
 		glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraData), nullptr, GL_DYNAMIC_DRAW);
 	}
-	void* pbrModel = CreateInternalPBRFromFile("Assets/Helmet.gltf", 0.5f);
+	void* pbrModel = CreateInternalPBRFromFile("Assets/Helmet.gltf", 20.0f);
 
 
 	// CREATE SCENE
@@ -198,6 +198,7 @@ void UnoPlugin::Resize(ApplicationData* data)
 	g_objs->rendererData.MakeMainFramebuffer();
 }
 static ColorPicker picker;
+static bool showDebugTexture = false;
 void UnoPlugin::Render(ApplicationData* data)
 {
 	if (!(sizeX && sizeY)) return;
@@ -286,23 +287,26 @@ void UnoPlugin::Render(ApplicationData* data)
 		camData.projection = g_objs->playerCam.perspective;
 		glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraData), &camData, GL_DYNAMIC_DRAW);
 	}
-
 	stdData.camView = &g_objs->playerCam.view;
 	stdData.camProj = &g_objs->playerCam.perspective;
 	stdData.camPos = &g_objs->playerCam.pos;
 
+	glm::ivec2 mainSize = GetMainFramebufferSize();
 	glBindFramebuffer(GL_FRAMEBUFFER, GetMainFramebuffer());
-	glViewport(0, 0, sizeX, sizeY);
-
+	glViewport(0, 0, mainSize.x, mainSize.y);
 	glClearColor(1.0f, 0.4f, 0.4f, 1.0f);
 	glClearDepthf(1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	RenderAmbientOcclusion(g_objs->UnoScene, &stdData, &g_objs->rendererData);
+	glBindFramebuffer(GL_FRAMEBUFFER, GetMainFramebuffer());
+	glViewport(0, 0, mainSize.x, mainSize.y);
 	RenderSceneStandard(g_objs->UnoScene, &stdData);
-	
+
+	if(showDebugTexture)
+		DrawQuad({ -1.0f, -1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF, g_objs->rendererData.aoFBO.texture);
 
 	DrawUI();
-
 	RenderPostProcessing(&g_objs->rendererData, GetScreenFramebuffer(), sizeX, sizeY);
 
 	EndScene();
@@ -336,6 +340,7 @@ void UnoPlugin::KeyDownCallback(Key k, bool isRepeat)
 		if (k == Key::Key_A)g_objs->moveComp.SetMovementDirection(MovementComponent::DIRECTION::LEFT, true);
 		if (k == Key::Key_S)g_objs->moveComp.SetMovementDirection(MovementComponent::DIRECTION::BACKWARD, true);
 		if (k == Key::Key_D)g_objs->moveComp.SetMovementDirection(MovementComponent::DIRECTION::RIGHT, true);
+		if (k == Key::Key_E)showDebugTexture = !showDebugTexture;
 	}
 #endif
 	if (k == Key::Key_0) g_objs->localPlayer->FetchCard(g_objs->playerCam, g_objs->stack, g_objs->deck, g_objs->anims);

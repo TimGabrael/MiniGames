@@ -310,12 +310,12 @@ void ClearCards()
 
 void DrawCardsInSceneBlended(SceneObject* obj, void* renderPassData);
 void DrawCardsInSceneBlendedClip(SceneObject* obj, void* renderPassData);
-void DrawCardsInSceneGeometry(SceneObject* obj, void* renderPassData);
+void DrawCardsInSceneShadow(SceneObject* obj, void* renderPassData);
 static PFUNCDRAWSCENEOBJECT GetDrawSceneObjectFunction(TYPE_FUNCTION f)
 {
-	if (f == TYPE_FUNCTION::TYPE_FUNCTION_BLEND) return DrawCardsInSceneBlended;
+	if (f == TYPE_FUNCTION::TYPE_FUNCTION_SHADOW) return DrawCardsInSceneShadow;
+	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_BLEND) return DrawCardsInSceneBlended;
 	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_CLIP_PLANE_BLEND) return DrawCardsInSceneBlendedClip;
-	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_GEOMETRY) return DrawCardsInSceneGeometry;
 	return nullptr;
 }
 void AddCardTypeToScene(PScene scene)
@@ -368,7 +368,7 @@ void DrawCardsInSceneBlended(SceneObject* obj, void* renderPassData)
 	SetDefaultBlendState();
 	DrawCards(*data->camProj, *data->camView, *data->camPos, dir, false);
 }
-void DrawCardsInSceneGeometry(SceneObject* obj, void* renderPassData)
+void DrawCardsInSceneShadow(SceneObject* obj, void* renderPassData)
 {
 	StandardRenderPassData* data = (StandardRenderPassData*)renderPassData;
 	const CurrentLightInformation* cur = GetCurrentLightInformation();
@@ -715,7 +715,7 @@ void CardStack::AddToStack(CARD_ID card, const glm::vec3& pos, const glm::quat& 
 	}
 	else
 	{
-		cards.emplace_back(CARD_ID::CARD_ID_BLANK, card, pos, rot, 0.0f, true);
+		cards.emplace_back(CARD_ID::CARD_ID_BLANK, card, glm::vec3(pos.x, pos.y + 0.001f, pos.z), rot, 0.0f, true);
 	}
 }
 CARD_ID CardStack::GetTop(CARD_ID& blackColorRef) const

@@ -1201,6 +1201,55 @@ void main()\n\
 	clipDist = dot(vec4(inWorldPos, 1.0f), clipPlane);\n\
 	gl_Position = ubo.projection * ubo.view * vec4(inWorldPos, 1.0);\n\
 }";
+const char* pbrAmbientOcclusionVertexShader = "#version 300 es\n\
+\n\
+layout(location = 0) in vec3 inPos;\n\
+layout(location = 1) in vec3 inVNormal;\n\
+layout(location = 2) in vec2 inVUV0;\n\
+layout(location = 3) in vec2 inVUV1;\n\
+layout(location = 4) in vec4 inJoint0;\n\
+layout(location = 5) in vec4 inWeight0;\n\
+uniform UBO\n\
+{\n\
+	mat4 projection;\n\
+	mat4 view;\n\
+	vec3 camPos;\n\
+} ubo;\n\
+uniform mat4 model;\n\
+\n\
+#define MAX_NUM_JOINTS 128\n\
+\n\
+uniform UBONode {\n\
+	mat4 matrix;\n\
+	mat4 jointMatrix[MAX_NUM_JOINTS];\n\
+	float jointCount;\n\
+} node;\n\
+\n\
+out vec4 pos;\n\
+out vec3 normal;\n\
+\n\
+void main()\n\
+{\n\
+	vec4 locPos;\n\
+	if (node.jointCount > 0.0) {\n\
+		// Mesh is skinned\n\
+		mat4 skinMat =\n\
+			inWeight0.x * node.jointMatrix[int(inJoint0.x)] +\n\
+			inWeight0.y * node.jointMatrix[int(inJoint0.y)] +\n\
+			inWeight0.z * node.jointMatrix[int(inJoint0.z)] +\n\
+			inWeight0.w * node.jointMatrix[int(inJoint0.w)];\n\
+	\n\
+		locPos = model * node.matrix * skinMat * vec4(inPos, 1.0);\n\
+		normal = normalize(transpose(inverse(mat3(model * node.matrix * skinMat))) * inVNormal);\n\
+	}\n\
+	else {\n\
+		locPos = model * node.matrix * vec4(inPos, 1.0);\n\
+		normal = normalize(transpose(inverse(mat3(model * node.matrix))) * inVNormal);\n\
+	}\n\
+	pos = ubo.view * vec4((locPos.xyz / locPos.w), 1.0f);\n\
+	gl_Position = ubo.projection * pos;\n\
+}";
+
 
 
 const char* pbrFragmentShaderExtension = "\n\
@@ -1595,6 +1644,11 @@ enum GLTF_Textures
 	EMISSIVE_MAP,
 	SHADOW_MAP,
 };
+enum GLTF_AO_Textures
+{
+	GLTF_AO_NOISE,
+	GLTF_AO_DEPTH,
+};
 
 struct GLTFUniforms
 {
@@ -1606,16 +1660,24 @@ struct GLTFUniforms
 	GLuint clipPlaneLoc = -1;
 	GLuint lightDataLoc = -1;
 };
+struct GLTFAOUniforms
+{
+	GLTFUniforms unis;
+	GLuint AoUBOLoc;
+	GLuint projectionLoc;
+};
 
 struct OpenGlPipelineObjects
 {
 	GLuint geomProgram;
 	GLuint shaderProgram;
+	GLuint aoProgram;
 	GLuint brdfLutMap;
 	GLuint defTex;
 	GLuint SharedUBOUniform;
 	GLTFUniforms unis;
 	GLTFUniforms geomUnis;
+	GLTFAOUniforms aoUnis;
 	MaterialPbr* currentBoundMaterial = nullptr;
 }g_pipeline;
 
@@ -1626,6 +1688,7 @@ void InitializePbrPipeline(void* assetManager)
 #endif
 	g_pipeline.geomProgram = CreateProgram(pbrVertexShader);
 	g_pipeline.shaderProgram = CreateProgramExtended(pbrVertexShader, pbrFragmentShaderExtension, &g_pipeline.unis.lightDataLoc, SHADOW_MAP);
+	g_pipeline.aoProgram = CreateProgramAmbientOcclusion(pbrAmbientOcclusionVertexShader, &g_pipeline.aoUnis.AoUBOLoc, &g_pipeline.aoUnis.projectionLoc, GLTF_AO_NOISE, GLTF_AO_DEPTH);
 	glGenTextures(1, &g_pipeline.defTex);
 	glBindTexture(GL_TEXTURE_2D, g_pipeline.defTex);
 	uint32_t defTexColorData[2];
@@ -1662,10 +1725,22 @@ void InitializePbrPipeline(void* assetManager)
 	g_pipeline.geomUnis.clipPlaneLoc = glGetUniformLocation(g_pipeline.geomProgram, "clipPlane");
 	g_pipeline.geomUnis.lightDataLoc = -1;
 
+
+	g_pipeline.aoUnis.unis.ModelMatrixLoc = glGetUniformLocation(g_pipeline.aoProgram, "model");
+	g_pipeline.aoUnis.unis.UBOLoc = glGetUniformBlockIndex(g_pipeline.aoProgram, "UBO");
+	glUniformBlockBinding(g_pipeline.aoProgram, g_pipeline.aoUnis.unis.UBOLoc, g_pipeline.aoUnis.unis.UBOLoc);
+	g_pipeline.aoUnis.unis.UBONodeLoc = glGetUniformBlockIndex(g_pipeline.aoProgram, "UBONode");
+	glUniformBlockBinding(g_pipeline.aoProgram, g_pipeline.aoUnis.unis.UBONodeLoc, g_pipeline.aoUnis.unis.UBONodeLoc);
+	g_pipeline.aoUnis.unis.lightDataLoc = -1;
+	g_pipeline.aoUnis.unis.clipPlaneLoc = -1;
+	g_pipeline.aoUnis.unis.MaterialLoc = -1;
+	g_pipeline.aoUnis.unis.UBOParamsLoc = -1;
+
+
+
 	glGenBuffers(1, &g_pipeline.SharedUBOUniform);
 
-	//LOG("UBO/UBONode/UBOParams/Material Locs: %d, %d, %d, %d\n", g_pipeline.UBOLoc, g_pipeline.UBONodeLoc, g_pipeline.UBOParamsLoc, g_pipeline.MaterialLoc);
-
+	
 	glUseProgram(g_pipeline.shaderProgram);
 	GLint curTexture = glGetUniformLocation(g_pipeline.shaderProgram, "samplerIrradiance");
 	if (curTexture == -1) { LOG("failed to Get Texture Loaction of GLTF shader program\n"); }
@@ -1914,6 +1989,32 @@ void UpdateAnimation(void* internalObj, uint32_t index, float time)
 	}
 }
 
+void DrawScenePBRAmbientOcclusion(SceneObject* obj, void* renderPassData)
+{
+	PBRSceneObject* o = (PBRSceneObject*)obj;
+	AmbientOcclusionPassData* passData = (AmbientOcclusionPassData*)renderPassData;
+	
+	GLTFUniforms* unis = &g_pipeline.aoUnis.unis;
+
+	InternalPBR* realObj = (InternalPBR*)o->model;
+
+	glUseProgramWrapper(g_pipeline.aoProgram);
+	glBindVertexArray(realObj->vao);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, realObj->indices.indexBuffer);
+
+	glBindBufferBase(GL_UNIFORM_BUFFER, unis->UBOLoc, passData->std->cameraUniform);
+	glUniformMatrix4fv(unis->ModelMatrixLoc, 1, GL_FALSE, (const GLfloat*)o->transform);
+
+	glBindBufferBase(GL_UNIFORM_BUFFER, g_pipeline.aoUnis.AoUBOLoc, passData->aoUBO);
+	glUniformMatrix4fv(g_pipeline.aoUnis.projectionLoc, 1, GL_FALSE, (const GLfloat*)passData->std->camProj);
+
+
+	for (auto& node : realObj->nodes) {
+		DrawNode(realObj, node, true, unis);
+	}
+
+}
+
 void DrawScenePBRGeometry(SceneObject* obj, void* renderPassData)
 {
 	PBRSceneObject* o = (PBRSceneObject*)obj;
@@ -1952,7 +2053,9 @@ void DrawScenePBRBlendClip(SceneObject* obj, void* renderPassData)
 
 PFUNCDRAWSCENEOBJECT PBRModelGetDrawFunction(TYPE_FUNCTION f)
 {
-	if (f == TYPE_FUNCTION::TYPE_FUNCTION_GEOMETRY) return DrawScenePBRGeometry;
+	if (f == TYPE_FUNCTION::TYPE_FUNCTION_SHADOW) return DrawScenePBRGeometry;
+	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_AMBIENT_OCCLUSION) return DrawScenePBRAmbientOcclusion;
+	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_GEOMETRY) return DrawScenePBRGeometry;
 	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_OPAQUE) return DrawScenePBROpaque;
 	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_BLEND) return DrawScenePBRBlend;
 	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_CLIP_PLANE_OPAQUE) return DrawScenePBROpaqueClip;
