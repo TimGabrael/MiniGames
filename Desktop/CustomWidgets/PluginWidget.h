@@ -1,10 +1,12 @@
 #pragma once
 #include <QWidget.h>
 #include <qopenglwidget.h>
+#include <QOpenGLExtraFunctions>
+#include <qtimer.h>
 #include "../util/PluginLoader.h"
 #include <qevent.h>
 
-class PluginWidget : public QOpenGLWidget
+class PluginWidget : public QOpenGLWidget, private QOpenGLExtraFunctions
 {
 public:
 	PluginWidget(QWidget* parent, PluginClass* plClass);
@@ -20,8 +22,6 @@ private:
 
 	void resizeEvent(QResizeEvent* event) override;
 
-	void HandleTimer();
-
 
 	void mouseMoveEvent(QMouseEvent* event) override;
 	void mousePressEvent(QMouseEvent* event) override;
@@ -33,6 +33,7 @@ private:
 
 	PB_MouseData mouseData;
 	PluginClass* plugin = nullptr;
+	QTimer frameTimer;
 	bool isInitialized = false;
 	bool hovered = false;
 };

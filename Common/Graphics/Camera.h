@@ -48,7 +48,7 @@ struct MovementComponent
 	bool keyboardDirUsed = false;
 	bool touchInputUsed = false;
 
-	static constexpr float maxVelocity = 0.02f;
+	static constexpr float maxVelocity = 0.2f;
 	static constexpr float joystickTurnSpeed = 1.0f;
 };
 

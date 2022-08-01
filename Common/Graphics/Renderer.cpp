@@ -115,6 +115,7 @@ static void UpdateTemporary(const StandardRenderPassData* data)
 	memcpy(&g_render->mainData, data, sizeof(StandardRenderPassData));
 	g_render->mainData.lightData = g_render->lightDataUniform;
 	if (data->ambientOcclusionMap == 0) g_render->mainData.ambientOcclusionMap = g_render->whiteTexture;
+	if (data->shadowMap == 0) g_render->mainData.shadowMap = g_render->whiteTexture;
 }
 static void ReflectVectorAtPlane(glm::vec3* reflecting, const glm::vec4* plane)
 {
@@ -179,7 +180,7 @@ static void UpdateLightInformation(const glm::vec3* middle, uint16_t lightGroups
 		{
 			float dist = glm::length(*middle - curPointLight->data.pos);
 			float attenuation = 1.0f / (curPointLight->data.constant + sqrtf(dist) * curPointLight->data.linear + dist * curPointLight->data.quadratic);
-			if (attenuation > 0.1f)
+			//if (attenuation > 0.1f)
 			{
 				lInfo.curPointLights[lInfo.numCurPointLights] = *curPointLight;
 				if (reflectPlane)

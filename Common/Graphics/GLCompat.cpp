@@ -321,13 +321,13 @@ vec3 CalculateLightsColor(vec4 fragWorldPos, vec3 normal, vec3 viewDir, vec3 mat
 	for(int i = 0; i < _lightData.numDirLights; i++)\
 	{\
 		float shadow = 1.0f;\
-		if(_lightData.dirLights[i].hasShadow) shadow = CalculateShadowValue(_lightData.dirLights[i].mapper, fragWorldPos);\n\
+		if(_lightData.dirLights[i].hasShadow) shadow = CalculateShadowValue(_lightData.dirLights[i].mapper, fragWorldPos);\
 		result += CalculateDirectionalLightColor(_lightData.dirLights[i], normal, viewDir, matDiffuseCol, matSpecCol, shininess) * shadow * occludedValue;\
 	}\
 	for(int i = 0; i < _lightData.numPointLights; i++)\
 	{\
 		result += CalculatePointLightColor(_lightData.pointLights[i], normal, fragWorldPos.xyz, viewDir, matDiffuseCol, matSpecCol, shininess);\
-	}\
+	}\n\
 	return result;\
 }\
 ";

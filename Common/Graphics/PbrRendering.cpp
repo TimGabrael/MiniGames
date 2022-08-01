@@ -622,8 +622,8 @@ void LoadNode(InternalPBR& pbr, Node* parent, const tinygltf::Node& node, uint32
 				const tinygltf::Accessor& posAccessor = model.accessors[primitive.attributes.find("POSITION")->second];
 				const tinygltf::BufferView& posView = model.bufferViews[posAccessor.bufferView];
 				bufferPos = reinterpret_cast<const float*>(&(model.buffers[posView.buffer].data[posAccessor.byteOffset + posView.byteOffset]));
-				posMin = glm::vec3(posAccessor.minValues[0], posAccessor.minValues[1], posAccessor.minValues[2]);
-				posMax = glm::vec3(posAccessor.maxValues[0], posAccessor.maxValues[1], posAccessor.maxValues[2]);
+				posMin = glm::vec3(posAccessor.minValues[0] * globalScale, posAccessor.minValues[1] * globalScale, posAccessor.minValues[2] * globalScale);
+				posMax = glm::vec3(posAccessor.maxValues[0] * globalScale, posAccessor.maxValues[1] * globalScale, posAccessor.maxValues[2] * globalScale);
 				vertexCount = static_cast<uint32_t>(posAccessor.count);
 				posByteStride = posAccessor.ByteStride(posView) ? (posAccessor.ByteStride(posView) / sizeof(float)) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC3);
 
@@ -1019,7 +1019,6 @@ void* CreateInternalPBRFromFile(const char* filename, float scale)
 			node->update();
 		}
 	}
-
 	size_t vertexBufferSize = vertexCount * sizeof(Vertex);
 	size_t indexBufferSize = indexCount * sizeof(uint32_t);
 	pbr.indices.count = indexCount;
@@ -1532,7 +1531,6 @@ void main()\n\
 	vec3 l = normalize(uboParams.lightDir.xyz);     // Vector from surface point to light\n\
 	vec3 h = normalize(l + v);                        // Half vector between both l and v\n\
 	vec3 reflection = -normalize(reflect(v, n));\n\
-	reflection.y *= -1.0f;\n\
 \n\
 	float NdotL = clamp(dot(n, l), 0.001, 1.0);\n\
 	float NdotV = clamp(abs(dot(n, v)), 0.001, 1.0);\n\
@@ -1621,6 +1619,43 @@ void main()\n\
 	}\n\
 \n\
 }";
+	static const char* pbrGeometryFragmentShader = "#version 300 es\n\
+precision highp float;\n\
+in vec2 inUV0;\n\
+in vec2 inUV1;\n\
+uniform Material {\n\
+	vec4 baseColorFactor;\n\
+	vec4 emissiveFactor;\n\
+	vec4 diffuseFactor;\n\
+	vec4 specularFactor;\n\
+	float workflow;\n\
+	int baseColorTextureSet;\n\
+	int physicalDescriptorTextureSet;\n\
+	int normalTextureSet;\n\
+	int occlusionTextureSet;\n\
+	int emissiveTextureSet;\n\
+	float metallicFactor;\n\
+	float roughnessFactor;\n\
+	float alphaMask;\n\
+	float alphaMaskCutoff;\n\
+} material;\n\
+uniform sampler2D colorMap;\n\
+void main()\
+{\
+	vec4 baseColor;\n\
+	if (material.alphaMask == 1.0f) {\n\
+		if (material.baseColorTextureSet > -1) {\n\
+			baseColor = texture(colorMap, material.baseColorTextureSet == 0 ? inUV0 : inUV1) * material.baseColorFactor;\n\
+		}\n\
+		else {\n\
+			baseColor = material.baseColorFactor;\n\
+		}\n\
+		if (baseColor.a < material.alphaMaskCutoff) {\n\
+			discard;\n\
+		}\n\
+	}\n\
+}\
+";
 
 
 // uniform samplerCube samplerIrradiance;
@@ -1669,7 +1704,6 @@ struct OpenGlPipelineObjects
 	GLuint geomProgram;
 	GLuint shaderProgram;
 	GLuint brdfLutMap;
-	GLuint defTex;
 	GLTFUniforms unis;
 	GLTFUniforms geomUnis;
 	MaterialPbr* currentBoundMaterial = nullptr;
@@ -1680,19 +1714,9 @@ void InitializePbrPipeline(void* assetManager)
 #ifdef ANDROID
 	tinygltf::asset_manager = (AAssetManager*)assetManager;
 #endif
-	g_pipeline.geomProgram = CreateProgram(pbrVertexShader);
+	g_pipeline.geomProgram = CreateProgram(pbrVertexShader, pbrGeometryFragmentShader);
 	g_pipeline.shaderProgram = CreateProgramExtended(pbrVertexShader, pbrFragmentShaderExtension, &g_pipeline.unis.lightDataLoc, &g_pipeline.unis.fboSizeLoc, SHADOW_MAP, GLOBAL_AO_MAP);
-	glGenTextures(1, &g_pipeline.defTex);
-	glBindTexture(GL_TEXTURE_2D, g_pipeline.defTex);
-	uint32_t defTexColorData[2];
-	memset(defTexColorData, 0xFF, 2 * sizeof(uint32_t));
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, defTexColorData);
-	
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glBindTexture(GL_TEXTURE_2D, 0);
+
 
 
 	g_pipeline.unis.UBOLoc = glGetUniformBlockIndex(g_pipeline.shaderProgram, "UBO");
@@ -1745,6 +1769,11 @@ void InitializePbrPipeline(void* assetManager)
 	curTexture = glGetUniformLocation(g_pipeline.shaderProgram, "emissiveMap");
 	if (curTexture == -1) { LOG("failed to Get Texture Loaction of GLTF shader program\n"); }
 	glUniform1i(curTexture, EMISSIVE_MAP);
+	
+	
+	glUseProgram(g_pipeline.geomProgram);
+	curTexture = glGetUniformLocation(g_pipeline.geomProgram, "colorMap");
+	glUniform1i(curTexture, COLOR_MAP);
 	glUseProgram(0);
 
 	g_pipeline.brdfLutMap = GenerateBRDF_LUT(512);
@@ -1752,51 +1781,57 @@ void InitializePbrPipeline(void* assetManager)
 void CleanUpPbrPipeline()
 {
 	glDeleteTextures(1, &g_pipeline.brdfLutMap);
-	glDeleteTextures(1, &g_pipeline.defTex);
 	glDeleteProgram(g_pipeline.shaderProgram);
-	g_pipeline.brdfLutMap = 0; g_pipeline.defTex = 0; g_pipeline.shaderProgram = 0;
+	g_pipeline.brdfLutMap = 0; g_pipeline.shaderProgram = 0;
 	g_pipeline.currentBoundMaterial = nullptr;
 }
 
 
 void BindMaterial(MaterialPbr* mat, GLTFUniforms* unis)
 {
-	if (unis->lightDataLoc == -1) return;	// geometry pass
 
-	glBindBuffer(GL_UNIFORM_BUFFER, mat->uniformBuffer);
 	glBindBufferBase(GL_UNIFORM_BUFFER, unis->MaterialLoc, mat->uniformBuffer);
+	GLuint defTex = GetWhiteTexture2D();
+	if (unis->lightDataLoc != -1)
+	{
+		glActiveTexture(GL_TEXTURE0 + GLTF_Textures::AO_MAP);
+		glBindTexture(GL_TEXTURE_2D, mat->occlusionTexture ? mat->occlusionTexture : defTex);
 
-	glActiveTexture(GL_TEXTURE0 + GLTF_Textures::AO_MAP);
-	glBindTexture(GL_TEXTURE_2D, mat->occlusionTexture ? mat->occlusionTexture : g_pipeline.defTex);
-	
-	glActiveTexture(GL_TEXTURE0 + GLTF_Textures::EMISSIVE_MAP);
-	glBindTexture(GL_TEXTURE_2D, mat->emissiveTexture ? mat->emissiveTexture : g_pipeline.defTex);
+		glActiveTexture(GL_TEXTURE0 + GLTF_Textures::EMISSIVE_MAP);
+		glBindTexture(GL_TEXTURE_2D, mat->emissiveTexture ? mat->emissiveTexture : defTex);
 
-	glActiveTexture(GL_TEXTURE0 + GLTF_Textures::NORMAL_MAP);
-	glBindTexture(GL_TEXTURE_2D, mat->normalTexture ? mat->normalTexture : g_pipeline.defTex);
+		glActiveTexture(GL_TEXTURE0 + GLTF_Textures::NORMAL_MAP);
+		glBindTexture(GL_TEXTURE_2D, mat->normalTexture ? mat->normalTexture : defTex);
+	}
 
 	if (mat->pbrWorkflows.metallicRoughness)
 	{
 		glActiveTexture(GL_TEXTURE0 + GLTF_Textures::COLOR_MAP);
-		glBindTexture(GL_TEXTURE_2D, mat->baseColorTexture ? mat->baseColorTexture : g_pipeline.defTex);
+		glBindTexture(GL_TEXTURE_2D, mat->baseColorTexture ? mat->baseColorTexture : defTex);
 
-		glActiveTexture(GL_TEXTURE0 + GLTF_Textures::PHYSICAL_DESCRIPTOR_MAP);
-		glBindTexture(GL_TEXTURE_2D, mat->metallicRoughnessTexture ? mat->metallicRoughnessTexture : g_pipeline.defTex);
+		if (unis->lightDataLoc != -1)
+		{
+			glActiveTexture(GL_TEXTURE0 + GLTF_Textures::PHYSICAL_DESCRIPTOR_MAP);
+			glBindTexture(GL_TEXTURE_2D, mat->metallicRoughnessTexture ? mat->metallicRoughnessTexture : defTex);
+		}
 	}
 	else if (mat->pbrWorkflows.specularGlossiness)
 	{
 		glActiveTexture(GL_TEXTURE0 + GLTF_Textures::COLOR_MAP);
-		glBindTexture(GL_TEXTURE_2D, mat->extension.diffuseTexture ? mat->extension.diffuseTexture : g_pipeline.defTex);
+		glBindTexture(GL_TEXTURE_2D, mat->extension.diffuseTexture ? mat->extension.diffuseTexture : defTex);
 
-		glActiveTexture(GL_TEXTURE0 + GLTF_Textures::PHYSICAL_DESCRIPTOR_MAP);
-		glBindTexture(GL_TEXTURE_2D, mat->extension.specularGlossinessTexture ? mat->extension.specularGlossinessTexture : g_pipeline.defTex);
+		if (unis->lightDataLoc != -1)
+		{
+			glActiveTexture(GL_TEXTURE0 + GLTF_Textures::PHYSICAL_DESCRIPTOR_MAP);
+			glBindTexture(GL_TEXTURE_2D, mat->extension.specularGlossinessTexture ? mat->extension.specularGlossinessTexture : defTex);
+		}
 	}
 	else
 	{
 		glActiveTexture(GL_TEXTURE0 + GLTF_Textures::COLOR_MAP);
-		glBindTexture(GL_TEXTURE_2D, g_pipeline.defTex);
+		glBindTexture(GL_TEXTURE_2D, defTex);
 	}
-	
+	g_pipeline.currentBoundMaterial = mat;
 }
 void DrawNode(InternalPBR* realObj, Node* node, bool drawOpaque, GLTFUniforms* unis)
 {
@@ -1806,11 +1841,10 @@ void DrawNode(InternalPBR* realObj, Node* node, bool drawOpaque, GLTFUniforms* u
 		{
 			if (drawOpaque && primitive->material.alphaMode == MaterialPbr::ALPHAMODE_BLEND) continue;
 			else if (!drawOpaque && primitive->material.alphaMode != MaterialPbr::ALPHAMODE_BLEND) continue;
-
+			
 			if (g_pipeline.currentBoundMaterial != &primitive->material)
 			{
 				BindMaterial(&primitive->material, unis);
-				g_pipeline.currentBoundMaterial = &primitive->material;
 			}
 			glDrawElementsWrapper(GL_TRIANGLES, primitive->indexCount, GL_UNSIGNED_INT, (const void*)(primitive->firstIndex * sizeof(uint32_t)));
 		}

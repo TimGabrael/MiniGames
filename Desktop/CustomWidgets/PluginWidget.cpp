@@ -6,16 +6,21 @@
 #include <qopenglcontext.h>
 #include <qopenglfunctions.h>
 #include <qnamespace.h>
+#include "../util/QImGui.h"
+#include <imgui.h>
 #include "../MiniGames.h"
 
 PluginWidget::PluginWidget(QWidget* parent, PluginClass* plClass) : QOpenGLWidget(parent), plugin(plClass)
 {
 	QSurfaceFormat fmt = QSurfaceFormat::defaultFormat();
-	fmt.setSwapInterval(2);
+	fmt.setSwapInterval(0);
 	this->setFormat(fmt);
 	setMouseTracking(true);
 	this->setFocusPolicy(Qt::FocusPolicy::StrongFocus);
-	connect(this, &QOpenGLWidget::frameSwapped, this, &PluginWidget::HandleTimer);
+
+
+	QObject::connect(&frameTimer, SIGNAL(timeout()), this, SLOT(update()));
+	frameTimer.start(0);
 }
 
 PluginWidget::~PluginWidget()
@@ -34,6 +39,8 @@ PluginWidget::~PluginWidget()
 
 void PluginWidget::initializeGL()
 {
+	initializeOpenGLFunctions();
+	QImGui::initialize(this);
 	MainApplication* app = MainApplication::GetInstance();
 	app->appData.socket = &app->socket;
 	app->appData.platform = _CURRENT_PLATFORM_ID;
@@ -52,26 +59,24 @@ void PluginWidget::resizeGL(int w, int h)
 
 void PluginWidget::paintGL()
 {
+	QImGui::newFrame();
+	//ImGui::SetNextWindowSize(ImVec2(200, 100), ImGuiCond_FirstUseEver);
+	//ImGui::ShowDemoWindow(nullptr);
+
 	if(hovered) hovered = underMouse();
 
 	MainApplication* app = MainApplication::GetInstance();
 	plugin->Render(&app->appData);
+
+
+	ImGui::Render();
+	QImGui::render();
 }
 
 void PluginWidget::resizeEvent(QResizeEvent* event)
 {
 	QOpenGLWidget::resizeEvent(event);
 	this->resizeGL(event->size().width(), event->size().height());
-}
-
-void PluginWidget::HandleTimer()
-{
-	//hovered = underMouse();
-	//static auto prev = std::chrono::high_resolution_clock::now();
-	//auto now = std::chrono::high_resolution_clock::now();
-	//std::cout << "frameTime: " << std::chrono::duration<float>(now - prev).count() << std::endl;
-	//prev = now;
-	this->update();
 }
 
 void PluginWidget::mouseMoveEvent(QMouseEvent* event)

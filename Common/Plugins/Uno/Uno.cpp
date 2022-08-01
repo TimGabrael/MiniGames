@@ -47,6 +47,36 @@ UnoPlugin* GetInstance()
 
 
 
+struct PlayerData
+{
+
+};
+struct GameStateData
+{
+	int playerInTurn;
+}game;
+
+
+
+
+
+
+void GameUpdateFunction(float dt)
+{
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -95,7 +125,8 @@ void UnoPlugin::Init(ApplicationData* data)
 		glBindBuffer(GL_UNIFORM_BUFFER, g_objs->playerCam.uniform);
 		glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraData), nullptr, GL_DYNAMIC_DRAW);
 	}
-	void* pbrModel = CreateInternalPBRFromFile("Assets/Helmet.gltf", 1.0f);
+	//void* pbrModel = CreateInternalPBRFromFile("Assets/Helmet.gltf", 1.0f);
+	void* pbrModel = CreateInternalPBRFromFile("C:/Users/deder/OneDrive/Desktop/3DModels/glTF-Sample-Models-master/2.0/Sponza/glTF/Sponza.gltf", 1.0f);
 
 
 	// CREATE SCENE
@@ -121,12 +152,21 @@ void UnoPlugin::Init(ApplicationData* data)
 		light->data.mapper.end = { 1.0f, 1.0f };
 		light->data.mapper.viewProj = g_objs->reflectionCam.viewProj;
 
+		ScenePointLight* plight = SC_AddPointLight(g_objs->UnoScene);
+		plight->data.ambient = { 0.2f, 0.2f, 0.2f };
+		plight->data.diffuse = { 10.0f, 0.0f, 0.0f };
+		plight->data.pos = { 0, 4.0f, 0.0f };
+		plight->data.specular = { 0.8f, 0.8f, 0.8f };
+		plight->data.constant = 1.0f;
+		plight->data.linear = 0.1f;
+		plight->data.quadratic = 0.1f;
+
+		plight->data.hasShadow = false;
+
 
 		UBOParams params = UBOParams();
 		PBRSceneObject* o = AddPbrModelToScene(g_objs->UnoScene, pbrModel, params, glm::translate(glm::mat4(1.0f), glm::vec3(-2.0f, 0.7f, -2.0f)));
 		o->base.flags &= ~(SCENE_OBJECT_BLEND);
-		
-
 	}
 	g_objs->skybox = LoadCubemap(
 		"Assets/CitySkybox/right.jpg",
@@ -198,7 +238,6 @@ void UnoPlugin::Resize(ApplicationData* data)
 	g_objs->rendererData.MakeMainFramebuffer();
 }
 static ColorPicker picker;
-static bool showDebugTexture = false;
 void UnoPlugin::Render(ApplicationData* data)
 {
 	if (!(sizeX && sizeY)) return;
@@ -223,6 +262,7 @@ void UnoPlugin::Render(ApplicationData* data)
 		g_objs->picker.Draw((float)g_objs->playerCam.screenX / (float)g_objs->playerCam.screenY, dt);
 	}
 
+	GameUpdateFunction(dt);
 
 	{ // render all cards
 		ClearCards();
@@ -280,7 +320,7 @@ void UnoPlugin::Render(ApplicationData* data)
 	reflectData.base = &stdData;
 	reflectData.planeEquation = &plane;
 
-	RenderSceneReflectedOnPlane(g_objs->UnoScene, &reflectData);
+	//RenderSceneReflectedOnPlane(g_objs->UnoScene, &reflectData);
 	{
 		glBindBuffer(GL_UNIFORM_BUFFER, g_objs->playerCam.uniform);
 		CameraData camData;
@@ -306,12 +346,8 @@ void UnoPlugin::Render(ApplicationData* data)
 	glBindFramebuffer(GL_FRAMEBUFFER, GetMainFramebuffer());
 	glViewport(0, 0, mainSize.x, mainSize.y);
 
-	if(!showDebugTexture)
-		stdData.ambientOcclusionMap = 0;
 	RenderSceneStandard(g_objs->UnoScene, &stdData);
 
-	//if(showDebugTexture)
-	//	DrawQuad({ -1.0f, -1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF, g_objs->rendererData.aoFBO.texture);
 
 	DrawUI();
 	RenderPostProcessing(&g_objs->rendererData, GetScreenFramebuffer(), sizeX, sizeY);
@@ -347,7 +383,6 @@ void UnoPlugin::KeyDownCallback(Key k, bool isRepeat)
 		if (k == Key::Key_A)g_objs->moveComp.SetMovementDirection(MovementComponent::DIRECTION::LEFT, true);
 		if (k == Key::Key_S)g_objs->moveComp.SetMovementDirection(MovementComponent::DIRECTION::BACKWARD, true);
 		if (k == Key::Key_D)g_objs->moveComp.SetMovementDirection(MovementComponent::DIRECTION::RIGHT, true);
-		if (k == Key::Key_E)showDebugTexture = !showDebugTexture;
 	}
 #endif
 	if (k == Key::Key_0) g_objs->localPlayer->FetchCard(g_objs->playerCam, g_objs->stack, g_objs->deck, g_objs->anims);
