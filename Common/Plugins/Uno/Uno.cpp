@@ -102,20 +102,20 @@ void UnoPlugin::Init(ApplicationData* data)
 
 	g_objs->lightDir = { -1.0f / sqrtf(3.0f), -1.0f / sqrt(3.0f), -1.0f / sqrt(3.0f) };
 
-	g_objs->reflectionCam.pos = { 2.0f, 4.0f, 2.0f };
-	g_objs->reflectionCam.view = glm::lookAtLH(g_objs->reflectionCam.pos, g_objs->reflectionCam.pos - g_objs->lightDir, glm::vec3(0.0f, 1.0f, 0.0f));
-	g_objs->reflectionCam.proj = glm::ortho(-4.0f, 4.0f, -4.0f, 4.0f, -10.0f, 10.0f);
-	g_objs->reflectionCam.viewProj = g_objs->reflectionCam.proj * g_objs->reflectionCam.view;
+	g_objs->shadowCam.pos = { 2.0f, 4.0f, 2.0f };
+	g_objs->shadowCam.view = glm::lookAtLH(g_objs->shadowCam.pos, g_objs->shadowCam.pos - g_objs->lightDir, glm::vec3(0.0f, 1.0f, 0.0f));
+	g_objs->shadowCam.proj = glm::ortho(-4.0f, 4.0f, -4.0f, 4.0f, -10.0f, 10.0f);
+	g_objs->shadowCam.viewProj = g_objs->shadowCam.proj * g_objs->shadowCam.view;
 
 	
 	{
-		glGenBuffers(1, &g_objs->reflectionCam.uniform);
-		glBindBuffer(GL_UNIFORM_BUFFER, g_objs->reflectionCam.uniform);
+		glGenBuffers(1, &g_objs->shadowCam.uniform);
+		glBindBuffer(GL_UNIFORM_BUFFER, g_objs->shadowCam.uniform);
 
 		CameraData camData;
-		camData.camPos = g_objs->reflectionCam.pos;
-		camData.projection = g_objs->reflectionCam.proj;
-		camData.view = g_objs->reflectionCam.view;
+		camData.camPos = g_objs->shadowCam.pos;
+		camData.projection = g_objs->shadowCam.proj;
+		camData.view = g_objs->shadowCam.view;
 
 		glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraData), &camData, GL_STATIC_DRAW);
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
@@ -150,7 +150,7 @@ void UnoPlugin::Init(ApplicationData* data)
 		light->data.hasShadow = true;
 		light->data.mapper.start = { 0.0f, 0.0f };
 		light->data.mapper.end = { 1.0f, 1.0f };
-		light->data.mapper.viewProj = g_objs->reflectionCam.viewProj;
+		light->data.mapper.viewProj = g_objs->shadowCam.viewProj;
 
 		ScenePointLight* plight = SC_AddPointLight(g_objs->UnoScene);
 		plight->data.ambient = { 0.2f, 0.2f, 0.2f };
@@ -160,7 +160,26 @@ void UnoPlugin::Init(ApplicationData* data)
 		plight->data.constant = 1.0f;
 		plight->data.linear = 0.1f;
 		plight->data.quadratic = 0.1f;
+		plight->data.hasShadow = false;
 
+		plight = SC_AddPointLight(g_objs->UnoScene);
+		plight->data.ambient = { 0.2f, 0.2f, 0.2f };
+		plight->data.diffuse = { 0.0f, 10.0f, 0.0f };
+		plight->data.pos = { -4.0, 4.0f, -4.0f };
+		plight->data.specular = { 0.8f, 0.8f, 0.8f };
+		plight->data.constant = 1.0f;
+		plight->data.linear = 0.1f;
+		plight->data.quadratic = 0.1f;
+		plight->data.hasShadow = false;
+
+		plight = SC_AddPointLight(g_objs->UnoScene);
+		plight->data.ambient = { 0.2f, 0.2f, 0.2f };
+		plight->data.diffuse = { 0.0f, 0.0f, 10.0f };
+		plight->data.pos = { 4.0, 4.0f, -4.0f };
+		plight->data.specular = { 0.8f, 0.8f, 0.8f };
+		plight->data.constant = 1.0f;
+		plight->data.linear = 0.1f;
+		plight->data.quadratic = 0.1f;
 		plight->data.hasShadow = false;
 
 
@@ -285,13 +304,13 @@ void UnoPlugin::Render(ApplicationData* data)
 
 
 	stdData.skyBox = g_objs->skybox;
-	stdData.camPos = &g_objs->reflectionCam.pos;
-	stdData.camProj = &g_objs->reflectionCam.proj;
-	stdData.camView = &g_objs->reflectionCam.view;
+	stdData.camPos = &g_objs->shadowCam.pos;
+	stdData.camProj = &g_objs->shadowCam.proj;
+	stdData.camView = &g_objs->shadowCam.view;
 	stdData.shadowMap = 0;
 	stdData.ambientOcclusionMap = 0;
 	stdData.renderSize = { g_objs->rendererData.shadowWidth, g_objs->rendererData.shadowHeight };
-	stdData.cameraUniform = g_objs->reflectionCam.uniform;
+	stdData.cameraUniform = g_objs->shadowCam.uniform;
 	RenderSceneShadow(g_objs->UnoScene, &stdData);
 	stdData.shadowMap = g_objs->rendererData.shadowFBO.depth;
 

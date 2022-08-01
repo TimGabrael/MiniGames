@@ -17,7 +17,7 @@ struct PlayerInfo
 struct UnoGlobals
 {
 	Camera playerCam;
-	OrthographicCamera reflectionCam;
+	OrthographicCamera shadowCam;
 	glm::vec3 lightDir;
 	MovementComponent moveComp;
 	SingleFBO reflectFBO;
