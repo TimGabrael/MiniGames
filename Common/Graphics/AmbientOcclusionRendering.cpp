@@ -3,7 +3,7 @@
 #include <random>
 #include <string>
 #include "logging.h"
-
+#define NOISE_DATA_SIZE 4
 static const char* ambientOcclusionVertexShader = "#version 300 es\n\
 vec2 pos[6] = vec2[6](\
 	vec2(-1.0f, -1.0f),\
@@ -50,14 +50,14 @@ vec3(0.7119, -0.0154, -0.0918), vec3(-0.0533, 0.0596, -0.5411),\
 vec3(0.0352, -0.0631, 0.5460), vec3(-0.4776, 0.2847, -0.0271)\
 );\
 const float total_strength = 1.4;\
-const float base = 0.6;\
+const float base = 0.4;\
 const float area = 0.025;\
-const float falloff = 0.000001;\
-const float radius = 0.00125;\
+const float falloff = 0.00001;\
+const float radius = 0.00525;\
 void main()\
 {\
     float depth = texture(gDepthMap, TexCoord).r;\
-    vec3 random = normalize(texture(gRandTex, TexCoord * screenResolution).rgb);\
+    vec3 random = normalize(texture(gRandTex, TexCoord * screenResolution / 4.0f).xyz);\
     vec3 position = vec3(TexCoord, depth);\
     vec3 normal = NormalFromDepth(depth, TexCoord);\
     float radiusDepth = radius / depth;\
@@ -96,22 +96,22 @@ void InitializeAmbientOcclusionPipeline()
     std::uniform_real_distribution<float> randomFloats(0.0f, 1.0f);
     std::default_random_engine generator;
 
-    glm::vec3 noiseData[64 * 64];
-    for (int y = 0; y < 64; y++)
+    glm::vec3* noiseData = new glm::vec3[NOISE_DATA_SIZE * NOISE_DATA_SIZE];
+    for (int y = 0; y < NOISE_DATA_SIZE; y++)
     {
-        for (int x = 0; x < 64; x++)
+        for (int x = 0; x < NOISE_DATA_SIZE; x++)
         {
-            noiseData[y * 64 + x] = glm::vec3(randomFloats(generator) * 2.0f - 1.0f, randomFloats(generator) * 2.0f - 1.0f, randomFloats(generator));
+            noiseData[y * NOISE_DATA_SIZE + x] = glm::vec3(randomFloats(generator) * 2.0f - 1.0f, randomFloats(generator) * 2.0f - 1.0f, 0.0f);
         }
     }
     glGenTextures(1, &g_AOpipeline.noiseTexture);
     glBindTexture(GL_TEXTURE_2D, g_AOpipeline.noiseTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, 64, 64, 0, GL_RGB, GL_FLOAT, noiseData);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, NOISE_DATA_SIZE, NOISE_DATA_SIZE, 0, GL_RGB, GL_FLOAT, noiseData);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
+    delete noiseData;
 }
 void CleanUpAmbientOcclusionPipeline()
 {

@@ -466,7 +466,7 @@ void RenderAmbientOcclusion(PScene scene, StandardRenderPassData* data, const Sc
 		RenderAmbientOcclusionQuad(frameData->aoFBO.depth, screenSizeX, screenSizeY);
 
 		const IntermediateTextureData* data = GetIntermediateTexture(screenSizeX, screenSizeY, 8, true, false, false, false);
-		BlurTextureToFramebuffer(frameData->aoFBO.fbo, frameData->baseWidth, frameData->baseHeight, frameData->aoFBO.texture, 8.0f, data->fbo, data->texture);
+		BlurTextureToFramebuffer(frameData->aoFBO.fbo, frameData->baseWidth, frameData->baseHeight, frameData->aoFBO.texture, 2.0f, data->fbo, data->texture);
 		
 	}
 	else

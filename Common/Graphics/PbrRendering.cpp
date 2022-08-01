@@ -384,15 +384,15 @@ void LoadTextures(const tinygltf::Model& m, InternalPBR& pbr)
 			const tinygltf::Sampler& smpl = m.samplers.at(tex.sampler);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, smpl.wrapS);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, smpl.wrapT);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		}
 		else
 		{
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		}
 
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, img.width, img.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, img.image.data());
@@ -1313,11 +1313,7 @@ out vec4 outColor;\n\
 \n\
 struct PBRInfo\n\
 {\n\
-	float NdotL;                  \n\
 	float NdotV;                  \n\
-	float NdotH;                  \n\
-	float LdotH;                  \n\
-	float VdotH;                  \n\
 	float perceptualRoughness;    \n\
 	float metalness;              \n\
 	vec3 reflectance0;            \n\
@@ -1333,7 +1329,7 @@ const float c_MinRoughness = 0.04;\n\
 const float PBR_WORKFLOW_METALLIC_ROUGHNESS = 0.0;\n\
 const float PBR_WORKFLOW_SPECULAR_GLOSINESS = 1.0f;\n\
 \n\
-#define MANUAL_SRGB 1\n\
+#define MANUAL_SRGB 0\n\
 \n\
 vec3 Uncharted2Tonemap(vec3 color)\n\
 {\n\
@@ -1411,28 +1407,6 @@ vec3 diffuse(PBRInfo pbrInputs)\n\
 	return pbrInputs.diffuseColor / M_PI;\n\
 }\n\
 \n\
-vec3 specularReflection(PBRInfo pbrInputs)\n\
-{\n\
-	return pbrInputs.reflectance0 + (pbrInputs.reflectance90 - pbrInputs.reflectance0) * pow(clamp(1.0f - pbrInputs.VdotH, 0.0f, 1.0f), 5.0f);\n\
-}\n\
-\n\
-float geometricOcclusion(PBRInfo pbrInputs)\n\
-{\n\
-	float NdotL = pbrInputs.NdotL;\n\
-	float NdotV = pbrInputs.NdotV;\n\
-	float r = pbrInputs.alphaRoughness;\n\
-\n\
-	float attenuationL = 2.0f * NdotL / (NdotL + sqrt(r * r + (1.0f - r * r) * (NdotL * NdotL)));\n\
-	float attenuationV = 2.0f * NdotV / (NdotV + sqrt(r * r + (1.0f - r * r) * (NdotV * NdotV)));\n\
-	return attenuationL * attenuationV;\n\
-}\n\
-\n\
-float microfacetDistribution(PBRInfo pbrInputs)\n\
-{\n\
-	float roughnessSq = pbrInputs.alphaRoughness * pbrInputs.alphaRoughness;\n\
-	float f = (pbrInputs.NdotH * roughnessSq - pbrInputs.NdotH) * pbrInputs.NdotH + 1.0;\n\
-	return roughnessSq / (M_PI * f * f);\n\
-}\n\
 \n\
 float convertMetallic(vec3 diffuse, vec3 specular, float maxSpecular) {\n\
 	float perceivedDiffuse = sqrt(0.299f * diffuse.r * diffuse.r + 0.587f * diffuse.g * diffuse.g + 0.114f * diffuse.b * diffuse.b);\n\
@@ -1528,22 +1502,12 @@ void main()\n\
 \n\
 	vec3 n = (material.normalTextureSet > -1) ? getNormal() : normalize(inNormal);\n\
 	vec3 v = normalize(ubo.camPos - inWorldPos);    // Vector from surface point to camera\n\
-	vec3 l = normalize(uboParams.lightDir.xyz);     // Vector from surface point to light\n\
-	vec3 h = normalize(l + v);                        // Half vector between both l and v\n\
 	vec3 reflection = -normalize(reflect(v, n));\n\
 \n\
-	float NdotL = clamp(dot(n, l), 0.001, 1.0);\n\
 	float NdotV = clamp(abs(dot(n, v)), 0.001, 1.0);\n\
-	float NdotH = clamp(dot(n, h), 0.0, 1.0);\n\
-	float LdotH = clamp(dot(l, h), 0.0, 1.0);\n\
-	float VdotH = clamp(dot(v, h), 0.0, 1.0);\n\
 \n\
 	PBRInfo pbrInputs = PBRInfo(\n\
-		NdotL,\n\
 		NdotV,\n\
-		NdotH,\n\
-		LdotH,\n\
-		VdotH,\n\
 		perceptualRoughness,\n\
 		metallic,\n\
 		specularEnvironmentR0,\n\
@@ -1554,9 +1518,6 @@ void main()\n\
 	);\n\
 \n\
 	// Calculate the shading terms for the microfacet specular shading model\n\
-	vec3 F = specularReflection(pbrInputs);\n\
-	float G = geometricOcclusion(pbrInputs);\n\
-	float D = microfacetDistribution(pbrInputs);\n\
 	vec3 color = CalculateLightsColor(vec4(inWorldPos, 1.0f), n, v, diffuseColor, specularColor, reflectance90);\n\
 \n\
 	// Calculate lighting contribution from image based lighting source (IBL)\n\
@@ -1600,22 +1561,6 @@ void main()\n\
 			break;\n\
 		}\n\
 		outColor = SRGBtoLINEAR(outColor);\n\
-	}\n\
-\n\
-	// PBR equation debug visualization\n\
-	if (uboParams.debugViewEquation > 0.0) {\n\
-		int index = int(uboParams.debugViewEquation);\n\
-		switch (index) {\n\
-		case 1:\n\
-			outColor.rgb = F;\n\
-			break;\n\
-		case 2:\n\
-			outColor.rgb = vec3(G);\n\
-			break;\n\
-		case 3:\n\
-			outColor.rgb = vec3(D);\n\
-			break;\n\
-		}\n\
 	}\n\
 \n\
 }";

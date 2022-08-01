@@ -318,11 +318,12 @@ vec3 CalculateLightsColor(vec4 fragWorldPos, vec3 normal, vec3 viewDir, vec3 mat
 {\
 	vec3 result = vec3(0.0f);\
 	float occludedValue = texture(_my_internalAOMap, (gl_FragCoord.xy - vec2(0.5)) / currentFBOSize).r;\
+	matDiffuseCol *= occludedValue;\
 	for(int i = 0; i < _lightData.numDirLights; i++)\
 	{\
 		float shadow = 1.0f;\
 		if(_lightData.dirLights[i].hasShadow) shadow = CalculateShadowValue(_lightData.dirLights[i].mapper, fragWorldPos);\
-		result += CalculateDirectionalLightColor(_lightData.dirLights[i], normal, viewDir, matDiffuseCol, matSpecCol, shininess) * shadow * occludedValue;\
+		result += CalculateDirectionalLightColor(_lightData.dirLights[i], normal, viewDir, matDiffuseCol, matSpecCol, shininess) * shadow;\
 	}\
 	for(int i = 0; i < _lightData.numPointLights; i++)\
 	{\

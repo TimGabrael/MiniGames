@@ -152,35 +152,35 @@ void UnoPlugin::Init(ApplicationData* data)
 		light->data.mapper.end = { 1.0f, 1.0f };
 		light->data.mapper.viewProj = g_objs->shadowCam.viewProj;
 
-		ScenePointLight* plight = SC_AddPointLight(g_objs->UnoScene);
-		plight->data.ambient = { 0.2f, 0.2f, 0.2f };
-		plight->data.diffuse = { 10.0f, 0.0f, 0.0f };
-		plight->data.pos = { 0, 4.0f, 0.0f };
-		plight->data.specular = { 0.8f, 0.8f, 0.8f };
-		plight->data.constant = 1.0f;
-		plight->data.linear = 0.1f;
-		plight->data.quadratic = 0.1f;
-		plight->data.hasShadow = false;
-
-		plight = SC_AddPointLight(g_objs->UnoScene);
-		plight->data.ambient = { 0.2f, 0.2f, 0.2f };
-		plight->data.diffuse = { 0.0f, 10.0f, 0.0f };
-		plight->data.pos = { -4.0, 4.0f, -4.0f };
-		plight->data.specular = { 0.8f, 0.8f, 0.8f };
-		plight->data.constant = 1.0f;
-		plight->data.linear = 0.1f;
-		plight->data.quadratic = 0.1f;
-		plight->data.hasShadow = false;
-
-		plight = SC_AddPointLight(g_objs->UnoScene);
-		plight->data.ambient = { 0.2f, 0.2f, 0.2f };
-		plight->data.diffuse = { 0.0f, 0.0f, 10.0f };
-		plight->data.pos = { 4.0, 4.0f, -4.0f };
-		plight->data.specular = { 0.8f, 0.8f, 0.8f };
-		plight->data.constant = 1.0f;
-		plight->data.linear = 0.1f;
-		plight->data.quadratic = 0.1f;
-		plight->data.hasShadow = false;
+		// ScenePointLight* plight = SC_AddPointLight(g_objs->UnoScene);
+		// plight->data.ambient = { 0.2f, 0.2f, 0.2f };
+		// plight->data.diffuse = { 10.0f, 0.0f, 0.0f };
+		// plight->data.pos = { 0, 4.0f, 0.0f };
+		// plight->data.specular = { 0.8f, 0.8f, 0.8f };
+		// plight->data.constant = 1.0f;
+		// plight->data.linear = 0.1f;
+		// plight->data.quadratic = 0.1f;
+		// plight->data.hasShadow = false;
+		// 
+		// plight = SC_AddPointLight(g_objs->UnoScene);
+		// plight->data.ambient = { 0.2f, 0.2f, 0.2f };
+		// plight->data.diffuse = { 0.0f, 10.0f, 0.0f };
+		// plight->data.pos = { -4.0, 4.0f, -4.0f };
+		// plight->data.specular = { 0.8f, 0.8f, 0.8f };
+		// plight->data.constant = 1.0f;
+		// plight->data.linear = 0.1f;
+		// plight->data.quadratic = 0.1f;
+		// plight->data.hasShadow = false;
+		// 
+		// plight = SC_AddPointLight(g_objs->UnoScene);
+		// plight->data.ambient = { 0.2f, 0.2f, 0.2f };
+		// plight->data.diffuse = { 0.0f, 0.0f, 10.0f };
+		// plight->data.pos = { 4.0, 4.0f, -4.0f };
+		// plight->data.specular = { 0.8f, 0.8f, 0.8f };
+		// plight->data.constant = 1.0f;
+		// plight->data.linear = 0.1f;
+		// plight->data.quadratic = 0.1f;
+		// plight->data.hasShadow = false;
 
 
 		UBOParams params = UBOParams();
@@ -257,6 +257,8 @@ void UnoPlugin::Resize(ApplicationData* data)
 	g_objs->rendererData.MakeMainFramebuffer();
 }
 static ColorPicker picker;
+static bool overrideAOMap = false;
+static bool drawAOMap = false;
 void UnoPlugin::Render(ApplicationData* data)
 {
 	if (!(sizeX && sizeY)) return;
@@ -364,9 +366,10 @@ void UnoPlugin::Render(ApplicationData* data)
 	RenderAmbientOcclusion(g_objs->UnoScene, &stdData, &g_objs->rendererData, sizeX, sizeY);
 	glBindFramebuffer(GL_FRAMEBUFFER, GetMainFramebuffer());
 	glViewport(0, 0, mainSize.x, mainSize.y);
-
+	if (overrideAOMap) stdData.ambientOcclusionMap = 0;
 	RenderSceneStandard(g_objs->UnoScene, &stdData);
 
+	if (drawAOMap) DrawQuad({ -1.0f, -1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF, g_objs->rendererData.aoFBO.texture);
 
 	DrawUI();
 	RenderPostProcessing(&g_objs->rendererData, GetScreenFramebuffer(), sizeX, sizeY);
@@ -402,6 +405,8 @@ void UnoPlugin::KeyDownCallback(Key k, bool isRepeat)
 		if (k == Key::Key_A)g_objs->moveComp.SetMovementDirection(MovementComponent::DIRECTION::LEFT, true);
 		if (k == Key::Key_S)g_objs->moveComp.SetMovementDirection(MovementComponent::DIRECTION::BACKWARD, true);
 		if (k == Key::Key_D)g_objs->moveComp.SetMovementDirection(MovementComponent::DIRECTION::RIGHT, true);
+		if (k == Key::Key_E)overrideAOMap = !overrideAOMap;
+		if (k == Key::Key_R)drawAOMap = !drawAOMap;
 	}
 #endif
 	if (k == Key::Key_0) g_objs->localPlayer->FetchCard(g_objs->playerCam, g_objs->stack, g_objs->deck, g_objs->anims);
