@@ -52,7 +52,7 @@ struct MovementComponent
 	static constexpr float joystickTurnSpeed = 1.0f;
 };
 
-
+struct OrthographicCamera;
 struct Camera
 {
 	static Camera GetReflected(const Camera* ref, const glm::vec4& reflectionPlane);
@@ -81,6 +81,10 @@ struct Camera
 	GLuint uniform;
 
 	int screenX, screenY;
+
+
+	void SetTightFit(OrthographicCamera* outCam, const glm::vec3& dir, float distance);
+
 private:
 
 	glm::vec3 front = glm::vec3(0.0f, 0.0f, -1.0f);

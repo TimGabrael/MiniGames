@@ -711,10 +711,6 @@ DepthFBO CreateDepthFBO(int width, int height)
 	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, &borderColor);
 #endif
 
-	// for whatever reason this doesn't lead to undefined behavior even though 
-	// the documentation tells me otherwise, (EXACT OPPOSITE) one should use GL_NONE as a compare_mode, if you want to sample the Depth texture with a
-	// normal sampler2D, but my physical phone doesn't perform depth test with GL_NONE :(
-	// but to mitigate further unkown U.B. just use a sampler2DShadow in the shader (which also did not work originaly for me)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);	
 
 

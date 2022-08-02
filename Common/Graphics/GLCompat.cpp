@@ -287,7 +287,7 @@ float CalculateCubeShadowValue(CubemapLightMapperData mapper, vec3 fragToLight, 
 	vec3 indexUV = convert_xyz_to_cube_uv(fragToLight);\n\
 	return 1.0f;\
 }\
-vec3 CalculatePointLightColor(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir, vec3 matDiffuseCol, vec3 matSpecCol, float shininess)\
+vec3 CalculatePointLightColor(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir, vec3 matDiffuseCol, vec3 matSpecCol, float shininess, float shadowValue)\
 {\
 	vec3 lightDir = normalize(light.pos - fragPos);\
 	float diff = max(dot(normal, lightDir), 0.0f);\
@@ -296,22 +296,22 @@ vec3 CalculatePointLightColor(PointLight light, vec3 normal, vec3 fragPos, vec3 
 	float distance = length(light.pos - fragPos);\
 	float attenuation = 1.0f / (light.constant + light.linear * distance + light.quadratic * (distance * distance));\
 	vec3 ambient = light.ambient * matDiffuseCol;\
-	vec3 diffuse = light.diffuse * diff * matDiffuseCol;\
-	vec3 specular = light.specular * spec * matSpecCol;\
+	vec3 diffuse = light.diffuse * diff * matDiffuseCol * shadowValue;\
+	vec3 specular = light.specular * spec * matSpecCol * shadowValue;\
 	ambient *= attenuation;\
 	diffuse *= attenuation;\
 	specular *= attenuation;\
 	return (ambient + diffuse + specular);\
 }\
-vec3 CalculateDirectionalLightColor(DirectionalLight light, vec3 normal, vec3 viewDir, vec3 matDiffuseCol, vec3 matSpecCol, float shininess)\
+vec3 CalculateDirectionalLightColor(DirectionalLight light, vec3 normal, vec3 viewDir, vec3 matDiffuseCol, vec3 matSpecCol, float shininess, float shadowValue)\
 {\
 	vec3 lightDir = normalize(-light.dir);\
 	float diff = max(dot(normal, lightDir), 0.0f);\
 	vec3 reflectDir = reflect(-lightDir, normal);\
 	float spec = pow(max(dot(viewDir, reflectDir), 0.0f), shininess);\
 	vec3 ambient = light.ambient * matDiffuseCol;\
-	vec3 diffuse = light.diffuse * diff * matDiffuseCol;\
-	vec3 specular = light.specular * spec * matSpecCol;\
+	vec3 diffuse = light.diffuse * diff * matDiffuseCol * shadowValue;\
+	vec3 specular = light.specular * spec * matSpecCol * shadowValue;\
 	return (ambient + diffuse + specular);\
 }\
 vec3 CalculateLightsColor(vec4 fragWorldPos, vec3 normal, vec3 viewDir, vec3 matDiffuseCol, vec3 matSpecCol, float shininess)\
@@ -323,11 +323,11 @@ vec3 CalculateLightsColor(vec4 fragWorldPos, vec3 normal, vec3 viewDir, vec3 mat
 	{\
 		float shadow = 1.0f;\
 		if(_lightData.dirLights[i].hasShadow) shadow = CalculateShadowValue(_lightData.dirLights[i].mapper, fragWorldPos);\
-		result += CalculateDirectionalLightColor(_lightData.dirLights[i], normal, viewDir, matDiffuseCol, matSpecCol, shininess) * shadow;\
+		result += CalculateDirectionalLightColor(_lightData.dirLights[i], normal, viewDir, matDiffuseCol, matSpecCol, shininess, shadow);\
 	}\
 	for(int i = 0; i < _lightData.numPointLights; i++)\
 	{\
-		result += CalculatePointLightColor(_lightData.pointLights[i], normal, fragWorldPos.xyz, viewDir, matDiffuseCol, matSpecCol, shininess);\
+		result += CalculatePointLightColor(_lightData.pointLights[i], normal, fragWorldPos.xyz, viewDir, matDiffuseCol, matSpecCol, shininess, 1.0f);\
 	}\n\
 	return result;\
 }\

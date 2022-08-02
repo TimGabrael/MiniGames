@@ -15,7 +15,7 @@
 #include <math.h>
 
 PLUGIN_EXPORT_DEFINITION(UnoPlugin, "a3fV-6giK-10Eb-2rdT");
-#define SHADOW_TEXTURE_SIZE 512
+#define SHADOW_TEXTURE_SIZE 2048
 
 PLUGIN_INFO UnoPlugin::GetPluginInfos()
 {
@@ -117,7 +117,7 @@ void UnoPlugin::Init(ApplicationData* data)
 		camData.projection = g_objs->shadowCam.proj;
 		camData.view = g_objs->shadowCam.view;
 
-		glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraData), &camData, GL_STATIC_DRAW);
+		glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraData), &camData, GL_DYNAMIC_DRAW);
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 	}
 	{
@@ -125,8 +125,8 @@ void UnoPlugin::Init(ApplicationData* data)
 		glBindBuffer(GL_UNIFORM_BUFFER, g_objs->playerCam.uniform);
 		glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraData), nullptr, GL_DYNAMIC_DRAW);
 	}
-	//void* pbrModel = CreateInternalPBRFromFile("Assets/Helmet.gltf", 1.0f);
-	void* pbrModel = CreateInternalPBRFromFile("C:/Users/deder/OneDrive/Desktop/3DModels/glTF-Sample-Models-master/2.0/Sponza/glTF/Sponza.gltf", 1.0f);
+	void* pbrModel = CreateInternalPBRFromFile("Assets/Helmet.gltf", 1.0f);
+	//void* pbrModel = CreateInternalPBRFromFile("C:/Users/deder/OneDrive/Desktop/3DModels/glTF-Sample-Models-master/2.0/Sponza/glTF/Sponza.gltf", 1.0f);
 
 
 	// CREATE SCENE
@@ -259,6 +259,8 @@ void UnoPlugin::Resize(ApplicationData* data)
 static ColorPicker picker;
 static bool overrideAOMap = false;
 static bool drawAOMap = false;
+static bool camToShadowView = false;
+static bool stopUpdateShadow = false;
 void UnoPlugin::Render(ApplicationData* data)
 {
 	if (!(sizeX && sizeY)) return;
@@ -304,6 +306,14 @@ void UnoPlugin::Render(ApplicationData* data)
 	glClearDepthf(1.0f);
 	glClear(GL_DEPTH_BUFFER_BIT);
 
+	g_objs->playerCam.viewProj = g_objs->playerCam.perspective * g_objs->playerCam.view;
+	if(!stopUpdateShadow)
+		g_objs->playerCam.SetTightFit(&g_objs->shadowCam, g_objs->lightDir, 4.0f);
+	
+
+	light->data.mapper.start = { 0.0f, 0.0f };
+	light->data.mapper.end = { 1.0f, 1.0f };
+	light->data.mapper.viewProj = g_objs->shadowCam.viewProj;
 
 	stdData.skyBox = g_objs->skybox;
 	stdData.camPos = &g_objs->shadowCam.pos;
@@ -345,15 +355,32 @@ void UnoPlugin::Render(ApplicationData* data)
 	{
 		glBindBuffer(GL_UNIFORM_BUFFER, g_objs->playerCam.uniform);
 		CameraData camData;
-		camData.camPos = g_objs->playerCam.pos;
-		camData.view = g_objs->playerCam.view;
-		camData.projection = g_objs->playerCam.perspective;
+		if (camToShadowView)
+		{
+			camData.camPos = g_objs->shadowCam.pos;
+			camData.view = g_objs->shadowCam.view;
+			camData.projection = g_objs->shadowCam.proj;
+		}
+		else
+		{
+			camData.camPos = g_objs->playerCam.pos;
+			camData.view = g_objs->playerCam.view;
+			camData.projection = g_objs->playerCam.perspective;
+		}
 		glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraData), &camData, GL_DYNAMIC_DRAW);
 	}
-	stdData.camView = &g_objs->playerCam.view;
-	stdData.camProj = &g_objs->playerCam.perspective;
-	stdData.camPos = &g_objs->playerCam.pos;
-
+	if (camToShadowView)
+	{
+		stdData.camView = &g_objs->shadowCam.view;
+		stdData.camProj = &g_objs->shadowCam.proj;
+		stdData.camPos = &g_objs->shadowCam.pos;
+	}
+	else
+	{
+		stdData.camView = &g_objs->playerCam.view;
+		stdData.camProj = &g_objs->playerCam.perspective;
+		stdData.camPos = &g_objs->playerCam.pos;
+	}
 	glm::ivec2 mainSize = GetMainFramebufferSize();
 	glBindFramebuffer(GL_FRAMEBUFFER, GetMainFramebuffer());
 	glViewport(0, 0, mainSize.x, mainSize.y);
@@ -369,7 +396,15 @@ void UnoPlugin::Render(ApplicationData* data)
 	if (overrideAOMap) stdData.ambientOcclusionMap = 0;
 	RenderSceneStandard(g_objs->UnoScene, &stdData);
 
-	if (drawAOMap) DrawQuad({ -1.0f, -1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF, g_objs->rendererData.aoFBO.texture);
+	//if (drawAOMap) DrawQuad({ -1.0f, -1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF, g_objs->rendererData.aoFBO.texture);
+	if (drawAOMap) DrawQuad({ -1.0f, -1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF, g_objs->rendererData.shadowFBO.depth);
+
+
+
+
+
+
+
 
 	DrawUI();
 	RenderPostProcessing(&g_objs->rendererData, GetScreenFramebuffer(), sizeX, sizeY);
@@ -407,6 +442,8 @@ void UnoPlugin::KeyDownCallback(Key k, bool isRepeat)
 		if (k == Key::Key_D)g_objs->moveComp.SetMovementDirection(MovementComponent::DIRECTION::RIGHT, true);
 		if (k == Key::Key_E)overrideAOMap = !overrideAOMap;
 		if (k == Key::Key_R)drawAOMap = !drawAOMap;
+		if (k == Key::Key_T)camToShadowView = !camToShadowView;
+		if (k == Key::Key_Z)stopUpdateShadow = !stopUpdateShadow;
 	}
 #endif
 	if (k == Key::Key_0) g_objs->localPlayer->FetchCard(g_objs->playerCam, g_objs->stack, g_objs->deck, g_objs->anims);

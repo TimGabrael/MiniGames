@@ -11,6 +11,7 @@
 #include <math.h>
 
 #include "logging.h"
+#include "Renderer.h"
 
 constexpr float MovementComponent::maxVelocity;			// required for android build
 constexpr float MovementComponent::joystickTurnSpeed;	// required for android build
@@ -175,7 +176,7 @@ void Camera::SetPerspective(float fov, float aspect, float znear, float zfar)
 {
 	this->nearClipping = znear; this->farClipping = zfar;
 	this->aspectRatio = aspect; this->fieldOfView = fov;
-	perspective = glm::perspective(glm::radians(fov), aspect, znear, zfar);
+	perspective = glm::perspectiveRH(glm::radians(fov), aspect, znear, zfar);
 }
 void Camera::Update(const MovementComponent* comp)
 {
@@ -242,60 +243,70 @@ glm::vec3 Camera::ScreenToWorld(float x, float y) const
 	return res;
 }
 
+void Camera::SetTightFit(OrthographicCamera* outCam, const glm::vec3& dir, float distance)
+{
+	float splitDist = 1.0f;
+	float lastSplitDist = 0.0f;
+	const glm::mat4 invCam = glm::inverse(perspective * view);
+	glm::vec3 frustumCorners[8] = {
+		glm::vec3(-1.0f,  1.0f, -1.0f),
+		glm::vec3(1.0f,  1.0f, -1.0f),
+		glm::vec3(1.0f, -1.0f, -1.0f),
+		glm::vec3(-1.0f, -1.0f, -1.0f),
+		glm::vec3(-1.0f,  1.0f,  1.0f),
+		glm::vec3(1.0f,  1.0f,  1.0f),
+		glm::vec3(1.0f, -1.0f,  1.0f),
+		glm::vec3(-1.0f, -1.0f,  1.0f),
+	};
+	for (uint32_t i = 0; i < 8; i++) {
+		glm::vec4 invCorner = invCam * glm::vec4(frustumCorners[i], 1.0f);
+		frustumCorners[i] = invCorner / invCorner.w;
+	}
+	for (uint32_t i = 0; i < 4; i++) {
+		glm::vec3 dist = frustumCorners[i + 4] - frustumCorners[i];
+		frustumCorners[i + 4] = frustumCorners[i] + (dist * splitDist);
+		frustumCorners[i] = frustumCorners[i] + (dist * lastSplitDist);
+	}
+	glm::vec3 frustumCenter = glm::vec3(0.0f);
+	for (uint32_t i = 0; i < 8; i++) {
+		frustumCenter += frustumCorners[i];
+	}
+	frustumCenter /= 8.0f;
+	float radius = 0.0f;
+	for (uint32_t i = 0; i < 8; i++) {
+		float distance = glm::length(frustumCorners[i] - frustumCenter);
+		radius = glm::max(radius, distance);
+	}
+	radius = std::ceil(radius * 16.0f) / 16.0f;
+	glm::vec3 maxExtents = glm::vec3(radius);
+	glm::vec3 minExtents = -maxExtents;
+	glm::vec3 lightDir = glm::normalize(dir);
+	glm::mat4 lightViewMatrix = glm::lookAt(frustumCenter - lightDir * -minExtents.z, frustumCenter, glm::vec3(0.0f, 1.0f, 0.0f));
+	glm::mat4 lightOrthoMatrix = glm::ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.0f, maxExtents.z - minExtents.z);
+
+	outCam->view = lightViewMatrix;
+	outCam->proj = lightOrthoMatrix;
+
+
+	//cascades[i].splitDepth = (camera.getNearClip() + splitDist * clipRange) * -1.0f;
+
+	outCam->viewProj = outCam->proj * outCam->view;
+	glBindBuffer(GL_UNIFORM_BUFFER, outCam->uniform);
+
+	CameraData camData;
+	camData.camPos = outCam->pos;
+	camData.projection = outCam->proj;
+	camData.view = outCam->view;
+
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraData), &camData, GL_DYNAMIC_DRAW);
+
+}
+
+
+
 static glm::vec4 NDCToWorld(const glm::mat4& invMat, const glm::vec4& pos)
 {
 	glm::vec4 world = invMat * pos;
 	world = world / world.w;
 	return world;
-}
-
-OrthographicCamera OrthographicCamera::CreateMinimalFit(const Camera& cam, const glm::vec3& dir, float distance)
-{
-	OrthographicCamera out;
-	
-	glm::mat4 invMat = glm::inverse(cam.perspective * cam.view);
-
-	
-
-	glm::vec4 pts[8] = {
-		NDCToWorld(invMat, {-1.0f, -1.0f, -1.0f, 1.0f}),
-		NDCToWorld(invMat, { 1.0f, -1.0f, -1.0f, 1.0f}),
-		NDCToWorld(invMat, { 1.0f,  1.0f, -1.0f, 1.0f}),
-		NDCToWorld(invMat, {-1.0f,  1.0f, -1.0f, 1.0f}),
-		
-		NDCToWorld(invMat, {-1.0f, -1.0f,  1.0f, 1.0f}),
-		NDCToWorld(invMat, { 1.0f, -1.0f,  1.0f, 1.0f}),
-		NDCToWorld(invMat, { 1.0f,  1.0f,  1.0f, 1.0f}),
-		NDCToWorld(invMat, {-1.0f,  1.0f,  1.0f, 1.0f}),
-	};
-	glm::vec3 center = { 0,0,0 };
-	for(int i = 0; i < 8; i++)
-	{
-		center += glm::vec3(pts[i]);
-	}
-	center /= 8;
-	out.pos = center - dir * distance;
-	
-	out.view = glm::lookAtLH(out.pos, center, glm::vec3(0.0f, 1.0f, 0.0f));
-
-	for (int i = 0; i < 8; i++)
-	{
-		pts[i] = out.view * pts[i];
-	}
-
-	glm::vec3 min = pts[0];
-	glm::vec3 max = pts[0];
-	for (int i = 1; i < 8; i++)
-	{
-		if (pts[i].x < min.x) min.x = pts[i].x;
-		if (max.x < pts[i].x) max.x = pts[i].x;
-		if (pts[i].y < min.y) min.y = pts[i].y;
-		if (max.y < pts[i].y) max.y = pts[i].y;
-		if (pts[i].z < min.z) min.z = pts[i].z;
-		if (max.z < pts[i].z) max.z = pts[i].z;
-	}
-	out.proj = glm::ortho(min.x, max.x, min.y, max.y, min.z, max.z);
-
-
-	return out;
 }

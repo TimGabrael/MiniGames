@@ -212,7 +212,14 @@ void DrawCircle(const glm::vec2& center, const glm::vec2& rad, float angleStart,
 	AddVerticesToBuffer(verts, 3 * samples, g_ui.standardTexture, true);
 	delete[] verts;
 }
-
+void DrawLine(const glm::vec2& first, const glm::vec2& second, uint32_t col)
+{
+	Vertex2D verts[2] = {
+		first, {0.0f, 0.0f}, col,
+		second, {0.0f, 0.0f}, col,
+	};
+	AddVerticesToBuffer(verts, 2, g_ui.standardTexture, false);
+}
 void DrawUI()
 {
 	if (g_ui.streamBuffer.instructions.empty()) return;
