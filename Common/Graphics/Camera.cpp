@@ -277,6 +277,7 @@ void Camera::SetTightFit(OrthographicCamera* outCam, const glm::vec3& dir, float
 		float distance = glm::length(frustumCorners[i] - frustumCenter);
 		radius = glm::max(radius, distance);
 	}
+
 	radius = std::ceil(radius * 16.0f) / 16.0f;
 	glm::vec3 maxExtents = glm::vec3(radius);
 	glm::vec3 minExtents = -maxExtents;
@@ -284,11 +285,10 @@ void Camera::SetTightFit(OrthographicCamera* outCam, const glm::vec3& dir, float
 	glm::mat4 lightViewMatrix = glm::lookAt(frustumCenter - lightDir * -minExtents.z, frustumCenter, glm::vec3(0.0f, 1.0f, 0.0f));
 	glm::mat4 lightOrthoMatrix = glm::ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.0f, maxExtents.z - minExtents.z);
 
+	outCam->pos = frustumCenter - lightDir * -minExtents.z;
 	outCam->view = lightViewMatrix;
 	outCam->proj = lightOrthoMatrix;
 
-
-	//cascades[i].splitDepth = (camera.getNearClip() + splitDist * clipRange) * -1.0f;
 
 	outCam->viewProj = outCam->proj * outCam->view;
 	glBindBuffer(GL_UNIFORM_BUFFER, outCam->uniform);

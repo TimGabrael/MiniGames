@@ -104,8 +104,6 @@ private:
 
 struct OrthographicCamera
 {
-	static OrthographicCamera CreateMinimalFit(const Camera& cam, const glm::vec3& dir, float distance);
-
 	glm::mat4 proj;
 	glm::mat4 view;
 	glm::vec3 pos;

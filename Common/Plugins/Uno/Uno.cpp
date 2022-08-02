@@ -15,7 +15,7 @@
 #include <math.h>
 
 PLUGIN_EXPORT_DEFINITION(UnoPlugin, "a3fV-6giK-10Eb-2rdT");
-#define SHADOW_TEXTURE_SIZE 2048
+#define SHADOW_TEXTURE_SIZE 2048 * 4
 
 PLUGIN_INFO UnoPlugin::GetPluginInfos()
 {
