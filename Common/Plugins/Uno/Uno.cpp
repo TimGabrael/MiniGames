@@ -15,7 +15,8 @@
 #include <math.h>
 
 PLUGIN_EXPORT_DEFINITION(UnoPlugin, "a3fV-6giK-10Eb-2rdT");
-#define SHADOW_TEXTURE_SIZE 2048 * 4
+#define SHADOW_TEXTURE_SIZE 2048
+
 
 PLUGIN_INFO UnoPlugin::GetPluginInfos()
 {
@@ -92,6 +93,11 @@ void UnoPlugin::Init(ApplicationData* data)
 	InitializeCardPipeline(data->assetManager);
 
 
+	GLint tex;
+	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &tex);
+	LOG("MAXTEXSIZE: %d\n", tex);
+
+
 	g_objs = new UnoGlobals;
 	g_objs->moveComp.pos = { 0.0f, 1.6f, 2.0f };
 	g_objs->moveComp.SetRotation(-90.0f, -40.0f, 0.0f);
@@ -125,8 +131,8 @@ void UnoPlugin::Init(ApplicationData* data)
 		glBindBuffer(GL_UNIFORM_BUFFER, g_objs->playerCam.uniform);
 		glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraData), nullptr, GL_DYNAMIC_DRAW);
 	}
-	void* pbrModel = CreateInternalPBRFromFile("Assets/Helmet.gltf", 1.0f);
-	//void* pbrModel = CreateInternalPBRFromFile("C:/Users/deder/OneDrive/Desktop/3DModels/glTF-Sample-Models-master/2.0/Sponza/glTF/Sponza.gltf", 1.0f);
+	//void* pbrModel = CreateInternalPBRFromFile("Assets/Helmet.gltf", 1.0f);
+	void* pbrModel = CreateInternalPBRFromFile("C:/Users/deder/OneDrive/Desktop/3DModels/glTF-Sample-Models-master/2.0/Sponza/glTF/Sponza.gltf", 1.0f);
 
 
 	// CREATE SCENE
@@ -148,39 +154,40 @@ void UnoPlugin::Init(ApplicationData* data)
 		light->data.dir = { -1.0f / sqrtf(3.0f), -1.0f / sqrt(3.0f), -1.0f / sqrt(3.0f) };
 		light->data.specular = { 0.8f, 0.8f, 0.8f };
 		light->data.hasShadow = true;
-		light->data.mapper.start = { 0.0f, 0.0f };
-		light->data.mapper.end = { 1.0f, 1.0f };
-		light->data.mapper.viewProj = g_objs->shadowCam.viewProj;
+		light->data.mapper[0].start = { 0.0f, 0.0f };
+		light->data.mapper[0].end = { 1.0f, 1.0f };
+		light->data.mapper[0].viewProj = g_objs->shadowCam.viewProj;
+		light->data.numCascades = 1;
 
-		// ScenePointLight* plight = SC_AddPointLight(g_objs->UnoScene);
-		// plight->data.ambient = { 0.2f, 0.2f, 0.2f };
-		// plight->data.diffuse = { 10.0f, 0.0f, 0.0f };
-		// plight->data.pos = { 0, 4.0f, 0.0f };
-		// plight->data.specular = { 0.8f, 0.8f, 0.8f };
-		// plight->data.constant = 1.0f;
-		// plight->data.linear = 0.1f;
-		// plight->data.quadratic = 0.1f;
-		// plight->data.hasShadow = false;
-		// 
-		// plight = SC_AddPointLight(g_objs->UnoScene);
-		// plight->data.ambient = { 0.2f, 0.2f, 0.2f };
-		// plight->data.diffuse = { 0.0f, 10.0f, 0.0f };
-		// plight->data.pos = { -4.0, 4.0f, -4.0f };
-		// plight->data.specular = { 0.8f, 0.8f, 0.8f };
-		// plight->data.constant = 1.0f;
-		// plight->data.linear = 0.1f;
-		// plight->data.quadratic = 0.1f;
-		// plight->data.hasShadow = false;
-		// 
-		// plight = SC_AddPointLight(g_objs->UnoScene);
-		// plight->data.ambient = { 0.2f, 0.2f, 0.2f };
-		// plight->data.diffuse = { 0.0f, 0.0f, 10.0f };
-		// plight->data.pos = { 4.0, 4.0f, -4.0f };
-		// plight->data.specular = { 0.8f, 0.8f, 0.8f };
-		// plight->data.constant = 1.0f;
-		// plight->data.linear = 0.1f;
-		// plight->data.quadratic = 0.1f;
-		// plight->data.hasShadow = false;
+		//ScenePointLight* plight = SC_AddPointLight(g_objs->UnoScene);
+		//plight->data.ambient = { 0.2f, 0.2f, 0.2f };
+		//plight->data.diffuse = { 10.0f, 0.0f, 0.0f };
+		//plight->data.pos = { 0, 4.0f, 0.0f };
+		//plight->data.specular = { 0.8f, 0.8f, 0.8f };
+		//plight->data.constant = 1.0f;
+		//plight->data.linear = 0.1f;
+		//plight->data.quadratic = 0.1f;
+		//plight->data.hasShadow = false;
+		//
+		//plight = SC_AddPointLight(g_objs->UnoScene);
+		//plight->data.ambient = { 0.2f, 0.2f, 0.2f };
+		//plight->data.diffuse = { 0.0f, 10.0f, 0.0f };
+		//plight->data.pos = { -4.0, 4.0f, -4.0f };
+		//plight->data.specular = { 0.8f, 0.8f, 0.8f };
+		//plight->data.constant = 1.0f;
+		//plight->data.linear = 0.1f;
+		//plight->data.quadratic = 0.1f;
+		//plight->data.hasShadow = false;
+		//
+		//plight = SC_AddPointLight(g_objs->UnoScene);
+		//plight->data.ambient = { 0.2f, 0.2f, 0.2f };
+		//plight->data.diffuse = { 0.0f, 0.0f, 10.0f };
+		//plight->data.pos = { 4.0, 4.0f, -4.0f };
+		//plight->data.specular = { 0.8f, 0.8f, 0.8f };
+		//plight->data.constant = 1.0f;
+		//plight->data.linear = 0.1f;
+		//plight->data.quadratic = 0.1f;
+		//plight->data.hasShadow = false;
 
 
 		UBOParams params = UBOParams();
@@ -227,7 +234,7 @@ void UnoPlugin::Init(ApplicationData* data)
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CCW);
 	glDepthMask(GL_TRUE);
-
+	
 #ifndef ANDROID
 	glEnable(GL_MULTISAMPLE);
 #endif
@@ -236,7 +243,7 @@ void UnoPlugin::Init(ApplicationData* data)
 void UnoPlugin::Resize(ApplicationData* data)
 {
 	if(sizeY && sizeX)
-		g_objs->playerCam.SetPerspective(90.0f, (float)this->sizeX / (float)this->sizeY, 0.1f, 20.0f);
+		g_objs->playerCam.SetPerspective(90.0f, (float)this->sizeX / (float)this->sizeY, 0.1f, 30.0f);
 	g_objs->playerCam.screenX = sizeX;
 	g_objs->playerCam.screenY = sizeY;
 	GLint defaultFBO;
@@ -299,31 +306,17 @@ void UnoPlugin::Render(ApplicationData* data)
 	BeginScene(g_objs->UnoScene);
 
 	StandardRenderPassData stdData;
+	stdData.skyBox = g_objs->skybox;
+	stdData.shadowMap = 0;
+	stdData.ambientOcclusionMap = 0;
 
 	glm::vec4 plane = { 0.0f, 1.0f, 0.0f, 0.0f };
 	glBindFramebuffer(GL_FRAMEBUFFER, g_objs->rendererData.shadowFBO.fbo);
-	glViewport(0, 0, g_objs->rendererData.shadowWidth, g_objs->rendererData.shadowHeight);
 	glClearDepthf(1.0f);
 	glClear(GL_DEPTH_BUFFER_BIT);
-
-	g_objs->playerCam.viewProj = g_objs->playerCam.perspective * g_objs->playerCam.view;
-	if(!stopUpdateShadow)
-		g_objs->playerCam.SetTightFit(&g_objs->shadowCam, g_objs->lightDir, 4.0f);
 	
 
-	light->data.mapper.start = { 0.0f, 0.0f };
-	light->data.mapper.end = { 1.0f, 1.0f };
-	light->data.mapper.viewProj = g_objs->shadowCam.viewProj;
-
-	stdData.skyBox = g_objs->skybox;
-	stdData.camPos = &g_objs->shadowCam.pos;
-	stdData.camProj = &g_objs->shadowCam.proj;
-	stdData.camView = &g_objs->shadowCam.view;
-	stdData.shadowMap = 0;
-	stdData.ambientOcclusionMap = 0;
-	stdData.renderSize = { g_objs->rendererData.shadowWidth, g_objs->rendererData.shadowHeight };
-	stdData.cameraUniform = g_objs->shadowCam.uniform;
-	RenderSceneShadow(g_objs->UnoScene, &stdData);
+	RenderSceneCascadeShadow(g_objs->UnoScene, &g_objs->rendererData, &g_objs->playerCam, &g_objs->shadowCam, &light->data, { 0.0f, 0.0f }, { 1.0f, 1.0f }, 1.0f);
 	stdData.shadowMap = g_objs->rendererData.shadowFBO.depth;
 
 	

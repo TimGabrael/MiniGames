@@ -1200,54 +1200,6 @@ void main()\n\
 	clipDist = dot(vec4(inWorldPos, 1.0f), clipPlane);\n\
 	gl_Position = ubo.projection * ubo.view * vec4(inWorldPos, 1.0);\n\
 }";
-const char* pbrAmbientOcclusionVertexShader = "#version 300 es\n\
-\n\
-layout(location = 0) in vec3 inPos;\n\
-layout(location = 1) in vec3 inVNormal;\n\
-layout(location = 2) in vec2 inVUV0;\n\
-layout(location = 3) in vec2 inVUV1;\n\
-layout(location = 4) in vec4 inJoint0;\n\
-layout(location = 5) in vec4 inWeight0;\n\
-uniform UBO\n\
-{\n\
-	mat4 projection;\n\
-	mat4 view;\n\
-	vec3 camPos;\n\
-} ubo;\n\
-uniform mat4 model;\n\
-\n\
-#define MAX_NUM_JOINTS 128\n\
-\n\
-uniform UBONode {\n\
-	mat4 matrix;\n\
-	mat4 jointMatrix[MAX_NUM_JOINTS];\n\
-	float jointCount;\n\
-} node;\n\
-\n\
-out vec4 pos;\n\
-out vec3 normal;\n\
-\n\
-void main()\n\
-{\n\
-	vec4 locPos;\n\
-	if (node.jointCount > 0.0) {\n\
-		// Mesh is skinned\n\
-		mat4 skinMat =\n\
-			inWeight0.x * node.jointMatrix[int(inJoint0.x)] +\n\
-			inWeight0.y * node.jointMatrix[int(inJoint0.y)] +\n\
-			inWeight0.z * node.jointMatrix[int(inJoint0.z)] +\n\
-			inWeight0.w * node.jointMatrix[int(inJoint0.w)];\n\
-	\n\
-		locPos = model * node.matrix * skinMat * vec4(inPos, 1.0);\n\
-		normal = normalize(transpose(inverse(mat3(model * node.matrix * skinMat))) * inVNormal);\n\
-	}\n\
-	else {\n\
-		locPos = model * node.matrix * vec4(inPos, 1.0);\n\
-		normal = normalize(transpose(inverse(mat3(model * node.matrix))) * inVNormal);\n\
-	}\n\
-	pos = ubo.view * vec4((locPos.xyz / locPos.w), 1.0f);\n\
-	gl_Position = ubo.projection * pos;\n\
-}";
 
 
 

@@ -83,7 +83,7 @@ struct Camera
 	int screenX, screenY;
 
 
-	void SetTightFit(OrthographicCamera* outCam, const glm::vec3& dir, float distance);
+	void SetTightFit(OrthographicCamera* outCam, const glm::vec3& dir, float lastSplitDist, float splitDist, float* splitDepth) const;
 
 private:
 

@@ -10,6 +10,7 @@
 #include <glm/glm.hpp>
 #define MAX_BLOOM_MIPMAPS 8
 #define MAX_NUM_LIGHTS 8
+#define MAX_NUM_SHADOW_CASCADE_MAPS 4
 
 void EndFrameAndResetData();
 
@@ -85,11 +86,12 @@ struct DirectionalLightData
 	float _align3;
 	glm::vec3 specular;
 	float _align4;
-	LightMapperData mapper;
+	LightMapperData mapper[MAX_NUM_SHADOW_CASCADE_MAPS];
+	glm::vec4 cascadeSplits;
+	int numCascades;
 	int hasShadow;
 	int _align5;
 	int _align6;
-	int _align7;
 };
 struct LightUniformData
 {

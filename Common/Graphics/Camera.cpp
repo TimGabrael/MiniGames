@@ -243,10 +243,8 @@ glm::vec3 Camera::ScreenToWorld(float x, float y) const
 	return res;
 }
 
-void Camera::SetTightFit(OrthographicCamera* outCam, const glm::vec3& dir, float distance)
+void Camera::SetTightFit(OrthographicCamera* outCam, const glm::vec3& dir, float lastSplitDist, float splitDist, float* splitDepth) const
 {
-	float splitDist = 1.0f;
-	float lastSplitDist = 0.0f;
 	const glm::mat4 invCam = glm::inverse(perspective * view);
 	glm::vec3 frustumCorners[8] = {
 		glm::vec3(-1.0f,  1.0f, -1.0f),
@@ -284,11 +282,13 @@ void Camera::SetTightFit(OrthographicCamera* outCam, const glm::vec3& dir, float
 	glm::vec3 lightDir = glm::normalize(dir);
 	glm::mat4 lightViewMatrix = glm::lookAt(frustumCenter - lightDir * -minExtents.z, frustumCenter, glm::vec3(0.0f, 1.0f, 0.0f));
 	glm::mat4 lightOrthoMatrix = glm::ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.0f, maxExtents.z - minExtents.z);
+	
+	glm::vec4 splitDepthWorldSpace = perspective * glm::vec4(0.0f, 0.0f, nearClipping + splitDist * (farClipping - nearClipping) * -1.0f, 1.0f);
+	*splitDepth = splitDepthWorldSpace.z / splitDepthWorldSpace.w;
 
 	outCam->pos = frustumCenter - lightDir * -minExtents.z;
 	outCam->view = lightViewMatrix;
 	outCam->proj = lightOrthoMatrix;
-
 
 	outCam->viewProj = outCam->proj * outCam->view;
 	glBindBuffer(GL_UNIFORM_BUFFER, outCam->uniform);

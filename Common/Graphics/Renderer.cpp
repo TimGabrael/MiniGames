@@ -304,8 +304,8 @@ void SceneRenderData::Create(int width, int height, int shadowWidth, int shadowH
 		glTexStorage2D(GL_TEXTURE_2D, 1, requiredColorFormat, width, height);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ppFBO.texture, 0);
 		
 
@@ -316,8 +316,8 @@ void SceneRenderData::Create(int width, int height, int shadowWidth, int shadowH
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, ppFBO.maybeDepth, 0);
 		}
 
@@ -509,8 +509,61 @@ void RenderSceneShadow(PScene scene, const StandardRenderPassData* data)
 		o->DrawFunc(o->obj, (void*)&g_render->mainData);
 	}
 	glDisable(GL_POLYGON_OFFSET_FILL);
+}
+void RenderSceneCascadeShadow(PScene scene, const SceneRenderData* renderData, const Camera* cam, OrthographicCamera* orthoCam, DirectionalLightData* dirLight, const glm::vec2& regionStart, const glm::vec2& regionEnd, float endRelativeDist)
+{
+	g_render->mainData.camPos = &orthoCam->pos;
+	g_render->mainData.camProj = &orthoCam->proj;
+	g_render->mainData.camView = &orthoCam->view;
+	g_render->mainData.camViewProj = &orthoCam->viewProj;
+	g_render->mainData.cameraUniform = orthoCam->uniform;
+	g_render->mainData.shadowMap = 0;
+	g_render->mainData.ambientOcclusionMap = GetWhiteTexture2D();
+	g_render->mainData.lightData = 0;
+	SetDefaultOpaqueState();
 
-	SetOpenGLDepthWrite(true);
+
+	glEnable(GL_POLYGON_OFFSET_FILL);
+	glPolygonOffset(2.0f, 4.0f);
+	int num;
+	glm::mat4 camViewProj = *g_render->mainData.camProj * *g_render->mainData.camView;
+	SC_FillRenderList(scene, g_render->objs, &camViewProj, &num, TYPE_FUNCTION_SHADOW, SCENE_OBJECT_CAST_SHADOW);
+	
+	const glm::vec2 stepSize = (regionEnd - regionStart) / 2.0f;
+
+	const glm::ivec2 vpStart = glm::ivec2(regionStart.x * renderData->shadowWidth, regionStart.y * renderData->shadowHeight);
+	const glm::ivec2 vpStep = glm::ivec2(stepSize.x * renderData->shadowWidth, stepSize.y * renderData->shadowHeight);
+	g_render->mainData.renderSize = vpStep;
+
+	float lastSplitDist = 0.0f;
+	for (int i = 0; i < MAX_NUM_SHADOW_CASCADE_MAPS; i++)	// use 4 cascades by default
+	{
+		const int x = i % 2;
+		const int y = i / 2;
+		const int xStart = vpStart.x + x * vpStep.x;
+		const int yStart = vpStart.y + y * vpStep.y;
+
+		glViewport(xStart, yStart, vpStep.x, vpStep.y);
+		
+		
+		cam->SetTightFit(orthoCam, dirLight->dir, lastSplitDist, lastSplitDist + endRelativeDist / 4.0f, &dirLight->cascadeSplits[i]);
+		dirLight->mapper[i].start = regionStart + glm::vec2(x * stepSize.x, y * stepSize.y);
+		dirLight->mapper[i].end = dirLight->mapper[i].start + stepSize;
+		dirLight->mapper[i].viewProj = orthoCam->viewProj;
+
+		for (int j = 0; j < num; j++)
+		{
+			ObjectRenderStruct* o = &g_render->objs[j];
+			o->DrawFunc(o->obj, (void*)&g_render->mainData);
+		}
+
+		lastSplitDist += endRelativeDist / 4.0f;
+	}
+	dirLight->numCascades = 4;
+
+
+
+	glDisable(GL_POLYGON_OFFSET_FILL);
 }
 
 void RenderSceneReflectedOnPlane(PScene scene, const ReflectPlanePassData* data)

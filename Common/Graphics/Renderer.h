@@ -110,6 +110,7 @@ void EndScene();
 void RenderAmbientOcclusion(PScene scene, StandardRenderPassData* data, const SceneRenderData* frameData, float screeSizeX, float screenSizeY);// will set the ao texture in data or 0 if no occlusion available
 void RenderSceneGeometry(PScene scene, const StandardRenderPassData* data);
 void RenderSceneShadow(PScene scene, const StandardRenderPassData* data);
+void RenderSceneCascadeShadow(PScene scene, const SceneRenderData* renderData, const Camera* cam, OrthographicCamera* orthoCam, DirectionalLightData* dirLight, const glm::vec2& regionStart, const glm::vec2& regionEnd, float endRelativeDist);
 void RenderSceneReflectedOnPlane(PScene scene, const ReflectPlanePassData* data);
 void RenderSceneStandard(PScene scene, const StandardRenderPassData* data);
 void RenderPostProcessingBloom(const struct BloomFBO* bloomData, GLuint finalFBO, int finalSizeX, int finalSizeY, GLuint ppFBOTexture, int ppSizeX, int ppSizeY);

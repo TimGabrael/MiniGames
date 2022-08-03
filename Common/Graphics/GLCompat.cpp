@@ -169,6 +169,7 @@ const char* GetFragmentShaderBase()
 precision highp float;\n\
 precision highp sampler2DShadow;\n\
 #define MAX_NUM_LIGHTS 8\n\
+#define MAX_NUM_SHADOW_MAP_CASCADE_COUNT 4\n\
 struct LightMapper\
 {\
 	mat4 viewProj;\
@@ -197,7 +198,9 @@ struct DirectionalLight\
 	vec3 ambient;\
 	vec3 diffuse;\
 	vec3 specular;\
-	LightMapper mapper;\
+	LightMapper mapper[MAX_NUM_SHADOW_MAP_CASCADE_COUNT];\
+	vec4 cascadeSplits;\
+	int numCascades;\
 	bool hasShadow;\
 };\
 layout (std140) uniform LightData\
@@ -215,7 +218,7 @@ float CalculateShadowValue(LightMapper mapper, vec4 fragWorldPos)\
 	vec2 ts = vec2(1.0f) / vec2(textureSize(shadowMap, 0));\
 	vec4 fragLightPos = mapper.viewProj * fragWorldPos;\
 	vec3 projCoords = fragLightPos.xyz / fragLightPos.w;\
-	projCoords = (projCoords * 0.5 + 0.5) * vec3(mapper.end, 1.0f) + vec3(mapper.start, 0.0f);\
+	projCoords = (projCoords * 0.5 + 0.5) * vec3(mapper.end - mapper.start, 1.0f) + vec3(mapper.start, 0.0f);\
 	float shadow = 0.0f;\
 	for(int x = -1; x <= 1; ++x)\
 	{\
@@ -322,8 +325,27 @@ vec3 CalculateLightsColor(vec4 fragWorldPos, vec3 normal, vec3 viewDir, vec3 mat
 	for(int i = 0; i < _lightData.numDirLights; i++)\
 	{\
 		float shadow = 1.0f;\
-		if(_lightData.dirLights[i].hasShadow) shadow = CalculateShadowValue(_lightData.dirLights[i].mapper, fragWorldPos);\
-		result += CalculateDirectionalLightColor(_lightData.dirLights[i], normal, viewDir, matDiffuseCol, matSpecCol, shininess, shadow);\
+		if(_lightData.dirLights[i].hasShadow){\
+			int mapperIndex = 0;\
+			for(int j = _lightData.dirLights[i].numCascades-1; j >= 0; j--)\
+			{\
+				if(_lightData.dirLights[i].cascadeSplits[j] < gl_FragCoord.z)\
+				{\
+					mapperIndex = j + 1;\
+					break;\
+				}\
+			}\
+			//if(mapperIndex == 0) result += vec3(1.0f, 0.0f, 0.0f);\
+			else if(mapperIndex == 1) result += vec3(0.0f, 1.0f, 0.0f);\
+			else if(mapperIndex == 2) result += vec3(0.0f, 0.0f, 1.0f);\
+			else if(mapperIndex == 3) result += vec3(1.0f, 1.0f, 0.0f);\
+			else if(mapperIndex == 4) result += vec3(1.0f, 0.0f, 1.0f);\n\
+			if(mapperIndex < 4)\
+			{\
+				shadow = CalculateShadowValue(_lightData.dirLights[i].mapper[mapperIndex], fragWorldPos);\
+			}\
+		}\
+		result += CalculateDirectionalLightColor(_lightData.dirLights[i], normal, viewDir, matDiffuseCol, matSpecCol, shininess, shadow);\n\
 	}\
 	for(int i = 0; i < _lightData.numPointLights; i++)\
 	{\
