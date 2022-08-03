@@ -53,19 +53,17 @@ void main()\
     vec4 col = vec4(0.0, 0.0, 0.0, 0.0);\
     w0 = 0.5135 / pow(blurRadius, 0.96);\n\
     if (axis == 0) for (d = 1.0 / textureSize.x, x = -blurRadius, p.x += x * d; x <= blurRadius; x++, p.x += d) { w = w0 * exp((-x * x) / (2.0 * rr));\
-    vec3 addCol = textureLod(tex, p, mipLevel).xyz;\
-    vec3 remCol = vec3(1.0f) * intensity;\n\
-    addCol = addCol - remCol;\
-    addCol = vec3(max(addCol.x, 0.0f), max(addCol.y, 0.0f), max(addCol.z, 0.0f));\n\
-    col += vec4(addCol, 1.0f) * w;\
- }\n\
+            vec3 addCol = textureLod(tex, p, mipLevel).rgb;\
+            vec3 remCol = vec3(1.0f, 1.0f, 1.0f) * intensity;\n\
+            addCol = max(addCol - remCol, vec3(0.0f));\
+            col += vec4(addCol, 0.0f) * w;\
+        }\n\
     if (axis == 1) for (d = 1.0 / textureSize.y, y = -blurRadius, p.y += y * d; y <= blurRadius; y++, p.y += d) { w = w0 * exp((-y * y) / (2.0 * rr));\
-    vec3 addCol = textureLod(tex, p, mipLevel).xyz;\
-    vec3 remCol = vec3(1.0f) * intensity;\n\
-    addCol = addCol - remCol;\
-    addCol = vec3(max(addCol.x, 0.0f), max(addCol.y, 0.0f), max(addCol.z, 0.0f));\n\
-    col += vec4(addCol, 1.0f) * w;\
- }\n\
+            vec3 addCol = textureLod(tex, p, mipLevel).rgb;\
+            vec3 remCol = vec3(1.0f, 1.0f, 1.0f) * intensity;\n\
+            addCol = max(addCol - remCol, vec3(0.0f));\
+            col += vec4(addCol, 0.0f) * w;\
+        }\n\
     outCol = col;\
 }";
 static constexpr char* copyFragmentShader = "#version 300 es\n\
@@ -125,7 +123,7 @@ vec3 filmic(vec3 x) {\
 out vec4 outCol;\
 void main()\
 {\
-    vec4 c = textureLod(tex1, UV, mipLevel1) + textureLod(tex2, UV, mipLevel2);\
+    vec4 c = textureLod(tex1, UV, mipLevel1) + textureLod(tex2, UV, mipLevel2);\n\
     outCol = c;\
 }";
 

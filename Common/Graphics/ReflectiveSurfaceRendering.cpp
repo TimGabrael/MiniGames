@@ -54,9 +54,9 @@ void main(){\
 	vec2 refract = clipSpace.xy/clipSpace.w * 0.5f + 0.5f;\
 	vec2 reflect = vec2(refract.x, -refract.y);\
 	outCol = texture(reflectTexture, reflect);\n\
-	vec3 diffuseColor = ((vec4(1.0f) * outCol + vec4(0.4f) * texture(refractTexture, texCoord)) * material.tintColor).xyz;\n\
+	vec3 diffuseColor = ((vec4(0.9f) * outCol + vec4(0.1f) * texture(refractTexture, texCoord)) * material.tintColor).xyz;\n\
 	vec3 col = CalculateLightsColor(fragPosWorld, normalize(normal), vec3(0.0f), diffuseColor, vec3(0.0f), 0.0f);\
-	outCol = vec4(col, 1.0f);\n\
+	outCol = vec4(diffuseColor, 1.0f);\n\
 }\
 ";
 

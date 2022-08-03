@@ -512,6 +512,8 @@ void RenderSceneShadow(PScene scene, const StandardRenderPassData* data)
 }
 void RenderSceneCascadeShadow(PScene scene, const SceneRenderData* renderData, const Camera* cam, OrthographicCamera* orthoCam, DirectionalLightData* dirLight, const glm::vec2& regionStart, const glm::vec2& regionEnd, float endRelativeDist)
 {
+	static constexpr float logStepSizes[4] = {0.05f, 0.1f, 0.3f, 1.0f};
+
 	g_render->mainData.camPos = &orthoCam->pos;
 	g_render->mainData.camProj = &orthoCam->proj;
 	g_render->mainData.camView = &orthoCam->view;
@@ -546,7 +548,7 @@ void RenderSceneCascadeShadow(PScene scene, const SceneRenderData* renderData, c
 		glViewport(xStart, yStart, vpStep.x, vpStep.y);
 		
 		
-		cam->SetTightFit(orthoCam, dirLight->dir, lastSplitDist, lastSplitDist + endRelativeDist / 4.0f, &dirLight->cascadeSplits[i]);
+		cam->SetTightFit(orthoCam, dirLight->dir, lastSplitDist, logStepSizes[i] * endRelativeDist, &dirLight->cascadeSplits[i]);
 		dirLight->mapper[i].start = regionStart + glm::vec2(x * stepSize.x, y * stepSize.y);
 		dirLight->mapper[i].end = dirLight->mapper[i].start + stepSize;
 		dirLight->mapper[i].viewProj = orthoCam->viewProj;
@@ -557,7 +559,7 @@ void RenderSceneCascadeShadow(PScene scene, const SceneRenderData* renderData, c
 			o->DrawFunc(o->obj, (void*)&g_render->mainData);
 		}
 
-		lastSplitDist += endRelativeDist / 4.0f;
+		lastSplitDist = logStepSizes[i] * endRelativeDist;
 	}
 	dirLight->numCascades = 4;
 

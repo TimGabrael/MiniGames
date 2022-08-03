@@ -15,7 +15,7 @@
 #include <math.h>
 
 PLUGIN_EXPORT_DEFINITION(UnoPlugin, "a3fV-6giK-10Eb-2rdT");
-#define SHADOW_TEXTURE_SIZE 2048
+#define SHADOW_TEXTURE_SIZE 2048 * 4
 
 
 PLUGIN_INFO UnoPlugin::GetPluginInfos()
@@ -146,11 +146,11 @@ void UnoPlugin::Init(ApplicationData* data)
 		glm::vec3 normal = { 0.0f, 1.0f, 0.0f };
 		ReflectiveSurfaceMaterialData data{ };
 		data.tintColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-		g_objs->basePlatform = AddReflectiveSurface(g_objs->UnoScene, &reflectPos, &normal, 8.0f, 8.0f, &data, nullptr);
+		g_objs->basePlatform = AddReflectiveSurface(g_objs->UnoScene, &reflectPos, &normal, 80.0f, 80.0f, &data, nullptr);
 
 		light = SC_AddDirectionalLight(g_objs->UnoScene);
 		light->data.ambient = { 0.2f, 0.2f, 0.2f };
-		light->data.diffuse = { 0.8f, 0.8f, 0.8f };
+		light->data.diffuse = { 1.1f, 1.1f, 1.1f };
 		light->data.dir = { -1.0f / sqrtf(3.0f), -1.0f / sqrt(3.0f), -1.0f / sqrt(3.0f) };
 		light->data.specular = { 0.8f, 0.8f, 0.8f };
 		light->data.hasShadow = true;
@@ -159,35 +159,35 @@ void UnoPlugin::Init(ApplicationData* data)
 		light->data.mapper[0].viewProj = g_objs->shadowCam.viewProj;
 		light->data.numCascades = 1;
 
-		//ScenePointLight* plight = SC_AddPointLight(g_objs->UnoScene);
-		//plight->data.ambient = { 0.2f, 0.2f, 0.2f };
-		//plight->data.diffuse = { 10.0f, 0.0f, 0.0f };
-		//plight->data.pos = { 0, 4.0f, 0.0f };
-		//plight->data.specular = { 0.8f, 0.8f, 0.8f };
-		//plight->data.constant = 1.0f;
-		//plight->data.linear = 0.1f;
-		//plight->data.quadratic = 0.1f;
-		//plight->data.hasShadow = false;
-		//
-		//plight = SC_AddPointLight(g_objs->UnoScene);
-		//plight->data.ambient = { 0.2f, 0.2f, 0.2f };
-		//plight->data.diffuse = { 0.0f, 10.0f, 0.0f };
-		//plight->data.pos = { -4.0, 4.0f, -4.0f };
-		//plight->data.specular = { 0.8f, 0.8f, 0.8f };
-		//plight->data.constant = 1.0f;
-		//plight->data.linear = 0.1f;
-		//plight->data.quadratic = 0.1f;
-		//plight->data.hasShadow = false;
-		//
-		//plight = SC_AddPointLight(g_objs->UnoScene);
-		//plight->data.ambient = { 0.2f, 0.2f, 0.2f };
-		//plight->data.diffuse = { 0.0f, 0.0f, 10.0f };
-		//plight->data.pos = { 4.0, 4.0f, -4.0f };
-		//plight->data.specular = { 0.8f, 0.8f, 0.8f };
-		//plight->data.constant = 1.0f;
-		//plight->data.linear = 0.1f;
-		//plight->data.quadratic = 0.1f;
-		//plight->data.hasShadow = false;
+		ScenePointLight* plight = SC_AddPointLight(g_objs->UnoScene);
+		plight->data.ambient = { 0.2f, 0.2f, 0.2f };
+		plight->data.diffuse = { 10.0f, 0.0f, 0.0f };
+		plight->data.pos = { 0, 4.0f, 0.0f };
+		plight->data.specular = { 0.8f, 0.8f, 0.8f };
+		plight->data.constant = 1.0f;
+		plight->data.linear = 0.1f;
+		plight->data.quadratic = 0.1f;
+		plight->data.hasShadow = false;
+		
+		plight = SC_AddPointLight(g_objs->UnoScene);
+		plight->data.ambient = { 0.2f, 0.2f, 0.2f };
+		plight->data.diffuse = { 0.0f, 10.0f, 0.0f };
+		plight->data.pos = { -4.0, 4.0f, -4.0f };
+		plight->data.specular = { 0.8f, 0.8f, 0.8f };
+		plight->data.constant = 1.0f;
+		plight->data.linear = 0.1f;
+		plight->data.quadratic = 0.1f;
+		plight->data.hasShadow = false;
+		
+		plight = SC_AddPointLight(g_objs->UnoScene);
+		plight->data.ambient = { 0.2f, 0.2f, 0.2f };
+		plight->data.diffuse = { 0.0f, 0.0f, 10.0f };
+		plight->data.pos = { 4.0, 4.0f, -4.0f };
+		plight->data.specular = { 0.8f, 0.8f, 0.8f };
+		plight->data.constant = 1.0f;
+		plight->data.linear = 0.1f;
+		plight->data.quadratic = 0.1f;
+		plight->data.hasShadow = false;
 
 
 		UBOParams params = UBOParams();
@@ -207,8 +207,8 @@ void UnoPlugin::Init(ApplicationData* data)
 	glGenTextures(1, &colTex);
 	glBindTexture(GL_TEXTURE_2D, colTex);
 	uint32_t cols[4] = {
-		0xFF0000FF, 0xFF00FF00,
-		0xFF00FFFF, 0xFFFF0000
+		0x000000FF, 0x0000FF00,
+		0x0000FFFF, 0x00FF0000
 	};
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, cols);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -243,7 +243,7 @@ void UnoPlugin::Init(ApplicationData* data)
 void UnoPlugin::Resize(ApplicationData* data)
 {
 	if(sizeY && sizeX)
-		g_objs->playerCam.SetPerspective(90.0f, (float)this->sizeX / (float)this->sizeY, 0.1f, 30.0f);
+		g_objs->playerCam.SetPerspective(90.0f, (float)this->sizeX / (float)this->sizeY, 0.1f, 300.0f);
 	g_objs->playerCam.screenX = sizeX;
 	g_objs->playerCam.screenY = sizeY;
 	GLint defaultFBO;
@@ -311,12 +311,16 @@ void UnoPlugin::Render(ApplicationData* data)
 	stdData.ambientOcclusionMap = 0;
 
 	glm::vec4 plane = { 0.0f, 1.0f, 0.0f, 0.0f };
+
+
+	
 	glBindFramebuffer(GL_FRAMEBUFFER, g_objs->rendererData.shadowFBO.fbo);
 	glClearDepthf(1.0f);
 	glClear(GL_DEPTH_BUFFER_BIT);
-	
 
-	RenderSceneCascadeShadow(g_objs->UnoScene, &g_objs->rendererData, &g_objs->playerCam, &g_objs->shadowCam, &light->data, { 0.0f, 0.0f }, { 1.0f, 1.0f }, 1.0f);
+
+	RenderSceneCascadeShadow(g_objs->UnoScene, &g_objs->rendererData, &g_objs->playerCam, &g_objs->shadowCam, &light->data, { 0.0f, 0.0f }, { 1.0f, 1.0f }, 0.8f);
+	
 	stdData.shadowMap = g_objs->rendererData.shadowFBO.depth;
 
 	
@@ -344,7 +348,7 @@ void UnoPlugin::Render(ApplicationData* data)
 	reflectData.base = &stdData;
 	reflectData.planeEquation = &plane;
 
-	//RenderSceneReflectedOnPlane(g_objs->UnoScene, &reflectData);
+	RenderSceneReflectedOnPlane(g_objs->UnoScene, &reflectData);
 	{
 		glBindBuffer(GL_UNIFORM_BUFFER, g_objs->playerCam.uniform);
 		CameraData camData;
@@ -390,7 +394,8 @@ void UnoPlugin::Render(ApplicationData* data)
 	RenderSceneStandard(g_objs->UnoScene, &stdData);
 
 	//if (drawAOMap) DrawQuad({ -1.0f, -1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF, g_objs->rendererData.aoFBO.texture);
-	if (drawAOMap) DrawQuad({ -1.0f, -1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF, g_objs->rendererData.shadowFBO.depth);
+	//if (drawAOMap) DrawQuad({ -1.0f, -1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF, g_objs->rendererData.shadowFBO.depth);
+	if (drawAOMap) DrawQuad({ -1.0f, -1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF, g_objs->rendererData.bloomFBO.bloomTexture1);
 
 
 
@@ -398,9 +403,10 @@ void UnoPlugin::Render(ApplicationData* data)
 
 
 
+
+	RenderPostProcessing(&g_objs->rendererData, GetScreenFramebuffer(), sizeX, sizeY);
 
 	DrawUI();
-	RenderPostProcessing(&g_objs->rendererData, GetScreenFramebuffer(), sizeX, sizeY);
 
 	EndScene();
 

@@ -279,11 +279,13 @@ void Camera::SetTightFit(OrthographicCamera* outCam, const glm::vec3& dir, float
 	radius = std::ceil(radius * 16.0f) / 16.0f;
 	glm::vec3 maxExtents = glm::vec3(radius);
 	glm::vec3 minExtents = -maxExtents;
+
 	glm::vec3 lightDir = glm::normalize(dir);
 	glm::mat4 lightViewMatrix = glm::lookAt(frustumCenter - lightDir * -minExtents.z, frustumCenter, glm::vec3(0.0f, 1.0f, 0.0f));
 	glm::mat4 lightOrthoMatrix = glm::ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.0f, maxExtents.z - minExtents.z);
 	
-	glm::vec4 splitDepthWorldSpace = perspective * glm::vec4(0.0f, 0.0f, nearClipping + splitDist * (farClipping - nearClipping) * -1.0f, 1.0f);
+	const float vSSplitDepth = nearClipping + splitDist * (farClipping - nearClipping) * -1.0f;
+	glm::vec4 splitDepthWorldSpace = perspective * glm::vec4(vSSplitDepth, vSSplitDepth, vSSplitDepth, 1.0f);
 	*splitDepth = splitDepthWorldSpace.z / splitDepthWorldSpace.w;
 
 	outCam->pos = frustumCenter - lightDir * -minExtents.z;

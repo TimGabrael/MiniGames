@@ -26,7 +26,7 @@ uniform sampler2D tex;\
 out vec4 outCol;\
 void main(){\
 	outCol = texture(tex, tPos).rgba * col;\n\
-	outCol = vec4(texture(tex, tPos).rrr, 1.0f) * col;\n\
+	outCol = vec4(texture(tex, tPos).rgb, 1.0f) * col;\n\
 }\
 ";
 
