@@ -18,6 +18,7 @@ struct ClientInfo
 	Room* room = nullptr;
 	std::string ipAddr;
 	uint32_t groupMask;
+	uint32_t clientID;	// used to tell others who send a message, depends on the room, the client is in
 	float timeOutTimer = 0.0f;
 };
 

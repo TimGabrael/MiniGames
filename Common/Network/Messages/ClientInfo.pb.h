@@ -179,6 +179,7 @@ class ClientInfo final :
   enum : int {
     kNameFieldNumber = 1,
     kListenGroupFieldNumber = 2,
+    kIdFieldNumber = 3,
   };
   // string name = 1;
   void clear_name();
@@ -203,6 +204,15 @@ class ClientInfo final :
   void _internal_set_listengroup(uint32_t value);
   public:
 
+  // uint32 id = 3;
+  void clear_id();
+  uint32_t id() const;
+  void set_id(uint32_t value);
+  private:
+  uint32_t _internal_id() const;
+  void _internal_set_id(uint32_t value);
+  public:
+
   // @@protoc_insertion_point(class_scope:Base.ClientInfo)
  private:
   class _Internal;
@@ -213,6 +223,7 @@ class ClientInfo final :
   struct Impl_ {
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr name_;
     uint32_t listengroup_;
+    uint32_t id_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -297,6 +308,26 @@ inline void ClientInfo::_internal_set_listengroup(uint32_t value) {
 inline void ClientInfo::set_listengroup(uint32_t value) {
   _internal_set_listengroup(value);
   // @@protoc_insertion_point(field_set:Base.ClientInfo.listenGroup)
+}
+
+// uint32 id = 3;
+inline void ClientInfo::clear_id() {
+  _impl_.id_ = 0u;
+}
+inline uint32_t ClientInfo::_internal_id() const {
+  return _impl_.id_;
+}
+inline uint32_t ClientInfo::id() const {
+  // @@protoc_insertion_point(field_get:Base.ClientInfo.id)
+  return _internal_id();
+}
+inline void ClientInfo::_internal_set_id(uint32_t value) {
+  
+  _impl_.id_ = value;
+}
+inline void ClientInfo::set_id(uint32_t value) {
+  _internal_set_id(value);
+  // @@protoc_insertion_point(field_set:Base.ClientInfo.id)
 }
 
 #ifdef __GNUC__

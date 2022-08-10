@@ -19,12 +19,13 @@ in vec2 pos;\
 uniform sampler2D tex;\
 uniform float blurRadius;\
 uniform int axis;\
+uniform vec2 texUV;\
 out vec4 outCol;\
 void main()\
 {\
     vec2 textureSize = vec2(textureSize(tex, 0));\
     float x,y,rr=blurRadius*blurRadius,d,w,w0;\
-    vec2 p = 0.5 * (vec2(1.0, 1.0) + pos);\
+    vec2 p = 0.5 * (vec2(1.0, 1.0) + pos) * texUV;\
     vec4 col = vec4(0.0, 0.0, 0.0, 0.0);\
     w0 = 0.5135 / pow(blurRadius, 0.96);\n\
     if (axis == 0) for (d = 1.0 / textureSize.x, x = -blurRadius, p.x += x * d; x <= blurRadius; x++, p.x += d) { \n\
@@ -136,6 +137,7 @@ struct BlurUniforms
 {
     GLuint blurRadiusLoc;
     GLuint blurAxisLoc;
+    GLuint textureUVLoc;
 };
 struct BloomUniforms
 {
@@ -181,6 +183,7 @@ void InitializeBloomPipeline()
 
     g_bloom.blurUnis.blurRadiusLoc = glGetUniformLocation(g_bloom.blurProgram, "blurRadius");
     g_bloom.blurUnis.blurAxisLoc = glGetUniformLocation(g_bloom.blurProgram, "axis");
+    g_bloom.blurUnis.textureUVLoc = glGetUniformLocation(g_bloom.blurProgram, "texUV");
 
     g_bloom.bloomUnis.blurUnis.blurRadiusLoc = glGetUniformLocation(g_bloom.bloomProgram, "blurRadius");
     g_bloom.bloomUnis.blurUnis.blurAxisLoc = glGetUniformLocation(g_bloom.bloomProgram, "axis");
@@ -191,6 +194,8 @@ void InitializeBloomPipeline()
 
     g_bloom.copyDualUnis.mipLevel1Loc = glGetUniformLocation(g_bloom.copyDualProgram, "mipLevel1");
     g_bloom.copyDualUnis.mipLevel2Loc = glGetUniformLocation(g_bloom.copyDualProgram, "mipLevel2");
+
+
     glUseProgram(g_bloom.copyDualProgram);
     GLuint idx = glGetUniformLocation(g_bloom.copyDualProgram, "tex1");
     glUniform1i(idx, 0);
@@ -208,7 +213,7 @@ void CleanUpBloomPipeline()
     glDeleteProgram(g_bloom.upsamplingProgram);
 }
 
-void BlurTextureToFramebuffer(GLuint endFbo, int fboX, int fboY, GLuint tex, float blurRadius, GLuint intermediateFBO, GLuint intermediateTexture)
+void BlurTextureToFramebuffer(GLuint endFbo, int fboX, int fboY, GLuint tex, float blurRadius, GLuint intermediateFBO, int intermediateSizeX, int intermediateSizeY, GLuint intermediateTexture)
 {
     glBindFramebuffer(GL_FRAMEBUFFER, intermediateFBO);
     glViewport(0, 0, fboX, fboY);
@@ -222,7 +227,11 @@ void BlurTextureToFramebuffer(GLuint endFbo, int fboX, int fboY, GLuint tex, flo
 
     glUniform1f(g_bloom.blurUnis.blurRadiusLoc, blurRadius);
     glUniform1i(g_bloom.blurUnis.blurAxisLoc, (int)BLUR_AXIS::X_AXIS);
+    glUniform2f(g_bloom.blurUnis.textureUVLoc, 1.0f, 1.0f);
+
     glDrawArraysWrapper(GL_TRIANGLES, 0, 3);
+
+    glUniform2f(g_bloom.blurUnis.textureUVLoc, (float)fboX / (float)intermediateSizeX, (float)fboY / (float)intermediateSizeY);
     
     glBindFramebuffer(GL_FRAMEBUFFER, endFbo);
     glClear(GL_COLOR_BUFFER_BIT);

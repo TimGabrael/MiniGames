@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package Uno;
+
+
+message Player
+{
+	string name = 1;
+	repeated uint32 cardsOnHand = 2;
+}
+
+message GameState
+{
+	string playerInTurn = 1;
+	repeated Player players = 2;
+	uint32 topCard = 3;
+	uint32 topCardColorID = 4;
+}
+
+message SinglePullCardResponse
+{
+	string player = 1;
+	repeated uint32 cards = 2;
+}
+
+message PullCardResponse
+{
+	repeated SinglePullCardResponse pullResponses = 1;
+}
+message PlayCardRequest
+{
+	uint32 card = 1;
+}
+message PlayCard
+{
+	string player = 1;
+	uint32 card = 2;
+}

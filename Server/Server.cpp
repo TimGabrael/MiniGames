@@ -57,7 +57,7 @@ void PacketCB(void* userData, Connection* conn, Packet* packet)
 							auto c = room->clients.at(i);
 							if (c != info)
 							{
-								c->conn->SendData(PacketID::ADD_CLIENT, addSer);
+								c->conn->SendData(PacketID::ADD_CLIENT, 0, 0, -1, addSer);
 							}
 						}
 					}
@@ -79,7 +79,7 @@ void PacketCB(void* userData, Connection* conn, Packet* packet)
 		{
 			response.set_error(Base::SERVER_ROOM_JOIN_INFO::ROOM_JOIN_INVALID_MESSAGE);
 		}
-		conn->SendData(PacketID::JOIN, response.SerializeAsString());
+		conn->SendData(PacketID::JOIN, 0, 0, -1, response.SerializeAsString());
 	}
 	else if (packet->header.type == (uint32_t)PacketID::CREATE)
 	{
@@ -121,7 +121,7 @@ void PacketCB(void* userData, Connection* conn, Packet* packet)
 		{
 			response.set_error(Base::SERVER_ROOM_CREATE_INFO::ROOM_CREATE_INVALID_MESSAGE);
 		}
-		conn->SendData(PacketID::CREATE, response.SerializeAsString());
+		conn->SendData(PacketID::CREATE, 0, 0, -1, response.SerializeAsString());
 	}
 	else if (packet->header.type == (uint32_t)PacketID::SYNC_REQUEST)
 	{
@@ -129,7 +129,7 @@ void PacketCB(void* userData, Connection* conn, Packet* packet)
 		if (client && client->room)
 		{
 			client->room->waitForSyncClients.push_back(client);
-			client->room->admin->conn->SendData(PacketID::SYNC_REQUEST, 0, nullptr);
+			client->room->admin->conn->SendData(PacketID::SYNC_REQUEST, LISTEN_GROUP_ALL, 0, -1, 0, nullptr);
 		}
 	}
 	else if (packet->header.type == (uint32_t)PacketID::SYNC_RESPONSE)
@@ -159,7 +159,7 @@ void PacketCB(void* userData, Connection* conn, Packet* packet)
 			const std::string serialized = res.SerializeAsString();
 			for (int i = 0; i < r->waitForSyncClients.size(); i++)
 			{
-				client->room->waitForSyncClients.at(i)->conn->SendData(PacketID::SYNC_RESPONSE, serialized);
+				client->room->waitForSyncClients.at(i)->conn->SendData(PacketID::SYNC_RESPONSE, LISTEN_GROUP_ALL, 0, -1, serialized);
 			}
 			client->room->waitForSyncClients.clear();
 		}
@@ -176,7 +176,7 @@ void PacketCB(void* userData, Connection* conn, Packet* packet)
 					if (cl == client) continue;
 					if (cl->groupMask & packet->header.group)	// check if the message should be send to the client
 					{
-						cl->conn->SendData((PacketID)packet->header.type, packet->header.group, packet->header.additionalData, packet->body.size(), packet->body.data());
+						cl->conn->SendData((PacketID)packet->header.type, cl->groupMask, packet->header.additionalData, cl->clientID, packet->body.size(), packet->body.data());
 					}
 				}
 			}
@@ -202,6 +202,7 @@ void ClientDisconnectCB(void* userData, TCPServerSocket* sock, Connection* remov
 		Base::RemoveClient rem;
 		rem.mutable_removed()->set_name(removedClient->name);
 		rem.mutable_removed()->set_listengroup(removedClient->groupMask);
+		rem.mutable_removed()->set_id(removedClient->clientID);
 		const std::string removeData = rem.SerializeAsString();
 		LOG("CLIENT DISCONNECTED:\t%s\n", removedClient->name.c_str());
 		removedClient->conn = nullptr;
@@ -214,7 +215,7 @@ void ClientDisconnectCB(void* userData, TCPServerSocket* sock, Connection* remov
 				{
 					if (r->clients.at(i)->conn)
 					{
-						r->clients.at(i)->conn->SendData(PacketID::REMOVE_CLIENT, removeData);
+						r->clients.at(i)->conn->SendData(PacketID::REMOVE_CLIENT, removedClient->groupMask, 0, removedClient->clientID, removeData);
 					}
 				}
 			}

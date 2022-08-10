@@ -10,6 +10,8 @@
 #include <glm/gtc/quaternion.hpp>
 #include "Graphics/UiRendering.h"
 #include "Graphics/Renderer.h"
+#include "Messages/UnoMessages.pb.h"
+#include "Uno.h"
 
 #define CARD_SCENE_TYPE_INDEX DEFAULT_SCENE_RENDER_TYPES::NUM_DEFAULT_RENDERABLES
 // this is related to the UNO_DECK.png
@@ -726,19 +728,33 @@ CARD_ID CardStack::GetTop(CARD_ID& blackColorRef) const
 	if (top == CARD_ID::CARD_ID_ADD_4 || top == CARD_ID::CARD_ID_CHOOSE_COLOR) blackColorRef = blackColorID;
 	return top;
 }
-
+void CardStack::SetTop(CARD_ID topCard, CARD_ID blackColorRef)
+{
+	if (!cards.empty())
+	{
+		cards.at(cards.size() - 1).front = topCard;
+		this->blackColorID = blackColorRef;
+	}
+	else
+	{
+		cards.emplace_back(CARD_ID::CARD_ID_BLANK, topCard, glm::vec3(0.0f, 0.001f, 0.0f), glm::mat4(1.0f), false, true);
+	}
+}
 
 
 void CardHand::Add(CARD_ID id)
 {
-	if (wideCardsStart >= 0.0f) wideCardsStart += g_cardMinDiff * 0.5f;
+	//if (wideCardsStart >= 0.0f) wideCardsStart += g_cardMinDiff * 0.5f;
+	wideCardsStart += g_cardMinDiff * 0.5f;
+	
 
 	cards.emplace_back(CARD_ID::CARD_ID_BLANK, id, glm::vec3(0.0f), glm::mat4(1.0f), 0.0f, true);
-
-	std::sort(cards.begin(), cards.end(), [](CardInfo& i1, CardInfo& i2) {
-		return CardSort(i1.front, i2.front);
-		});
-
+	if (willBeSorted)
+	{
+		std::sort(cards.begin(), cards.end(), [](CardInfo& i1, CardInfo& i2) {
+			return CardSort(i1.front, i2.front);
+			});
+	}
 	needRegen = true;
 }
 int CardHand::AddTemp(const Camera& cam, CARD_ID id)
@@ -746,9 +762,12 @@ int CardHand::AddTemp(const Camera& cam, CARD_ID id)
 	if (wideCardsStart >= 0.0f) wideCardsStart += g_cardMinDiff * 0.5f;
 
 	cards.emplace_back(CARD_ID::CARD_ID_BLANK, id, glm::vec3(0.0f), glm::mat4(1.0f), -1.0f, false);
-	std::sort(cards.begin(), cards.end(), [](CardInfo& i1, CardInfo& i2) {
-		return CardSort(i1.front, i2.front);
-		});
+	if (willBeSorted)
+	{
+		std::sort(cards.begin(), cards.end(), [](CardInfo& i1, CardInfo& i2) {
+			return CardSort(i1.front, i2.front);
+			});
+	}
 	int idx = 0;
 	for (int i = 0; i < cards.size(); i++)
 	{
@@ -769,18 +788,32 @@ void CardHand::PlayCard(const CardStack& stack, CardsInAnimation& anim, int card
 {
 	CARD_ID blackColRef;
 	CARD_ID top = stack.GetTop(blackColRef);
-
+	UnoPlugin* instance = GetInstance();
 	if (CardIsPlayable(top, cards.at(cardIdx).front, blackColRef))
 	{
 		auto& c = cards.at(cardIdx);
-		anim.AddAnim(stack, c, handID, CARD_ANIMATIONS::ANIM_PLAY_CARD);
-		
-		if (c.front == CARD_ID::CARD_ID_ADD_4 || c.front == CARD_ID::CARD_ID_CHOOSE_COLOR)
+		CARD_ID card = c.front;
+		instance->backendData->localPlayer.groupMask = 0;
+		if (instance->backendData->localPlayer.groupMask & ADMIN_GROUP_MASK)
 		{
-			this->choosingCardColor = true;
-		}
+			anim.AddAnim(stack, c, handID, CARD_ANIMATIONS::ANIM_PLAY_CARD);
 
-		cards.erase(cards.begin() + cardIdx);
+			if (c.front == CARD_ID::CARD_ID_ADD_4 || c.front == CARD_ID::CARD_ID_CHOOSE_COLOR)
+			{
+				this->choosingCardColor = true;
+			}
+			cards.erase(cards.begin() + cardIdx);
+			Uno::PlayCard resp;
+			resp.set_player(instance->backendData->localPlayer.name);
+			resp.set_card(card);
+			SendNetworkData(UNO_MESSAGES::UNO_PLAY_CARD_RESPONSE, LISTEN_GROUP_ALL, ADDITIONAL_DATA_FLAG_ADMIN, instance->backendData->localPlayer.clientID, resp.SerializeAsString());
+		}
+		else
+		{
+			Uno::PlayCardRequest req;
+			req.set_card(card);
+			SendNetworkData(UNO_MESSAGES::UNO_PLAY_CARD_REQUEST, ADMIN_GROUP_MASK, 0, instance->backendData->localPlayer.clientID, req.SerializeAsString());
+		}
 	}
 	else
 	{
@@ -790,9 +823,22 @@ void CardHand::PlayCard(const CardStack& stack, CardsInAnimation& anim, int card
 }
 void CardHand::FetchCard(const Camera& cam, const CardStack& stack, CardDeck& deck, CardsInAnimation& anim)
 {
-	CARD_ID card = deck.PullCard();
-	int idx = AddTemp(cam, card);
-	anim.AddAnim(stack, cards.at(idx), handID, CARD_ANIMATIONS::ANIM_FETCH_CARD);
+	UnoPlugin* instance = GetInstance();
+	if (instance->backendData->localPlayer.groupMask & ADMIN_GROUP_MASK)
+	{
+		Uno::PullCardResponse resp;
+		Uno::SinglePullCardResponse* pulled = resp.add_pullresponses();
+		pulled->set_player(instance->backendData->localPlayer.name);
+		CARD_ID card = instance->g_objs->deck.PullCard();
+		pulled->add_cards(card);
+		int idx = AddTemp(cam, card);
+		anim.AddAnim(stack, cards.at(idx), handID, CARD_ANIMATIONS::ANIM_FETCH_CARD);
+		SendNetworkData(UNO_MESSAGES::UNO_PLAY_CARD_RESPONSE, LISTEN_GROUP_ALL, ADDITIONAL_DATA_FLAG_ADMIN, instance->backendData->localPlayer.clientID, resp.SerializeAsString());
+	}
+	else
+	{
+		SendNetworkData(UNO_MESSAGES::UNO_PULL_CARD_REQUEST, ADMIN_GROUP_MASK, 0, instance->backendData->localPlayer.clientID, 0, nullptr);
+	}
 }
 void CardHand::Update(CardStack& stack, CardsInAnimation& anim, ColorPicker& picker, const Camera& cam, const glm::vec3& mouseRay, const Pointer& p, bool allowInput)
 {
@@ -959,7 +1005,8 @@ void CardHand::Draw(const Camera& cam)
 {
 	static float idx = 0.0f;
 	static bool countDown = false;
-	if (needRegen) GenTransformations(cam);
+	//if (needRegen)
+	GenTransformations(cam);
 
 	if (countDown) idx = std::max(idx - 0.02f, 0.0f);
 	else idx = std::min(idx + 0.02f, 1.0f);

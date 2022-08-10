@@ -13,6 +13,7 @@ public:
 	~PluginWidget();
 
 
+
 private:
 
 	virtual void initializeGL() override;

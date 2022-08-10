@@ -7,6 +7,7 @@ message ClientInfo
 {
 	string name = 1;
 	uint32 listenGroup = 2;
+	uint32 id = 3;
 }
 
 

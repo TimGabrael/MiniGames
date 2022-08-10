@@ -2,6 +2,7 @@
 #include "KeyboardKeys.h"
 #include <string>
 #include <vector>
+#include "Network/NetworkBase.h"
 
 struct PLUGIN_INFO
 {
@@ -18,7 +19,9 @@ struct PLUGIN_INFO
 #define EXPORT 
 #endif
 
-class TCPSocket;
+
+struct ImGuiContext;
+typedef void(*PSendDataFunction)(uint32_t packetID, uint32_t group, uint16_t additionalFlags, uint16_t clientID, size_t size, const void* data);
 enum PLATFORM_ID
 {
 	PLATFORM_ID_WINDOWS = 1,
@@ -39,6 +42,7 @@ struct ClientData
 {
 	std::string name;
 	uint32_t groupMask;
+	uint16_t clientID;
 };
 
 struct ApplicationData
@@ -52,7 +56,8 @@ struct ApplicationData
 	std::string roomName;
 	std::string tempSyncDataStorage;
 	void* assetManager;
-	TCPSocket* socket;
+	PSendDataFunction _sendDataFunction;
+	ImGuiContext* imGuiCtx;
 };
 
 
@@ -93,6 +98,17 @@ public:
 	virtual void TouchUpCallback(int x, int y, int touchID) = 0;
 	virtual void TouchMoveCallback(int x, int y, int dx, int dy, int touchID) = 0;
 
+	
+	
+	// NOT IN MAIN THREAD
+	virtual void NetworkCallback(Packet* packet) = 0;
+	virtual void FetchSyncData(std::string& str) = 0;
+	virtual void HandleSync(const std::string& syncData) = 0;
+
+	// IN MAIN THREAD
+	virtual void HandleAddClient(const ClientData* added) = 0;
+	virtual void HandleRemovedClient(const ClientData* removed) = 0;
+
 	virtual void CleanUp() = 0;
 
 	int sizeX, sizeY;
@@ -101,4 +117,13 @@ public:
 
 
 #define PLUGIN_EXPORTS() extern "C" EXPORT PluginClass* GetPlugin()
-#define PLUGIN_EXPORT_DEFINITION(PlugClass, ID) extern "C" EXPORT PluginClass* GetPlugin(){ return new PlugClass(); } const char* _Plugin_Export_ID_Value = ID;
+#define PLUGIN_EXPORT_DEFINITION(PlugClass, _ID, resource) extern "C" EXPORT PluginClass* GetPlugin(){ return new PlugClass(); }\
+															PLUGIN_INFO PlugClass::GetPluginInfos()\
+															{\
+																const char* _Plugin_Export_ID_Value = _ID;\
+																PLUGIN_INFO plugInfo;\
+																memcpy(plugInfo.ID, _Plugin_Export_ID_Value, strnlen(_Plugin_Export_ID_Value, 19));\
+																plugInfo.previewResource = resource;\
+																return plugInfo;\
+															}
+																			

@@ -16,7 +16,6 @@ vec2 pos[6] = vec2[6](\
 uniform mat4 projection;\n\
 uniform mat4 view;\n\
 uniform mat4 model;\n\
-uniform mat4 testLightUniform;\n\
 uniform vec4 clipPlane;\n\
 out vec4 clipSpace;\
 out vec2 texCoord;\
@@ -56,7 +55,7 @@ void main(){\
 	outCol = texture(reflectTexture, reflect);\n\
 	vec3 diffuseColor = ((vec4(0.9f) * outCol + vec4(0.1f) * texture(refractTexture, texCoord)) * material.tintColor).xyz;\n\
 	vec3 col = CalculateLightsColor(fragPosWorld, normalize(normal), vec3(0.0f), diffuseColor, vec3(0.0f), 0.0f);\
-	outCol = vec4(diffuseColor, 1.0f);\n\
+	outCol = vec4(col, 1.0f);\n\
 }\
 ";
 

@@ -264,7 +264,7 @@ enum InternalSceneRenderDataInfo
 	INTERNAL_SCENE_RENDER_DATA_HAS_AMBIENT_OCCLUSION = 1<<1,
 	INTERNAL_SCENE_RENDER_DATA_HAS_AMBIENT_SHADOW = 1<<2,
 };
-void SceneRenderData::Create(int width, int height, int shadowWidth, int shadowHeight, uint8_t msaaQuality, bool useAmbientOcclusion, bool useBloom)
+void SceneRenderData::Create(int width, int height, int shadowWidthh, int shadowHeighth, uint8_t msaaQuality, bool useAmbientOcclusion, bool useBloom)
 {
 	GLenum requiredColorFormat = GL_RGBA8;
 	_internal_msaa_quality = std::min(msaaQuality, (uint8_t)16);
@@ -273,8 +273,8 @@ void SceneRenderData::Create(int width, int height, int shadowWidth, int shadowH
 #endif
 	baseWidth = width;
 	baseHeight = height;
-	this->shadowWidth = shadowWidth;
-	this->shadowHeight = shadowHeight;
+	this->shadowWidth = shadowWidthh;
+	this->shadowHeight = shadowHeighth;
 	if (useBloom) {
 		requiredColorFormat = GL_RGBA16F;
 		_internal_flags |= INTERNAL_SCENE_RENDER_DATA_HAS_BLOOM;
@@ -466,8 +466,7 @@ void RenderAmbientOcclusion(PScene scene, StandardRenderPassData* data, const Sc
 		RenderAmbientOcclusionQuad(frameData->aoFBO.depth, screenSizeX, screenSizeY);
 
 		const IntermediateTextureData* data = GetIntermediateTexture(screenSizeX, screenSizeY, 8, true, false, false, false);
-		BlurTextureToFramebuffer(frameData->aoFBO.fbo, frameData->baseWidth, frameData->baseHeight, frameData->aoFBO.texture, 2.0f, data->fbo, data->texture);
-		
+		BlurTextureToFramebuffer(frameData->aoFBO.fbo, frameData->baseWidth, frameData->baseHeight, frameData->aoFBO.texture, 2.0f, data->fbo, data->sizeX, data->sizeY, data->texture);
 	}
 	else
 	{

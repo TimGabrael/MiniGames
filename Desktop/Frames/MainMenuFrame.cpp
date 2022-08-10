@@ -224,7 +224,7 @@ void MainMenuFrame::OnJoinClick()
                 }
                 req.set_id(app->appData.localPlayerID, 16);
                 std::string serializedData = req.SerializeAsString();
-                app->socket.SendData(PacketID::JOIN, serializedData.size(), (const  uint8_t*)serializedData.data());
+                app->socket.SendData(PacketID::JOIN, STANDARD_GROUP_MASK, 0, 0, serializedData);
             }
         });
     }
@@ -287,7 +287,7 @@ void MainMenuFrame::OnCreateClick()
                 }
 
                 std::string serializedData = req.SerializeAsString();
-                app->socket.SendData(PacketID::CREATE, serializedData.size(), (const uint8_t*)serializedData.data());
+                app->socket.SendData(PacketID::CREATE, STANDARD_GROUP_MASK, 0, 0, serializedData);
             }
         });
     }

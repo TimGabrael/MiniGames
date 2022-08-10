@@ -29,6 +29,7 @@ PluginWidget::~PluginWidget()
 }
 
 
+
 #ifdef _WIN32
 #define _CURRENT_PLATFORM_ID PLATFORM_ID::PLATFORM_ID_WINDOWS
 #elif defined(OSX)
@@ -37,12 +38,21 @@ PluginWidget::~PluginWidget()
 #define _CURRENT_PLATFORM_ID PLATFORM_ID::PLATFORM_ID_LINUX
 #endif
 
+
+
+static void SendDataFunction(uint32_t packetID, uint32_t group, uint16_t flags, uint16_t clientID, size_t size, const void* data)
+{
+	MainApplication* app = MainApplication::GetInstance();
+	app->socket.SendData((PacketID)packetID, group, flags, clientID, size, data);
+}
+
 void PluginWidget::initializeGL()
 {
 	initializeOpenGLFunctions();
 	QImGui::initialize(this);
 	MainApplication* app = MainApplication::GetInstance();
-	app->appData.socket = &app->socket;
+	app->appData.imGuiCtx = ImGui::GetCurrentContext();
+	app->appData._sendDataFunction = &SendDataFunction;
 	app->appData.platform = _CURRENT_PLATFORM_ID;
 	plugin->Init(&app->appData);
 	isInitialized = true;
@@ -60,8 +70,6 @@ void PluginWidget::resizeGL(int w, int h)
 void PluginWidget::paintGL()
 {
 	QImGui::newFrame();
-	//ImGui::SetNextWindowSize(ImVec2(200, 100), ImGuiCond_FirstUseEver);
-	//ImGui::ShowDemoWindow(nullptr);
 
 	if(hovered) hovered = underMouse();
 

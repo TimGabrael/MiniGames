@@ -25,6 +25,7 @@ PROTOBUF_CONSTEXPR ClientInfo::ClientInfo(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.name_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.listengroup_)*/0u
+  , /*decltype(_impl_.id_)*/0u
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct ClientInfoDefaultTypeInternal {
   PROTOBUF_CONSTEXPR ClientInfoDefaultTypeInternal()
@@ -49,6 +50,7 @@ const uint32_t TableStruct_ClientInfo_2eproto::offsets[] PROTOBUF_SECTION_VARIAB
   ~0u,  // no _inlined_string_donated_
   PROTOBUF_FIELD_OFFSET(::Base::ClientInfo, _impl_.name_),
   PROTOBUF_FIELD_OFFSET(::Base::ClientInfo, _impl_.listengroup_),
+  PROTOBUF_FIELD_OFFSET(::Base::ClientInfo, _impl_.id_),
 };
 static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, -1, sizeof(::Base::ClientInfo)},
@@ -59,13 +61,13 @@ static const ::_pb::Message* const file_default_instances[] = {
 };
 
 const char descriptor_table_protodef_ClientInfo_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
-  "\n\020ClientInfo.proto\022\004Base\"/\n\nClientInfo\022\014"
-  "\n\004name\030\001 \001(\t\022\023\n\013listenGroup\030\002 \001(\rb\006proto"
-  "3"
+  "\n\020ClientInfo.proto\022\004Base\";\n\nClientInfo\022\014"
+  "\n\004name\030\001 \001(\t\022\023\n\013listenGroup\030\002 \001(\r\022\n\n\002id\030"
+  "\003 \001(\rb\006proto3"
   ;
 static ::_pbi::once_flag descriptor_table_ClientInfo_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_ClientInfo_2eproto = {
-    false, false, 81, descriptor_table_protodef_ClientInfo_2eproto,
+    false, false, 93, descriptor_table_protodef_ClientInfo_2eproto,
     "ClientInfo.proto",
     &descriptor_table_ClientInfo_2eproto_once, nullptr, 0, 1,
     schemas, file_default_instances, TableStruct_ClientInfo_2eproto::offsets,
@@ -98,6 +100,7 @@ ClientInfo::ClientInfo(const ClientInfo& from)
   new (&_impl_) Impl_{
       decltype(_impl_.name_){}
     , decltype(_impl_.listengroup_){}
+    , decltype(_impl_.id_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
@@ -109,7 +112,9 @@ ClientInfo::ClientInfo(const ClientInfo& from)
     _this->_impl_.name_.Set(from._internal_name(), 
       _this->GetArenaForAllocation());
   }
-  _this->_impl_.listengroup_ = from._impl_.listengroup_;
+  ::memcpy(&_impl_.listengroup_, &from._impl_.listengroup_,
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.id_) -
+    reinterpret_cast<char*>(&_impl_.listengroup_)) + sizeof(_impl_.id_));
   // @@protoc_insertion_point(copy_constructor:Base.ClientInfo)
 }
 
@@ -120,6 +125,7 @@ inline void ClientInfo::SharedCtor(
   new (&_impl_) Impl_{
       decltype(_impl_.name_){}
     , decltype(_impl_.listengroup_){0u}
+    , decltype(_impl_.id_){0u}
     , /*decltype(_impl_._cached_size_)*/{}
   };
   _impl_.name_.InitDefault();
@@ -153,7 +159,9 @@ void ClientInfo::Clear() {
   (void) cached_has_bits;
 
   _impl_.name_.ClearToEmpty();
-  _impl_.listengroup_ = 0u;
+  ::memset(&_impl_.listengroup_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&_impl_.id_) -
+      reinterpret_cast<char*>(&_impl_.listengroup_)) + sizeof(_impl_.id_));
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -177,6 +185,14 @@ const char* ClientInfo::_InternalParse(const char* ptr, ::_pbi::ParseContext* ct
       case 2:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 16)) {
           _impl_.listengroup_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // uint32 id = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 24)) {
+          _impl_.id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
@@ -226,6 +242,12 @@ uint8_t* ClientInfo::_InternalSerialize(
     target = ::_pbi::WireFormatLite::WriteUInt32ToArray(2, this->_internal_listengroup(), target);
   }
 
+  // uint32 id = 3;
+  if (this->_internal_id() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(3, this->_internal_id(), target);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -254,6 +276,11 @@ size_t ClientInfo::ByteSizeLong() const {
     total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_listengroup());
   }
 
+  // uint32 id = 3;
+  if (this->_internal_id() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_id());
+  }
+
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
@@ -278,6 +305,9 @@ void ClientInfo::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PRO
   if (from._internal_listengroup() != 0) {
     _this->_internal_set_listengroup(from._internal_listengroup());
   }
+  if (from._internal_id() != 0) {
+    _this->_internal_set_id(from._internal_id());
+  }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
@@ -301,7 +331,12 @@ void ClientInfo::InternalSwap(ClientInfo* other) {
       &_impl_.name_, lhs_arena,
       &other->_impl_.name_, rhs_arena
   );
-  swap(_impl_.listengroup_, other->_impl_.listengroup_);
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(ClientInfo, _impl_.id_)
+      + sizeof(ClientInfo::_impl_.id_)
+      - PROTOBUF_FIELD_OFFSET(ClientInfo, _impl_.listengroup_)>(
+          reinterpret_cast<char*>(&_impl_.listengroup_),
+          reinterpret_cast<char*>(&other->_impl_.listengroup_));
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata ClientInfo::GetMetadata() const {

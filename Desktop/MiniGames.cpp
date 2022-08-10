@@ -128,7 +128,7 @@ void PacketCB(void* userData, Packet* pack)
         }
         res.set_state(data);
         const std::string serialized = res.SerializeAsString();
-        sock->SendData(PacketID::SYNC_RESPONSE, serialized.size(), (const uint8_t*)serialized.data());
+        sock->SendData(PacketID::SYNC_RESPONSE, app->appData.localPlayer.groupMask, 0, app->appData.localPlayer.clientID, serialized);
     }
     else if (pack->header.type == (uint32_t)PacketID::JOIN)
     {
@@ -138,11 +138,12 @@ void PacketCB(void* userData, Packet* pack)
         {
             app->appData.localPlayer.name = j.info().client().name();
             app->appData.localPlayer.groupMask = j.info().client().listengroup();
+            app->appData.localPlayer.clientID = j.info().client().id();
             app->appData.roomName = j.info().serverid();
             memcpy(app->appData.localPlayerID, j.id().c_str(), std::min(16, (int)j.id().size()));
 
             app->mainWindow->SetState(MAIN_WINDOW_STATE::STATE_LOBBY);
-            sock->SendData(PacketID::SYNC_REQUEST, 0, nullptr);
+            sock->SendData(PacketID::SYNC_REQUEST, 0, 0, app->appData.localPlayer.clientID, 0, nullptr);
         }
         else if (j.error() == Base::SERVER_ROOM_JOIN_INFO::ROOM_JOIN_UNAVAILABLE)
         {
@@ -174,9 +175,9 @@ void PacketCB(void* userData, Packet* pack)
         {
             app->appData.localPlayer.name = c.info().client().name();
             app->appData.localPlayer.groupMask = c.info().client().listengroup();
+            app->appData.localPlayer.clientID = c.info().client().id();
             app->appData.roomName = c.info().serverid();
             memcpy(app->appData.localPlayerID, c.id().c_str(), std::min(16, (int)c.id().size()));
-            
             app->mainWindow->SetState(MAIN_WINDOW_STATE::STATE_LOBBY);
         }
         else if(c.error() == Base::SERVER_ROOM_CREATE_INFO::ROOM_CREATE_COLLISION)
@@ -198,7 +199,7 @@ void PacketCB(void* userData, Packet* pack)
     {
         Base::AddClient add;
         add.ParseFromArray(pack->body.data(), pack->body.size());
-        app->appData.players.push_back({ add.joined().name(), add.joined().listengroup() });
+        app->appData.players.push_back({ add.joined().name(), add.joined().listengroup(), (uint16_t)add.joined().id() });
         app->appData.addedClientIdx = app->appData.players.size() - 1;
 
         MAIN_WINDOW_STATE curState = app->mainWindow->GetState();

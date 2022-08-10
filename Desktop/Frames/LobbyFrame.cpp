@@ -46,7 +46,7 @@ public:
 			}
 			Base::Vote voteData;
 			voteData.set_clientname(app->appData.localPlayer.name);
-			app->socket.SendData(PacketID::VOTE, LISTEN_GROUP_ALL, 0, voteData.SerializeAsString());
+			app->socket.SendData(PacketID::VOTE, LISTEN_GROUP_ALL, 0, app->appData.localPlayer.clientID, voteData.SerializeAsString());
 
 			GameInfo* cpy = GameInfo::selected;
 			cpy->voteCount--;
@@ -138,7 +138,7 @@ private:
 			Base::Vote voteMessage;
 			voteMessage.set_plugin(plugID);
 			voteMessage.set_clientname(app->appData.localPlayer.name);
-			app->socket.SendData(PacketID::VOTE, 0xFFFFFFFF, 0, voteMessage.SerializeAsString());
+			app->socket.SendData(PacketID::VOTE, 0xFFFFFFFF, 0, app->appData.localPlayer.clientID, voteMessage.SerializeAsString());
 
 
 			for (auto& v : LobbyFrame::data.votes)
@@ -302,7 +302,7 @@ public:
 				v->set_plugin(vote.pluginID); v->set_clientname(vote.username);
 			}
 			data.set_running(LobbyFrame::data.isRunning);
-			app->socket.SendData(PacketID::VOTE_SYNC, LISTEN_GROUP_ALL, ADDITIONAL_DATA_FLAG_ADMIN, data.SerializeAsString());
+			app->socket.SendData(PacketID::VOTE_SYNC, LISTEN_GROUP_ALL, ADDITIONAL_DATA_FLAG_ADMIN,  app->appData.localPlayer.clientID, data.SerializeAsString());
 		}
 	}
 	void AdminStart()
@@ -313,7 +313,7 @@ public:
 			Base::StartPlugin starting;
 			std::string start = GetPluginByVotes();
 			starting.set_pluginid(start);
-			app->socket.SendData(PacketID::START, LISTEN_GROUP_ALL, ADDITIONAL_DATA_FLAG_ADMIN, starting.SerializeAsString());
+			app->socket.SendData(PacketID::START, LISTEN_GROUP_ALL, ADDITIONAL_DATA_FLAG_ADMIN, app->appData.localPlayer.clientID, starting.SerializeAsString());
 
 			LobbyFrame* frame = (LobbyFrame*)this->parentWidget();
 			frame->pluginCache = start;

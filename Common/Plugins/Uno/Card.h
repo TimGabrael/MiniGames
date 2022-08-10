@@ -136,6 +136,7 @@ struct CardStack
 	void Draw();
 	void AddToStack(CARD_ID card, const glm::vec3& pos, const glm::quat& rot);
 	CARD_ID GetTop(CARD_ID& blackColorRef) const;
+	void SetTop(CARD_ID topCard, CARD_ID blackColorRef);
 };
 struct CardHand
 {
@@ -161,6 +162,7 @@ struct CardHand
 	bool mouseAttached = false;
 
 	bool needRegen = false;
+	bool willBeSorted = false;
 	void Add(CARD_ID id);
 	// returns the index that the card got placed in
 	int AddTemp(const Camera& cam, CARD_ID id);

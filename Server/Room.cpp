@@ -87,14 +87,23 @@ Base::SERVER_ROOM_JOIN_INFO ClientJoinRoom(Room** r, ClientInfo* info, const std
 	if (r) *r = nullptr;
 	for (int i = 0; i < rooms.size(); i++)
 	{
-		if (rooms.at(i)->ID == ID) { // ADD THE CLIENT HERR
+		if (rooms.at(i)->ID == ID) { // ADD THE CLIENT HERE
 			auto* ro = rooms.at(i);
-			for (int j = 0; j < ro->clients.size(); j++)
+			bool isEmpty = false;
+			uint16_t clientID = 0;
+			while (!isEmpty)
 			{
-				if (ro->clients.at(j) != info && ro->clients.at(j)->name == info->name) {
-					return Base::SERVER_ROOM_JOIN_INFO::ROOM_JOIN_NAME_COLLISION;
+				clientID++;
+				isEmpty = true;
+				for (int j = 0; j < ro->clients.size(); j++)
+				{
+					if (ro->clients.at(j)->clientID == clientID) isEmpty = false;
+					if (ro->clients.at(j) != info && ro->clients.at(j)->name == info->name) {
+						return Base::SERVER_ROOM_JOIN_INFO::ROOM_JOIN_NAME_COLLISION;
+					}
 				}
 			}
+			info->clientID = clientID;
 			info->room = ro;
 			rooms.at(i)->clients.push_back(info);
 			if (r) *r = ro;

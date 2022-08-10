@@ -4,66 +4,7 @@
 #include <vector>
 #include <mutex>
 #include "Cryptography.h"
-
-// ADMIN/CREATOR OF THE ROOM
-#define ADMIN_GROUP_MASK (1 << 31)
-#define STANDARD_GROUP_MASK 1
-#define LISTEN_GROUP_ALL 0xFFFFFFFF
-
-enum class NetError
-{
-	OK,
-	E_INIT,			// failed to initialize
-	E_RESOLVE,		// failed to Resolve the address
-	E_CONNECT,		// failed to Connect
-	E_LISTEN,		// failed to Listen
-	E_READ,			// failed to Read bytes from socket
-	E_HANDSHAKE,	// failed to perform handshake
-	E_VERSION,		// failed Version mismatch
-};
-
-enum class PacketID
-{
-	HANDSHAKE = 0,
-	CHECK = 1,
-	JOIN = 2,
-	CREATE = 3,
-	SYNC_REQUEST = 4,	// these need to be seperate as the server can ask the Admin for the current SYNC data
-	SYNC_RESPONSE = 5,	// these need to be seperate as the server can ask the Admin for the current SYNC data
-	ADD_CLIENT = 6,
-	REMOVE_CLIENT = 7,
-	// END OF GENERAL MESSAGES
-
-
-	VOTE = 8,
-	VOTE_SYNC = 9,
-	START = 10,
-};
-
-enum AdditionalDataFlags
-{
-	ADDITIONAL_DATA_FLAG_ADMIN = 1,	// only admins should and can send this message!
-
-};
-
-
-struct PacketHeader
-{
-	PacketHeader() { type = 0; size = 0; group = 0x0; additionalData = 0; }
-	constexpr PacketHeader(uint32_t t, uint32_t sz) : type(t), size(sz), group(0x0), additionalData(0) { }
-	constexpr PacketHeader(PacketID t, uint32_t sz) : type((uint32_t)t), size(sz), group(0x0), additionalData(0) { }
-	constexpr PacketHeader(PacketID t, uint32_t gr, uint32_t sz) : type((uint32_t)t), size(sz), group(gr), additionalData(0) { }
-	constexpr PacketHeader(PacketID t, uint32_t gr, uint32_t dat, uint32_t sz) : type((uint32_t)t), size(sz), group(gr), additionalData(dat) { }
-	uint32_t type;
-	uint32_t size;
-	uint32_t group;
-	uint32_t additionalData;
-};
-struct Packet
-{
-	PacketHeader header;
-	std::vector<char> body;
-};
+#include "NetworkBase.h"
 
 struct ValidationPacket
 {
@@ -133,12 +74,8 @@ struct Connection
 
 	void Init(uintptr_t sock, ConnectionFunc socketCallback, void* obj, const ukey_t& key);
 
-	void SendData(PacketID id, size_t size, const void* data);
-	void SendData(PacketID id, uint32_t group, size_t size, const void* data);
-	void SendData(PacketID id, uint32_t group, uint32_t additionalData, size_t size, const void* data);
-	void SendData(PacketID id, const std::string& str);
-	void SendData(PacketID id, uint32_t group, const std::string& str);
-	void SendData(PacketID id, uint32_t group, uint32_t additionalData, const std::string& str);
+	void SendData(PacketID id, uint32_t group, uint16_t additionalFlags, uint16_t clientID, size_t size, const void* data);
+	void SendData(PacketID id, uint32_t group, uint16_t additionalFlags, uint16_t clientID, const std::string& str);
 
 	void SetCryptoKey(const ukey_t& k);
 
@@ -159,9 +96,8 @@ public:
 	void SetPacketCallback(ClientPacketCallback cb, void* userData = nullptr);
 	void SetDisconnectCallback(ClientDisconnectCallback cb, void* userData = nullptr);
 
-	void SendData(PacketID id, uint32_t size, const uint8_t* data);
-	void SendData(PacketID id, const std::string& data);
-	void SendData(PacketID id, uint32_t group, uint32_t additionalData, const std::string& data);
+	void SendData(PacketID id, uint32_t group, uint16_t additionalFlags, uint16_t clientID, size_t size, const void* data);
+	void SendData(PacketID id, uint32_t group, uint16_t additionalFlags, uint16_t clientID, const std::string& str);
 
 private:
 	void SendDataUnencrypted(PacketID id, uint32_t size, const uint8_t* data);
