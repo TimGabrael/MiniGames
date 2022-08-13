@@ -96,6 +96,7 @@ PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORIT
 PROTOBUF_CONSTEXPR PlayCard::PlayCard(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.player_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.nextplayer_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.card_)*/0u
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct PlayCardDefaultTypeInternal {
@@ -160,6 +161,7 @@ const uint32_t TableStruct_UnoMessages_2eproto::offsets[] PROTOBUF_SECTION_VARIA
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
   PROTOBUF_FIELD_OFFSET(::Uno::PlayCard, _impl_.player_),
+  PROTOBUF_FIELD_OFFSET(::Uno::PlayCard, _impl_.nextplayer_),
   PROTOBUF_FIELD_OFFSET(::Uno::PlayCard, _impl_.card_),
 };
 static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
@@ -189,12 +191,13 @@ const char descriptor_table_protodef_UnoMessages_2eproto[] PROTOBUF_SECTION_VARI
   "e\022\016\n\006player\030\001 \001(\t\022\r\n\005cards\030\002 \003(\r\"F\n\020Pull"
   "CardResponse\0222\n\rpullResponses\030\001 \003(\0132\033.Un"
   "o.SinglePullCardResponse\"\037\n\017PlayCardRequ"
-  "est\022\014\n\004card\030\001 \001(\r\"(\n\010PlayCard\022\016\n\006player\030"
-  "\001 \001(\t\022\014\n\004card\030\002 \001(\rb\006proto3"
+  "est\022\014\n\004card\030\001 \001(\r\"<\n\010PlayCard\022\016\n\006player\030"
+  "\001 \001(\t\022\022\n\nnextPlayer\030\002 \001(\t\022\014\n\004card\030\003 \001(\rb"
+  "\006proto3"
   ;
 static ::_pbi::once_flag descriptor_table_UnoMessages_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_UnoMessages_2eproto = {
-    false, false, 387, descriptor_table_protodef_UnoMessages_2eproto,
+    false, false, 407, descriptor_table_protodef_UnoMessages_2eproto,
     "UnoMessages.proto",
     &descriptor_table_UnoMessages_2eproto_once, nullptr, 0, 6,
     schemas, file_default_instances, TableStruct_UnoMessages_2eproto::offsets,
@@ -1376,6 +1379,7 @@ PlayCard::PlayCard(const PlayCard& from)
   PlayCard* const _this = this; (void)_this;
   new (&_impl_) Impl_{
       decltype(_impl_.player_){}
+    , decltype(_impl_.nextplayer_){}
     , decltype(_impl_.card_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
@@ -1388,6 +1392,14 @@ PlayCard::PlayCard(const PlayCard& from)
     _this->_impl_.player_.Set(from._internal_player(), 
       _this->GetArenaForAllocation());
   }
+  _impl_.nextplayer_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.nextplayer_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_nextplayer().empty()) {
+    _this->_impl_.nextplayer_.Set(from._internal_nextplayer(), 
+      _this->GetArenaForAllocation());
+  }
   _this->_impl_.card_ = from._impl_.card_;
   // @@protoc_insertion_point(copy_constructor:Uno.PlayCard)
 }
@@ -1398,12 +1410,17 @@ inline void PlayCard::SharedCtor(
   (void)is_message_owned;
   new (&_impl_) Impl_{
       decltype(_impl_.player_){}
+    , decltype(_impl_.nextplayer_){}
     , decltype(_impl_.card_){0u}
     , /*decltype(_impl_._cached_size_)*/{}
   };
   _impl_.player_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
     _impl_.player_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.nextplayer_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.nextplayer_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
@@ -1419,6 +1436,7 @@ PlayCard::~PlayCard() {
 inline void PlayCard::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
   _impl_.player_.Destroy();
+  _impl_.nextplayer_.Destroy();
 }
 
 void PlayCard::SetCachedSize(int size) const {
@@ -1432,6 +1450,7 @@ void PlayCard::Clear() {
   (void) cached_has_bits;
 
   _impl_.player_.ClearToEmpty();
+  _impl_.nextplayer_.ClearToEmpty();
   _impl_.card_ = 0u;
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
@@ -1452,9 +1471,19 @@ const char* PlayCard::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx)
         } else
           goto handle_unusual;
         continue;
-      // uint32 card = 2;
+      // string nextPlayer = 2;
       case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 16)) {
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+          auto str = _internal_mutable_nextplayer();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "Uno.PlayCard.nextPlayer"));
+        } else
+          goto handle_unusual;
+        continue;
+      // uint32 card = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 24)) {
           _impl_.card_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
           CHK_(ptr);
         } else
@@ -1499,10 +1528,20 @@ uint8_t* PlayCard::_InternalSerialize(
         1, this->_internal_player(), target);
   }
 
-  // uint32 card = 2;
+  // string nextPlayer = 2;
+  if (!this->_internal_nextplayer().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_nextplayer().data(), static_cast<int>(this->_internal_nextplayer().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "Uno.PlayCard.nextPlayer");
+    target = stream->WriteStringMaybeAliased(
+        2, this->_internal_nextplayer(), target);
+  }
+
+  // uint32 card = 3;
   if (this->_internal_card() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(2, this->_internal_card(), target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(3, this->_internal_card(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -1528,7 +1567,14 @@ size_t PlayCard::ByteSizeLong() const {
         this->_internal_player());
   }
 
-  // uint32 card = 2;
+  // string nextPlayer = 2;
+  if (!this->_internal_nextplayer().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_nextplayer());
+  }
+
+  // uint32 card = 3;
   if (this->_internal_card() != 0) {
     total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_card());
   }
@@ -1553,6 +1599,9 @@ void PlayCard::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTO
 
   if (!from._internal_player().empty()) {
     _this->_internal_set_player(from._internal_player());
+  }
+  if (!from._internal_nextplayer().empty()) {
+    _this->_internal_set_nextplayer(from._internal_nextplayer());
   }
   if (from._internal_card() != 0) {
     _this->_internal_set_card(from._internal_card());
@@ -1579,6 +1628,10 @@ void PlayCard::InternalSwap(PlayCard* other) {
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
       &_impl_.player_, lhs_arena,
       &other->_impl_.player_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.nextplayer_, lhs_arena,
+      &other->_impl_.nextplayer_, rhs_arena
   );
   swap(_impl_.card_, other->_impl_.card_);
 }

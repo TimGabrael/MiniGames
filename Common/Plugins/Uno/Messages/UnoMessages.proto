@@ -34,5 +34,6 @@ message PlayCardRequest
 message PlayCard
 {
 	string player = 1;
-	uint32 card = 2;
+	string nextPlayer = 2;
+	uint32 card = 3;
 }

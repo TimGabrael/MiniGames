@@ -9,6 +9,7 @@
 #include "../util/QImGui.h"
 #include <imgui.h>
 #include "../MiniGames.h"
+#include "Network/Messages/ClientInfo.pb.h"
 
 PluginWidget::PluginWidget(QWidget* parent, PluginClass* plClass) : QOpenGLWidget(parent), plugin(plClass)
 {
@@ -48,14 +49,23 @@ static void SendDataFunction(uint32_t packetID, uint32_t group, uint16_t flags, 
 
 void PluginWidget::initializeGL()
 {
+
 	initializeOpenGLFunctions();
 	QImGui::initialize(this);
 	MainApplication* app = MainApplication::GetInstance();
+	
+	Base::ClientInfo client;
+	client.set_id(app->appData.localPlayer.clientID);
+	client.set_listengroup(app->appData.localPlayer.groupMask);
+	client.set_name(app->appData.localPlayer.name);
+
 	app->appData.imGuiCtx = ImGui::GetCurrentContext();
 	app->appData._sendDataFunction = &SendDataFunction;
 	app->appData.platform = _CURRENT_PLATFORM_ID;
 	plugin->Init(&app->appData);
 	isInitialized = true;
+	
+	app->socket.SendData(PacketID::STARTED, LISTEN_GROUP_ALL, 0, app->appData.localPlayer.clientID, client.SerializeAsString());
 }
 
 void PluginWidget::resizeGL(int w, int h)

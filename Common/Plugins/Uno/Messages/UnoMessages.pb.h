@@ -1054,7 +1054,8 @@ class PlayCard final :
 
   enum : int {
     kPlayerFieldNumber = 1,
-    kCardFieldNumber = 2,
+    kNextPlayerFieldNumber = 2,
+    kCardFieldNumber = 3,
   };
   // string player = 1;
   void clear_player();
@@ -1070,7 +1071,21 @@ class PlayCard final :
   std::string* _internal_mutable_player();
   public:
 
-  // uint32 card = 2;
+  // string nextPlayer = 2;
+  void clear_nextplayer();
+  const std::string& nextplayer() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_nextplayer(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_nextplayer();
+  PROTOBUF_NODISCARD std::string* release_nextplayer();
+  void set_allocated_nextplayer(std::string* nextplayer);
+  private:
+  const std::string& _internal_nextplayer() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_nextplayer(const std::string& value);
+  std::string* _internal_mutable_nextplayer();
+  public:
+
+  // uint32 card = 3;
   void clear_card();
   uint32_t card() const;
   void set_card(uint32_t value);
@@ -1088,6 +1103,7 @@ class PlayCard final :
   typedef void DestructorSkippable_;
   struct Impl_ {
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr player_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr nextplayer_;
     uint32_t card_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
@@ -1559,7 +1575,57 @@ inline void PlayCard::set_allocated_player(std::string* player) {
   // @@protoc_insertion_point(field_set_allocated:Uno.PlayCard.player)
 }
 
-// uint32 card = 2;
+// string nextPlayer = 2;
+inline void PlayCard::clear_nextplayer() {
+  _impl_.nextplayer_.ClearToEmpty();
+}
+inline const std::string& PlayCard::nextplayer() const {
+  // @@protoc_insertion_point(field_get:Uno.PlayCard.nextPlayer)
+  return _internal_nextplayer();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void PlayCard::set_nextplayer(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.nextplayer_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:Uno.PlayCard.nextPlayer)
+}
+inline std::string* PlayCard::mutable_nextplayer() {
+  std::string* _s = _internal_mutable_nextplayer();
+  // @@protoc_insertion_point(field_mutable:Uno.PlayCard.nextPlayer)
+  return _s;
+}
+inline const std::string& PlayCard::_internal_nextplayer() const {
+  return _impl_.nextplayer_.Get();
+}
+inline void PlayCard::_internal_set_nextplayer(const std::string& value) {
+  
+  _impl_.nextplayer_.Set(value, GetArenaForAllocation());
+}
+inline std::string* PlayCard::_internal_mutable_nextplayer() {
+  
+  return _impl_.nextplayer_.Mutable(GetArenaForAllocation());
+}
+inline std::string* PlayCard::release_nextplayer() {
+  // @@protoc_insertion_point(field_release:Uno.PlayCard.nextPlayer)
+  return _impl_.nextplayer_.Release();
+}
+inline void PlayCard::set_allocated_nextplayer(std::string* nextplayer) {
+  if (nextplayer != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.nextplayer_.SetAllocated(nextplayer, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.nextplayer_.IsDefault()) {
+    _impl_.nextplayer_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:Uno.PlayCard.nextPlayer)
+}
+
+// uint32 card = 3;
 inline void PlayCard::clear_card() {
   _impl_.card_ = 0u;
 }

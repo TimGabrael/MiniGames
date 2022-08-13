@@ -722,7 +722,7 @@ void CardStack::AddToStack(CARD_ID card, const glm::vec3& pos, const glm::quat& 
 }
 CARD_ID CardStack::GetTop(CARD_ID& blackColorRef) const
 {
-	if (cards.empty()) return CARD_ID_BLANK;
+	if (cards.empty()) return (CARD_ID)-1;
 
 	CARD_ID top = cards.at(cards.size() - 1).front;
 	if (top == CARD_ID::CARD_ID_ADD_4 || top == CARD_ID::CARD_ID_CHOOSE_COLOR) blackColorRef = blackColorID;
@@ -737,14 +737,15 @@ void CardStack::SetTop(CARD_ID topCard, CARD_ID blackColorRef)
 	}
 	else
 	{
-		cards.emplace_back(CARD_ID::CARD_ID_BLANK, topCard, glm::vec3(0.0f, 0.001f, 0.0f), glm::mat4(1.0f), false, true);
+		glm::quat rotation = glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+
+		cards.emplace_back(CARD_ID::CARD_ID_BLANK, topCard, glm::vec3(0.0f, 0.001f, 0.0f), rotation , false, true);
 	}
 }
 
 
 void CardHand::Add(CARD_ID id)
 {
-	//if (wideCardsStart >= 0.0f) wideCardsStart += g_cardMinDiff * 0.5f;
 	wideCardsStart += g_cardMinDiff * 0.5f;
 	
 
@@ -793,7 +794,6 @@ void CardHand::PlayCard(const CardStack& stack, CardsInAnimation& anim, int card
 	{
 		auto& c = cards.at(cardIdx);
 		CARD_ID card = c.front;
-		instance->backendData->localPlayer.groupMask = 0;
 		if (instance->backendData->localPlayer.groupMask & ADMIN_GROUP_MASK)
 		{
 			anim.AddAnim(stack, c, handID, CARD_ANIMATIONS::ANIM_PLAY_CARD);
