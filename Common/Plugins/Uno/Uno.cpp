@@ -172,6 +172,7 @@ void UnoPlugin::NetworkCallback(Packet* packet) // NOT IN MAIN THREAD
 			if (!curFound && game.playerNames.at(i) == name)
 			{
 				played_card_data.playerIdx = i;
+				played_card_data.card = (CARD_ID)resp.card();
 				curFound = true;
 			}
 			if (!nextFound && game.playerNames.at(i) == nextName)
@@ -182,6 +183,7 @@ void UnoPlugin::NetworkCallback(Packet* packet) // NOT IN MAIN THREAD
 			if (curFound && nextFound)
 				break;
 		}
+		if (!curFound || !nextFound) SendNetworkData((uint32_t)PacketID::SYNC_REQUEST, ADMIN_GROUP_MASK, 0, backendData->localPlayer.clientID, "");
 		played_card_data.card = (CARD_ID)resp.card();
 		data_mutex.unlock();
 	}
@@ -189,6 +191,7 @@ void UnoPlugin::NetworkCallback(Packet* packet) // NOT IN MAIN THREAD
 }
 void UnoPlugin::FetchSyncData(std::string& str) // NOT IN MAIN THREAD
 {
+	while (!g_objs->anims.inputsAllowed) { }
 	Uno::GameState state;
 	CARD_ID topCardColorID;
 	CARD_ID topCard = g_objs->stack.GetTop(topCardColorID);

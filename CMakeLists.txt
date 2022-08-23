@@ -66,8 +66,10 @@ if(WIN32 OR (UNIX AND NOT ANDROID AND NOT EMSCRIPTEN))
 		include_directories(Windows)
 	endif()
 
-
+	
 	add_subdirectory(Desktop)
+	add_subdirectory(PluginCLI)
+
 elseif(EMSCRIPTEN)
 	add_subdirectory(Emscripten)
 else()
