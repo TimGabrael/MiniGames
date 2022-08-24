@@ -128,7 +128,7 @@ void PacketCB(void* userData, Packet* pack)
         }
         res.set_state(data);
         const std::string serialized = res.SerializeAsString();
-        sock->SendData(PacketID::SYNC_RESPONSE, app->appData.localPlayer.groupMask, 0, app->appData.localPlayer.clientID, serialized);
+        sock->SendData(PacketID::SYNC_RESPONSE, app->appData.localPlayer.groupMask, ADDITIONAL_DATA_FLAG_ADMIN, app->appData.localPlayer.clientID, serialized);
     }
     else if (pack->header.type == (uint32_t)PacketID::JOIN)
     {

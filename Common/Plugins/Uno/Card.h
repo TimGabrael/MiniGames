@@ -10,7 +10,7 @@
 static float g_cardScale = 0.3f;
 static constexpr float g_cardMinDiff = 0.35f;
 
-enum CARD_ID
+enum CARD_ID : uint32_t
 {
 	CARD_ID_RED_0, CARD_ID_RED_1, CARD_ID_RED_2, CARD_ID_RED_3, CARD_ID_RED_4, CARD_ID_RED_5, CARD_ID_RED_6,
 	CARD_ID_RED_7, CARD_ID_RED_8, CARD_ID_RED_9, CARD_ID_RED_PAUSE, CARD_ID_RED_SWAP, CARD_ID_RED_ADD,

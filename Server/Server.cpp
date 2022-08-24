@@ -159,10 +159,59 @@ void PacketCB(void* userData, Connection* conn, Packet* packet)
 			const std::string serialized = res.SerializeAsString();
 			for (int i = 0; i < r->waitForSyncClients.size(); i++)
 			{
-				client->room->waitForSyncClients.at(i)->conn->SendData(PacketID::SYNC_RESPONSE, LISTEN_GROUP_ALL, 0, -1, serialized);
+				client->room->waitForSyncClients.at(i)->conn->SendData(PacketID::SYNC_RESPONSE, LISTEN_GROUP_ALL, ADDITIONAL_DATA_FLAG_ADMIN, -1, serialized);
 			}
 			client->room->waitForSyncClients.clear();
 		}
+	}
+	else if (packet->header.type == (uint32_t)PacketID::FORCE_SYNC)
+	{
+		ClientInfo* client = GetClientInfo(conn);
+		if (client->groupMask & ADMIN_GROUP_MASK)
+		{
+			Room* r = client->room;
+			Base::SyncResponse res;
+			res.ParseFromArray(packet->body.data(), packet->body.size());
+			res.clear_availableplugins();
+			res.clear_connectedclients();
+			res.clear_serverid();
+
+			for (int i = 0; i < r->activePlugins.size(); i++)
+			{
+				res.add_availableplugins(r->activePlugins.at(i).c_str());
+			}
+			for (int i = 0; i < r->clients.size(); i++)
+			{
+				ClientInfo* c = r->clients.at(i);
+				Base::ClientInfo* cl = res.add_connectedclients();
+				cl->set_name(c->name); cl->set_listengroup(c->groupMask);
+			}
+			res.set_serverid(r->ID);
+			const std::string serialized = res.SerializePartialAsString();
+			if (packet->header.additionalData & ADDITIONAL_DATA_FLAG_TO_SENDER_ID)
+			{
+				for (int i = 0; i < r->clients.size(); i++)
+				{
+					if (r->clients.at(i)->clientID == packet->header.senderID)
+					{
+						r->clients.at(i)->conn->SendData(PacketID::SYNC_RESPONSE, LISTEN_GROUP_ALL, ADDITIONAL_DATA_FLAG_ADMIN, -1, serialized);
+						break;
+					}
+				}
+			}
+			else
+			{
+				for (int i = 0; i < r->clients.size(); i++)
+				{
+					if (r->clients.at(i)->conn == conn) continue;
+					r->clients.at(i)->conn->SendData(PacketID::SYNC_RESPONSE, LISTEN_GROUP_ALL, ADDITIONAL_DATA_FLAG_ADMIN, -1, serialized);
+				}
+			}
+		}
+	}
+	else if (packet->header.type == (uint32_t)PacketID::GET_CLIENTS)
+	{
+		// TODO: RETURN CLIENTS TO SENDER
 	}
 	else
 	{

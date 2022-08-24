@@ -31,14 +31,16 @@ enum class PacketID
 	SYNC_RESPONSE = 5,	// these need to be seperate as the server can ask the Admin for the current SYNC data
 	ADD_CLIENT = 6,
 	REMOVE_CLIENT = 7,
+	FORCE_SYNC = 8,
+	GET_CLIENTS = 9,
 	// END OF GENERAL MESSAGES
 
 
-	VOTE = 8,
-	VOTE_SYNC = 9,
-	START = 10,
-	STARTED = 11,
-	NUM_PACKETS = 12,
+	VOTE = 10,
+	VOTE_SYNC = 11,
+	START = 12,
+	STARTED = 13,
+	NUM_PACKETS = 14,
 };
 
 enum AdditionalDataFlags : uint16_t

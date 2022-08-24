@@ -13,6 +13,7 @@
 #include "Network/Networking.h"
 #include "imgui.h"
 #include "Messages/UnoMessages.pb.h"
+#include "Network/Messages/sync.pb.h"
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -167,6 +168,7 @@ void UnoPlugin::NetworkCallback(Packet* packet) // NOT IN MAIN THREAD
 		data_mutex.lock();
 		bool curFound = false;
 		bool nextFound = false;
+		played_card_data.playerIdx = -1;
 		for (int i = 0; i < game.playerNames.size(); i++)
 		{
 			if (!curFound && game.playerNames.at(i) == name)
@@ -183,7 +185,7 @@ void UnoPlugin::NetworkCallback(Packet* packet) // NOT IN MAIN THREAD
 			if (curFound && nextFound)
 				break;
 		}
-		if (!curFound || !nextFound) SendNetworkData((uint32_t)PacketID::SYNC_REQUEST, ADMIN_GROUP_MASK, 0, backendData->localPlayer.clientID, "");
+		//if (!curFound || !nextFound) SendNetworkData((uint32_t)PacketID::SYNC_REQUEST, ADMIN_GROUP_MASK, 0, backendData->localPlayer.clientID, 0, nullptr);
 		played_card_data.card = (CARD_ID)resp.card();
 		data_mutex.unlock();
 	}
@@ -193,7 +195,7 @@ void UnoPlugin::FetchSyncData(std::string& str) // NOT IN MAIN THREAD
 {
 	while (!g_objs->anims.inputsAllowed) { }
 	Uno::GameState state;
-	CARD_ID topCardColorID;
+	CARD_ID topCardColorID = (CARD_ID)-1;
 	CARD_ID topCard = g_objs->stack.GetTop(topCardColorID);
 	state.set_topcard(topCard); state.set_topcardcolorid(topCardColorID);
 	if (0 <= game.playerInTurn && game.playerNames.size() < game.playerInTurn)
@@ -209,7 +211,6 @@ void UnoPlugin::FetchSyncData(std::string& str) // NOT IN MAIN THREAD
 	{
 		const std::string& name = game.playerNames.at(i);
 		const CardHand& hand = game.hands->at(i);
-
 		Uno::Player* players = state.add_players();
 		players->set_name(name);
 		for (const CardInfo& card : hand.cards)
@@ -237,7 +238,6 @@ void UnoPlugin::HandleSync(const std::string& syncData)
 	
 	AddPlayer(&backendData->localPlayer);
 	game.playerInTurn = -1;
-
 	for (const auto& player : state.players())
 	{
 		bool found = false;
@@ -286,7 +286,7 @@ void UnoPlugin::HandleSync(const std::string& syncData)
 	uint32_t topColorID = state.topcardcolorid();
 	if (topCard < CARD_ID::NUM_AVAILABLE_CARDS)
 	{
-		g_objs->stack.SetTop((CARD_ID)topCard, (CARD_ID)topColorID);
+		if (topCard != -1) { g_objs->stack.SetTop((CARD_ID)topCard, (CARD_ID)topColorID); }
 	}
 
 
@@ -331,9 +331,18 @@ void GameUpdateFunction(UnoGlobals* g_objs, float dt)
 		if (idx == -1)
 		{
 			idx = hand.cards.size();
-			hand.Add(played_card_data.card);
+			if (idx == 0)
+			{
+				hand.Add(played_card_data.card);
+			}
+			else
+			{
+				hand.cards.at(0).front = played_card_data.card;
+				idx = 0;
+			}
 		}
 		g_objs->anims.AddAnim(g_objs->stack, hand.cards.at(idx), hand.handID, CARD_ANIMATIONS::ANIM_PLAY_CARD);
+		hand.cards.erase(hand.cards.begin() + idx);
 		played_card_data.playerIdx = -1;
 		played_card_data.card = (CARD_ID)-1;
 
@@ -465,36 +474,6 @@ void UnoPlugin::Init(ApplicationData* data)
 		light->data.mapper[0].viewProj = g_objs->shadowCam.viewProj;
 		light->data.numCascades = 1;
 
-		//ScenePointLight* plight = SC_AddPointLight(g_objs->UnoScene);
-		//plight->data.ambient = { 0.2f, 0.2f, 0.2f };
-		//plight->data.diffuse = { 10.0f, 0.0f, 0.0f };
-		//plight->data.pos = { 0, 4.0f, 0.0f };
-		//plight->data.specular = { 0.8f, 0.8f, 0.8f };
-		//plight->data.constant = 1.0f;
-		//plight->data.linear = 0.1f;
-		//plight->data.quadratic = 0.1f;
-		//plight->data.hasShadow = false;
-		//
-		//plight = SC_AddPointLight(g_objs->UnoScene);
-		//plight->data.ambient = { 0.2f, 0.2f, 0.2f };
-		//plight->data.diffuse = { 0.0f, 10.0f, 0.0f };
-		//plight->data.pos = { -4.0, 4.0f, -4.0f };
-		//plight->data.specular = { 0.8f, 0.8f, 0.8f };
-		//plight->data.constant = 1.0f;
-		//plight->data.linear = 0.1f;
-		//plight->data.quadratic = 0.1f;
-		//plight->data.hasShadow = false;
-		//
-		//plight = SC_AddPointLight(g_objs->UnoScene);
-		//plight->data.ambient = { 0.2f, 0.2f, 0.2f };
-		//plight->data.diffuse = { 0.0f, 0.0f, 10.0f };
-		//plight->data.pos = { 4.0, 4.0f, -4.0f };
-		//plight->data.specular = { 0.8f, 0.8f, 0.8f };
-		//plight->data.constant = 1.0f;
-		//plight->data.linear = 0.1f;
-		//plight->data.quadratic = 0.1f;
-		//plight->data.hasShadow = false;
-
 
 		UBOParams params = UBOParams();
 		PBRSceneObject* o = AddPbrModelToScene(g_objs->UnoScene, pbrModel, params, glm::translate(glm::mat4(1.0f), glm::vec3(-2.0f, 0.7f, -2.0f)));
@@ -534,15 +513,19 @@ void UnoPlugin::Init(ApplicationData* data)
 	for (const auto& p : backendData->players)
 	{
 		int idx = AddPlayer(&p);
-		for (int i = 0; i < 100; i++)
+		for (int i = 0; i < 4; i++)
 		{
 			game.hands->at(idx).Add(CARD_ID::CARD_ID_BLUE_0);
 		}
 	}
 	
-	if (!(backendData->localPlayer.groupMask & ADMIN_GROUP_MASK))
+	if(backendData->localPlayer.groupMask & ADMIN_GROUP_MASK)
 	{
-		SendNetworkData((uint32_t)PacketID::SYNC_REQUEST, ADMIN_GROUP_MASK, 0, backendData->localPlayer.clientID, 0, nullptr);
+		Base::SyncResponse resp;
+		std::string state;
+		FetchSyncData(state);
+		resp.set_state(state);
+		SendNetworkData((uint32_t)PacketID::FORCE_SYNC, LISTEN_GROUP_ALL, ADDITIONAL_DATA_FLAG_ADMIN, backendData->localPlayer.clientID, resp.SerializeAsString());
 	}
 
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -566,15 +549,6 @@ void UnoPlugin::Resize(ApplicationData* data)
 	GLint defaultFBO;
 	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &defaultFBO);
 	SetScreenFramebuffer(defaultFBO, { sizeX, sizeY });
-	
-	//g_objs->offscreenX = sizeX;
-	//g_objs->offscreenY = sizeY;
-	//RecreateSingleFBO(&g_objs->reflectFBO, sizeX, sizeY);
-	//ReflectiveSurfaceTextures texs;
-	//texs.reflect = g_objs->reflectFBO.texture;
-	//texs.refract = g_objs->refGroundTexture;
-	//texs.dudv = 0;
-	//ReflectiveSurfaceSetTextureData(g_objs->basePlatform, &texs);
 
 
 	g_objs->rendererData.Recreate(sizeX, sizeY, SHADOW_TEXTURE_SIZE, SHADOW_TEXTURE_SIZE);
@@ -612,9 +586,9 @@ void UnoPlugin::Render(ApplicationData* data)
 		g_objs->stack.Draw();
 		g_objs->anims.Update(g_objs->hands, g_objs->stack, dt);
 	
-		for (auto& c : g_objs->hands)
+		for (int i = 0; i < g_objs->hands.size(); i++)
 		{
-			c.Draw(g_objs->playerCam);
+			g_objs->hands.at(i).Draw(g_objs->playerCam);
 		}
 		
 	}
@@ -771,6 +745,32 @@ void UnoPlugin::KeyUpCallback(Key k, bool isRepeat)
 		if (k == Key::Key_A)g_objs->moveComp.SetMovementDirection(MovementComponent::DIRECTION::LEFT, false);
 		if (k == Key::Key_S)g_objs->moveComp.SetMovementDirection(MovementComponent::DIRECTION::BACKWARD, false);
 		if (k == Key::Key_D)g_objs->moveComp.SetMovementDirection(MovementComponent::DIRECTION::RIGHT, false);
+
+		if (k == Key::Key_P) // PRINT DEBUG GAME INFO
+		{
+			LOG("<<<<<<<<<<<<<<<<GAME_INFO<<<<<<<<<<<<<<<<\n");
+			LOG("LOCAL_PLAYER: %s\n", game.playerNames.at(0).c_str());
+			for (int i = 0; i < game.hands->at(0).cards.size(); i++)
+			{
+				LOG("CARD(%d): %d\n", i, game.hands->at(0).cards.at(i).front);
+			}
+			for (int i = 1; i < game.hands->size(); i++)
+			{
+				if (game.playerNames.size() <= i)
+				{
+					LOG("[ERROR]: THIS SHOULD NEVER EVERY HAPPEN!!!\n");
+				}
+				else
+				{
+					LOG("PLAYER: %s\n", game.playerNames.at(i).c_str());
+					for (int j = 0; j < game.hands->at(i).cards.size(); j++)
+					{
+						LOG("CARD(%d): %d\n", j, game.hands->at(i).cards.at(j).front);
+					}
+				}
+			}
+			LOG("CURRENT_PLAYER_IN_TURN: %d\n", game.playerInTurn);
+		}
 	}
 #endif
 }
