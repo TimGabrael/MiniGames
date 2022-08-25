@@ -45,6 +45,12 @@ struct TableStruct_UnoMessages_2eproto {
 };
 extern const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_UnoMessages_2eproto;
 namespace Uno {
+class ChooseColor;
+struct ChooseColorDefaultTypeInternal;
+extern ChooseColorDefaultTypeInternal _ChooseColor_default_instance_;
+class ChooseColorRequest;
+struct ChooseColorRequestDefaultTypeInternal;
+extern ChooseColorRequestDefaultTypeInternal _ChooseColorRequest_default_instance_;
 class GameState;
 struct GameStateDefaultTypeInternal;
 extern GameStateDefaultTypeInternal _GameState_default_instance_;
@@ -65,6 +71,8 @@ struct SinglePullCardResponseDefaultTypeInternal;
 extern SinglePullCardResponseDefaultTypeInternal _SinglePullCardResponse_default_instance_;
 }  // namespace Uno
 PROTOBUF_NAMESPACE_OPEN
+template<> ::Uno::ChooseColor* Arena::CreateMaybeMessage<::Uno::ChooseColor>(Arena*);
+template<> ::Uno::ChooseColorRequest* Arena::CreateMaybeMessage<::Uno::ChooseColorRequest>(Arena*);
 template<> ::Uno::GameState* Arena::CreateMaybeMessage<::Uno::GameState>(Arena*);
 template<> ::Uno::PlayCard* Arena::CreateMaybeMessage<::Uno::PlayCard>(Arena*);
 template<> ::Uno::PlayCardRequest* Arena::CreateMaybeMessage<::Uno::PlayCardRequest>(Arena*);
@@ -197,10 +205,11 @@ class Player final :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kCardsOnHandFieldNumber = 2,
+    kCardsOnHandFieldNumber = 3,
     kNameFieldNumber = 1,
+    kIdFieldNumber = 2,
   };
-  // repeated uint32 cardsOnHand = 2;
+  // repeated uint32 cardsOnHand = 3;
   int cardsonhand_size() const;
   private:
   int _internal_cardsonhand_size() const;
@@ -236,6 +245,15 @@ class Player final :
   std::string* _internal_mutable_name();
   public:
 
+  // uint32 id = 2;
+  void clear_id();
+  uint32_t id() const;
+  void set_id(uint32_t value);
+  private:
+  uint32_t _internal_id() const;
+  void _internal_set_id(uint32_t value);
+  public:
+
   // @@protoc_insertion_point(class_scope:Uno.Player)
  private:
   class _Internal;
@@ -247,6 +265,7 @@ class Player final :
     ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint32_t > cardsonhand_;
     mutable std::atomic<int> _cardsonhand_cached_byte_size_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr name_;
+    uint32_t id_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -379,6 +398,8 @@ class GameState final :
     kPlayerInTurnFieldNumber = 1,
     kTopCardFieldNumber = 3,
     kTopCardColorIDFieldNumber = 4,
+    kStateFieldNumber = 5,
+    kChoosingColorFieldNumber = 6,
   };
   // repeated .Uno.Player players = 2;
   int players_size() const;
@@ -430,6 +451,24 @@ class GameState final :
   void _internal_set_topcardcolorid(uint32_t value);
   public:
 
+  // uint32 state = 5;
+  void clear_state();
+  uint32_t state() const;
+  void set_state(uint32_t value);
+  private:
+  uint32_t _internal_state() const;
+  void _internal_set_state(uint32_t value);
+  public:
+
+  // bool choosingColor = 6;
+  void clear_choosingcolor();
+  bool choosingcolor() const;
+  void set_choosingcolor(bool value);
+  private:
+  bool _internal_choosingcolor() const;
+  void _internal_set_choosingcolor(bool value);
+  public:
+
   // @@protoc_insertion_point(class_scope:Uno.GameState)
  private:
   class _Internal;
@@ -442,6 +481,8 @@ class GameState final :
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr playerinturn_;
     uint32_t topcard_;
     uint32_t topcardcolorid_;
+    uint32_t state_;
+    bool choosingcolor_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -571,7 +612,7 @@ class SinglePullCardResponse final :
 
   enum : int {
     kCardsFieldNumber = 2,
-    kPlayerFieldNumber = 1,
+    kPlayerIDFieldNumber = 1,
   };
   // repeated uint32 cards = 2;
   int cards_size() const;
@@ -595,18 +636,13 @@ class SinglePullCardResponse final :
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint32_t >*
       mutable_cards();
 
-  // string player = 1;
-  void clear_player();
-  const std::string& player() const;
-  template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_player(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_player();
-  PROTOBUF_NODISCARD std::string* release_player();
-  void set_allocated_player(std::string* player);
+  // uint32 playerID = 1;
+  void clear_playerid();
+  uint32_t playerid() const;
+  void set_playerid(uint32_t value);
   private:
-  const std::string& _internal_player() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_player(const std::string& value);
-  std::string* _internal_mutable_player();
+  uint32_t _internal_playerid() const;
+  void _internal_set_playerid(uint32_t value);
   public:
 
   // @@protoc_insertion_point(class_scope:Uno.SinglePullCardResponse)
@@ -619,7 +655,7 @@ class SinglePullCardResponse final :
   struct Impl_ {
     ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint32_t > cards_;
     mutable std::atomic<int> _cards_cached_byte_size_;
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr player_;
+    uint32_t playerid_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -1053,36 +1089,26 @@ class PlayCard final :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kPlayerFieldNumber = 1,
-    kNextPlayerFieldNumber = 2,
+    kPlayerIDFieldNumber = 1,
+    kNextPlayerIDFieldNumber = 2,
     kCardFieldNumber = 3,
   };
-  // string player = 1;
-  void clear_player();
-  const std::string& player() const;
-  template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_player(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_player();
-  PROTOBUF_NODISCARD std::string* release_player();
-  void set_allocated_player(std::string* player);
+  // uint32 playerID = 1;
+  void clear_playerid();
+  uint32_t playerid() const;
+  void set_playerid(uint32_t value);
   private:
-  const std::string& _internal_player() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_player(const std::string& value);
-  std::string* _internal_mutable_player();
+  uint32_t _internal_playerid() const;
+  void _internal_set_playerid(uint32_t value);
   public:
 
-  // string nextPlayer = 2;
-  void clear_nextplayer();
-  const std::string& nextplayer() const;
-  template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_nextplayer(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_nextplayer();
-  PROTOBUF_NODISCARD std::string* release_nextplayer();
-  void set_allocated_nextplayer(std::string* nextplayer);
+  // uint32 nextPlayerID = 2;
+  void clear_nextplayerid();
+  uint32_t nextplayerid() const;
+  void set_nextplayerid(uint32_t value);
   private:
-  const std::string& _internal_nextplayer() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_nextplayer(const std::string& value);
-  std::string* _internal_mutable_nextplayer();
+  uint32_t _internal_nextplayerid() const;
+  void _internal_set_nextplayerid(uint32_t value);
   public:
 
   // uint32 card = 3;
@@ -1102,9 +1128,327 @@ class PlayCard final :
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   struct Impl_ {
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr player_;
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr nextplayer_;
+    uint32_t playerid_;
+    uint32_t nextplayerid_;
     uint32_t card_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_UnoMessages_2eproto;
+};
+// -------------------------------------------------------------------
+
+class ChooseColorRequest final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:Uno.ChooseColorRequest) */ {
+ public:
+  inline ChooseColorRequest() : ChooseColorRequest(nullptr) {}
+  ~ChooseColorRequest() override;
+  explicit PROTOBUF_CONSTEXPR ChooseColorRequest(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  ChooseColorRequest(const ChooseColorRequest& from);
+  ChooseColorRequest(ChooseColorRequest&& from) noexcept
+    : ChooseColorRequest() {
+    *this = ::std::move(from);
+  }
+
+  inline ChooseColorRequest& operator=(const ChooseColorRequest& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline ChooseColorRequest& operator=(ChooseColorRequest&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const ChooseColorRequest& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const ChooseColorRequest* internal_default_instance() {
+    return reinterpret_cast<const ChooseColorRequest*>(
+               &_ChooseColorRequest_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    6;
+
+  friend void swap(ChooseColorRequest& a, ChooseColorRequest& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(ChooseColorRequest* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(ChooseColorRequest* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  ChooseColorRequest* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<ChooseColorRequest>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const ChooseColorRequest& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const ChooseColorRequest& from) {
+    ChooseColorRequest::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(ChooseColorRequest* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "Uno.ChooseColorRequest";
+  }
+  protected:
+  explicit ChooseColorRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kColorIDFieldNumber = 1,
+  };
+  // uint32 colorID = 1;
+  void clear_colorid();
+  uint32_t colorid() const;
+  void set_colorid(uint32_t value);
+  private:
+  uint32_t _internal_colorid() const;
+  void _internal_set_colorid(uint32_t value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:Uno.ChooseColorRequest)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    uint32_t colorid_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_UnoMessages_2eproto;
+};
+// -------------------------------------------------------------------
+
+class ChooseColor final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:Uno.ChooseColor) */ {
+ public:
+  inline ChooseColor() : ChooseColor(nullptr) {}
+  ~ChooseColor() override;
+  explicit PROTOBUF_CONSTEXPR ChooseColor(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  ChooseColor(const ChooseColor& from);
+  ChooseColor(ChooseColor&& from) noexcept
+    : ChooseColor() {
+    *this = ::std::move(from);
+  }
+
+  inline ChooseColor& operator=(const ChooseColor& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline ChooseColor& operator=(ChooseColor&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const ChooseColor& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const ChooseColor* internal_default_instance() {
+    return reinterpret_cast<const ChooseColor*>(
+               &_ChooseColor_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    7;
+
+  friend void swap(ChooseColor& a, ChooseColor& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(ChooseColor* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(ChooseColor* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  ChooseColor* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<ChooseColor>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const ChooseColor& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const ChooseColor& from) {
+    ChooseColor::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(ChooseColor* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "Uno.ChooseColor";
+  }
+  protected:
+  explicit ChooseColor(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kPlayerIDFieldNumber = 1,
+    kNextPlayerIDFieldNumber = 2,
+    kColorIDFieldNumber = 3,
+  };
+  // uint32 playerID = 1;
+  void clear_playerid();
+  uint32_t playerid() const;
+  void set_playerid(uint32_t value);
+  private:
+  uint32_t _internal_playerid() const;
+  void _internal_set_playerid(uint32_t value);
+  public:
+
+  // uint32 nextPlayerID = 2;
+  void clear_nextplayerid();
+  uint32_t nextplayerid() const;
+  void set_nextplayerid(uint32_t value);
+  private:
+  uint32_t _internal_nextplayerid() const;
+  void _internal_set_nextplayerid(uint32_t value);
+  public:
+
+  // uint32 colorID = 3;
+  void clear_colorid();
+  uint32_t colorid() const;
+  void set_colorid(uint32_t value);
+  private:
+  uint32_t _internal_colorid() const;
+  void _internal_set_colorid(uint32_t value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:Uno.ChooseColor)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    uint32_t playerid_;
+    uint32_t nextplayerid_;
+    uint32_t colorid_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -1171,7 +1515,27 @@ inline void Player::set_allocated_name(std::string* name) {
   // @@protoc_insertion_point(field_set_allocated:Uno.Player.name)
 }
 
-// repeated uint32 cardsOnHand = 2;
+// uint32 id = 2;
+inline void Player::clear_id() {
+  _impl_.id_ = 0u;
+}
+inline uint32_t Player::_internal_id() const {
+  return _impl_.id_;
+}
+inline uint32_t Player::id() const {
+  // @@protoc_insertion_point(field_get:Uno.Player.id)
+  return _internal_id();
+}
+inline void Player::_internal_set_id(uint32_t value) {
+  
+  _impl_.id_ = value;
+}
+inline void Player::set_id(uint32_t value) {
+  _internal_set_id(value);
+  // @@protoc_insertion_point(field_set:Uno.Player.id)
+}
+
+// repeated uint32 cardsOnHand = 3;
 inline int Player::_internal_cardsonhand_size() const {
   return _impl_.cardsonhand_.size();
 }
@@ -1352,58 +1716,68 @@ inline void GameState::set_topcardcolorid(uint32_t value) {
   // @@protoc_insertion_point(field_set:Uno.GameState.topCardColorID)
 }
 
+// uint32 state = 5;
+inline void GameState::clear_state() {
+  _impl_.state_ = 0u;
+}
+inline uint32_t GameState::_internal_state() const {
+  return _impl_.state_;
+}
+inline uint32_t GameState::state() const {
+  // @@protoc_insertion_point(field_get:Uno.GameState.state)
+  return _internal_state();
+}
+inline void GameState::_internal_set_state(uint32_t value) {
+  
+  _impl_.state_ = value;
+}
+inline void GameState::set_state(uint32_t value) {
+  _internal_set_state(value);
+  // @@protoc_insertion_point(field_set:Uno.GameState.state)
+}
+
+// bool choosingColor = 6;
+inline void GameState::clear_choosingcolor() {
+  _impl_.choosingcolor_ = false;
+}
+inline bool GameState::_internal_choosingcolor() const {
+  return _impl_.choosingcolor_;
+}
+inline bool GameState::choosingcolor() const {
+  // @@protoc_insertion_point(field_get:Uno.GameState.choosingColor)
+  return _internal_choosingcolor();
+}
+inline void GameState::_internal_set_choosingcolor(bool value) {
+  
+  _impl_.choosingcolor_ = value;
+}
+inline void GameState::set_choosingcolor(bool value) {
+  _internal_set_choosingcolor(value);
+  // @@protoc_insertion_point(field_set:Uno.GameState.choosingColor)
+}
+
 // -------------------------------------------------------------------
 
 // SinglePullCardResponse
 
-// string player = 1;
-inline void SinglePullCardResponse::clear_player() {
-  _impl_.player_.ClearToEmpty();
+// uint32 playerID = 1;
+inline void SinglePullCardResponse::clear_playerid() {
+  _impl_.playerid_ = 0u;
 }
-inline const std::string& SinglePullCardResponse::player() const {
-  // @@protoc_insertion_point(field_get:Uno.SinglePullCardResponse.player)
-  return _internal_player();
+inline uint32_t SinglePullCardResponse::_internal_playerid() const {
+  return _impl_.playerid_;
 }
-template <typename ArgT0, typename... ArgT>
-inline PROTOBUF_ALWAYS_INLINE
-void SinglePullCardResponse::set_player(ArgT0&& arg0, ArgT... args) {
- 
- _impl_.player_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:Uno.SinglePullCardResponse.player)
+inline uint32_t SinglePullCardResponse::playerid() const {
+  // @@protoc_insertion_point(field_get:Uno.SinglePullCardResponse.playerID)
+  return _internal_playerid();
 }
-inline std::string* SinglePullCardResponse::mutable_player() {
-  std::string* _s = _internal_mutable_player();
-  // @@protoc_insertion_point(field_mutable:Uno.SinglePullCardResponse.player)
-  return _s;
-}
-inline const std::string& SinglePullCardResponse::_internal_player() const {
-  return _impl_.player_.Get();
-}
-inline void SinglePullCardResponse::_internal_set_player(const std::string& value) {
+inline void SinglePullCardResponse::_internal_set_playerid(uint32_t value) {
   
-  _impl_.player_.Set(value, GetArenaForAllocation());
+  _impl_.playerid_ = value;
 }
-inline std::string* SinglePullCardResponse::_internal_mutable_player() {
-  
-  return _impl_.player_.Mutable(GetArenaForAllocation());
-}
-inline std::string* SinglePullCardResponse::release_player() {
-  // @@protoc_insertion_point(field_release:Uno.SinglePullCardResponse.player)
-  return _impl_.player_.Release();
-}
-inline void SinglePullCardResponse::set_allocated_player(std::string* player) {
-  if (player != nullptr) {
-    
-  } else {
-    
-  }
-  _impl_.player_.SetAllocated(player, GetArenaForAllocation());
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.player_.IsDefault()) {
-    _impl_.player_.Set("", GetArenaForAllocation());
-  }
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:Uno.SinglePullCardResponse.player)
+inline void SinglePullCardResponse::set_playerid(uint32_t value) {
+  _internal_set_playerid(value);
+  // @@protoc_insertion_point(field_set:Uno.SinglePullCardResponse.playerID)
 }
 
 // repeated uint32 cards = 2;
@@ -1525,104 +1899,44 @@ inline void PlayCardRequest::set_card(uint32_t value) {
 
 // PlayCard
 
-// string player = 1;
-inline void PlayCard::clear_player() {
-  _impl_.player_.ClearToEmpty();
+// uint32 playerID = 1;
+inline void PlayCard::clear_playerid() {
+  _impl_.playerid_ = 0u;
 }
-inline const std::string& PlayCard::player() const {
-  // @@protoc_insertion_point(field_get:Uno.PlayCard.player)
-  return _internal_player();
+inline uint32_t PlayCard::_internal_playerid() const {
+  return _impl_.playerid_;
 }
-template <typename ArgT0, typename... ArgT>
-inline PROTOBUF_ALWAYS_INLINE
-void PlayCard::set_player(ArgT0&& arg0, ArgT... args) {
- 
- _impl_.player_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:Uno.PlayCard.player)
+inline uint32_t PlayCard::playerid() const {
+  // @@protoc_insertion_point(field_get:Uno.PlayCard.playerID)
+  return _internal_playerid();
 }
-inline std::string* PlayCard::mutable_player() {
-  std::string* _s = _internal_mutable_player();
-  // @@protoc_insertion_point(field_mutable:Uno.PlayCard.player)
-  return _s;
-}
-inline const std::string& PlayCard::_internal_player() const {
-  return _impl_.player_.Get();
-}
-inline void PlayCard::_internal_set_player(const std::string& value) {
+inline void PlayCard::_internal_set_playerid(uint32_t value) {
   
-  _impl_.player_.Set(value, GetArenaForAllocation());
+  _impl_.playerid_ = value;
 }
-inline std::string* PlayCard::_internal_mutable_player() {
-  
-  return _impl_.player_.Mutable(GetArenaForAllocation());
-}
-inline std::string* PlayCard::release_player() {
-  // @@protoc_insertion_point(field_release:Uno.PlayCard.player)
-  return _impl_.player_.Release();
-}
-inline void PlayCard::set_allocated_player(std::string* player) {
-  if (player != nullptr) {
-    
-  } else {
-    
-  }
-  _impl_.player_.SetAllocated(player, GetArenaForAllocation());
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.player_.IsDefault()) {
-    _impl_.player_.Set("", GetArenaForAllocation());
-  }
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:Uno.PlayCard.player)
+inline void PlayCard::set_playerid(uint32_t value) {
+  _internal_set_playerid(value);
+  // @@protoc_insertion_point(field_set:Uno.PlayCard.playerID)
 }
 
-// string nextPlayer = 2;
-inline void PlayCard::clear_nextplayer() {
-  _impl_.nextplayer_.ClearToEmpty();
+// uint32 nextPlayerID = 2;
+inline void PlayCard::clear_nextplayerid() {
+  _impl_.nextplayerid_ = 0u;
 }
-inline const std::string& PlayCard::nextplayer() const {
-  // @@protoc_insertion_point(field_get:Uno.PlayCard.nextPlayer)
-  return _internal_nextplayer();
+inline uint32_t PlayCard::_internal_nextplayerid() const {
+  return _impl_.nextplayerid_;
 }
-template <typename ArgT0, typename... ArgT>
-inline PROTOBUF_ALWAYS_INLINE
-void PlayCard::set_nextplayer(ArgT0&& arg0, ArgT... args) {
- 
- _impl_.nextplayer_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:Uno.PlayCard.nextPlayer)
+inline uint32_t PlayCard::nextplayerid() const {
+  // @@protoc_insertion_point(field_get:Uno.PlayCard.nextPlayerID)
+  return _internal_nextplayerid();
 }
-inline std::string* PlayCard::mutable_nextplayer() {
-  std::string* _s = _internal_mutable_nextplayer();
-  // @@protoc_insertion_point(field_mutable:Uno.PlayCard.nextPlayer)
-  return _s;
-}
-inline const std::string& PlayCard::_internal_nextplayer() const {
-  return _impl_.nextplayer_.Get();
-}
-inline void PlayCard::_internal_set_nextplayer(const std::string& value) {
+inline void PlayCard::_internal_set_nextplayerid(uint32_t value) {
   
-  _impl_.nextplayer_.Set(value, GetArenaForAllocation());
+  _impl_.nextplayerid_ = value;
 }
-inline std::string* PlayCard::_internal_mutable_nextplayer() {
-  
-  return _impl_.nextplayer_.Mutable(GetArenaForAllocation());
-}
-inline std::string* PlayCard::release_nextplayer() {
-  // @@protoc_insertion_point(field_release:Uno.PlayCard.nextPlayer)
-  return _impl_.nextplayer_.Release();
-}
-inline void PlayCard::set_allocated_nextplayer(std::string* nextplayer) {
-  if (nextplayer != nullptr) {
-    
-  } else {
-    
-  }
-  _impl_.nextplayer_.SetAllocated(nextplayer, GetArenaForAllocation());
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.nextplayer_.IsDefault()) {
-    _impl_.nextplayer_.Set("", GetArenaForAllocation());
-  }
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:Uno.PlayCard.nextPlayer)
+inline void PlayCard::set_nextplayerid(uint32_t value) {
+  _internal_set_nextplayerid(value);
+  // @@protoc_insertion_point(field_set:Uno.PlayCard.nextPlayerID)
 }
 
 // uint32 card = 3;
@@ -1645,9 +1959,101 @@ inline void PlayCard::set_card(uint32_t value) {
   // @@protoc_insertion_point(field_set:Uno.PlayCard.card)
 }
 
+// -------------------------------------------------------------------
+
+// ChooseColorRequest
+
+// uint32 colorID = 1;
+inline void ChooseColorRequest::clear_colorid() {
+  _impl_.colorid_ = 0u;
+}
+inline uint32_t ChooseColorRequest::_internal_colorid() const {
+  return _impl_.colorid_;
+}
+inline uint32_t ChooseColorRequest::colorid() const {
+  // @@protoc_insertion_point(field_get:Uno.ChooseColorRequest.colorID)
+  return _internal_colorid();
+}
+inline void ChooseColorRequest::_internal_set_colorid(uint32_t value) {
+  
+  _impl_.colorid_ = value;
+}
+inline void ChooseColorRequest::set_colorid(uint32_t value) {
+  _internal_set_colorid(value);
+  // @@protoc_insertion_point(field_set:Uno.ChooseColorRequest.colorID)
+}
+
+// -------------------------------------------------------------------
+
+// ChooseColor
+
+// uint32 playerID = 1;
+inline void ChooseColor::clear_playerid() {
+  _impl_.playerid_ = 0u;
+}
+inline uint32_t ChooseColor::_internal_playerid() const {
+  return _impl_.playerid_;
+}
+inline uint32_t ChooseColor::playerid() const {
+  // @@protoc_insertion_point(field_get:Uno.ChooseColor.playerID)
+  return _internal_playerid();
+}
+inline void ChooseColor::_internal_set_playerid(uint32_t value) {
+  
+  _impl_.playerid_ = value;
+}
+inline void ChooseColor::set_playerid(uint32_t value) {
+  _internal_set_playerid(value);
+  // @@protoc_insertion_point(field_set:Uno.ChooseColor.playerID)
+}
+
+// uint32 nextPlayerID = 2;
+inline void ChooseColor::clear_nextplayerid() {
+  _impl_.nextplayerid_ = 0u;
+}
+inline uint32_t ChooseColor::_internal_nextplayerid() const {
+  return _impl_.nextplayerid_;
+}
+inline uint32_t ChooseColor::nextplayerid() const {
+  // @@protoc_insertion_point(field_get:Uno.ChooseColor.nextPlayerID)
+  return _internal_nextplayerid();
+}
+inline void ChooseColor::_internal_set_nextplayerid(uint32_t value) {
+  
+  _impl_.nextplayerid_ = value;
+}
+inline void ChooseColor::set_nextplayerid(uint32_t value) {
+  _internal_set_nextplayerid(value);
+  // @@protoc_insertion_point(field_set:Uno.ChooseColor.nextPlayerID)
+}
+
+// uint32 colorID = 3;
+inline void ChooseColor::clear_colorid() {
+  _impl_.colorid_ = 0u;
+}
+inline uint32_t ChooseColor::_internal_colorid() const {
+  return _impl_.colorid_;
+}
+inline uint32_t ChooseColor::colorid() const {
+  // @@protoc_insertion_point(field_get:Uno.ChooseColor.colorID)
+  return _internal_colorid();
+}
+inline void ChooseColor::_internal_set_colorid(uint32_t value) {
+  
+  _impl_.colorid_ = value;
+}
+inline void ChooseColor::set_colorid(uint32_t value) {
+  _internal_set_colorid(value);
+  // @@protoc_insertion_point(field_set:Uno.ChooseColor.colorID)
+}
+
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

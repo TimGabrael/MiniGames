@@ -6,7 +6,8 @@ package Uno;
 message Player
 {
 	string name = 1;
-	repeated uint32 cardsOnHand = 2;
+	uint32 id = 2;
+	repeated uint32 cardsOnHand = 3;
 }
 
 message GameState
@@ -15,11 +16,13 @@ message GameState
 	repeated Player players = 2;
 	uint32 topCard = 3;
 	uint32 topCardColorID = 4;
+	uint32 state = 5;
+	bool choosingColor = 6;
 }
 
 message SinglePullCardResponse
 {
-	string player = 1;
+	uint32 playerID = 1;
 	repeated uint32 cards = 2;
 }
 
@@ -33,7 +36,17 @@ message PlayCardRequest
 }
 message PlayCard
 {
-	string player = 1;
-	string nextPlayer = 2;
+	uint32 playerID = 1;
+	uint32 nextPlayerID = 2;
 	uint32 card = 3;
+}
+message ChooseColorRequest
+{
+	uint32 colorID = 1;
+}
+message ChooseColor
+{
+	uint32 playerID = 1;
+	uint32 nextPlayerID = 2;
+	uint32 colorID = 3;
 }

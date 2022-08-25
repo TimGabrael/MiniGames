@@ -31,6 +31,15 @@ enum CARD_ID : uint32_t
 
 	NUM_AVAILABLE_CARDS,
 };
+enum COLOR_ID : uint32_t
+{
+	COLOR_RED,
+	COLOR_YELLOW,
+	COLOR_GREEN,
+	COLOR_BLUE,
+	COLOR_BLACK,
+	COLOR_INVALID = -1
+};
 
 enum CARD_EFFECT
 {
@@ -76,9 +85,11 @@ std::vector<CARD_ID> GenerateDeck();
 bool CardSort(CARD_ID low, CARD_ID high);
 
 // color refrence card is used for black cards, (user choice)
-bool CardIsPlayable(CARD_ID topCard, CARD_ID playing, CARD_ID colorRefrenceCard);
+bool CardIsPlayable(CARD_ID topCard, CARD_ID playing, COLOR_ID colorRefrenceCard);
 
-uint32_t GetCardColorFromID(CARD_ID id);
+COLOR_ID GetColorIDFromCardID(CARD_ID id);
+uint32_t GetColorFromColorID(COLOR_ID id);
+uint32_t GetColorFromCardID(CARD_ID id);
 
 
 
@@ -94,7 +105,7 @@ struct ColorPicker
 	int pressedColor= false;	// partially selected a color
 	float hoverTimer = 0.0f;
 	bool isCurrentlyHovered = false;
-	CARD_ID GetSelected(int mx, int my, int screenX, int screenY, bool pressed, bool released);
+	COLOR_ID GetSelected(int mx, int my, int screenX, int screenY, bool pressed, bool released);
 	void Draw(float aspectRatio, float dt);
 };
 
@@ -128,15 +139,15 @@ struct CardStack
 {
 	static constexpr float dy = 0.003f;
 	std::vector<CardInfo> cards;
-	CARD_ID blackColorID;
+	COLOR_ID blackColorID;
 	
 	float topAnim = 0.0f;
 	bool countDown = false;
 
 	void Draw();
 	void AddToStack(CARD_ID card, const glm::vec3& pos, const glm::quat& rot);
-	CARD_ID GetTop(CARD_ID& blackColorRef) const;
-	void SetTop(CARD_ID topCard, CARD_ID blackColorRef);
+	CARD_ID GetTop(COLOR_ID& blackColorRef) const;
+	void SetTop(CARD_ID topCard, COLOR_ID blackColorRef);
 };
 struct CardHand
 {
@@ -156,7 +167,7 @@ struct CardHand
 	int handID = 0;
 	float rotation = 0.0f;
 	
-	CARD_ID choosenCardColor = CARD_ID_RED_2;
+	COLOR_ID choosenCardColor = COLOR_INVALID;
 	bool choosingCardColor = false;
 
 	bool mouseAttached = false;

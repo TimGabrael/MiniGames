@@ -11,7 +11,14 @@
 struct PlayerInfo
 {
 	std::string name;
-	CardHand hand;
+	uint32_t id = 0;
+	CardHand* hand = nullptr;
+};
+
+enum GAME_STATE : uint32_t
+{
+	STATE_PENDING,
+	STATE_PLAYING,
 };
 
 struct UnoGlobals
@@ -38,6 +45,16 @@ struct UnoGlobals
 	CardSceneObject* cardRenderObject;
 	int offscreenX;
 	int offscreenY;
+	float cardHandlingTimer = 0.0f;
+	uint32_t localPlayerIndex = 0;
+};
+struct GameStateData
+{
+	std::vector<PlayerInfo> players;
+	std::vector<CardHand>* hands;
+	int playerInTurn;
+	GAME_STATE state = STATE_PENDING;
+	bool isChoosingColor = false;
 };
 
 enum UNO_MESSAGES : uint32_t
@@ -45,7 +62,9 @@ enum UNO_MESSAGES : uint32_t
 	UNO_PULL_CARD_REQUEST = (uint32_t)PacketID::NUM_PACKETS,
 	UNO_PULL_CARD_RESPONSE,
 	UNO_PLAY_CARD_REQUEST,
-	UNO_PLAY_CARD_RESPONSE
+	UNO_PLAY_CARD_RESPONSE,
+	UNO_PICK_COLOR_REQUEST,
+	UNO_PICK_COLOR_RESPONSE,
 };
 
 
@@ -81,6 +100,7 @@ public:
 
 
 UnoPlugin* GetInstance();
+GameStateData* GetGameState();
 void SendNetworkData(uint32_t packetID, uint32_t group, uint16_t additionalFlags, uint16_t clientID, size_t size, const void* data);
 void SendNetworkData(uint32_t packetID, uint32_t group, uint16_t additionalFlags, uint16_t clientID, const std::string& str);
 

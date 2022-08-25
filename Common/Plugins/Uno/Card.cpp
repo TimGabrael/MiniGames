@@ -501,19 +501,18 @@ bool CardSort(CARD_ID low, CARD_ID high)
 }
 
 
-bool CardIsPlayable(CARD_ID topCard, CARD_ID playing, CARD_ID colorRefrenceCard)
+bool CardIsPlayable(CARD_ID topCard, CARD_ID playing, COLOR_ID colorRefrenceCard)
 {
 	if (topCard == CARD_ID::CARD_ID_BLANK || topCard == CARD_ID::CARD_ID_BLANK2) return true;
 
-	int colorIDTop = topCard / 14;
-	int colorIDPlay = playing / 14;
-	int colorIDRef = colorRefrenceCard / 14;
+	COLOR_ID colorIDTop = GetColorIDFromCardID(topCard);
+	COLOR_ID colorIDPlay = GetColorIDFromCardID(playing);
 
 	int numIDTop = topCard % 14;
 	int numIDPlay = playing % 14;
 
 	if (topCard == CARD_ID::CARD_ID_ADD_4 || topCard == CARD_ID::CARD_ID_CHOOSE_COLOR) {
-		if (colorIDRef == colorIDPlay) return true;
+		if (colorRefrenceCard == colorIDPlay && colorIDPlay != COLOR_BLACK) return true;
 		return false;
 	}
 	else if (playing == CARD_ID::CARD_ID_ADD_4 || playing == CARD_ID::CARD_ID_CHOOSE_COLOR)
@@ -524,15 +523,29 @@ bool CardIsPlayable(CARD_ID topCard, CARD_ID playing, CARD_ID colorRefrenceCard)
 	return ((colorIDTop == colorIDPlay) || (numIDTop == numIDPlay));
 }
 
-
-uint32_t GetCardColorFromID(CARD_ID id)
+COLOR_ID GetColorIDFromCardID(CARD_ID id)
 {
-	const int colorID = id / 14;
-	if (colorID == 0) return 0xFF0000FF;
-	else if (colorID == 1) return 0xFF00FFFF;
-	else if (colorID == 2) return 0xFF00FF00;
-	else if (colorID == 3) return 0xFFFF0000;
+	if (id < CARD_ID_CHOOSE_COLOR) return COLOR_RED;
+	else if (id == CARD_ID_CHOOSE_COLOR) return COLOR_BLACK;
+	else if (id < CARD_ID_ADD_4) return COLOR_YELLOW;
+	else if (id == CARD_ID_ADD_4) return COLOR_BLACK;
+	else if (id < CARD_ID_BLANK) return COLOR_GREEN;
+	else if (id == CARD_ID_BLANK) return COLOR_INVALID;
+	else if (id < CARD_ID_BLANK2) return COLOR_BLUE;
+	return COLOR_INVALID;
+}
+uint32_t GetColorFromColorID(COLOR_ID id)
+{
+	if (id == COLOR_RED) return 0xFF0000FF;
+	else if (id == COLOR_YELLOW) return 0xFF00FFFF;
+	else if (id == COLOR_GREEN) return 0xFF00FF00;
+	else if (id == COLOR_BLUE) return 0xFFFF0000;
+	else if (id == COLOR_BLACK) return 0xFF000000;
 	return 0xFFFFFFFF;
+}
+uint32_t GetColorFromCardID(CARD_ID id)
+{
+	return GetColorFromColorID(GetColorIDFromCardID(id));
 }
 
 
@@ -566,7 +579,8 @@ uint32_t GetCardColorFromID(CARD_ID id)
 
 
 
-CARD_ID ColorPicker::GetSelected(int mx, int my, int screenX, int screenY, bool pressed, bool released)
+
+COLOR_ID ColorPicker::GetSelected(int mx, int my, int screenX, int screenY, bool pressed, bool released)
 {
 	const float mX = 2.0f * ((float)mx / (float)screenX) - 1.0f;
 	const float mY = 1.0f - 2.0f * ((float)my / (float)screenY);
@@ -579,33 +593,33 @@ CARD_ID ColorPicker::GetSelected(int mx, int my, int screenX, int screenY, bool 
 
 	const float ellipseHitEq = mX * mX / r_2 + mY * mY / ra_2;
 
-	CARD_ID output = CARD_ID_BLANK;
+	COLOR_ID output = COLOR_INVALID;
 
 	if (ellipseHitEq < 1.0f)
 	{
 		if (mX > 0.0f && mY > 0.0f)			// region red
 		{
-			this->hoveredColor = 0;
+			this->hoveredColor = COLOR_RED;
 		}
 		else if (mX > 0.0f && mY < 0.0f)	// region yellow
 		{
-			this->hoveredColor = 1;
+			this->hoveredColor = COLOR_YELLOW;
 
 		}
 		else if (mX < 0.0f && mY < 0.0f)	// region green
 		{
-			this->hoveredColor = 2;
+			this->hoveredColor = COLOR_GREEN;
 		}
 		else								// region blue 
 		{
-			this->hoveredColor = 3;
+			this->hoveredColor = COLOR_BLUE;
 		}
 		if (pressed) pressedColor = hoveredColor;
 		if (released && pressedColor != -1 && pressedColor == hoveredColor) {
-			if (pressedColor == 0) output = CARD_ID_RED_2;
-			else if (pressedColor == 1) output = CARD_ID_YELLOW_2;
-			else if (pressedColor == 2) output = CARD_ID_GREEN_2;
-			else if (pressedColor == 3) output = CARD_ID_BLUE_2;
+			if (pressedColor == 0) output = COLOR_RED;
+			else if (pressedColor == 1) output = COLOR_YELLOW;
+			else if (pressedColor == 2) output = COLOR_GREEN;
+			else if (pressedColor == 3) output = COLOR_BLUE;
 		}
 		isCurrentlyHovered = true;
 	}
@@ -697,7 +711,7 @@ void CardStack::Draw()
 				if (topAnim == 1.0f) countDown = true;
 			}
 			const float s = g_cardScale * (1.3f + 0.4f * topAnim);
-			const uint32_t col = GetCardColorFromID(this->blackColorID);
+			const uint32_t col = GetColorFromColorID(this->blackColorID);
 			RendererAddEffect(CARD_EFFECT_BLUR, c.position, c.rotation, s, s - 0.1f * g_cardScale, col);
 		}
 		RendererAddCard(c.back, c.front, c.position, c.rotation, g_cardScale, g_cardScale);
@@ -720,7 +734,7 @@ void CardStack::AddToStack(CARD_ID card, const glm::vec3& pos, const glm::quat& 
 		cards.emplace_back(CARD_ID::CARD_ID_BLANK, card, glm::vec3(pos.x, pos.y + 0.001f, pos.z), rot, 0.0f, true);
 	}
 }
-CARD_ID CardStack::GetTop(CARD_ID& blackColorRef) const
+CARD_ID CardStack::GetTop(COLOR_ID& blackColorRef) const
 {
 	if (cards.empty()) return (CARD_ID)-1;
 
@@ -728,7 +742,7 @@ CARD_ID CardStack::GetTop(CARD_ID& blackColorRef) const
 	if (top == CARD_ID::CARD_ID_ADD_4 || top == CARD_ID::CARD_ID_CHOOSE_COLOR) blackColorRef = blackColorID;
 	return top;
 }
-void CardStack::SetTop(CARD_ID topCard, CARD_ID blackColorRef)
+void CardStack::SetTop(CARD_ID topCard, COLOR_ID blackColorRef)
 {
 	if (!cards.empty())
 	{
@@ -785,13 +799,41 @@ int CardHand::AddTemp(const Camera& cam, CARD_ID id)
 	GenTransformations(cam);
 	return idx;
 }
+
+static void SetNextStateFromCardID(CARD_ID card)
+{
+	GameStateData* state = GetGameState();
+	uint32_t cur = (state->playerInTurn % state->players.size());
+	if (card == CARD_ID_ADD_4 || card == CARD_ID_BLANK)
+	{
+		state->isChoosingColor = true;
+	}
+	else if (card == CARD_ID_RED_SWAP || card == CARD_ID_YELLOW_SWAP || card == CARD_ID_GREEN_SWAP || card == CARD_ID_BLUE_SWAP)
+	{
+		state->isChoosingColor = false;
+		state->playerInTurn = (cur - 1) % state->players.size();
+	}
+	else if (card == CARD_ID_RED_PAUSE || card == CARD_ID_YELLOW_PAUSE || card == CARD_ID_GREEN_PAUSE || card == CARD_ID_BLUE_PAUSE)
+	{
+		state->isChoosingColor = false;
+		state->playerInTurn = (cur + 2) % state->players.size();
+	}
+	else
+	{
+		state->isChoosingColor = false;
+		state->playerInTurn = (cur + 1) % state->players.size();
+	}
+}
+
 void CardHand::PlayCard(const CardStack& stack, CardsInAnimation& anim, int cardIdx)
 {
-	CARD_ID blackColRef;
+	COLOR_ID blackColRef;
 	CARD_ID top = stack.GetTop(blackColRef);
 	UnoPlugin* instance = GetInstance();
 	if (CardIsPlayable(top, cards.at(cardIdx).front, blackColRef))
 	{
+		GameStateData* state = GetGameState();
+		SetNextStateFromCardID(cards.at(cardIdx).front);
 		auto& c = cards.at(cardIdx);
 		CARD_ID card = c.front;
 		if (instance->backendData->localPlayer.groupMask & ADMIN_GROUP_MASK)
@@ -803,15 +845,17 @@ void CardHand::PlayCard(const CardStack& stack, CardsInAnimation& anim, int card
 				this->choosingCardColor = true;
 			}
 			cards.erase(cards.begin() + cardIdx);
+			
 			Uno::PlayCard resp;
-			resp.set_player(instance->backendData->localPlayer.name);
-			resp.set_card(card);
+			resp.set_playerid(handID);
+			resp.set_card((uint32_t)card);
+			resp.set_nextplayerid(state->players.at(state->playerInTurn).id);
 			SendNetworkData(UNO_MESSAGES::UNO_PLAY_CARD_RESPONSE, LISTEN_GROUP_ALL, ADDITIONAL_DATA_FLAG_ADMIN, instance->backendData->localPlayer.clientID, resp.SerializeAsString());
 		}
 		else
 		{
 			Uno::PlayCardRequest req;
-			req.set_card(card);
+			req.set_card((uint32_t)card);
 			SendNetworkData(UNO_MESSAGES::UNO_PLAY_CARD_REQUEST, ADMIN_GROUP_MASK, 0, instance->backendData->localPlayer.clientID, req.SerializeAsString());
 		}
 	}
@@ -828,7 +872,7 @@ void CardHand::FetchCard(const Camera& cam, const CardStack& stack, CardDeck& de
 	{
 		Uno::PullCardResponse resp;
 		Uno::SinglePullCardResponse* pulled = resp.add_pullresponses();
-		pulled->set_player(instance->backendData->localPlayer.name);
+		pulled->set_playerid(handID);
 		CARD_ID card = instance->g_objs->deck.PullCard();
 		pulled->add_cards(card);
 		int idx = AddTemp(cam, card);
@@ -881,7 +925,7 @@ void CardHand::Update(CardStack& stack, CardsInAnimation& anim, ColorPicker& pic
 
 	if (choosingCardColor)
 	{
-		CARD_ID id = picker.GetSelected(p.x, p.y, cam.screenX, cam.screenY, p.Pressed(), p.Released());
+		COLOR_ID id = picker.GetSelected(p.x, p.y, cam.screenX, cam.screenY, p.Pressed(), p.Released());
 		if (id != CARD_ID_BLANK)
 		{
 			choosenCardColor = id;
@@ -1089,6 +1133,7 @@ void AnimatedCard::AddDeckAnimation()
 
 void CardsInAnimation::AddAnim(const CardStack& stack, const CardInfo& info, int handID, CARD_ANIMATIONS id)
 {
+	this->inputsAllowed = false;
 	const float inv_scale = 1.0f / g_cardScale;
 	list.emplace_back(stack, info.front, info.position, info.rotation, 0.0f, id, info.transitionID, handID);
 }
@@ -1113,6 +1158,7 @@ void CardsInAnimation::Update(std::vector<CardHand>& hands, CardStack& stack, fl
 				OnFinish(hands, stack, a.posAnim.currentTransform, a.rotAnim.currentTransform, a.front, a.type, a.handID, a.cardID);
 			}
 		}
+		if (newList.size() == 0) inputsAllowed = true;
 		list = std::move(newList);
 	}
 }

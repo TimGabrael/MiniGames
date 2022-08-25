@@ -26,6 +26,7 @@ PROTOBUF_CONSTEXPR Player::Player(
     /*decltype(_impl_.cardsonhand_)*/{}
   , /*decltype(_impl_._cardsonhand_cached_byte_size_)*/{0}
   , /*decltype(_impl_.name_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.id_)*/0u
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct PlayerDefaultTypeInternal {
   PROTOBUF_CONSTEXPR PlayerDefaultTypeInternal()
@@ -42,6 +43,8 @@ PROTOBUF_CONSTEXPR GameState::GameState(
   , /*decltype(_impl_.playerinturn_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.topcard_)*/0u
   , /*decltype(_impl_.topcardcolorid_)*/0u
+  , /*decltype(_impl_.state_)*/0u
+  , /*decltype(_impl_.choosingcolor_)*/false
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct GameStateDefaultTypeInternal {
   PROTOBUF_CONSTEXPR GameStateDefaultTypeInternal()
@@ -56,7 +59,7 @@ PROTOBUF_CONSTEXPR SinglePullCardResponse::SinglePullCardResponse(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.cards_)*/{}
   , /*decltype(_impl_._cards_cached_byte_size_)*/{0}
-  , /*decltype(_impl_.player_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.playerid_)*/0u
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct SinglePullCardResponseDefaultTypeInternal {
   PROTOBUF_CONSTEXPR SinglePullCardResponseDefaultTypeInternal()
@@ -95,8 +98,8 @@ struct PlayCardRequestDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 PlayCardRequestDefaultTypeInternal _PlayCardRequest_default_instance_;
 PROTOBUF_CONSTEXPR PlayCard::PlayCard(
     ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.player_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
-  , /*decltype(_impl_.nextplayer_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+    /*decltype(_impl_.playerid_)*/0u
+  , /*decltype(_impl_.nextplayerid_)*/0u
   , /*decltype(_impl_.card_)*/0u
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct PlayCardDefaultTypeInternal {
@@ -108,8 +111,36 @@ struct PlayCardDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 PlayCardDefaultTypeInternal _PlayCard_default_instance_;
+PROTOBUF_CONSTEXPR ChooseColorRequest::ChooseColorRequest(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.colorid_)*/0u
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct ChooseColorRequestDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR ChooseColorRequestDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~ChooseColorRequestDefaultTypeInternal() {}
+  union {
+    ChooseColorRequest _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ChooseColorRequestDefaultTypeInternal _ChooseColorRequest_default_instance_;
+PROTOBUF_CONSTEXPR ChooseColor::ChooseColor(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.playerid_)*/0u
+  , /*decltype(_impl_.nextplayerid_)*/0u
+  , /*decltype(_impl_.colorid_)*/0u
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct ChooseColorDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR ChooseColorDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~ChooseColorDefaultTypeInternal() {}
+  union {
+    ChooseColor _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ChooseColorDefaultTypeInternal _ChooseColor_default_instance_;
 }  // namespace Uno
-static ::_pb::Metadata file_level_metadata_UnoMessages_2eproto[6];
+static ::_pb::Metadata file_level_metadata_UnoMessages_2eproto[8];
 static constexpr ::_pb::EnumDescriptor const** file_level_enum_descriptors_UnoMessages_2eproto = nullptr;
 static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_UnoMessages_2eproto = nullptr;
 
@@ -121,6 +152,7 @@ const uint32_t TableStruct_UnoMessages_2eproto::offsets[] PROTOBUF_SECTION_VARIA
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
   PROTOBUF_FIELD_OFFSET(::Uno::Player, _impl_.name_),
+  PROTOBUF_FIELD_OFFSET(::Uno::Player, _impl_.id_),
   PROTOBUF_FIELD_OFFSET(::Uno::Player, _impl_.cardsonhand_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::Uno::GameState, _internal_metadata_),
@@ -132,13 +164,15 @@ const uint32_t TableStruct_UnoMessages_2eproto::offsets[] PROTOBUF_SECTION_VARIA
   PROTOBUF_FIELD_OFFSET(::Uno::GameState, _impl_.players_),
   PROTOBUF_FIELD_OFFSET(::Uno::GameState, _impl_.topcard_),
   PROTOBUF_FIELD_OFFSET(::Uno::GameState, _impl_.topcardcolorid_),
+  PROTOBUF_FIELD_OFFSET(::Uno::GameState, _impl_.state_),
+  PROTOBUF_FIELD_OFFSET(::Uno::GameState, _impl_.choosingcolor_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::Uno::SinglePullCardResponse, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::Uno::SinglePullCardResponse, _impl_.player_),
+  PROTOBUF_FIELD_OFFSET(::Uno::SinglePullCardResponse, _impl_.playerid_),
   PROTOBUF_FIELD_OFFSET(::Uno::SinglePullCardResponse, _impl_.cards_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::Uno::PullCardResponse, _internal_metadata_),
@@ -160,17 +194,35 @@ const uint32_t TableStruct_UnoMessages_2eproto::offsets[] PROTOBUF_SECTION_VARIA
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::Uno::PlayCard, _impl_.player_),
-  PROTOBUF_FIELD_OFFSET(::Uno::PlayCard, _impl_.nextplayer_),
+  PROTOBUF_FIELD_OFFSET(::Uno::PlayCard, _impl_.playerid_),
+  PROTOBUF_FIELD_OFFSET(::Uno::PlayCard, _impl_.nextplayerid_),
   PROTOBUF_FIELD_OFFSET(::Uno::PlayCard, _impl_.card_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::Uno::ChooseColorRequest, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::Uno::ChooseColorRequest, _impl_.colorid_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::Uno::ChooseColor, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::Uno::ChooseColor, _impl_.playerid_),
+  PROTOBUF_FIELD_OFFSET(::Uno::ChooseColor, _impl_.nextplayerid_),
+  PROTOBUF_FIELD_OFFSET(::Uno::ChooseColor, _impl_.colorid_),
 };
 static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, -1, sizeof(::Uno::Player)},
-  { 8, -1, -1, sizeof(::Uno::GameState)},
-  { 18, -1, -1, sizeof(::Uno::SinglePullCardResponse)},
-  { 26, -1, -1, sizeof(::Uno::PullCardResponse)},
-  { 33, -1, -1, sizeof(::Uno::PlayCardRequest)},
-  { 40, -1, -1, sizeof(::Uno::PlayCard)},
+  { 9, -1, -1, sizeof(::Uno::GameState)},
+  { 21, -1, -1, sizeof(::Uno::SinglePullCardResponse)},
+  { 29, -1, -1, sizeof(::Uno::PullCardResponse)},
+  { 36, -1, -1, sizeof(::Uno::PlayCardRequest)},
+  { 43, -1, -1, sizeof(::Uno::PlayCard)},
+  { 52, -1, -1, sizeof(::Uno::ChooseColorRequest)},
+  { 59, -1, -1, sizeof(::Uno::ChooseColor)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -180,26 +232,32 @@ static const ::_pb::Message* const file_default_instances[] = {
   &::Uno::_PullCardResponse_default_instance_._instance,
   &::Uno::_PlayCardRequest_default_instance_._instance,
   &::Uno::_PlayCard_default_instance_._instance,
+  &::Uno::_ChooseColorRequest_default_instance_._instance,
+  &::Uno::_ChooseColor_default_instance_._instance,
 };
 
 const char descriptor_table_protodef_UnoMessages_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
-  "\n\021UnoMessages.proto\022\003Uno\"+\n\006Player\022\014\n\004na"
-  "me\030\001 \001(\t\022\023\n\013cardsOnHand\030\002 \003(\r\"h\n\tGameSta"
-  "te\022\024\n\014playerInTurn\030\001 \001(\t\022\034\n\007players\030\002 \003("
-  "\0132\013.Uno.Player\022\017\n\007topCard\030\003 \001(\r\022\026\n\016topCa"
-  "rdColorID\030\004 \001(\r\"7\n\026SinglePullCardRespons"
-  "e\022\016\n\006player\030\001 \001(\t\022\r\n\005cards\030\002 \003(\r\"F\n\020Pull"
-  "CardResponse\0222\n\rpullResponses\030\001 \003(\0132\033.Un"
-  "o.SinglePullCardResponse\"\037\n\017PlayCardRequ"
-  "est\022\014\n\004card\030\001 \001(\r\"<\n\010PlayCard\022\016\n\006player\030"
-  "\001 \001(\t\022\022\n\nnextPlayer\030\002 \001(\t\022\014\n\004card\030\003 \001(\rb"
-  "\006proto3"
+  "\n\021UnoMessages.proto\022\003Uno\"7\n\006Player\022\014\n\004na"
+  "me\030\001 \001(\t\022\n\n\002id\030\002 \001(\r\022\023\n\013cardsOnHand\030\003 \003("
+  "\r\"\216\001\n\tGameState\022\024\n\014playerInTurn\030\001 \001(\t\022\034\n"
+  "\007players\030\002 \003(\0132\013.Uno.Player\022\017\n\007topCard\030\003"
+  " \001(\r\022\026\n\016topCardColorID\030\004 \001(\r\022\r\n\005state\030\005 "
+  "\001(\r\022\025\n\rchoosingColor\030\006 \001(\010\"9\n\026SinglePull"
+  "CardResponse\022\020\n\010playerID\030\001 \001(\r\022\r\n\005cards\030"
+  "\002 \003(\r\"F\n\020PullCardResponse\0222\n\rpullRespons"
+  "es\030\001 \003(\0132\033.Uno.SinglePullCardResponse\"\037\n"
+  "\017PlayCardRequest\022\014\n\004card\030\001 \001(\r\"@\n\010PlayCa"
+  "rd\022\020\n\010playerID\030\001 \001(\r\022\024\n\014nextPlayerID\030\002 \001"
+  "(\r\022\014\n\004card\030\003 \001(\r\"%\n\022ChooseColorRequest\022\017"
+  "\n\007colorID\030\001 \001(\r\"F\n\013ChooseColor\022\020\n\010player"
+  "ID\030\001 \001(\r\022\024\n\014nextPlayerID\030\002 \001(\r\022\017\n\007colorI"
+  "D\030\003 \001(\rb\006proto3"
   ;
 static ::_pbi::once_flag descriptor_table_UnoMessages_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_UnoMessages_2eproto = {
-    false, false, 407, descriptor_table_protodef_UnoMessages_2eproto,
+    false, false, 575, descriptor_table_protodef_UnoMessages_2eproto,
     "UnoMessages.proto",
-    &descriptor_table_UnoMessages_2eproto_once, nullptr, 0, 6,
+    &descriptor_table_UnoMessages_2eproto_once, nullptr, 0, 8,
     schemas, file_default_instances, TableStruct_UnoMessages_2eproto::offsets,
     file_level_metadata_UnoMessages_2eproto, file_level_enum_descriptors_UnoMessages_2eproto,
     file_level_service_descriptors_UnoMessages_2eproto,
@@ -231,6 +289,7 @@ Player::Player(const Player& from)
       decltype(_impl_.cardsonhand_){from._impl_.cardsonhand_}
     , /*decltype(_impl_._cardsonhand_cached_byte_size_)*/{0}
     , decltype(_impl_.name_){}
+    , decltype(_impl_.id_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
@@ -242,6 +301,7 @@ Player::Player(const Player& from)
     _this->_impl_.name_.Set(from._internal_name(), 
       _this->GetArenaForAllocation());
   }
+  _this->_impl_.id_ = from._impl_.id_;
   // @@protoc_insertion_point(copy_constructor:Uno.Player)
 }
 
@@ -253,6 +313,7 @@ inline void Player::SharedCtor(
       decltype(_impl_.cardsonhand_){arena}
     , /*decltype(_impl_._cardsonhand_cached_byte_size_)*/{0}
     , decltype(_impl_.name_){}
+    , decltype(_impl_.id_){0u}
     , /*decltype(_impl_._cached_size_)*/{}
   };
   _impl_.name_.InitDefault();
@@ -288,6 +349,7 @@ void Player::Clear() {
 
   _impl_.cardsonhand_.Clear();
   _impl_.name_.ClearToEmpty();
+  _impl_.id_ = 0u;
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -307,12 +369,20 @@ const char* Player::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
         } else
           goto handle_unusual;
         continue;
-      // repeated uint32 cardsOnHand = 2;
+      // uint32 id = 2;
       case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 16)) {
+          _impl_.id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // repeated uint32 cardsOnHand = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
           ptr = ::PROTOBUF_NAMESPACE_ID::internal::PackedUInt32Parser(_internal_mutable_cardsonhand(), ptr, ctx);
           CHK_(ptr);
-        } else if (static_cast<uint8_t>(tag) == 16) {
+        } else if (static_cast<uint8_t>(tag) == 24) {
           _internal_add_cardsonhand(::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr));
           CHK_(ptr);
         } else
@@ -357,12 +427,18 @@ uint8_t* Player::_InternalSerialize(
         1, this->_internal_name(), target);
   }
 
-  // repeated uint32 cardsOnHand = 2;
+  // uint32 id = 2;
+  if (this->_internal_id() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(2, this->_internal_id(), target);
+  }
+
+  // repeated uint32 cardsOnHand = 3;
   {
     int byte_size = _impl_._cardsonhand_cached_byte_size_.load(std::memory_order_relaxed);
     if (byte_size > 0) {
       target = stream->WriteUInt32Packed(
-          2, _internal_cardsonhand(), byte_size, target);
+          3, _internal_cardsonhand(), byte_size, target);
     }
   }
 
@@ -382,7 +458,7 @@ size_t Player::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // repeated uint32 cardsOnHand = 2;
+  // repeated uint32 cardsOnHand = 3;
   {
     size_t data_size = ::_pbi::WireFormatLite::
       UInt32Size(this->_impl_.cardsonhand_);
@@ -401,6 +477,11 @@ size_t Player::ByteSizeLong() const {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
         this->_internal_name());
+  }
+
+  // uint32 id = 2;
+  if (this->_internal_id() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_id());
   }
 
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
@@ -424,6 +505,9 @@ void Player::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBU
   _this->_impl_.cardsonhand_.MergeFrom(from._impl_.cardsonhand_);
   if (!from._internal_name().empty()) {
     _this->_internal_set_name(from._internal_name());
+  }
+  if (from._internal_id() != 0) {
+    _this->_internal_set_id(from._internal_id());
   }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
@@ -449,6 +533,7 @@ void Player::InternalSwap(Player* other) {
       &_impl_.name_, lhs_arena,
       &other->_impl_.name_, rhs_arena
   );
+  swap(_impl_.id_, other->_impl_.id_);
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata Player::GetMetadata() const {
@@ -477,6 +562,8 @@ GameState::GameState(const GameState& from)
     , decltype(_impl_.playerinturn_){}
     , decltype(_impl_.topcard_){}
     , decltype(_impl_.topcardcolorid_){}
+    , decltype(_impl_.state_){}
+    , decltype(_impl_.choosingcolor_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
@@ -489,8 +576,8 @@ GameState::GameState(const GameState& from)
       _this->GetArenaForAllocation());
   }
   ::memcpy(&_impl_.topcard_, &from._impl_.topcard_,
-    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.topcardcolorid_) -
-    reinterpret_cast<char*>(&_impl_.topcard_)) + sizeof(_impl_.topcardcolorid_));
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.choosingcolor_) -
+    reinterpret_cast<char*>(&_impl_.topcard_)) + sizeof(_impl_.choosingcolor_));
   // @@protoc_insertion_point(copy_constructor:Uno.GameState)
 }
 
@@ -503,6 +590,8 @@ inline void GameState::SharedCtor(
     , decltype(_impl_.playerinturn_){}
     , decltype(_impl_.topcard_){0u}
     , decltype(_impl_.topcardcolorid_){0u}
+    , decltype(_impl_.state_){0u}
+    , decltype(_impl_.choosingcolor_){false}
     , /*decltype(_impl_._cached_size_)*/{}
   };
   _impl_.playerinturn_.InitDefault();
@@ -539,8 +628,8 @@ void GameState::Clear() {
   _impl_.players_.Clear();
   _impl_.playerinturn_.ClearToEmpty();
   ::memset(&_impl_.topcard_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&_impl_.topcardcolorid_) -
-      reinterpret_cast<char*>(&_impl_.topcard_)) + sizeof(_impl_.topcardcolorid_));
+      reinterpret_cast<char*>(&_impl_.choosingcolor_) -
+      reinterpret_cast<char*>(&_impl_.topcard_)) + sizeof(_impl_.choosingcolor_));
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -585,6 +674,22 @@ const char* GameState::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx
       case 4:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 32)) {
           _impl_.topcardcolorid_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // uint32 state = 5;
+      case 5:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 40)) {
+          _impl_.state_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // bool choosingColor = 6;
+      case 6:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 48)) {
+          _impl_.choosingcolor_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
@@ -648,6 +753,18 @@ uint8_t* GameState::_InternalSerialize(
     target = ::_pbi::WireFormatLite::WriteUInt32ToArray(4, this->_internal_topcardcolorid(), target);
   }
 
+  // uint32 state = 5;
+  if (this->_internal_state() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(5, this->_internal_state(), target);
+  }
+
+  // bool choosingColor = 6;
+  if (this->_internal_choosingcolor() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteBoolToArray(6, this->_internal_choosingcolor(), target);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -688,6 +805,16 @@ size_t GameState::ByteSizeLong() const {
     total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_topcardcolorid());
   }
 
+  // uint32 state = 5;
+  if (this->_internal_state() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_state());
+  }
+
+  // bool choosingColor = 6;
+  if (this->_internal_choosingcolor() != 0) {
+    total_size += 1 + 1;
+  }
+
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
@@ -716,6 +843,12 @@ void GameState::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROT
   if (from._internal_topcardcolorid() != 0) {
     _this->_internal_set_topcardcolorid(from._internal_topcardcolorid());
   }
+  if (from._internal_state() != 0) {
+    _this->_internal_set_state(from._internal_state());
+  }
+  if (from._internal_choosingcolor() != 0) {
+    _this->_internal_set_choosingcolor(from._internal_choosingcolor());
+  }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
@@ -741,8 +874,8 @@ void GameState::InternalSwap(GameState* other) {
       &other->_impl_.playerinturn_, rhs_arena
   );
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(GameState, _impl_.topcardcolorid_)
-      + sizeof(GameState::_impl_.topcardcolorid_)
+      PROTOBUF_FIELD_OFFSET(GameState, _impl_.choosingcolor_)
+      + sizeof(GameState::_impl_.choosingcolor_)
       - PROTOBUF_FIELD_OFFSET(GameState, _impl_.topcard_)>(
           reinterpret_cast<char*>(&_impl_.topcard_),
           reinterpret_cast<char*>(&other->_impl_.topcard_));
@@ -772,18 +905,11 @@ SinglePullCardResponse::SinglePullCardResponse(const SinglePullCardResponse& fro
   new (&_impl_) Impl_{
       decltype(_impl_.cards_){from._impl_.cards_}
     , /*decltype(_impl_._cards_cached_byte_size_)*/{0}
-    , decltype(_impl_.player_){}
+    , decltype(_impl_.playerid_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  _impl_.player_.InitDefault();
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.player_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (!from._internal_player().empty()) {
-    _this->_impl_.player_.Set(from._internal_player(), 
-      _this->GetArenaForAllocation());
-  }
+  _this->_impl_.playerid_ = from._impl_.playerid_;
   // @@protoc_insertion_point(copy_constructor:Uno.SinglePullCardResponse)
 }
 
@@ -794,13 +920,9 @@ inline void SinglePullCardResponse::SharedCtor(
   new (&_impl_) Impl_{
       decltype(_impl_.cards_){arena}
     , /*decltype(_impl_._cards_cached_byte_size_)*/{0}
-    , decltype(_impl_.player_){}
+    , decltype(_impl_.playerid_){0u}
     , /*decltype(_impl_._cached_size_)*/{}
   };
-  _impl_.player_.InitDefault();
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.player_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
 SinglePullCardResponse::~SinglePullCardResponse() {
@@ -815,7 +937,6 @@ SinglePullCardResponse::~SinglePullCardResponse() {
 inline void SinglePullCardResponse::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
   _impl_.cards_.~RepeatedField();
-  _impl_.player_.Destroy();
 }
 
 void SinglePullCardResponse::SetCachedSize(int size) const {
@@ -829,7 +950,7 @@ void SinglePullCardResponse::Clear() {
   (void) cached_has_bits;
 
   _impl_.cards_.Clear();
-  _impl_.player_.ClearToEmpty();
+  _impl_.playerid_ = 0u;
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -839,13 +960,11 @@ const char* SinglePullCardResponse::_InternalParse(const char* ptr, ::_pbi::Pars
     uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
-      // string player = 1;
+      // uint32 playerID = 1;
       case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
-          auto str = _internal_mutable_player();
-          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 8)) {
+          _impl_.playerid_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
           CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "Uno.SinglePullCardResponse.player"));
         } else
           goto handle_unusual;
         continue;
@@ -889,14 +1008,10 @@ uint8_t* SinglePullCardResponse::_InternalSerialize(
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // string player = 1;
-  if (!this->_internal_player().empty()) {
-    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_player().data(), static_cast<int>(this->_internal_player().length()),
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "Uno.SinglePullCardResponse.player");
-    target = stream->WriteStringMaybeAliased(
-        1, this->_internal_player(), target);
+  // uint32 playerID = 1;
+  if (this->_internal_playerid() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(1, this->_internal_playerid(), target);
   }
 
   // repeated uint32 cards = 2;
@@ -938,11 +1053,9 @@ size_t SinglePullCardResponse::ByteSizeLong() const {
     total_size += data_size;
   }
 
-  // string player = 1;
-  if (!this->_internal_player().empty()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_player());
+  // uint32 playerID = 1;
+  if (this->_internal_playerid() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_playerid());
   }
 
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
@@ -964,8 +1077,8 @@ void SinglePullCardResponse::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg,
   (void) cached_has_bits;
 
   _this->_impl_.cards_.MergeFrom(from._impl_.cards_);
-  if (!from._internal_player().empty()) {
-    _this->_internal_set_player(from._internal_player());
+  if (from._internal_playerid() != 0) {
+    _this->_internal_set_playerid(from._internal_playerid());
   }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
@@ -983,14 +1096,9 @@ bool SinglePullCardResponse::IsInitialized() const {
 
 void SinglePullCardResponse::InternalSwap(SinglePullCardResponse* other) {
   using std::swap;
-  auto* lhs_arena = GetArenaForAllocation();
-  auto* rhs_arena = other->GetArenaForAllocation();
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   _impl_.cards_.InternalSwap(&other->_impl_.cards_);
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.player_, lhs_arena,
-      &other->_impl_.player_, rhs_arena
-  );
+  swap(_impl_.playerid_, other->_impl_.playerid_);
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata SinglePullCardResponse::GetMetadata() const {
@@ -1378,29 +1486,15 @@ PlayCard::PlayCard(const PlayCard& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
   PlayCard* const _this = this; (void)_this;
   new (&_impl_) Impl_{
-      decltype(_impl_.player_){}
-    , decltype(_impl_.nextplayer_){}
+      decltype(_impl_.playerid_){}
+    , decltype(_impl_.nextplayerid_){}
     , decltype(_impl_.card_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  _impl_.player_.InitDefault();
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.player_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (!from._internal_player().empty()) {
-    _this->_impl_.player_.Set(from._internal_player(), 
-      _this->GetArenaForAllocation());
-  }
-  _impl_.nextplayer_.InitDefault();
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.nextplayer_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (!from._internal_nextplayer().empty()) {
-    _this->_impl_.nextplayer_.Set(from._internal_nextplayer(), 
-      _this->GetArenaForAllocation());
-  }
-  _this->_impl_.card_ = from._impl_.card_;
+  ::memcpy(&_impl_.playerid_, &from._impl_.playerid_,
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.card_) -
+    reinterpret_cast<char*>(&_impl_.playerid_)) + sizeof(_impl_.card_));
   // @@protoc_insertion_point(copy_constructor:Uno.PlayCard)
 }
 
@@ -1409,19 +1503,11 @@ inline void PlayCard::SharedCtor(
   (void)arena;
   (void)is_message_owned;
   new (&_impl_) Impl_{
-      decltype(_impl_.player_){}
-    , decltype(_impl_.nextplayer_){}
+      decltype(_impl_.playerid_){0u}
+    , decltype(_impl_.nextplayerid_){0u}
     , decltype(_impl_.card_){0u}
     , /*decltype(_impl_._cached_size_)*/{}
   };
-  _impl_.player_.InitDefault();
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.player_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  _impl_.nextplayer_.InitDefault();
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.nextplayer_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
 PlayCard::~PlayCard() {
@@ -1435,8 +1521,6 @@ PlayCard::~PlayCard() {
 
 inline void PlayCard::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  _impl_.player_.Destroy();
-  _impl_.nextplayer_.Destroy();
 }
 
 void PlayCard::SetCachedSize(int size) const {
@@ -1449,9 +1533,9 @@ void PlayCard::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  _impl_.player_.ClearToEmpty();
-  _impl_.nextplayer_.ClearToEmpty();
-  _impl_.card_ = 0u;
+  ::memset(&_impl_.playerid_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&_impl_.card_) -
+      reinterpret_cast<char*>(&_impl_.playerid_)) + sizeof(_impl_.card_));
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -1461,23 +1545,19 @@ const char* PlayCard::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx)
     uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
-      // string player = 1;
+      // uint32 playerID = 1;
       case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
-          auto str = _internal_mutable_player();
-          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 8)) {
+          _impl_.playerid_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
           CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "Uno.PlayCard.player"));
         } else
           goto handle_unusual;
         continue;
-      // string nextPlayer = 2;
+      // uint32 nextPlayerID = 2;
       case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
-          auto str = _internal_mutable_nextplayer();
-          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 16)) {
+          _impl_.nextplayerid_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
           CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "Uno.PlayCard.nextPlayer"));
         } else
           goto handle_unusual;
         continue;
@@ -1518,24 +1598,16 @@ uint8_t* PlayCard::_InternalSerialize(
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // string player = 1;
-  if (!this->_internal_player().empty()) {
-    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_player().data(), static_cast<int>(this->_internal_player().length()),
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "Uno.PlayCard.player");
-    target = stream->WriteStringMaybeAliased(
-        1, this->_internal_player(), target);
+  // uint32 playerID = 1;
+  if (this->_internal_playerid() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(1, this->_internal_playerid(), target);
   }
 
-  // string nextPlayer = 2;
-  if (!this->_internal_nextplayer().empty()) {
-    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_nextplayer().data(), static_cast<int>(this->_internal_nextplayer().length()),
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "Uno.PlayCard.nextPlayer");
-    target = stream->WriteStringMaybeAliased(
-        2, this->_internal_nextplayer(), target);
+  // uint32 nextPlayerID = 2;
+  if (this->_internal_nextplayerid() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(2, this->_internal_nextplayerid(), target);
   }
 
   // uint32 card = 3;
@@ -1560,18 +1632,14 @@ size_t PlayCard::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // string player = 1;
-  if (!this->_internal_player().empty()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_player());
+  // uint32 playerID = 1;
+  if (this->_internal_playerid() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_playerid());
   }
 
-  // string nextPlayer = 2;
-  if (!this->_internal_nextplayer().empty()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_nextplayer());
+  // uint32 nextPlayerID = 2;
+  if (this->_internal_nextplayerid() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_nextplayerid());
   }
 
   // uint32 card = 3;
@@ -1597,11 +1665,11 @@ void PlayCard::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTO
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (!from._internal_player().empty()) {
-    _this->_internal_set_player(from._internal_player());
+  if (from._internal_playerid() != 0) {
+    _this->_internal_set_playerid(from._internal_playerid());
   }
-  if (!from._internal_nextplayer().empty()) {
-    _this->_internal_set_nextplayer(from._internal_nextplayer());
+  if (from._internal_nextplayerid() != 0) {
+    _this->_internal_set_nextplayerid(from._internal_nextplayerid());
   }
   if (from._internal_card() != 0) {
     _this->_internal_set_card(from._internal_card());
@@ -1622,24 +1690,432 @@ bool PlayCard::IsInitialized() const {
 
 void PlayCard::InternalSwap(PlayCard* other) {
   using std::swap;
-  auto* lhs_arena = GetArenaForAllocation();
-  auto* rhs_arena = other->GetArenaForAllocation();
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.player_, lhs_arena,
-      &other->_impl_.player_, rhs_arena
-  );
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.nextplayer_, lhs_arena,
-      &other->_impl_.nextplayer_, rhs_arena
-  );
-  swap(_impl_.card_, other->_impl_.card_);
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(PlayCard, _impl_.card_)
+      + sizeof(PlayCard::_impl_.card_)
+      - PROTOBUF_FIELD_OFFSET(PlayCard, _impl_.playerid_)>(
+          reinterpret_cast<char*>(&_impl_.playerid_),
+          reinterpret_cast<char*>(&other->_impl_.playerid_));
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata PlayCard::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_UnoMessages_2eproto_getter, &descriptor_table_UnoMessages_2eproto_once,
       file_level_metadata_UnoMessages_2eproto[5]);
+}
+
+// ===================================================================
+
+class ChooseColorRequest::_Internal {
+ public:
+};
+
+ChooseColorRequest::ChooseColorRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:Uno.ChooseColorRequest)
+}
+ChooseColorRequest::ChooseColorRequest(const ChooseColorRequest& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  ChooseColorRequest* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.colorid_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_impl_.colorid_ = from._impl_.colorid_;
+  // @@protoc_insertion_point(copy_constructor:Uno.ChooseColorRequest)
+}
+
+inline void ChooseColorRequest::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.colorid_){0u}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+}
+
+ChooseColorRequest::~ChooseColorRequest() {
+  // @@protoc_insertion_point(destructor:Uno.ChooseColorRequest)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void ChooseColorRequest::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+}
+
+void ChooseColorRequest::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void ChooseColorRequest::Clear() {
+// @@protoc_insertion_point(message_clear_start:Uno.ChooseColorRequest)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.colorid_ = 0u;
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* ChooseColorRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // uint32 colorID = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 8)) {
+          _impl_.colorid_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* ChooseColorRequest::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:Uno.ChooseColorRequest)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // uint32 colorID = 1;
+  if (this->_internal_colorid() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(1, this->_internal_colorid(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:Uno.ChooseColorRequest)
+  return target;
+}
+
+size_t ChooseColorRequest::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:Uno.ChooseColorRequest)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // uint32 colorID = 1;
+  if (this->_internal_colorid() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_colorid());
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData ChooseColorRequest::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    ChooseColorRequest::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*ChooseColorRequest::GetClassData() const { return &_class_data_; }
+
+
+void ChooseColorRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<ChooseColorRequest*>(&to_msg);
+  auto& from = static_cast<const ChooseColorRequest&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:Uno.ChooseColorRequest)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from._internal_colorid() != 0) {
+    _this->_internal_set_colorid(from._internal_colorid());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void ChooseColorRequest::CopyFrom(const ChooseColorRequest& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:Uno.ChooseColorRequest)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool ChooseColorRequest::IsInitialized() const {
+  return true;
+}
+
+void ChooseColorRequest::InternalSwap(ChooseColorRequest* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_.colorid_, other->_impl_.colorid_);
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata ChooseColorRequest::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_UnoMessages_2eproto_getter, &descriptor_table_UnoMessages_2eproto_once,
+      file_level_metadata_UnoMessages_2eproto[6]);
+}
+
+// ===================================================================
+
+class ChooseColor::_Internal {
+ public:
+};
+
+ChooseColor::ChooseColor(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:Uno.ChooseColor)
+}
+ChooseColor::ChooseColor(const ChooseColor& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  ChooseColor* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.playerid_){}
+    , decltype(_impl_.nextplayerid_){}
+    , decltype(_impl_.colorid_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  ::memcpy(&_impl_.playerid_, &from._impl_.playerid_,
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.colorid_) -
+    reinterpret_cast<char*>(&_impl_.playerid_)) + sizeof(_impl_.colorid_));
+  // @@protoc_insertion_point(copy_constructor:Uno.ChooseColor)
+}
+
+inline void ChooseColor::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.playerid_){0u}
+    , decltype(_impl_.nextplayerid_){0u}
+    , decltype(_impl_.colorid_){0u}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+}
+
+ChooseColor::~ChooseColor() {
+  // @@protoc_insertion_point(destructor:Uno.ChooseColor)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void ChooseColor::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+}
+
+void ChooseColor::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void ChooseColor::Clear() {
+// @@protoc_insertion_point(message_clear_start:Uno.ChooseColor)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  ::memset(&_impl_.playerid_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&_impl_.colorid_) -
+      reinterpret_cast<char*>(&_impl_.playerid_)) + sizeof(_impl_.colorid_));
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* ChooseColor::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // uint32 playerID = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 8)) {
+          _impl_.playerid_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // uint32 nextPlayerID = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 16)) {
+          _impl_.nextplayerid_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // uint32 colorID = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 24)) {
+          _impl_.colorid_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* ChooseColor::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:Uno.ChooseColor)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // uint32 playerID = 1;
+  if (this->_internal_playerid() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(1, this->_internal_playerid(), target);
+  }
+
+  // uint32 nextPlayerID = 2;
+  if (this->_internal_nextplayerid() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(2, this->_internal_nextplayerid(), target);
+  }
+
+  // uint32 colorID = 3;
+  if (this->_internal_colorid() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(3, this->_internal_colorid(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:Uno.ChooseColor)
+  return target;
+}
+
+size_t ChooseColor::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:Uno.ChooseColor)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // uint32 playerID = 1;
+  if (this->_internal_playerid() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_playerid());
+  }
+
+  // uint32 nextPlayerID = 2;
+  if (this->_internal_nextplayerid() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_nextplayerid());
+  }
+
+  // uint32 colorID = 3;
+  if (this->_internal_colorid() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_colorid());
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData ChooseColor::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    ChooseColor::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*ChooseColor::GetClassData() const { return &_class_data_; }
+
+
+void ChooseColor::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<ChooseColor*>(&to_msg);
+  auto& from = static_cast<const ChooseColor&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:Uno.ChooseColor)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from._internal_playerid() != 0) {
+    _this->_internal_set_playerid(from._internal_playerid());
+  }
+  if (from._internal_nextplayerid() != 0) {
+    _this->_internal_set_nextplayerid(from._internal_nextplayerid());
+  }
+  if (from._internal_colorid() != 0) {
+    _this->_internal_set_colorid(from._internal_colorid());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void ChooseColor::CopyFrom(const ChooseColor& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:Uno.ChooseColor)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool ChooseColor::IsInitialized() const {
+  return true;
+}
+
+void ChooseColor::InternalSwap(ChooseColor* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(ChooseColor, _impl_.colorid_)
+      + sizeof(ChooseColor::_impl_.colorid_)
+      - PROTOBUF_FIELD_OFFSET(ChooseColor, _impl_.playerid_)>(
+          reinterpret_cast<char*>(&_impl_.playerid_),
+          reinterpret_cast<char*>(&other->_impl_.playerid_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata ChooseColor::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_UnoMessages_2eproto_getter, &descriptor_table_UnoMessages_2eproto_once,
+      file_level_metadata_UnoMessages_2eproto[7]);
 }
 
 // @@protoc_insertion_point(namespace_scope)
@@ -1668,6 +2144,14 @@ Arena::CreateMaybeMessage< ::Uno::PlayCardRequest >(Arena* arena) {
 template<> PROTOBUF_NOINLINE ::Uno::PlayCard*
 Arena::CreateMaybeMessage< ::Uno::PlayCard >(Arena* arena) {
   return Arena::CreateMessageInternal< ::Uno::PlayCard >(arena);
+}
+template<> PROTOBUF_NOINLINE ::Uno::ChooseColorRequest*
+Arena::CreateMaybeMessage< ::Uno::ChooseColorRequest >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::Uno::ChooseColorRequest >(arena);
+}
+template<> PROTOBUF_NOINLINE ::Uno::ChooseColor*
+Arena::CreateMaybeMessage< ::Uno::ChooseColor >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::Uno::ChooseColor >(arena);
 }
 PROTOBUF_NAMESPACE_CLOSE
 
