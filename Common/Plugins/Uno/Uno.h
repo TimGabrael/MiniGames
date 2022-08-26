@@ -55,6 +55,7 @@ struct GameStateData
 	int playerInTurn;
 	GAME_STATE state = STATE_PENDING;
 	bool isChoosingColor = false;
+	bool isClockwise = true;
 };
 
 enum UNO_MESSAGES : uint32_t

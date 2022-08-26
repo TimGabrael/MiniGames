@@ -155,7 +155,7 @@ void PacketCB(void* userData, Connection* conn, Packet* packet)
 			{
 				ClientInfo* c = r->clients.at(i);
 				Base::ClientInfo* cl = res.add_connectedclients();
-				cl->set_name(c->name); cl->set_listengroup(c->groupMask);
+				cl->set_name(c->name); cl->set_listengroup(c->groupMask); cl->set_id(c->clientID);
 			}
 			res.set_serverid(r->ID);
 			const std::string serialized = res.SerializeAsString();

@@ -927,7 +927,7 @@ void CardHand::Update(CardStack& stack, CardsInAnimation& anim, ColorPicker& pic
 	}
 	UnoPlugin* instance = GetInstance();
 	GameStateData* state = GetGameState();
-	if (instance->g_objs->localPlayerIndex ==  state->playerInTurn && state->isChoosingColor)
+	if (instance->g_objs->localPlayerIndex == state->playerInTurn && state->isChoosingColor)
 	{
 		COLOR_ID id = picker.GetSelected(p.x, p.y, cam.screenX, cam.screenY, p.Pressed(), p.Released());
 		if (id != COLOR_INVALID)
