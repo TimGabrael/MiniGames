@@ -91,7 +91,7 @@ COLOR_ID GetColorIDFromCardID(CARD_ID id);
 uint32_t GetColorFromColorID(COLOR_ID id);
 uint32_t GetColorFromCardID(CARD_ID id);
 
-
+void SetNextStateFromCardID(CARD_ID card);
 
 
 struct ColorPicker

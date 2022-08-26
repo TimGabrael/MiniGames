@@ -50,6 +50,7 @@ void PacketCB(void* userData, Connection* conn, Packet* packet)
 					Base::AddClient addMsg;
 					addMsg.mutable_joined()->set_name(name);
 					addMsg.mutable_joined()->set_listengroup(info->groupMask);
+					addMsg.mutable_joined()->set_id(info->clientID);
 					std::string addSer = addMsg.SerializeAsString();
 					if (room) {
 						for (int i = 0; i < room->clients.size(); i++)
@@ -74,6 +75,7 @@ void PacketCB(void* userData, Connection* conn, Packet* packet)
 			response.mutable_info()->mutable_client()->set_name(info->name);
 			response.mutable_info()->set_serverid(lobby);
 			response.mutable_info()->mutable_client()->set_listengroup(info->groupMask);
+			response.mutable_info()->mutable_client()->set_id(info->clientID);
 		}
 		else
 		{
@@ -184,7 +186,7 @@ void PacketCB(void* userData, Connection* conn, Packet* packet)
 			{
 				ClientInfo* c = r->clients.at(i);
 				Base::ClientInfo* cl = res.add_connectedclients();
-				cl->set_name(c->name); cl->set_listengroup(c->groupMask);
+				cl->set_name(c->name); cl->set_listengroup(c->groupMask); cl->set_id(c->clientID);
 			}
 			res.set_serverid(r->ID);
 			const std::string serialized = res.SerializePartialAsString();
@@ -220,12 +222,23 @@ void PacketCB(void* userData, Connection* conn, Packet* packet)
 		{
 			if (!((packet->header.additionalData & ADDITIONAL_DATA_FLAG_ADMIN) && !(client->groupMask & ADMIN_GROUP_MASK)))
 			{
-				for (ClientInfo* cl : client->room->clients)
+				if (packet->header.additionalData & ADDITIONAL_DATA_FLAG_TO_SENDER_ID)
 				{
-					if (cl == client) continue;
-					if (cl->groupMask & packet->header.group)	// check if the message should be send to the client
+					for (ClientInfo* cl : client->room->clients)
 					{
-						cl->conn->SendData((PacketID)packet->header.type, cl->groupMask, packet->header.additionalData, cl->clientID, packet->body.size(), packet->body.data());
+						if (cl == client || cl->clientID != packet->header.senderID) continue;
+						cl->conn->SendData((PacketID)packet->header.type, cl->groupMask, packet->header.additionalData, client->clientID, packet->body.size(), packet->body.data());
+					}
+				}
+				else
+				{
+					for (ClientInfo* cl : client->room->clients)
+					{
+						if (cl == client) continue;
+						if (cl->groupMask & packet->header.group)	// check if the message should be send to the client
+						{
+							cl->conn->SendData((PacketID)packet->header.type, cl->groupMask, packet->header.additionalData, client->clientID, packet->body.size(), packet->body.data());
+						}
 					}
 				}
 			}

@@ -9,7 +9,34 @@
       "installRoot": "${projectDir}\\out\\install\\${name}",
       "cmakeCommandArgs": "",
       "buildCommandArgs": "",
-      "ctestCommandArgs": ""
+      "ctestCommandArgs": "",
+      "variables": [
+        {
+          "name": "Qt6_DIR",
+          "value": "C:/Qt/6.3.0/msvc2019_64/lib/cmake/Qt6",
+          "type": "PATH"
+        },
+        {
+          "name": "Qt6Widgets_DIR",
+          "value": "C:/Qt/6.3.0/msvc2019_64/lib/cmake/Qt6Widgets",
+          "type": "PATH"
+        },
+        {
+          "name": "Qt6WidgetsTools_DIR",
+          "value": "C:\\Qt\\6.3.0\\msvc2019_64\\lib\\cmake\\Qt6WidgetsTools",
+          "type": "PATH"
+        },
+        {
+          "name": "Qt6CoreTools_DIR",
+          "value": "C:\\Qt\\6.3.0\\msvc2019_64\\lib\\cmake\\Qt6CoreTools",
+          "type": "PATH"
+        },
+        {
+          "name": "Qt6GuiTools_DIR",
+          "value": "C:\\Qt\\6.3.0\\msvc2019_64\\lib\\cmake\\Qt6GuiTools",
+          "type": "PATH"
+        }
+      ]
     }
   ]
 }

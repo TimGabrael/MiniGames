@@ -698,7 +698,7 @@ void CardStack::Draw()
 	for (int i = 0; i < cards.size(); i++)
 	{
 		auto& c = cards.at(i);
-		if ((i == cards.size() - 1) && (c.front == CARD_ID::CARD_ID_ADD_4 || c.front == CARD_ID::CARD_ID_CHOOSE_COLOR) && (blackColorID != CARD_ID::CARD_ID_BLANK && blackColorID))
+		if ((i == cards.size() - 1) && (c.front == CARD_ID::CARD_ID_ADD_4 || c.front == CARD_ID::CARD_ID_CHOOSE_COLOR) && (blackColorID != COLOR_INVALID))
 		{
 			if (countDown)
 			{
@@ -800,11 +800,12 @@ int CardHand::AddTemp(const Camera& cam, CARD_ID id)
 	return idx;
 }
 
-static void SetNextStateFromCardID(CARD_ID card)
+void SetNextStateFromCardID(CARD_ID card)
 {
 	GameStateData* state = GetGameState();
 	uint32_t cur = (state->playerInTurn % state->players.size());
-	if (card == CARD_ID_ADD_4 || card == CARD_ID_BLANK)
+	LOG("playing card: %d\n", card);
+	if (card == CARD_ID_ADD_4 || card == CARD_ID_CHOOSE_COLOR)
 	{
 		state->isChoosingColor = true;
 	}
@@ -850,12 +851,14 @@ void CardHand::PlayCard(const CardStack& stack, CardsInAnimation& anim, int card
 			resp.set_playerid(handID);
 			resp.set_card((uint32_t)card);
 			resp.set_nextplayerid(state->players.at(state->playerInTurn).id);
+			LOG("RESPONSE WITH PLAY\n");
 			SendNetworkData(UNO_MESSAGES::UNO_PLAY_CARD_RESPONSE, LISTEN_GROUP_ALL, ADDITIONAL_DATA_FLAG_ADMIN, instance->backendData->localPlayer.clientID, resp.SerializeAsString());
 		}
 		else
 		{
 			Uno::PlayCardRequest req;
 			req.set_card((uint32_t)card);
+			LOG("REQUEST PLAY\n");
 			SendNetworkData(UNO_MESSAGES::UNO_PLAY_CARD_REQUEST, ADMIN_GROUP_MASK, 0, instance->backendData->localPlayer.clientID, req.SerializeAsString());
 		}
 	}
@@ -877,7 +880,7 @@ void CardHand::FetchCard(const Camera& cam, const CardStack& stack, CardDeck& de
 		pulled->add_cards(card);
 		int idx = AddTemp(cam, card);
 		anim.AddAnim(stack, cards.at(idx), handID, CARD_ANIMATIONS::ANIM_FETCH_CARD);
-		SendNetworkData(UNO_MESSAGES::UNO_PLAY_CARD_RESPONSE, LISTEN_GROUP_ALL, ADDITIONAL_DATA_FLAG_ADMIN, instance->backendData->localPlayer.clientID, resp.SerializeAsString());
+		SendNetworkData(UNO_MESSAGES::UNO_PULL_CARD_RESPONSE, LISTEN_GROUP_ALL, ADDITIONAL_DATA_FLAG_ADMIN, instance->backendData->localPlayer.clientID, resp.SerializeAsString());
 	}
 	else
 	{
@@ -922,16 +925,32 @@ void CardHand::Update(CardStack& stack, CardsInAnimation& anim, ColorPicker& pic
 			break;
 		}
 	}
-
-	if (choosingCardColor)
+	UnoPlugin* instance = GetInstance();
+	GameStateData* state = GetGameState();
+	if (instance->g_objs->localPlayerIndex ==  state->playerInTurn && state->isChoosingColor)
 	{
 		COLOR_ID id = picker.GetSelected(p.x, p.y, cam.screenX, cam.screenY, p.Pressed(), p.Released());
-		if (id != CARD_ID_BLANK)
+		if (id != COLOR_INVALID)
 		{
 			choosenCardColor = id;
 			stack.blackColorID = id;
+			state->isChoosingColor = false;
+			state->playerInTurn = (state->playerInTurn + 1) % state->players.size();
 			// update the game state to go to the next player here!
-			choosingCardColor = false;
+			if(instance->backendData->localPlayer.groupMask & ADMIN_GROUP_MASK)
+			{
+				Uno::ChooseColor cc;
+				cc.set_playerid(instance->backendData->localPlayer.clientID);
+				cc.set_nextplayerid(state->players.at(state->playerInTurn).id);
+				cc.set_colorid(id);
+				SendNetworkData(UNO_MESSAGES::UNO_PICK_COLOR_RESPONSE, LISTEN_GROUP_ALL, AdditionalDataFlags::ADDITIONAL_DATA_FLAG_ADMIN, instance->backendData->localPlayer.clientID, cc.SerializeAsString());
+			}
+			else
+			{
+				Uno::ChooseColorRequest cr;
+				cr.set_colorid(id);
+				SendNetworkData(UNO_MESSAGES::UNO_PICK_COLOR_REQUEST, ADDITIONAL_DATA_FLAG_ADMIN, 0, instance->backendData->localPlayer.clientID, cr.SerializeAsString());
+			}
 		}
 	}
 	else if (allowInput)
