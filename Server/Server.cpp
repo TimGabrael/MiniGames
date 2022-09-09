@@ -112,7 +112,6 @@ void PacketCB(void* userData, Connection* conn, Packet* packet)
 				added->clients.push_back(info);
 			}
 
-
 			response.set_error(err);
 			response.set_id(info->id, 16);
 			response.mutable_info()->mutable_client()->set_name(req.info().client().name());

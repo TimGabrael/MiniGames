@@ -10,6 +10,7 @@
 #include <imgui.h>
 #include "../MiniGames.h"
 #include "Network/Messages/ClientInfo.pb.h"
+#include "Network/Messages/lobby.pb.h"
 
 PluginWidget::PluginWidget(QWidget* parent, PluginClass* plClass) : QOpenGLWidget(parent), plugin(plClass)
 {
@@ -65,7 +66,17 @@ void PluginWidget::initializeGL()
 	plugin->Init(&app->appData);
 	isInitialized = true;
 	
-	app->socket.SendData(PacketID::STARTED, LISTEN_GROUP_ALL, 0, app->appData.localPlayer.clientID, client.SerializeAsString());
+	if (app->appData.localPlayer.groupMask & ADMIN_GROUP_MASK)
+	{
+		Base::StartPlugin starting;
+		std::string start = std::string(plugin->GetPluginInfos().ID, 19);
+		starting.set_pluginid(start);
+		app->socket.SendData(PacketID::START, LISTEN_GROUP_ALL, ADDITIONAL_DATA_FLAG_ADMIN, app->appData.localPlayer.clientID, starting.SerializeAsString());
+	}
+	else
+	{
+		app->socket.SendData(PacketID::STARTED, LISTEN_GROUP_ALL, 0, app->appData.localPlayer.clientID, client.SerializeAsString());
+	}
 }
 
 void PluginWidget::resizeGL(int w, int h)
