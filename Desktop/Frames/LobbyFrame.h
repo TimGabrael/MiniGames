@@ -24,16 +24,6 @@ public:
 	void StartPlugin();
 
 
-
-	virtual void FetchSyncData(std::string& str) override;
-	virtual void HandleAddClient(const ClientData* added) override;
-	virtual void HandleRemovedClient(const ClientData* removed) override;
-
-	virtual void HandleNetworkMessage(Packet* packet) override;
-	virtual void HandleSync(const std::string& syncData) override;
-
-	static bool VoteDataHandleNetworkMessage(Packet* packet);
-
 	static VoteData data;
 	std::string pluginCache;
 private:

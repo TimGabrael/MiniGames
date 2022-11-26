@@ -20,7 +20,6 @@
 #include "../UtilFuncs.h"
 #include "PluginFrame.h"
 #include "../MiniGames.h"
-#include "Network/Messages/lobby.pb.h"
 #include <qtimer.h>
 
 
@@ -44,9 +43,6 @@ public:
 				if (v.username == app->appData.localPlayer.name)
 					v.pluginID = "";
 			}
-			Base::Vote voteData;
-			voteData.set_clientname(app->appData.localPlayer.name);
-			app->socket.SendData(PacketID::VOTE, LISTEN_GROUP_ALL, 0, app->appData.localPlayer.clientID, voteData.SerializeAsString());
 
 			GameInfo* cpy = GameInfo::selected;
 			cpy->voteCount--;
@@ -135,10 +131,6 @@ private:
 
 			MainApplication* app = MainApplication::GetInstance();
 
-			Base::Vote voteMessage;
-			voteMessage.set_plugin(plugID);
-			voteMessage.set_clientname(app->appData.localPlayer.name);
-			app->socket.SendData(PacketID::VOTE, 0xFFFFFFFF, 0, app->appData.localPlayer.clientID, voteMessage.SerializeAsString());
 
 
 			for (auto& v : LobbyFrame::data.votes)
@@ -291,33 +283,15 @@ public:
 	void AdminSyncData()
 	{
 		MainApplication* app = MainApplication::GetInstance();
-		if (app->appData.localPlayer.groupMask & ADMIN_GROUP_MASK)
-		{
-			Base::SyncData data;
-			data.set_remainingtime(maxTimer);
-			for (int i = 0; i < LobbyFrame::data.votes.size(); i++)
-			{
-				Base::Vote* v = data.add_votes();
-				const auto& vote = LobbyFrame::data.votes.at(i);
-				v->set_plugin(vote.pluginID); v->set_clientname(vote.username);
-			}
-			data.set_running(LobbyFrame::data.isRunning);
-			app->socket.SendData(PacketID::VOTE_SYNC, LISTEN_GROUP_ALL, ADDITIONAL_DATA_FLAG_ADMIN,  app->appData.localPlayer.clientID, data.SerializeAsString());
-		}
+		
 	}
 	void AdminStart()
 	{
 		MainApplication* app = MainApplication::GetInstance();
 		if (app->appData.localPlayer.groupMask & ADMIN_GROUP_MASK)
 		{
-			Base::StartPlugin starting;
-			std::string start = GetPluginByVotes();
-			starting.set_pluginid(start);
-			app->socket.SendData(PacketID::START, LISTEN_GROUP_ALL, ADDITIONAL_DATA_FLAG_ADMIN, app->appData.localPlayer.clientID, starting.SerializeAsString());
+			
 
-			LobbyFrame* frame = (LobbyFrame*)this->parentWidget();
-			frame->pluginCache = start;
-			frame->StartPlugin();
 		}
 	}
 	std::string GetPluginByVotes()
@@ -537,52 +511,6 @@ void LobbyFrame::StartPlugin()
 	}
 }
 
-void LobbyFrame::FetchSyncData(std::string& str)
-{
-}
-
-void LobbyFrame::HandleAddClient(const ClientData* added)
-{
-	AddPlayer(added->name);
-}
-
-void LobbyFrame::HandleRemovedClient(const ClientData* removed)
-{
-	RemovePlayer(removed->name);
-}
-
-void LobbyFrame::HandleNetworkMessage(Packet* packet)
-{
-	if (VoteDataHandleNetworkMessage(packet))
-	{
-		QTimer::singleShot(0, this, &LobbyFrame::UpdateFromData);
-	}
-	else if (packet->header.type == (uint32_t)PacketID::START && (packet->header.additionalData == ADDITIONAL_DATA_FLAG_ADMIN))
-	{
-		Base::StartPlugin startInfo;
-		startInfo.ParseFromArray(packet->body.data(), packet->body.size());
-		this->pluginCache = startInfo.pluginid();
-		QTimer::singleShot(0, this, &LobbyFrame::StartPlugin);
-	}
-}
-
-void LobbyFrame::HandleSync(const std::string& syncData)
-{
-	data.votes.clear();
-	Base::SyncData sync;
-	sync.ParseFromString(syncData);
-	for (int i = 0; i < sync.votes_size(); i++)
-	{
-		const Base::Vote& vote = sync.votes(i);
-		if (IsValidName(vote.clientname()))
-		{
-			if (vote.has_plugin()) data.votes.push_back({ vote.plugin(), vote.clientname() });
-			else data.votes.push_back({ "", vote.clientname() });
-		}
-	}
-	data.remainingTime = sync.remainingtime();
-}
-
 
 
 
@@ -631,56 +559,3 @@ void LobbyFrame::UpdateFromData()
 }
 
 
-
-
-
-bool LobbyFrame::VoteDataHandleNetworkMessage(Packet* packet)
-{
-	ApplicationData& appData = MainApplication::GetInstance()->appData;
-	if (packet->header.type == (uint32_t)PacketID::VOTE)
-	{
-		Base::Vote added;
-		added.ParseFromArray(packet->body.data(), packet->body.size());
-		const std::string& plug = added.plugin();
-		const std::string& add = added.clientname();
-		
-		if (!IsValidName(add)) return true;
-
-		for (int i = 0; i < data.votes.size(); i++)
-		{
-			VoteInfo& info = data.votes.at(i);
-			if(add == info.username)
-			{
-				data.votes.erase(data.votes.begin() + i);
-				i--;
-			}
-		}
-		if (added.has_plugin())
-			data.votes.push_back({ plug, add });
-		else
-			data.votes.push_back({ "", add });
-
-
-		return true;
-	}
-	else if (packet->header.type == (uint32_t)PacketID::VOTE_SYNC)
-	{
-		data.votes.clear();
-		Base::SyncData sync;
-		sync.ParseFromArray(packet->body.data(), packet->body.size());
-		for (int i = 0; i < sync.votes_size(); i++)
-		{
-			const Base::Vote& vote = sync.votes(i);
-			if (IsValidName(vote.clientname()))
-			{
-				if (vote.has_plugin()) data.votes.push_back({ vote.plugin(), vote.clientname() });
-				else data.votes.push_back({ "", vote.clientname() });
-			}
-		}
-		data.remainingTime = sync.remainingtime();
-		data.isRunning = sync.running();
-		return true;
-	}
-
-	return false;
-}

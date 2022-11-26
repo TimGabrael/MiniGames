@@ -37,4 +37,5 @@ private:
 	QTimer frameTimer;
 	bool isInitialized = false;
 	bool hovered = false;
+	bool centerMouse = true;
 };

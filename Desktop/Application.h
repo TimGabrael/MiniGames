@@ -15,7 +15,7 @@ public:
 
 
 	ApplicationData appData;
-	TCPSocket socket;
+	UDPSocket socket;
 	QWidget* backgroundWidget = nullptr;
 	MainWindow* mainWindow = nullptr;
 

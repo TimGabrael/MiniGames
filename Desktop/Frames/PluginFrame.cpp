@@ -28,29 +28,3 @@ PluginFrame::~PluginFrame()
 
 
 }
-
-void PluginFrame::FetchSyncData(std::string& str)
-{
-	activePlugin->FetchSyncData(str);
-}
-
-void PluginFrame::HandleAddClient(const ClientData* added)
-{
-	activePlugin->HandleAddClient(added);
-}
-
-void PluginFrame::HandleRemovedClient(const ClientData* removed)
-{
-	activePlugin->HandleRemovedClient(removed);
-}
-
-void PluginFrame::HandleNetworkMessage(Packet* packet)
-{
-	this->activePlugin->NetworkCallback(packet);
-}
-
-void PluginFrame::HandleSync(const std::string& syncData)
-{
-	activePlugin->HandleSync(syncData);
-}
-

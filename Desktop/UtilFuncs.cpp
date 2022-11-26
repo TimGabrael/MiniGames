@@ -83,8 +83,8 @@ bool TryConnectToServer()
 	MainApplication* app = MainApplication::GetInstance();
 	if (app->isConnected) return true;
 	MainWindow* main = app->mainWindow;
-
-	NetError err = app->socket.Connect(DEBUG_IP, DEBUG_PORT);
+	
+	NetError err = app->socket.Create(DEBUG_IP, DEBUG_PORT);
 	app->isConnected = (err == NetError::OK) ? true : false;
 	if (!app->isConnected)
 	{

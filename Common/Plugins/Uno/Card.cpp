@@ -10,7 +10,6 @@
 #include <glm/gtc/quaternion.hpp>
 #include "Graphics/UiRendering.h"
 #include "Graphics/Renderer.h"
-#include "Messages/UnoMessages.pb.h"
 #include "Uno.h"
 
 #define CARD_SCENE_TYPE_INDEX DEFAULT_SCENE_RENDER_TYPES::NUM_DEFAULT_RENDERABLES
@@ -847,19 +846,10 @@ void CardHand::PlayCard(const CardStack& stack, CardsInAnimation& anim, int card
 			}
 			cards.erase(cards.begin() + cardIdx);
 			
-			Uno::PlayCard resp;
-			resp.set_playerid(handID);
-			resp.set_card((uint32_t)card);
-			resp.set_nextplayerid(state->players.at(state->playerInTurn).id);
-			LOG("RESPONSE WITH PLAY\n");
-			SendNetworkData(UNO_MESSAGES::UNO_PLAY_CARD_RESPONSE, LISTEN_GROUP_ALL, ADDITIONAL_DATA_FLAG_ADMIN, instance->backendData->localPlayer.clientID, resp.SerializeAsString());
 		}
 		else
 		{
-			Uno::PlayCardRequest req;
-			req.set_card((uint32_t)card);
-			LOG("REQUEST PLAY\n");
-			SendNetworkData(UNO_MESSAGES::UNO_PLAY_CARD_REQUEST, ADMIN_GROUP_MASK, 0, instance->backendData->localPlayer.clientID, req.SerializeAsString());
+
 		}
 	}
 	else
@@ -873,18 +863,9 @@ void CardHand::FetchCard(const Camera& cam, const CardStack& stack, CardDeck& de
 	UnoPlugin* instance = GetInstance();
 	if (instance->backendData->localPlayer.groupMask & ADMIN_GROUP_MASK)
 	{
-		Uno::PullCardResponse resp;
-		Uno::SinglePullCardResponse* pulled = resp.add_pullresponses();
-		pulled->set_playerid(handID);
 		CARD_ID card = instance->g_objs->deck.PullCard();
-		pulled->add_cards(card);
 		int idx = AddTemp(cam, card);
 		anim.AddAnim(stack, cards.at(idx), handID, CARD_ANIMATIONS::ANIM_FETCH_CARD);
-		SendNetworkData(UNO_MESSAGES::UNO_PULL_CARD_RESPONSE, LISTEN_GROUP_ALL, ADDITIONAL_DATA_FLAG_ADMIN, instance->backendData->localPlayer.clientID, resp.SerializeAsString());
-	}
-	else
-	{
-		SendNetworkData(UNO_MESSAGES::UNO_PULL_CARD_REQUEST, ADMIN_GROUP_MASK, 0, instance->backendData->localPlayer.clientID, 0, nullptr);
 	}
 }
 void CardHand::Update(CardStack& stack, CardsInAnimation& anim, ColorPicker& picker, const Camera& cam, const glm::vec3& mouseRay, const Pointer& p, bool allowInput)
@@ -937,20 +918,7 @@ void CardHand::Update(CardStack& stack, CardsInAnimation& anim, ColorPicker& pic
 			state->isChoosingColor = false;
 			state->playerInTurn = (state->playerInTurn + 1) % state->players.size();
 			// update the game state to go to the next player here!
-			if(instance->backendData->localPlayer.groupMask & ADMIN_GROUP_MASK)
-			{
-				Uno::ChooseColor cc;
-				cc.set_playerid(instance->backendData->localPlayer.clientID);
-				cc.set_nextplayerid(state->players.at(state->playerInTurn).id);
-				cc.set_colorid(id);
-				SendNetworkData(UNO_MESSAGES::UNO_PICK_COLOR_RESPONSE, LISTEN_GROUP_ALL, AdditionalDataFlags::ADDITIONAL_DATA_FLAG_ADMIN, instance->backendData->localPlayer.clientID, cc.SerializeAsString());
-			}
-			else
-			{
-				Uno::ChooseColorRequest cr;
-				cr.set_colorid(id);
-				SendNetworkData(UNO_MESSAGES::UNO_PICK_COLOR_REQUEST, ADDITIONAL_DATA_FLAG_ADMIN, 0, instance->backendData->localPlayer.clientID, cr.SerializeAsString());
-			}
+			
 		}
 	}
 	else if (allowInput)

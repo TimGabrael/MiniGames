@@ -9,8 +9,6 @@
 #include "../util/QImGui.h"
 #include <imgui.h>
 #include "../MiniGames.h"
-#include "Network/Messages/ClientInfo.pb.h"
-#include "Network/Messages/lobby.pb.h"
 
 PluginWidget::PluginWidget(QWidget* parent, PluginClass* plClass) : QOpenGLWidget(parent), plugin(plClass)
 {
@@ -42,12 +40,6 @@ PluginWidget::~PluginWidget()
 
 
 
-static void SendDataFunction(uint32_t packetID, uint32_t group, uint16_t flags, uint16_t clientID, size_t size, const void* data)
-{
-	MainApplication* app = MainApplication::GetInstance();
-	app->socket.SendData((PacketID)packetID, group, flags, clientID, size, data);
-}
-
 void PluginWidget::initializeGL()
 {
 
@@ -55,27 +47,20 @@ void PluginWidget::initializeGL()
 	QImGui::initialize(this);
 	MainApplication* app = MainApplication::GetInstance();
 	
-	Base::ClientInfo client;
-	client.set_id(app->appData.localPlayer.clientID);
-	client.set_listengroup(app->appData.localPlayer.groupMask);
-	client.set_name(app->appData.localPlayer.name);
 
 	app->appData.imGuiCtx = ImGui::GetCurrentContext();
-	app->appData._sendDataFunction = &SendDataFunction;
+	app->appData._sendDataFunction = nullptr;
 	app->appData.platform = _CURRENT_PLATFORM_ID;
 	plugin->Init(&app->appData);
 	isInitialized = true;
 	
 	if (app->appData.localPlayer.groupMask & ADMIN_GROUP_MASK)
 	{
-		Base::StartPlugin starting;
-		std::string start = std::string(plugin->GetPluginInfos().ID, 19);
-		starting.set_pluginid(start);
-		app->socket.SendData(PacketID::START, LISTEN_GROUP_ALL, ADDITIONAL_DATA_FLAG_ADMIN, app->appData.localPlayer.clientID, starting.SerializeAsString());
+
 	}
 	else
 	{
-		app->socket.SendData(PacketID::STARTED, LISTEN_GROUP_ALL, 0, app->appData.localPlayer.clientID, client.SerializeAsString());
+
 	}
 }
 
@@ -93,7 +78,7 @@ void PluginWidget::paintGL()
 	QImGui::newFrame();
 
 	if(hovered) hovered = underMouse();
-
+	
 	MainApplication* app = MainApplication::GetInstance();
 	plugin->Render(&app->appData);
 
@@ -111,19 +96,44 @@ void PluginWidget::resizeEvent(QResizeEvent* event)
 void PluginWidget::mouseMoveEvent(QMouseEvent* event)
 {
 	QPoint pos = event->pos();
-	memset(&mouseData.lPressed, 0, 6);
-	if (!hovered)
+	MainApplication* app = MainApplication::GetInstance();
+	if (centerMouse && app->mainWindow->isActiveWindow())
 	{
-		hovered = true;
-		mouseData.xPos = pos.x(); mouseData.yPos = pos.y();
-		return;
-	}
-	mouseData.dx = mouseData.xPos - pos.x();
-	mouseData.dy = mouseData.yPos - pos.y();
+		//QCursor cursor(Qt::BlankCursor);
+		//QApplication::setOverrideCursor(cursor);
+		//QApplication::changeOverrideCursor(cursor);
 
-	mouseData.xPos = pos.x(); mouseData.yPos = pos.y();
+		memset(&mouseData.lPressed, 0, 6);
+		QPoint glob = mapToGlobal(QPoint(width() / 2, height() / 2));
+		QCursor::setPos(glob);
+		mouseData.xPos = width() / 2;
+		mouseData.yPos = height() / 2;
+
+		mouseData.dx = mouseData.xPos - pos.x();
+		mouseData.dy = mouseData.yPos - pos.y();
+		if (mouseData.dx == 0 && mouseData.dy == 0) {
+			return;
+		}
+	}
+	else
+	{
+		memset(&mouseData.lPressed, 0, 6);
+		if (!hovered)
+		{
+			hovered = true;
+			mouseData.xPos = pos.x(); mouseData.yPos = pos.y();
+			return;
+		}
+		mouseData.dx = mouseData.xPos - pos.x();
+		mouseData.dy = mouseData.yPos - pos.y();
+
+		mouseData.xPos = pos.x(); mouseData.yPos = pos.y();
+
+
+	}
 
 	plugin->MouseCallback(&this->mouseData);
+	QOpenGLWidget::mouseMoveEvent(event);
 }
 void PluginWidget::mousePressEvent(QMouseEvent* event)
 {

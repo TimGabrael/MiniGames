@@ -9,6 +9,12 @@
 #define STANDARD_GROUP_MASK 1
 #define LISTEN_GROUP_ALL 0xFFFFFFFF
 
+#define MIN_NAME_LENGTH 5
+#define MAX_NAME_LENGTH 30
+
+
+typedef int(__stdcall* PacketFunction)(void* packet);
+
 enum class NetError
 {
 	OK,
@@ -20,53 +26,88 @@ enum class NetError
 	E_HANDSHAKE,	// failed to perform handshake
 	E_VERSION,		// failed Version mismatch
 };
-
-enum class PacketID
+enum class JOIN_ERROR : uint16_t
 {
-	HANDSHAKE = 0,
-	CHECK = 1,
-	JOIN = 2,
-	CREATE = 3,
-	SYNC_REQUEST = 4,	// these need to be seperate as the server can ask the Admin for the current SYNC data
-	SYNC_RESPONSE = 5,	// these need to be seperate as the server can ask the Admin for the current SYNC data
-	ADD_CLIENT = 6,
-	REMOVE_CLIENT = 7,
-	FORCE_SYNC = 8,
-	GET_CLIENTS = 9,
+	JOIN_OK,
+	JOIN_NAME_COLLISION,
+	JOIN_NAME_INVALID_CHARACTER,
+	JOIN_NAME_SHORT,
+	JOIN_FULL,
+};
+
+
+
+enum ServerPacketID : uint16_t
+{
+	SERVER_PACKET_ACK = 0,
+	SERVER_PACKET_JOIN = 1,
+	SERVER_PACKET_JOIN_RESPONSE = 2,
+	SERVER_PACKET_SYNC_RESPONSE = 3,	// these need to be seperate as the server can ask the Admin for the current SYNC data
+	SERVER_PACKET_ADD_CLIENT = 4,
+	SERVER_PACKET_REMOVE_CLIENT = 5,
+	SERVER_PACKET_FORCE_SYNC = 6,
+	SERVER_PACKET_CLIENTS = 7,
+	SERVER_PACKET_CLIENT_DISCONNECT = 8,
 	// END OF GENERAL MESSAGES
 
 
-	VOTE = 10,
-	VOTE_SYNC = 11,
-	START = 12,
-	STARTED = 13,
-	NUM_PACKETS = 14,
-};
-
-enum AdditionalDataFlags : uint16_t
-{
-	ADDITIONAL_DATA_FLAG_ADMIN = 1,				// only admins should and can send this message!
-	ADDITIONAL_DATA_FLAG_TO_SENDER_ID = 1 << 1,	// send only to senderID
-};
+	SERVER_VOTE = 9,
+	SERVER_START = 10,
 
 
-struct PacketHeader
-{
-	PacketHeader() { type = 0; size = 0; group = 0x0; additionalData = 0; senderID = 0; }
-	constexpr PacketHeader(uint32_t t, uint32_t sz) : type(t), size(sz), group(0x0), additionalData(0), senderID(0) { }
-	constexpr PacketHeader(PacketID t, uint32_t sz) : type((uint32_t)t), size(sz), group(0x0), additionalData(0), senderID(0) { }
-	constexpr PacketHeader(PacketID t, uint32_t gr, uint32_t sz) : type((uint32_t)t), size(sz), group(gr), additionalData(0), senderID(0) { }
-	constexpr PacketHeader(PacketID t, uint32_t gr, uint16_t id, uint32_t sz) : type((uint32_t)t), size(sz), group(gr), additionalData(0), senderID(id) { }
-	constexpr PacketHeader(PacketID t, uint32_t gr, uint16_t additional, uint16_t id, uint32_t sz) : type((uint32_t)t), size(sz), group(gr), additionalData(additional), senderID(id) { }
-	constexpr PacketHeader(uint32_t t, uint32_t gr, uint16_t additional, uint16_t id, uint32_t sz) : type(t), size(sz), group(gr), additionalData(additional), senderID(id) { }
-	uint32_t type;
-	uint32_t size;
-	uint32_t group;
-	uint16_t additionalData;
-	uint16_t senderID;
+	SERVER_IMPORTANT_FLAG = (1 << 15),
 };
-struct Packet
+
+enum ClientPacketID : uint16_t
 {
-	PacketHeader header;
-	std::vector<char> body;
+	CLIENT_PACKET_ACK = 0,
+	CLIENT_PACKET_PING = 1,
+	CLIENT_PACKET_JOIN = 2,
+	CLIENT_PACKET_SYNC_REQUEST = 3,
+	CLIENT_PACKET_DISCONNECT = 4,
+	// END OF GENERAL MESSAGES
+
+
+	CLIENT_VOTE = 5,
+	CLIENT_START = 6,
+
+
+	CLIENT_IMPORTANT_FLAG = (1 << 15),
 };
+
+
+struct BaseHeader
+{
+	uint16_t packetID;
+	uint16_t sequenceNumber;
+};
+
+struct ClientJoinPacket
+{
+	uint16_t packetID;
+	uint16_t sequenceNumber;
+	char name[MAX_NAME_LENGTH];
+};
+
+namespace Client
+{
+
+
+}
+
+namespace Server
+{
+	struct JoinResponsePacket
+	{
+		uint16_t packetID;
+		uint16_t sequenceNumber;
+		uint16_t id;
+		uint16_t error;
+		char name[MAX_NAME_LENGTH];
+	};
+}
+
+
+
+JOIN_ERROR ValidatePlayerName(char name[MAX_NAME_LENGTH]);
+

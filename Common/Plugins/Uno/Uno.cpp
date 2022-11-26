@@ -12,8 +12,6 @@
 #include "Graphics/BloomRendering.h"
 #include "Network/Networking.h"
 #include "imgui.h"
-#include "Messages/UnoMessages.pb.h"
-#include "Network/Messages/sync.pb.h"
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -129,316 +127,19 @@ static void RemovePlayer(const ClientData* removed)
 }
 
 
-static std::mutex data_mutex;
+
 static std::vector<std::vector<CARD_ID>> pulled_card_list;
 struct PlayedCardData
 {
 	uint32_t playerIdx = -1;
 	CARD_ID  card = (CARD_ID)-1;
 }played_card_data;
-static void SyncSinglePlayer(uint32_t senderId)
-{
-	std::string syncData;
-	Base::SyncResponse sync;
-	instance->FetchSyncData(syncData);
-	sync.set_state(syncData);
-	SendNetworkData((uint32_t)PacketID::FORCE_SYNC, LISTEN_GROUP_ALL, AdditionalDataFlags::ADDITIONAL_DATA_FLAG_ADMIN | AdditionalDataFlags::ADDITIONAL_DATA_FLAG_TO_SENDER_ID, senderId, sync.SerializeAsString());
-}
 
 static void PullCardsAction(const char* data, size_t size)
 {
-	Uno::PullCardResponse resp;
-	resp.ParseFromArray(data, size);
 	pulled_card_list.resize(game.players.size());
 	
-
-	for (const auto& pull : resp.pullresponses())
-	{
-		const uint32_t id = pull.playerid();
-		int playerIdx = -1;
-		for (uint32_t i = 0; i < game.players.size(); i++)
-		{
-			if (id == game.players.at(i).id)
-			{
-				playerIdx = i;
-				break;
-			}
-		}
-		if (playerIdx == -1)
-		{
-			SendNetworkData((uint32_t)PacketID::SYNC_REQUEST, ADMIN_GROUP_MASK, 0, instance->backendData->localPlayer.clientID, 0, nullptr);
-			return;
-		}
-		else
-		{
-			for (uint32_t card : pull.cards())
-			{
-				pulled_card_list.at(playerIdx).push_back((CARD_ID)card);
-			}
-		}
-	}
 }
-
-void UnoPlugin::NetworkCallback(Packet* packet) // NOT IN MAIN THREAD
-{
-	if (packet->header.type == UNO_MESSAGES::UNO_PULL_CARD_REQUEST && (backendData->localPlayer.groupMask & ADMIN_GROUP_MASK))
-	{
-		if (game.playerInTurn >= 0 && game.playerInTurn < game.players.size() && packet->header.senderID == game.hands->at(game.playerInTurn).handID)
-		{
-			CARD_ID pulled = g_objs->deck.PullCard();
-			Uno::PullCardResponse resp;
-			auto* pull = resp.add_pullresponses();
-			pull->add_cards((uint32_t)pulled);
-			pull->set_playerid(game.players.at(game.playerInTurn).id);
-			SendNetworkData(UNO_MESSAGES::UNO_PULL_CARD_RESPONSE, LISTEN_GROUP_ALL, AdditionalDataFlags::ADDITIONAL_DATA_FLAG_ADMIN, backendData->localPlayer.clientID, resp.SerializeAsString());
-		}
-		else
-		{
-			SyncSinglePlayer(packet->header.senderID);
-		}
-	}
-	else if (packet->header.type == UNO_MESSAGES::UNO_PULL_CARD_RESPONSE && packet->header.additionalData & AdditionalDataFlags::ADDITIONAL_DATA_FLAG_ADMIN)
-	{
-		data_mutex.lock();
-		PullCardsAction(packet->body.data(), packet->body.size());
-		game.state = STATE_PLAYING;	// PULLING CARDS AUTOMATICALLY SETS THE STATE TO PLAYING
-		data_mutex.unlock();
-	}
-	else if (packet->header.type == UNO_MESSAGES::UNO_PLAY_CARD_REQUEST && (backendData->localPlayer.groupMask & ADMIN_GROUP_MASK))
-	{
-		if (game.playerInTurn >= 0 && game.playerInTurn < game.players.size() && packet->header.senderID == game.hands->at(game.playerInTurn).handID)
-		{
-			data_mutex.lock();
-			Uno::PlayCardRequest req;
-			req.ParseFromArray(packet->body.data(), packet->body.size());
-
-			COLOR_ID topCardColorID;
-			CARD_ID topCard = g_objs->stack.GetTop(topCardColorID);
-			if (CardIsPlayable(topCard, (CARD_ID)req.card(), topCardColorID))
-			{
-				played_card_data.playerIdx = game.playerInTurn;
-				played_card_data.card = (CARD_ID)req.card();
-
-				Uno::PlayCard resp;
-				resp.set_playerid(game.players.at(game.playerInTurn).id);
-				resp.set_card(req.card());
-				SetNextStateFromCardID((CARD_ID)req.card());
-				resp.set_nextplayerid(game.players.at(game.playerInTurn).id);
-
-				SendNetworkData(UNO_MESSAGES::UNO_PLAY_CARD_RESPONSE, LISTEN_GROUP_ALL, AdditionalDataFlags::ADDITIONAL_DATA_FLAG_ADMIN, backendData->localPlayer.clientID, resp.SerializeAsString());
-			}
-			else
-			{
-				SyncSinglePlayer(packet->header.senderID);
-			}
-			data_mutex.unlock();
-		}
-	}
-	else if (packet->header.type == UNO_MESSAGES::UNO_PLAY_CARD_RESPONSE && (packet->header.additionalData & AdditionalDataFlags::ADDITIONAL_DATA_FLAG_ADMIN))
-	{
-		Uno::PlayCard resp;
-		resp.ParseFromArray(packet->body.data(), packet->body.size());
-		const uint32_t id = resp.playerid();
-		const uint32_t nextId = resp.nextplayerid();
-		data_mutex.lock();
-		bool curFound = false;
-		bool nextFound = false;
-		played_card_data.playerIdx = -1;
-		for (int i = 0; i < game.players.size(); i++)
-		{
-			if (!curFound && game.players.at(i).id == id)
-			{
-				played_card_data.playerIdx = i;
-				played_card_data.card = (CARD_ID)resp.card();
-				curFound = true;
-			}
-			if (!nextFound && game.players.at(i).id == nextId)
-			{
-				game.playerInTurn = i;
-				nextFound = true;
-			}
-			if (curFound && nextFound)
-				break;
-		}
-		if (id >= game.players.size()) nextFound = true;	// last move
-		if (!curFound || !nextFound) {
-			SendNetworkData((uint32_t)PacketID::SYNC_REQUEST, ADMIN_GROUP_MASK, 0, backendData->localPlayer.clientID, 0, nullptr);
-		}
-		played_card_data.card = (CARD_ID)resp.card();
-		data_mutex.unlock();
-	}
-	else if (packet->header.type == UNO_MESSAGES::UNO_PICK_COLOR_REQUEST & (backendData->localPlayer.groupMask & ADMIN_GROUP_MASK))
-	{
-		if (game.playerInTurn >= 0 && game.playerInTurn < game.players.size() && game.players.at(game.playerInTurn).id == packet->header.senderID)
-		{
-			if (!game.isChoosingColor) SyncSinglePlayer(packet->header.senderID);
-			else
-			{
-				data_mutex.lock();
-				Uno::ChooseColorRequest req;
-				req.ParseFromArray(packet->body.data(), packet->body.size());
-				COLOR_ID colorID = (COLOR_ID)req.colorid();
-				if (colorID != COLOR_INVALID && colorID != COLOR_BLACK)
-				{
-					game.playerInTurn = (game.playerInTurn + 1) % game.players.size();
-
-					Uno::ChooseColor resp;
-					resp.set_colorid(req.colorid());
-					resp.set_nextplayerid(game.players.at(game.playerInTurn).id);
-					resp.set_playerid(packet->header.senderID);
-					SendNetworkData(UNO_MESSAGES::UNO_PICK_COLOR_RESPONSE, LISTEN_GROUP_ALL, ADDITIONAL_DATA_FLAG_ADMIN, backendData->localPlayer.clientID, resp.SerializeAsString());
-				}
-				else
-				{
-					SyncSinglePlayer(packet->header.senderID);
-				}
-				data_mutex.unlock();
-			}
-		}
-	}
-	else if (packet->header.type == UNO_MESSAGES::UNO_PICK_COLOR_RESPONSE && (packet->header.additionalData & AdditionalDataFlags::ADDITIONAL_DATA_FLAG_ADMIN))
-	{
-		data_mutex.lock();
-
-		Uno::ChooseColor cc;
-		cc.ParseFromArray(packet->body.data(), packet->body.size());
-
-		COLOR_ID top = COLOR_INVALID;
-		CARD_ID t = g_objs->stack.GetTop(top);
-
-		g_objs->stack.SetTop(t, (COLOR_ID)cc.colorid());
-		game.isChoosingColor = false;
-		game.playerInTurn = -1;
-		for (int i = 0; i < game.players.size(); i++)
-		{
-			if (game.players.at(i).id == cc.nextplayerid())
-			{
-				game.playerInTurn = cc.nextplayerid();
-				break;
-			}
-		}
-		if(game.playerInTurn == -1) 
-			SendNetworkData((uint32_t)PacketID::SYNC_REQUEST, ADMIN_GROUP_MASK, 0, backendData->localPlayer.clientID, 0, nullptr);
-
-
-		data_mutex.unlock();
-	}
-}
-void UnoPlugin::FetchSyncData(std::string& str) // NOT IN MAIN THREAD
-{
-	while(!g_objs || !g_objs->anims.inputsAllowed) { }
-	data_mutex.lock();
-	Uno::GameState state;
-
-	COLOR_ID topCardColorID = COLOR_INVALID;
-	CARD_ID topCard = g_objs->stack.GetTop(topCardColorID);
-	state.set_topcard((uint32_t)topCard); state.set_topcardcolorid((uint32_t)topCardColorID);
-	if (0 <= game.playerInTurn && game.players.size() < game.playerInTurn)
-	{
-		const std::string& cur = game.players.at(game.playerInTurn).name;
-		state.set_playerinturn(cur);
-	}
-	else
-	{
-		state.set_playerinturn("");
-	}
-	for (int i = 0; i < game.players.size(); i++)
-	{
-		const std::string& name = game.players.at(i).name;
-		const CardHand& hand = *game.players.at(i).hand;
-		const uint32_t id = game.players.at(i).id;
-		Uno::Player* players = state.add_players();
-		players->set_name(name);
-		players->set_id(id);
-		for (const CardInfo& card : hand.cards)
-		{
-			players->add_cardsonhand(card.front);
-		}
-	}
-	str = state.SerializeAsString();
-	data_mutex.unlock();
-}
-void UnoPlugin::HandleAddClient(const ClientData* added)
-{
-	AddPlayer(added);
-}
-void UnoPlugin::HandleRemovedClient(const ClientData* removed)
-{
-	RemovePlayer(removed);
-}
-void UnoPlugin::HandleSync(const std::string& syncData)
-{
-	Uno::GameState state;
-	state.ParseFromString(syncData);
-	game.hands->clear();
-	game.players.clear();
-	const std::string& inTurn = state.playerinturn();
-	game.playerInTurn = -1;
-	g_objs->localPlayerIndex = -1;
-	for (const auto& player : state.players())
-	{
-		bool found = false;
-		const std::string name = player.name();
-		for (const auto& client : backendData->players)
-		{
-			if (client.name == name)
-			{
-				LOG("BEFORE ADD PLAYER\n");
-				int handIdx = AddPlayer(&client);
-				LOG("AFTER ADD PLAYER\n");
-				if (handIdx < game.hands->size() && handIdx >= 0)
-				{
-					CardHand& hand = game.hands->at(handIdx);
-					for (uint32_t card : player.cardsonhand())
-					{
-						hand.Add((CARD_ID)card);
-					}
-
-					if (name == inTurn)
-					{
-						game.playerInTurn = handIdx;
-					}
-
-				}
-				LOG("AFTER ADD CARDS\n");
-				found = true;
-				break;
-			}
-		}
-		if (!found)
-		{
-			if (name == backendData->localPlayer.name)
-			{
-				LOG("BEFORE LOCAL PLAYER\n");
-				int handIdx = AddPlayer(&backendData->localPlayer);
-				LOG("AFTER ADD LOCAL PLAYER\n");
-				if (handIdx < game.hands->size() && handIdx >= 0)
-				{
-					CardHand& hand = game.hands->at(handIdx);
-					for (uint32_t card : player.cardsonhand())
-					{
-						hand.Add((CARD_ID)card);
-					}
-				}
-				LOG("AFTER ADD CARDS LOCAL PLAYER\n");
-				if (name == inTurn)
-				{
-					game.playerInTurn = handIdx;
-				}
-			}
-		}
-	}
-
-	uint32_t topCard = state.topcard();
-	uint32_t topColorID = state.topcardcolorid();
-	if (topCard < CARD_ID::NUM_AVAILABLE_CARDS)
-	{
-		if (topCard != -1) { g_objs->stack.SetTop((CARD_ID)topCard, (COLOR_ID)topColorID); }
-	}
-}
-
-
-
 
 
 
@@ -656,23 +357,6 @@ void UnoPlugin::Init(ApplicationData* data)
 	ReflectiveSurfaceSetTextureData(g_objs->basePlatform, &texs);
 	
 
-	
-	if(backendData->localPlayer.groupMask & ADMIN_GROUP_MASK)
-	{
-		AddPlayer(&this->backendData->localPlayer);
-		game.playerInTurn = 0;
-		for (const auto& p : backendData->players)
-		{
-			int idx = AddPlayer(&p);
-		}
-
-		Base::SyncResponse resp;
-		std::string state;
-		FetchSyncData(state);
-		resp.set_state(state);
-		SendNetworkData((uint32_t)PacketID::FORCE_SYNC, LISTEN_GROUP_ALL, ADDITIONAL_DATA_FLAG_ADMIN, backendData->localPlayer.clientID, resp.SerializeAsString());
-	}
-
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
@@ -685,10 +369,13 @@ void UnoPlugin::Init(ApplicationData* data)
 #endif
 }
 
+
+
 void UnoPlugin::Resize(ApplicationData* data)
 {
 	if(sizeY && sizeX)
 		g_objs->playerCam.SetPerspective(90.0f, (float)this->sizeX / (float)this->sizeY, 0.1f, 300.0f);
+
 	g_objs->playerCam.screenX = sizeX;
 	g_objs->playerCam.screenY = sizeY;
 	GLint defaultFBO;
@@ -718,27 +405,12 @@ void UnoPlugin::Render(ApplicationData* data)
 	ray = g_objs->playerCam.ScreenToWorld(g_objs->p.x, g_objs->p.y);
 
 
-	data_mutex.lock();
 	if (game.state == STATE_PENDING && (backendData->localPlayer.groupMask & ADMIN_GROUP_MASK))
 	{
 		g_objs->cardHandlingTimer += dt;
 		if (g_objs->cardHandlingTimer > 2.0f)
 		{
-			Uno::PullCardResponse resp;
-			for (int i = 0; i < game.players.size(); i++)
-			{
-				auto& p = game.players.at(i);
-				auto* pull = resp.add_pullresponses();
-				pull->set_playerid(p.id);
-				for (int j = 0; j < 10; j++)
-				{
-					pull->add_cards(g_objs->deck.PullCard());
-				}
-			}
-			game.state = STATE_PLAYING;
-			const std::string& pullData = resp.SerializeAsString();
-			PullCardsAction(pullData.data(), pullData.size());
-			SendNetworkData(UNO_MESSAGES::UNO_PULL_CARD_RESPONSE, LISTEN_GROUP_ALL, AdditionalDataFlags::ADDITIONAL_DATA_FLAG_ADMIN, backendData->localPlayer.clientID, pullData);
+			
 		}
 	}
 	else if (game.state == STATE_PLAYING)
@@ -759,10 +431,10 @@ void UnoPlugin::Render(ApplicationData* data)
 		}
 
 	}
-	data_mutex.unlock();
+
+
 
 	BeginScene(g_objs->UnoScene);
-
 	StandardRenderPassData stdData;
 	stdData.skyBox = g_objs->skybox;
 	stdData.shadowMap = 0;

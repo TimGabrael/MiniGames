@@ -98,17 +98,6 @@ public:
 	virtual void TouchUpCallback(int x, int y, int touchID) = 0;
 	virtual void TouchMoveCallback(int x, int y, int dx, int dy, int touchID) = 0;
 
-	
-	
-	// NOT IN MAIN THREAD
-	virtual void NetworkCallback(Packet* packet) = 0;
-	virtual void FetchSyncData(std::string& str) = 0;
-	virtual void HandleSync(const std::string& syncData) = 0;
-
-	// IN MAIN THREAD
-	virtual void HandleAddClient(const ClientData* added) = 0;
-	virtual void HandleRemovedClient(const ClientData* removed) = 0;
-
 	virtual void CleanUp() = 0;
 
 	int sizeX, sizeY;

@@ -10,7 +10,6 @@
 #include "../CustomWidgets/InfoPopup.h"
 #include <future>
 #include "../UtilFuncs.h"
-#include "Network/Messages/join.pb.h"
 #include "Validation.h"
 #include "../util/PluginLoader.h"
 
@@ -127,7 +126,7 @@ MainMenuFrame::MainMenuFrame(QMainWindow* MainWindow) : StateFrame(MainWindow)
 
     auto function = []() {
         MainApplication* app = MainApplication::GetInstance();
-        NetError err = app->socket.Connect(DEBUG_IP, DEBUG_PORT);
+        NetError err = app->socket.Create(DEBUG_IP, DEBUG_PORT);
         app->isConnected = (err == NetError::OK) ? true : false;
         if (!app->isConnected)
         {
@@ -142,26 +141,6 @@ MainMenuFrame::MainMenuFrame(QMainWindow* MainWindow) : StateFrame(MainWindow)
     MainWindow->setCentralWidget(this);
 }
 MainMenuFrame::~MainMenuFrame()
-{
-}
-
-void MainMenuFrame::FetchSyncData(std::string& str)
-{
-}
-
-void MainMenuFrame::HandleAddClient(const ClientData* added)
-{
-}
-
-void MainMenuFrame::HandleRemovedClient(const ClientData* removed)
-{
-}
-
-void MainMenuFrame::HandleNetworkMessage(Packet* packet)
-{
-}
-
-void MainMenuFrame::HandleSync(const std::string& syncData)
 {
 }
 
@@ -213,18 +192,7 @@ void MainMenuFrame::OnJoinClick()
             {
                 QString name = this->nameIn->text();
                 QString server = this->lobbyIn->text();
-                Base::JoinRequest req;
-                req.mutable_info()->mutable_client()->set_name(name.toStdString());
-                req.mutable_info()->mutable_client()->set_listengroup(STANDARD_GROUP_MASK);
-                req.mutable_info()->set_serverid(server.toStdString());
-                const std::vector<PluginClass*>& plugs = GetPlugins();
-                for (int i = 0; i < plugs.size(); i++)
-                {
-                    req.mutable_info()->add_availableplugins(plugs.at(i)->GetPluginInfos().ID);
-                }
-                req.set_id(app->appData.localPlayerID, 16);
-                std::string serializedData = req.SerializeAsString();
-                app->socket.SendData(PacketID::JOIN, STANDARD_GROUP_MASK, 0, 0, serializedData);
+                
             }
         });
     }
@@ -275,19 +243,8 @@ void MainMenuFrame::OnCreateClick()
             QString server = this->lobbyIn->text();
             if (TryConnectToServer())
             {
-                Base::CreateRequest req;
-                req.mutable_info()->mutable_client()->set_name(name.toStdString());
-                req.mutable_info()->mutable_client()->set_listengroup(STANDARD_GROUP_MASK);
-                req.mutable_info()->set_serverid(server.toStdString());
+                
 
-                const std::vector<PluginClass*>& plugs = GetPlugins();
-                for (int i = 0; i < plugs.size(); i++)
-                {
-                    req.mutable_info()->add_availableplugins(plugs.at(i)->GetPluginInfos().ID);
-                }
-
-                std::string serializedData = req.SerializeAsString();
-                app->socket.SendData(PacketID::CREATE, STANDARD_GROUP_MASK, 0, 0, serializedData);
             }
         });
     }

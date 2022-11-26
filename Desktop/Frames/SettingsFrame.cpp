@@ -56,21 +56,6 @@ void SettingsFrame::Create()
 	connect(fullscreen, &QCheckBox::stateChanged, this, &SettingsFrame::OnFullSceen);
 	this->setLayout(vertical_layout);
 }
-void SettingsFrame::FetchSyncData(std::string& str)
-{
-}
-void SettingsFrame::HandleAddClient(const ClientData* added)
-{
-}
-void SettingsFrame::HandleRemovedClient(const ClientData* removed)
-{
-}
-void SettingsFrame::HandleNetworkMessage(Packet* packet)
-{
-}
-void SettingsFrame::HandleSync(const std::string& syncData)
-{
-}
 void SettingsFrame::OnFullSceen()
 {
 	QMainWindow* main = GetMainWindow();

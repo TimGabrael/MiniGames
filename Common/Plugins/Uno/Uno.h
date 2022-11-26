@@ -58,16 +58,6 @@ struct GameStateData
 	bool isClockwise = true;
 };
 
-enum UNO_MESSAGES : uint32_t
-{
-	UNO_PULL_CARD_REQUEST = (uint32_t)PacketID::NUM_PACKETS,
-	UNO_PULL_CARD_RESPONSE,
-	UNO_PLAY_CARD_REQUEST,
-	UNO_PLAY_CARD_RESPONSE,
-	UNO_PICK_COLOR_REQUEST,
-	UNO_PICK_COLOR_RESPONSE,
-};
-
 
 class UnoPlugin : public PluginClass
 {
@@ -84,12 +74,6 @@ public:
 	virtual void TouchDownCallback(int x, int y, int touchID) override;
 	virtual void TouchUpCallback(int x, int y, int touchID) override;
 	virtual void TouchMoveCallback(int x, int y, int dx, int dy, int touchID) override;
-
-	virtual void NetworkCallback(Packet* packet) override;
-	virtual void FetchSyncData(std::string& str) override;
-	virtual void HandleAddClient(const ClientData* added) override;
-	virtual void HandleRemovedClient(const ClientData* removed) override;
-	virtual void HandleSync(const std::string& syncData) override;
 
 	virtual void CleanUp() override;
 

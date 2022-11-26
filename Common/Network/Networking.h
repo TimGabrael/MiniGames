@@ -5,11 +5,13 @@
 #include <mutex>
 #include "Cryptography.h"
 #include "NetworkBase.h"
+#include <functional>
+#include <bitset>
 
-struct ValidationPacket
-{
-	uint8_t PacketData[64];
-};
+
+#define MAX_UDP_PACKET_SIZE 0xFFFF
+#define SOCKADDR_IN_SIZE 16
+#define SERVER_MAX_PLAYERS 0xFF
 
 // if this is changed, KEY_LEN needs to be changed as well !
 #define KEY_BITS_512
@@ -53,102 +55,96 @@ static constexpr KeyGenSharedFunc GenSharedSecret = GenSharedSecretU4096;
 
 
 
-
-class TCPSocket;
-class TCPServerSocket;
-typedef void(*ConnectionFunc)(void* obj, struct Connection* conn);
-typedef void(*ClientPacketCallback)(void* userData, Packet* pack);
-typedef void(*ServerPacketCallback)(void* userData, Connection* conn, Packet* pack);
-typedef void(*ConnectCallback)(void* userData, TCPServerSocket* sock, Connection* conn);
-typedef void(*DisconnectCallback)(void* userData, TCPServerSocket* sock, Connection* removed);
-typedef void(*ClientDisconnectCallback)(void* userData, TCPSocket* sock, Connection* removed);
-
-struct Connection
-{
-	Connection();
-	Connection(uintptr_t sock);
-	Connection(uintptr_t sock, ConnectionFunc socketCallback);
-	Connection(uintptr_t sock, ConnectionFunc socketCallback, void* obj);
-	Connection(uintptr_t sock, ConnectionFunc socketCallback, void* obj, const ukey_t& key);
-	~Connection();
-
-	void Init(uintptr_t sock, ConnectionFunc socketCallback, void* obj, const ukey_t& key);
-
-	void SendData(PacketID id, uint32_t group, uint16_t additionalFlags, uint16_t clientID, size_t size, const void* data);
-	void SendData(PacketID id, uint32_t group, uint16_t additionalFlags, uint16_t clientID, const std::string& str);
-
-	void SetCryptoKey(const ukey_t& k);
-
-	CryptoContext ctx;
-	uintptr_t socket;
-	std::thread listener;
-	Packet storedPacket;
-};
-
-class TCPSocket
+class UDPSocket
 {
 public:
-	TCPSocket();
-	~TCPSocket() { running = false; }
-	NetError Connect(const char* host, const char* port);
-	void Disconnect();
+	UDPSocket();
+	~UDPSocket();
 
-	void SetPacketCallback(ClientPacketCallback cb, void* userData = nullptr);
-	void SetDisconnectCallback(ClientDisconnectCallback cb, void* userData = nullptr);
+	NetError Create(const char* host, uint16_t port);
 
-	void SendData(PacketID id, uint32_t group, uint16_t additionalFlags, uint16_t clientID, size_t size, const void* data);
-	void SendData(PacketID id, uint32_t group, uint16_t additionalFlags, uint16_t clientID, const std::string& str);
+	bool SendData(void* data, int size);
+	
+	// repeats the action until an ack was sent back, is non blocking
+	bool SendImportantData(void* data, int size);
+
+	bool Poll(float dt);
+
+	bool SendAck(uint16_t sequence) const;
+
+	uint16_t GetSequenceNumber() const;
 
 private:
-	void SendDataUnencrypted(PacketID id, uint32_t size, const uint8_t* data);
-	static void SocketListenFunc(void* obj, struct Connection* conn);
+	struct ResendPacketData
+	{
+		char* data = nullptr;
+		int size = 0;
+		float accumulatedTime = 0.0f;
+		uint16_t knownSequenceNumber = 0;
+	};
 	uintptr_t sock;
-	ClientPacketCallback packCb = nullptr;
-	void* userDataPacketCB = nullptr;
-	ClientDisconnectCallback disconnectCB = nullptr;
-	void* userDataDisconnectCB = nullptr;
-	Connection serverConn;
-	ukey_t privateKey;
-	ukey_t publicKey;
-	bool running = true;
+	uint16_t sequenceNumber;
+	uint8_t serverAddr[SOCKADDR_IN_SIZE];
+	char* msgBuffer;
+	std::vector<ResendPacketData> tempStorage;
+	std::vector<PacketFunction> packetHandlers;
+
 };
 
-class TCPServerSocket
+typedef uint16_t ClientID;
+class UDPServerSocket
 {
 public:
-	TCPServerSocket();
-	NetError Create(const char* host, const char* port);
-	NetError AcceptConnection();
+	UDPServerSocket();
+	~UDPServerSocket();
 
-	void SetConnectCallback(ConnectCallback cb, void* userData = nullptr);
-	void SetPacketCallback(ServerPacketCallback cb, void* userData = nullptr);
-	void SetDisconnectCallback(DisconnectCallback cb, void* userData = nullptr);
 
-	void RemoveAll();
+	NetError Create(const char* ipAddr, uint16_t port);
+	bool Poll(float dt);
 
-	void RemoveClient(Connection* conn);
 
-	static void TCPServerListenToClient(void* server, Connection* conn);
+	bool SendAll(void* data, int size);
+	bool Send(void* data, int size, ClientID id);
+
+	bool SendImportantAll(void* data, int size);
+	bool SendImportantData(void* data, int size, ClientID id);
+	
+	bool SendAck(uint16_t sequence, ClientID id);
+
+
 private:
 
+	bool SendAck(uint16_t sequence, const struct sockaddr* client);
 
-	void AddClient(uintptr_t connSocket, const ukey_t& key);
-	void RemoveClient(uintptr_t connSocket);
-	void RemoveClientAtIdx(size_t idx);
+	
 
+	struct ClientData
+	{
+		char name[MAX_NAME_LENGTH + 1];
+		float lastPacketTime = 0.0f;
+		uint16_t knownSequenceNumber = 0;
+		uint8_t addr[SOCKADDR_IN_SIZE] = { 0 };
+		bool isActive = false;
+	};
+	struct ResendPacketData
+	{
+		char* data = nullptr;
+		int size = 0;
+		float accumulatedTime = 0.0f;
+		std::bitset<SERVER_MAX_PLAYERS> finAck = {0};
+		std::bitset<SERVER_MAX_PLAYERS> regAck = {0};
+	};
 
-	ServerPacketCallback packetCallback;
-	void* userDataPacketCB;
-	ConnectCallback connectCallback;
-	void* userDataConnectCB;
-	DisconnectCallback disconnectCallback;
-	void* userDataDisconnectCB;
+	ClientData* GetClient(const struct sockaddr* clientAddr);
+	uint16_t GetClientID(const ClientData* client);
+	int AddClient(const struct sockaddr* clientAddr);
+	
 	uintptr_t sock;
-	std::mutex clientMut;
-	std::vector<Connection*> clients;
-	ukey_t privateKey;
-	ukey_t publicKey;
-	bool running;
+	uint16_t sequenceNumber;
+	uint8_t addr[SOCKADDR_IN_SIZE];
+	std::bitset<SERVER_MAX_PLAYERS> clientsBitset = {0};
+	ClientData clients[SERVER_MAX_PLAYERS];
+	char* msgBuffer;
+	std::vector<ResendPacketData> tempStorage;
 };
 
-std::string GetIPAddress(uintptr_t socket);
