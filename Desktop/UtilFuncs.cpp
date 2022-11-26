@@ -86,6 +86,7 @@ bool TryConnectToServer()
 	
 	NetError err = app->socket.Create(DEBUG_IP, DEBUG_PORT);
 	app->isConnected = (err == NetError::OK) ? true : false;
+	std::cout << "err: " << (uint32_t)err << std::endl;
 	if (!app->isConnected)
 	{
 		QTimer::singleShot(0, main, [main]() {

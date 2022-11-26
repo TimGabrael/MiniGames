@@ -243,7 +243,6 @@ void MainMenuFrame::OnCreateClick()
             QString server = this->lobbyIn->text();
             if (TryConnectToServer())
             {
-                
 
             }
         });

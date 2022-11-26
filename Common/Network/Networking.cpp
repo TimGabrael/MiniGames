@@ -116,10 +116,11 @@ NetError UDPSocket::Create(const char* host, uint16_t port)
 
 	if (sock == INVALID_SOCKET) return NetError::E_INIT;
 	
+	
 	sockaddr_in* addr= (sockaddr_in*)serverAddr;
+	addr->sin_family = AF_INET;
 	addr->sin_addr.S_un.S_addr = inet_addr(host);
 	addr->sin_port = port;
-	if (bind(sock, (sockaddr*)serverAddr, SOCKADDR_IN_SIZE)) return NetError::E_INIT;
 
 	return NetError::OK;
 }
@@ -150,7 +151,9 @@ bool UDPSocket::SendImportantData(void* data, int size)
 
 bool UDPSocket::Poll(float dt)
 {
-	int out = recv(sock, msgBuffer, MAX_UDP_PACKET_SIZE, 0);
+	sockaddr_in server{0};
+	int addrSize = SOCKADDR_IN_SIZE;
+	int out = recvfrom(sock, msgBuffer, MAX_UDP_PACKET_SIZE, 0, (sockaddr*)&server, &addrSize);
 	if (out > MAX_UDP_PACKET_SIZE || out < 0) return false;
 	if (out >= sizeof(BaseHeader))
 	{
@@ -206,6 +209,7 @@ NetError UDPServerSocket::Create(const char* ipAddr, uint16_t port)
 	if (sock == INVALID_SOCKET) return NetError::E_INIT;
 
 	sockaddr_in* paddr = (sockaddr_in*)addr;
+	paddr->sin_family = AF_INET;
 	paddr->sin_addr.S_un.S_addr = inet_addr(ipAddr);
 	paddr->sin_port = port;
 	if (bind(sock, (sockaddr*)addr, SOCKADDR_IN_SIZE)) return NetError::E_INIT;

@@ -854,7 +854,6 @@ void CardHand::PlayCard(const CardStack& stack, CardsInAnimation& anim, int card
 	}
 	else
 	{
-		//LOG("CAN'T PLAY CARD\n");
 	}
 	
 }

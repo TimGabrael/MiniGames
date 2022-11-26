@@ -34,7 +34,7 @@ int main()
 		time = now;
 		if (server.Poll(dt))
 		{
-
+			std::cout << "jest" << std::endl;
 		}
 	}
 
