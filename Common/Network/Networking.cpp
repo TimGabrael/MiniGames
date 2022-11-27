@@ -131,7 +131,7 @@ NetError UDPSocket::Create(const char* host, uint16_t port)
 
 		if (sock == INVALID_SOCKET) return NetError::E_INIT;
 	}
-	
+	SetSocketBlockingEnabled(sock, false);
 	sockaddr_in* addr = (sockaddr_in*)serverAddr;
 	addr->sin_family = AF_INET;
 	addr->sin_addr.S_un.S_addr = inet_addr(host);
@@ -181,7 +181,10 @@ bool UDPSocket::SendImportantData(void* data, int size)
 
 bool UDPSocket::Poll(float dt)
 {
-	sockaddr_in server{0};
+	if (sock == INVALID_SOCKET) return false;
+	sockaddr_in server = *(sockaddr_in*)serverAddr;
+	if (server.sin_port == 0 || server.sin_family == 0) return false;
+
 	int addrSize = SOCKADDR_IN_SIZE;
 	int out = recvfrom(sock, msgBuffer, MAX_UDP_PACKET_SIZE, 0, (sockaddr*)&server, &addrSize);
 	if (out > MAX_UDP_PACKET_SIZE || out < 0) return false;

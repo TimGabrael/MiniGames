@@ -19,7 +19,10 @@ public:
 	QWidget* backgroundWidget = nullptr;
 	MainWindow* mainWindow = nullptr;
 
+	std::thread networkPollThread;
+
 	bool isConnected = false;
+	bool networkThreadShouldJoin = false;
 
 	bool fullscreen;
 
