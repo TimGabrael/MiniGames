@@ -16,7 +16,7 @@ static constexpr int INVALID_SOCKET = ~(0LL);
 typedef int SOCKET;
 #define ARRAYSIZE(arr) (sizeof(arr) / sizeof(arr[0]))
 #endif
-
+#include <fcntl.h>
 #ifndef _WIN32
 static void closesocket(uintptr_t socket) { close(socket); }
 #endif
@@ -66,7 +66,19 @@ static void CleanUp()
 #endif
 }
 
-
+bool SetSocketBlockingEnabled(SOCKET s, bool blocking)
+{
+	if (s == INVALID_SOCKET) return false;
+#ifdef _WIN32
+	unsigned long mode = blocking ? 0 : 1;
+	return (ioctlsocket(s, FIONBIO, &mode) == 0) ? true : false;
+#else
+	int flags = fcntl(s, F_GETFL, 0);
+	if (flags == -1) return false;
+	flags = blocking ? (flags & ~O_NONBLOCK) : (flags | O_NONBLOCK);
+	return (fcntl(fd, F_SETFL, flags) == 0) ? true : false;
+#endif
+}
 
 
 
@@ -97,6 +109,7 @@ static constexpr NetworkingSettings settings{
 
 UDPSocket::UDPSocket()
 {
+	userData = nullptr;
 	sock = INVALID_SOCKET;
 	sequenceNumber = 0;
 	memset(serverAddr, 0, 16);
@@ -111,26 +124,43 @@ UDPSocket::~UDPSocket()
 
 NetError UDPSocket::Create(const char* host, uint16_t port)
 {
-	if (!StartUp()) return NetError::E_INIT;
-	sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	if (sock == INVALID_SOCKET)
+	{
+		if (!StartUp()) return NetError::E_INIT;
+		sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
-	if (sock == INVALID_SOCKET) return NetError::E_INIT;
+		if (sock == INVALID_SOCKET) return NetError::E_INIT;
+	}
 	
-	
-	sockaddr_in* addr= (sockaddr_in*)serverAddr;
+	sockaddr_in* addr = (sockaddr_in*)serverAddr;
 	addr->sin_family = AF_INET;
 	addr->sin_addr.S_un.S_addr = inet_addr(host);
 	addr->sin_port = port;
 
 	return NetError::OK;
 }
+NetError UDPSocket::Connect(const char* host, uint16_t port, const std::string& name)
+{
+	if (name.size() > MAX_NAME_LENGTH) return NetError::E_INIT;
+	NetError err = Create(host, port);
+	if (err != NetError::OK) return err;
+
+	Client::JoinPacket pack{0};
+	pack.packetID = CLIENT_PACKET_JOIN | CLIENT_IMPORTANT_FLAG;
+	pack.sequenceNumber = sequenceNumber;
+	memcpy(pack.name, name.c_str(), name.size());
+	SendImportantData(&pack, sizeof(Client::JoinPacket));
+	return NetError::OK;
+}
 
 bool UDPSocket::SendData(void* data, int size)
 {
-	int numBytesWritten = sendto(sock, (const char*)data, size, 0, (sockaddr*)serverAddr, SOCKADDR_IN_SIZE);
+	sockaddr_in* in = (sockaddr_in*)serverAddr;
+	int numBytesWritten = sendto(sock, (const char*)data, size, 0, (sockaddr*)&serverAddr, SOCKADDR_IN_SIZE);
 	if (numBytesWritten != size)
 	{
-		LOG("[ERROR]: FAILED TO SEND DATA\n");
+		
+		LOG("[ERROR]: FAILED TO SEND DATA %d\n", numBytesWritten);
 		return false;
 	}
 	sequenceNumber++;
@@ -139,10 +169,10 @@ bool UDPSocket::SendData(void* data, int size)
 
 bool UDPSocket::SendImportantData(void* data, int size)
 {
-	char* fullMsg = new char[size];
-	memcpy(fullMsg, data, size);
-	if (SendData(fullMsg, size))
+	if (SendData(data, size))
 	{
+		char* fullMsg = new char[size];
+		memcpy(fullMsg, data, size);
 		tempStorage.push_back({ fullMsg, size, 0.0f, 0 });
 		return true;
 	}
@@ -158,12 +188,56 @@ bool UDPSocket::Poll(float dt)
 	if (out >= sizeof(BaseHeader))
 	{
 		BaseHeader* headerInfo = (BaseHeader*)msgBuffer;
-		if (headerInfo->packetID & CLIENT_IMPORTANT_FLAG)
+		uint16_t id = headerInfo->packetID & ~SERVER_IMPORTANT_FLAG;
+		if (headerInfo->packetID & SERVER_IMPORTANT_FLAG)
 		{
 			SendAck(headerInfo->sequenceNumber);
 		}
+		if (id == SERVER_PACKET_ACK)
+		{
+			if (out == sizeof(BaseHeader))
+			{
+				ReceiveAck(headerInfo->sequenceNumber);
+			}
+		}
+		else if (id == SERVER_PACKET_JOIN && out == sizeof(Server::JoinResponsePacket))
+		{
+			Server::JoinResponsePacket* resp = (Server::JoinResponsePacket*)msgBuffer;
+			if (resp->error != (uint16_t)JOIN_ERROR::JOIN_OK)
+			{
+				LOG("FAILED TO JOIN SERVER: %d\n", resp->error);
+			}
+		}
 	}
 	return true;
+}
+uint16_t UDPSocket::GetSequenceNumber() const
+{
+	return sequenceNumber;
+}
+
+void UDPSocket::SetUserData(void* data)
+{
+	userData = data;
+}
+
+void* UDPSocket::GetUserData()
+{
+	return userData;
+}
+
+void UDPSocket::AddPacketFunction(PacketFunction fun, uint16_t packetID)
+{
+	if (packetHandlers.size() < packetID)
+	{
+		packetHandlers.resize(packetID);
+	}
+	packetHandlers.at(packetID) = fun;
+}
+
+void UDPSocket::RemovePacketFunction(uint16_t packetID)
+{
+	AddPacketFunction(nullptr, packetID);
 }
 
 bool UDPSocket::SendAck(uint16_t sequence) const
@@ -174,11 +248,19 @@ bool UDPSocket::SendAck(uint16_t sequence) const
 	int len = sendto(sock, (const char*)&ack, sizeof(ack), 0, (sockaddr*)serverAddr, SOCKADDR_IN_SIZE);
 	return len == sizeof(BaseHeader);
 }
-
-uint16_t UDPSocket::GetSequenceNumber() const
+void UDPSocket::ReceiveAck(uint16_t sequence)
 {
-	return sequenceNumber;
+	for (int i = 0; i < tempStorage.size(); i++)
+	{
+		if (tempStorage.at(i).knownSequenceNumber == sequence)
+		{
+			delete[] tempStorage.at(i).data;
+			tempStorage.erase(tempStorage.begin() + i);
+			i--;
+		}
+	}
 }
+
 
 
 
@@ -191,6 +273,7 @@ uint16_t UDPSocket::GetSequenceNumber() const
 
 UDPServerSocket::UDPServerSocket()
 {
+	userData = nullptr;
 	sock = INVALID_SOCKET;
 	sequenceNumber = 0;
 	memset(addr, 0, SOCKADDR_IN_SIZE);
@@ -204,10 +287,12 @@ UDPServerSocket::~UDPServerSocket()
 NetError UDPServerSocket::Create(const char* ipAddr, uint16_t port)
 {
 	if (!StartUp()) return NetError::E_INIT;
-	sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-
-	if (sock == INVALID_SOCKET) return NetError::E_INIT;
-
+	if (sock == INVALID_SOCKET)
+	{
+		sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+		if (sock == INVALID_SOCKET) return NetError::E_INIT;
+	}
+	SetSocketBlockingEnabled(sock, false);
 	sockaddr_in* paddr = (sockaddr_in*)addr;
 	paddr->sin_family = AF_INET;
 	paddr->sin_addr.S_un.S_addr = inet_addr(ipAddr);
@@ -218,7 +303,7 @@ NetError UDPServerSocket::Create(const char* ipAddr, uint16_t port)
 }
 
 
-bool UDPServerSocket::SendAll(void* data, int size)
+bool UDPServerSocket::SendDataAll(void* data, int size)
 {
 	bool allSucceeded = true;
 	for (int i = 0; i < SERVER_MAX_PLAYERS; i++)
@@ -232,7 +317,7 @@ bool UDPServerSocket::SendAll(void* data, int size)
 	return allSucceeded;
 }
 
-bool UDPServerSocket::Send(void* data, int size, ClientID id)
+bool UDPServerSocket::SendData(void* data, int size, ClientID id)
 {
 	if (id < SERVER_MAX_PLAYERS && clients[id].isActive)
 	{
@@ -244,7 +329,7 @@ bool UDPServerSocket::Send(void* data, int size, ClientID id)
 
 bool UDPServerSocket::SendImportantAll(void* data, int size)
 {
-	bool sendToAll = SendAll(data, size);
+	bool sendToAll = SendDataAll(data, size);
 	if (sendToAll)
 	{
 		char* dataCopy = new char[size];
@@ -256,7 +341,7 @@ bool UDPServerSocket::SendImportantAll(void* data, int size)
 
 bool UDPServerSocket::SendImportantData(void* data, int size, ClientID id)
 {
-	bool sendSucceeded = Send(data, size, id);
+	bool sendSucceeded = SendData(data, size, id);
 	if (sendSucceeded)
 	{
 		ResendPacketData resendInfo;
@@ -287,10 +372,10 @@ bool UDPServerSocket::Poll(float dt)
 		{
 			if (header->packetID & CLIENT_IMPORTANT_FLAG) SendAck(header->sequenceNumber, (sockaddr*)&clientAddr);
 			
-			if (id == CLIENT_PACKET_JOIN && received == sizeof(ClientJoinPacket))
+			if (id == CLIENT_PACKET_JOIN && received == sizeof(Client::JoinPacket))
 			{
 				Server::JoinResponsePacket responsePacket{ 0 };
-				responsePacket.packetID = SERVER_PACKET_JOIN_RESPONSE;
+				responsePacket.packetID = SERVER_PACKET_JOIN;
 				responsePacket.sequenceNumber = sequenceNumber;
 				responsePacket.id = GetClientID(client);
 				if (responsePacket.id != -1)
@@ -307,18 +392,19 @@ bool UDPServerSocket::Poll(float dt)
 				uint16_t clientID = GetClientID(client);
 				if (clientID != -1)
 				{
-
+					std::cout << "received an acknowledgement\n" << std::endl;
+					ReceiveAck(header->sequenceNumber, clientID);
 				}
 			}
 
 		}
-		else if(received == sizeof(ClientJoinPacket) && (header->packetID & CLIENT_IMPORTANT_FLAG) && id == CLIENT_PACKET_JOIN)
+		else if(received == sizeof(Client::JoinPacket) && (header->packetID & CLIENT_IMPORTANT_FLAG) && id == CLIENT_PACKET_JOIN)
 		{
 			SendAck(header->sequenceNumber, (sockaddr*)&clientAddr);
 			
-			ClientJoinPacket* pack = (ClientJoinPacket*)msgBuffer;
+			Client::JoinPacket* pack = (Client::JoinPacket*)msgBuffer;
 			Server::JoinResponsePacket responsePacket{0};
-			responsePacket.packetID = SERVER_PACKET_JOIN_RESPONSE;
+			responsePacket.packetID = SERVER_PACKET_JOIN;
 			responsePacket.sequenceNumber = sequenceNumber;
 			responsePacket.id = 0;
 			for (int i = 0; i < MAX_NAME_LENGTH; i++)
@@ -345,6 +431,15 @@ bool UDPServerSocket::Poll(float dt)
 				{
 					int id = AddClient((sockaddr*)&clientAddr);
 					if (id == -1) responsePacket.error = (uint16_t)JOIN_ERROR::JOIN_FULL;
+					else
+					{
+						Server::AddClient addClient;
+						addClient.packetID = SERVER_PACKET_ADD_CLIENT | SERVER_IMPORTANT_FLAG;
+						addClient.clientID = id;
+						memcpy(addClient.name, clients[id].name, MAX_NAME_LENGTH);
+						addClient.sequenceNumber = sequenceNumber;
+						SendImportantDataAllExcept(&addClient, sizeof(Server::AddClient), id);
+					}
 					responsePacket.id = id;
 				}
 			}
@@ -372,13 +467,15 @@ bool UDPServerSocket::Poll(float dt)
 	for (int i = 0; i < tempStorage.size(); i++)
 	{
 		ResendPacketData& resend = tempStorage.at(i);
-		if (resend.finAck == resend.regAck)
+		std::bitset<SERVER_MAX_PLAYERS> overlapp(resend.finAck & resend.regAck);
+		if (resend.finAck == overlapp)
 		{
+			delete[] resend.data;
 			tempStorage.erase(tempStorage.begin() + i);
 			i--;
 			continue;
 		}
-		resend.accumulatedTime += dt;
+		resend.accumulatedTime += dt * 100.0f;
 		if (resend.accumulatedTime >= settings.resendDelay)
 		{
 			resend.accumulatedTime = 0.0f;
@@ -386,7 +483,7 @@ bool UDPServerSocket::Poll(float dt)
 			{
 				if (!resend.regAck.test(j) && resend.finAck.test(j))
 				{
-					Send(resend.data, resend.size, j);
+					SendData(resend.data, resend.size, j);
 				}
 			}
 
@@ -396,6 +493,32 @@ bool UDPServerSocket::Poll(float dt)
 	return true;
 }
 
+bool UDPServerSocket::SendDataAllExcept(void* data, int size, ClientID exception)
+{
+	bool allWorked = true;
+	for(int i = 0; i < SERVER_MAX_PLAYERS; i++)
+	{
+		if (i == exception) continue;
+		if (clients[i].isActive)
+		{
+			int sendBytes = sendto(sock, (const char*)data, size, 0, (sockaddr*)clients[i].addr, SOCKADDR_IN_SIZE);
+			if (sendBytes != size) allWorked = false;
+		}
+	}
+	return allWorked;
+}
+bool UDPServerSocket::SendImportantDataAllExcept(void* data, int size, ClientID exception)
+{
+	bool sendToAll = SendDataAllExcept(data, size, exception);
+	if (sendToAll)
+	{
+		char* dataCopy = new char[size];
+		memcpy(dataCopy, data, size);
+		this->tempStorage.push_back({ dataCopy,  size, 0.0f, clientsBitset, {0} });
+		tempStorage.at(tempStorage.size() - 1).finAck.set(exception, false);
+	}
+	return sendToAll;
+}
 bool UDPServerSocket::SendAck(uint16_t sequence, ClientID id)
 {
 	if (clients[id].isActive)
@@ -404,7 +527,26 @@ bool UDPServerSocket::SendAck(uint16_t sequence, ClientID id)
 	}
 	return false;
 }
-
+void UDPServerSocket::SetUserData(void* data)
+{
+	userData = data;
+}
+void* UDPServerSocket::GetUserData()
+{
+	return userData;
+}
+void UDPServerSocket::AddPacketFunction(PacketFunction fun, uint16_t packetID)
+{
+	if (packetHandlers.size() < packetID)
+	{
+		packetHandlers.resize(packetID);
+	}
+	packetHandlers.at(packetID) = fun;
+}
+void UDPServerSocket::RemovePacketFunction(uint16_t packetID)
+{
+	AddPacketFunction(nullptr, packetID);
+}
 bool UDPServerSocket::SendAck(uint16_t sequence, const struct sockaddr* client)
 {
 	BaseHeader ack;
@@ -413,6 +555,21 @@ bool UDPServerSocket::SendAck(uint16_t sequence, const struct sockaddr* client)
 	int len = sendto(sock, (const char*)&ack, sizeof(ack), 0, client, SOCKADDR_IN_SIZE);
 	if (len != sizeof(ack)) return false;
 	return true;
+}
+void UDPServerSocket::ReceiveAck(uint16_t sequence, ClientID id)
+{
+	if (id < SERVER_MAX_PLAYERS)
+	{
+		for (int i = 0; i < tempStorage.size(); i++)
+		{
+			ResendPacketData& resend = tempStorage.at(i);
+			BaseHeader* header = (BaseHeader*)resend.data;
+			if (header->sequenceNumber == sequence)
+			{
+				resend.regAck.set(id);
+			}
+		}
+	}
 }
 
 UDPServerSocket::ClientData* UDPServerSocket::GetClient(const sockaddr* clientAddr)

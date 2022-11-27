@@ -10,7 +10,6 @@
 #include "../CustomWidgets/InfoPopup.h"
 #include <future>
 #include "../UtilFuncs.h"
-#include "Validation.h"
 #include "../util/PluginLoader.h"
 
 MainMenuFrame::MainMenuFrame(QMainWindow* MainWindow) : StateFrame(MainWindow)
@@ -152,7 +151,7 @@ void MainMenuFrame::OnJoinClick()
 
     bool canShow = true;
     std::string errorMsg = "";
-    if (ValidateName(name))
+    if (name.size() > 3 && name.size() < MAX_NAME_LENGTH)
     {
         this->nameIn->setText(name.c_str());
     }
@@ -160,16 +159,6 @@ void MainMenuFrame::OnJoinClick()
     {
         canShow = false;
         errorMsg = "INVALID NAME LENGHT(3-30)";
-    }
-    if (ValidateServerID(server))
-    {
-        this->lobbyIn->setText(server.c_str());
-    }
-    else
-    {
-        if (!errorMsg.empty()) errorMsg += "\n";
-        canShow = false;
-        errorMsg += "INVALID LOBBYID LENGTH(5-30)";
     }
 
     if (!canShow) {
@@ -188,10 +177,10 @@ void MainMenuFrame::OnJoinClick()
         fut = std::async([this]() {
             MainApplication* app = MainApplication::GetInstance();
             MainWindow* main = app->mainWindow;
-            if (TryConnectToServer())
+            QString name = this->nameIn->text();
+            QString server = this->lobbyIn->text();
+            if (TryConnectToServer(name.toStdString()))
             {
-                QString name = this->nameIn->text();
-                QString server = this->lobbyIn->text();
                 
             }
         });
@@ -204,7 +193,7 @@ void MainMenuFrame::OnCreateClick()
     
     bool canShow = true;
     std::string errorMsg = "";
-    if (ValidateName(name))
+    if (ValidatePlayerName(name) == JOIN_ERROR::JOIN_OK)
     {
         this->nameIn->setText(name.c_str());
     }
@@ -212,16 +201,6 @@ void MainMenuFrame::OnCreateClick()
     {
         canShow = false;
         errorMsg = "INVALID NAME LENGHT(3-30)";
-    }
-    if (ValidateServerID(server))
-    {
-        this->lobbyIn->setText(server.c_str());
-    }
-    else
-    {
-        if(!errorMsg.empty()) errorMsg += "\n";
-        canShow = false;
-        errorMsg += "INVALID LOBBYID LENGTH(5-30)";
     }
 
     if (!canShow) {
@@ -241,7 +220,7 @@ void MainMenuFrame::OnCreateClick()
             MainWindow* main = (MainWindow*)GetMainWindow();
             QString name = this->nameIn->text();
             QString server = this->lobbyIn->text();
-            if (TryConnectToServer())
+            if (TryConnectToServer(name.toStdString()))
             {
 
             }

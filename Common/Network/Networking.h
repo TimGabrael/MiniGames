@@ -62,6 +62,7 @@ public:
 	~UDPSocket();
 
 	NetError Create(const char* host, uint16_t port);
+	NetError Connect(const char* host, uint16_t port, const std::string& name);
 
 	bool SendData(void* data, int size);
 	
@@ -70,11 +71,20 @@ public:
 
 	bool Poll(float dt);
 
-	bool SendAck(uint16_t sequence) const;
 
 	uint16_t GetSequenceNumber() const;
 
+	void SetUserData(void* data);
+	void* GetUserData();
+
+	void AddPacketFunction(PacketFunction fun, uint16_t packetID);
+	void RemovePacketFunction(uint16_t packetID);
+
 private:
+	bool SendAck(uint16_t sequence) const;
+
+	void ReceiveAck(uint16_t sequence);
+
 	struct ResendPacketData
 	{
 		char* data = nullptr;
@@ -82,6 +92,7 @@ private:
 		float accumulatedTime = 0.0f;
 		uint16_t knownSequenceNumber = 0;
 	};
+	void* userData;
 	uintptr_t sock;
 	uint16_t sequenceNumber;
 	uint8_t serverAddr[SOCKADDR_IN_SIZE];
@@ -103,19 +114,27 @@ public:
 	bool Poll(float dt);
 
 
-	bool SendAll(void* data, int size);
-	bool Send(void* data, int size, ClientID id);
+	bool SendDataAll(void* data, int size);
+	bool SendData(void* data, int size, ClientID id);
 
 	bool SendImportantAll(void* data, int size);
 	bool SendImportantData(void* data, int size, ClientID id);
 	
 	bool SendAck(uint16_t sequence, ClientID id);
 
+	void SetUserData(void* data);
+	void* GetUserData();
+
+	void AddPacketFunction(PacketFunction fun, uint16_t packetID);
+	void RemovePacketFunction(uint16_t packetID);
 
 private:
 
-	bool SendAck(uint16_t sequence, const struct sockaddr* client);
+	bool SendDataAllExcept(void* data, int size, ClientID exception);
+	bool SendImportantDataAllExcept(void* data, int size, ClientID exception);
 
+	bool SendAck(uint16_t sequence, const struct sockaddr* client);
+	void ReceiveAck(uint16_t sequence, ClientID id);
 	
 
 	struct ClientData
@@ -139,6 +158,7 @@ private:
 	uint16_t GetClientID(const ClientData* client);
 	int AddClient(const struct sockaddr* clientAddr);
 	
+	void* userData;
 	uintptr_t sock;
 	uint16_t sequenceNumber;
 	uint8_t addr[SOCKADDR_IN_SIZE];
@@ -146,5 +166,6 @@ private:
 	ClientData clients[SERVER_MAX_PLAYERS];
 	char* msgBuffer;
 	std::vector<ResendPacketData> tempStorage;
+	std::vector<PacketFunction> packetHandlers;
 };
 

@@ -1,7 +1,7 @@
 #pragma once
 #include <stdint.h>
 #include <vector>
-
+#include <string>
 
 
 // ADMIN/CREATOR OF THE ROOM
@@ -13,7 +13,7 @@
 #define MAX_NAME_LENGTH 30
 
 
-typedef int(__stdcall* PacketFunction)(void* packet);
+typedef int(__stdcall* PacketFunction)(void* socket, void* packet);
 
 enum class NetError
 {
@@ -41,18 +41,18 @@ enum ServerPacketID : uint16_t
 {
 	SERVER_PACKET_ACK = 0,
 	SERVER_PACKET_JOIN = 1,
-	SERVER_PACKET_JOIN_RESPONSE = 2,
-	SERVER_PACKET_SYNC_RESPONSE = 3,	// these need to be seperate as the server can ask the Admin for the current SYNC data
-	SERVER_PACKET_ADD_CLIENT = 4,
-	SERVER_PACKET_REMOVE_CLIENT = 5,
-	SERVER_PACKET_FORCE_SYNC = 6,
-	SERVER_PACKET_CLIENTS = 7,
-	SERVER_PACKET_CLIENT_DISCONNECT = 8,
+	SERVER_PACKET_ADD_CLIENT = 2,
+	SERVER_PACKET_REMOVE_CLIENT = 3,
+	SERVER_PACKET_CLIENTS = 4,
+	SERVER_PACKET_CLIENT_DISCONNECT = 5,
 	// END OF GENERAL MESSAGES
 
 
-	SERVER_VOTE = 9,
-	SERVER_START = 10,
+	SERVER_VOTE = 6,
+	SERVER_START = 7,
+
+
+	SERVER_PACKET_SYNC_RESPONSE = 8,
 
 
 	SERVER_IMPORTANT_FLAG = (1 << 15),
@@ -82,17 +82,17 @@ struct BaseHeader
 	uint16_t sequenceNumber;
 };
 
-struct ClientJoinPacket
-{
-	uint16_t packetID;
-	uint16_t sequenceNumber;
-	char name[MAX_NAME_LENGTH];
-};
+
 
 namespace Client
 {
 
-
+	struct JoinPacket
+	{
+		uint16_t packetID;
+		uint16_t sequenceNumber;
+		char name[MAX_NAME_LENGTH];
+	};
 }
 
 namespace Server
@@ -105,9 +105,18 @@ namespace Server
 		uint16_t error;
 		char name[MAX_NAME_LENGTH];
 	};
+
+	struct AddClient
+	{
+		uint16_t packetID;
+		uint16_t sequenceNumber;
+		uint16_t clientID;
+		char name[MAX_NAME_LENGTH];
+	};
 }
 
 
 
-JOIN_ERROR ValidatePlayerName(char name[MAX_NAME_LENGTH]);
+JOIN_ERROR ValidatePlayerName(const char name[MAX_NAME_LENGTH]);
+JOIN_ERROR ValidatePlayerName(const std::string& name);
 

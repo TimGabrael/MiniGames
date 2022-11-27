@@ -1,7 +1,6 @@
 #include <iostream>
 #include "CommonCollection.h"
 #include "Room.h"
-#include "Validation.h"
 #include <chrono>
 
 
@@ -34,7 +33,6 @@ int main()
 		time = now;
 		if (server.Poll(dt))
 		{
-			std::cout << "jest" << std::endl;
 		}
 	}
 

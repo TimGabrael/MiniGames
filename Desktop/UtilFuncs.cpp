@@ -78,16 +78,15 @@ void SafeAsyncUI(void(*uiFunction)(MainWindow* wnd))
 	}
 }
 
-bool TryConnectToServer()
+bool TryConnectToServer(const std::string& name)
 {
 	MainApplication* app = MainApplication::GetInstance();
+	app->isConnected = false;
 	if (app->isConnected) return true;
 	MainWindow* main = app->mainWindow;
 	
-	NetError err = app->socket.Create(DEBUG_IP, DEBUG_PORT);
-	app->isConnected = (err == NetError::OK) ? true : false;
-	std::cout << "err: " << (uint32_t)err << std::endl;
-	if (!app->isConnected)
+	NetError err = app->socket.Connect(DEBUG_IP, DEBUG_PORT, name);
+	if (err != NetError::OK)
 	{
 		QTimer::singleShot(0, main, [main]() {
 			MainApplication* app = MainApplication::GetInstance();
