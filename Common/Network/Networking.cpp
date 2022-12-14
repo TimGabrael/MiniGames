@@ -130,8 +130,8 @@ NetError UDPSocket::Create(const char* host, uint16_t port)
 		sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
 		if (sock == INVALID_SOCKET) return NetError::E_INIT;
+		SetSocketBlockingEnabled(sock, false);
 	}
-	SetSocketBlockingEnabled(sock, false);
 	sockaddr_in* addr = (sockaddr_in*)serverAddr;
 	addr->sin_family = AF_INET;
 	addr->sin_addr.S_un.S_addr = inet_addr(host);
@@ -203,14 +203,11 @@ bool UDPSocket::Poll(float dt)
 				ReceiveAck(headerInfo->sequenceNumber);
 			}
 		}
-		else if (id == SERVER_PACKET_JOIN && out == sizeof(Server::JoinResponsePacket))
+		else if (id < packetHandlers.size() && packetHandlers.at(id))
 		{
-			Server::JoinResponsePacket* resp = (Server::JoinResponsePacket*)msgBuffer;
-			if (resp->error != (uint16_t)JOIN_ERROR::JOIN_OK)
-			{
-				LOG("FAILED TO JOIN SERVER: %d\n", resp->error);
-			}
+			int msgLen = packetHandlers.at(id)(this, msgBuffer);
 		}
+
 	}
 	return true;
 }
@@ -233,7 +230,7 @@ void UDPSocket::AddPacketFunction(PacketFunction fun, uint16_t packetID)
 {
 	if (packetHandlers.size() < packetID)
 	{
-		packetHandlers.resize(packetID);
+		packetHandlers.resize(packetID + 1);
 	}
 	packetHandlers.at(packetID) = fun;
 }
@@ -395,9 +392,12 @@ bool UDPServerSocket::Poll(float dt)
 				uint16_t clientID = GetClientID(client);
 				if (clientID != -1)
 				{
-					std::cout << "received an acknowledgement\n" << std::endl;
 					ReceiveAck(header->sequenceNumber, clientID);
 				}
+			}
+			else if(id < packetHandlers.size() && packetHandlers.at(id))
+			{
+				int msgLen = packetHandlers.at(id)(this, msgBuffer);
 			}
 
 		}

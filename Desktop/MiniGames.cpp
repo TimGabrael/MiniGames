@@ -72,6 +72,22 @@ void DidRenderCallback(void* userData)
 {
 }
 
+int __stdcall JoinPacketCallback(UDPSocket* sock, Server::JoinResponsePacket* pack)
+{
+    if (pack->error != (uint16_t)JOIN_ERROR::JOIN_OK)
+    {
+        SafeAsyncUI([](MainWindow* wnd) {
+            const QRect& rect = wnd->rect();
+            InfoPopup* popUp = new InfoPopup(wnd, "FAILED TO CONNECT TO SERVER", QPoint(rect.width() / 2, rect.height() - 100), 20, 0xFFFF0000, 3000);
+        });
+        return sizeof(Server::JoinResponsePacket);
+    }
+    MainApplication* app = MainApplication::GetInstance();
+    app->isConnected = true;
+    app->mainWindow->SetState(MAIN_WINDOW_STATE::STATE_LOBBY);
+
+    return sizeof(Server::JoinResponsePacket);
+}
 
 
 
@@ -107,7 +123,11 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     {
         MainApplication* app = MainApplication::GetInstance();
         NetError err = app->socket.Create(DEBUG_IP, DEBUG_PORT);
-        app->isConnected = (err == NetError::OK) ? true : false;
+        app->socket.AddPacketFunction((PacketFunction)JoinPacketCallback, ServerPacketID::SERVER_PACKET_JOIN);
+
+        
+        
+        app->isConnected = false;
     });
 
     LoadAllPlugins();

@@ -13,6 +13,7 @@
 #define MAX_NAME_LENGTH 30
 
 
+// should return the size of the packet
 typedef int(__stdcall* PacketFunction)(void* socket, void* packet);
 
 enum class NetError

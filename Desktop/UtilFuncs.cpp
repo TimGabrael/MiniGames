@@ -81,7 +81,6 @@ void SafeAsyncUI(void(*uiFunction)(MainWindow* wnd))
 bool TryConnectToServer(const std::string& name)
 {
 	MainApplication* app = MainApplication::GetInstance();
-	app->isConnected = false;
 	if (app->isConnected) return true;
 	MainWindow* main = app->mainWindow;
 	
