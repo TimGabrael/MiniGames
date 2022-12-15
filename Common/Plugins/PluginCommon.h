@@ -41,8 +41,8 @@ enum PLATFORM_ID
 struct ClientData
 {
 	std::string name;
-	uint32_t groupMask;
 	uint16_t clientID;
+	bool isAdmin;
 };
 
 struct ApplicationData
@@ -84,6 +84,7 @@ struct PB_MouseData
 class PluginClass
 {
 public:
+	virtual ~PluginClass() {};
 	virtual PLUGIN_INFO GetPluginInfos() = 0;
 	virtual void Init(ApplicationData* data) = 0;	// THE ADMIN WILL ALWAYS INIT BEFORE ANYONE LOADS INTO THE PLUGIN!!!
 	virtual void Resize(ApplicationData* data) = 0;

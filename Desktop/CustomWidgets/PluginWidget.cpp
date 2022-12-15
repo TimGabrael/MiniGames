@@ -54,7 +54,7 @@ void PluginWidget::initializeGL()
 	plugin->Init(&app->appData);
 	isInitialized = true;
 	
-	if (app->appData.localPlayer.groupMask & ADMIN_GROUP_MASK)
+	if (app->appData.localPlayer.isAdmin)
 	{
 
 	}

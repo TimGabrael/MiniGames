@@ -72,8 +72,10 @@ void DidRenderCallback(void* userData)
 {
 }
 
-int __stdcall JoinPacketCallback(UDPSocket* sock, Server::JoinResponsePacket* pack)
+int __stdcall JoinPacketCallback(UDPSocket* sock, Server::JoinResponsePacket* pack, int packetSize)
 {
+    if (sizeof(Server::JoinResponsePacket) != packetSize) return -1;
+
     if (pack->error != (uint16_t)JOIN_ERROR::JOIN_OK)
     {
         SafeAsyncUI([](MainWindow* wnd) {
@@ -85,13 +87,59 @@ int __stdcall JoinPacketCallback(UDPSocket* sock, Server::JoinResponsePacket* pa
     MainApplication* app = MainApplication::GetInstance();
     app->isConnected = true;
     app->mainWindow->SetState(MAIN_WINDOW_STATE::STATE_LOBBY);
+    
 
     return sizeof(Server::JoinResponsePacket);
 }
+int __stdcall AddClientPacketCallback(UDPSocket* sock, Server::AddClient* pack, int packetSize)
+{
+    if (sizeof(Server::AddClient) != packetSize) return -1;
+
+    MainApplication* app = MainApplication::GetInstance();
+    ClientData cl;
+    cl.clientID = pack->clientID;
+    char name[32]{ 0 };
+    memcpy(name, pack->name, MAX_NAME_LENGTH);
+    cl.name = name;
+    cl.isAdmin = pack->isAdmin;
+    app->appData.players.push_back(cl);
+    
+    return sizeof(Server::AddClient);
+}
+int __stdcall RemoveClientPacketCallback(UDPSocket* sock, Server::RemoveClient* pack, int packetSize)
+{
+    if (sizeof(Server::RemoveClient) != packetSize) return -1;
+
+    return sizeof(Server::RemoveClient);
+}
+int __stdcall ClientDataPacketCallback(UDPSocket* sock, Server::Client* pack, int packetSize)
+{
+    if (sizeof(Server::Client) != packetSize) return -1;
+
+    return sizeof(Server::Client);
+}
+int __stdcall DisconnectPacketCallback(UDPSocket* sock, Server::Disconnect* pack, int packetSize)
+{
+    if (sizeof(Server::Disconnect) != packetSize) return -1;
+
+    return sizeof(Server::Disconnect);
+}
+int __stdcall StartPluginCallback(UDPSocket* sock, Server::StartPlugin* pack, int packetSize)
+{
+    if (sizeof(Server::StartPlugin) != packetSize) return -1;
+
+    return sizeof(Server::StartPlugin);
+}
+int __stdcall VoteCallback(UDPSocket* sock, Server::VotePacket* pack, int packetSize)
+{
+    if (sizeof(Server::VotePacket) != packetSize) return -1;
 
 
 
-static std::future<void> asyncConnectFunc;
+    return sizeof(Server::VotePacket);
+}
+
+
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
 {
 #ifdef _WIN32
@@ -119,16 +167,15 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
 
     app->isConnected = false;
 
-    asyncConnectFunc = std::async([]()
-    {
-        MainApplication* app = MainApplication::GetInstance();
-        NetError err = app->socket.Create(DEBUG_IP, DEBUG_PORT);
-        app->socket.AddPacketFunction((PacketFunction)JoinPacketCallback, ServerPacketID::SERVER_PACKET_JOIN);
+    NetError err = app->socket.Create(DEBUG_IP, DEBUG_PORT);
+    app->socket.AddPacketFunction((PacketFunction)JoinPacketCallback, ServerPacketID::SERVER_PACKET_JOIN);
+    app->socket.AddPacketFunction((PacketFunction)AddClientPacketCallback, ServerPacketID::SERVER_PACKET_ADD_CLIENT);
+    app->socket.AddPacketFunction((PacketFunction)RemoveClientPacketCallback, ServerPacketID::SERVER_PACKET_REMOVE_CLIENT);
+    app->socket.AddPacketFunction((PacketFunction)ClientDataPacketCallback, ServerPacketID::SERVER_PACKET_CLIENTS);
+    app->socket.AddPacketFunction((PacketFunction)DisconnectPacketCallback, ServerPacketID::SERVER_PACKET_CLIENT_DISCONNECT);
+    app->socket.AddPacketFunction((PacketFunction)StartPluginCallback, Server::LobbyPacketID::SERVER_START_PLUGIN);
+    app->socket.AddPacketFunction((PacketFunction)VoteCallback, Server::LobbyPacketID::SERVER_VOTE_DATA);
 
-        
-        
-        app->isConnected = false;
-    });
 
     LoadAllPlugins();
 
@@ -228,9 +275,9 @@ int main(int argc, char* argv[]) {
 #else
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd){
 
-    FILE* f = NULL;
-    AllocConsole();
-    freopen_s(&f, "CONOUT$", "w", stdout);
+    //FILE* f = NULL;
+    //AllocConsole();
+    //freopen_s(&f, "CONOUT$", "w", stdout);
 
     int argc = 0;
     char* argv[1] = { 0 };

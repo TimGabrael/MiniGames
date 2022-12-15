@@ -205,10 +205,22 @@ bool UDPSocket::Poll(float dt)
 		}
 		else if (id < packetHandlers.size() && packetHandlers.at(id))
 		{
-			int msgLen = packetHandlers.at(id)(this, msgBuffer);
+			int msgLen = packetHandlers.at(id)(this, msgBuffer, out);
 		}
 
 	}
+
+	for (int i = 0; i < tempStorage.size(); i++)
+	{
+		ResendPacketData& resend = tempStorage.at(i);
+		resend.accumulatedTime += dt * 100.0f;
+		if (resend.accumulatedTime >= settings.resendDelay)
+		{
+			resend.accumulatedTime = 0.0f;
+			SendData(resend.data, resend.size);
+		}
+	}
+
 	return true;
 }
 uint16_t UDPSocket::GetSequenceNumber() const
@@ -228,7 +240,7 @@ void* UDPSocket::GetUserData()
 
 void UDPSocket::AddPacketFunction(PacketFunction fun, uint16_t packetID)
 {
-	if (packetHandlers.size() < packetID)
+	if (packetHandlers.size() <= packetID)
 	{
 		packetHandlers.resize(packetID + 1);
 	}
@@ -370,6 +382,8 @@ bool UDPServerSocket::Poll(float dt)
 		uint16_t id = header->packetID & ~(CLIENT_IMPORTANT_FLAG);
 		if (client)
 		{
+			client->lastPacketTime = 0.0f;
+			client->knownSequenceNumber = header->sequenceNumber;
 			if (header->packetID & CLIENT_IMPORTANT_FLAG) SendAck(header->sequenceNumber, (sockaddr*)&clientAddr);
 			
 			if (id == CLIENT_PACKET_JOIN && received == sizeof(Client::JoinPacket))
@@ -395,9 +409,13 @@ bool UDPServerSocket::Poll(float dt)
 					ReceiveAck(header->sequenceNumber, clientID);
 				}
 			}
+			else if (id == CLIENT_PACKET_DISCONNECT)
+			{
+				RemoveClient(client);
+			}
 			else if(id < packetHandlers.size() && packetHandlers.at(id))
 			{
-				int msgLen = packetHandlers.at(id)(this, msgBuffer);
+				int msgLen = packetHandlers.at(id)(this, msgBuffer, received);
 			}
 
 		}
@@ -612,7 +630,16 @@ int UDPServerSocket::AddClient(const struct sockaddr* clientAddr)
 	}
 	return -1;
 }
-
+void UDPServerSocket::RemoveClient(ClientData* client)
+{
+	if (client->isActive)
+	{
+		client->isActive = false;
+		memset(client, 0, SOCKADDR_IN_SIZE);
+		client->knownSequenceNumber = 0;
+		client->lastPacketTime = 0.0f;
+	}
+}
 
 
 

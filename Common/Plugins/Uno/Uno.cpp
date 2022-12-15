@@ -405,13 +405,9 @@ void UnoPlugin::Render(ApplicationData* data)
 	ray = g_objs->playerCam.ScreenToWorld(g_objs->p.x, g_objs->p.y);
 
 
-	if (game.state == STATE_PENDING && (backendData->localPlayer.groupMask & ADMIN_GROUP_MASK))
+	if (game.state == STATE_PENDING)
 	{
-		g_objs->cardHandlingTimer += dt;
-		if (g_objs->cardHandlingTimer > 2.0f)
-		{
-			
-		}
+		
 	}
 	else if (game.state == STATE_PLAYING)
 	{

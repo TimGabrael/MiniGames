@@ -288,7 +288,7 @@ public:
 	void AdminStart()
 	{
 		MainApplication* app = MainApplication::GetInstance();
-		if (app->appData.localPlayer.groupMask & ADMIN_GROUP_MASK)
+		if (app->appData.localPlayer.isAdmin)
 		{
 			
 
@@ -451,7 +451,7 @@ LobbyFrame::LobbyFrame(QMainWindow* parent) : StateFrame(parent)
 				
 				QLabel* lab = new QLabel(data.localPlayer.name.c_str(), this);
 				vertical_layout1->addWidget(lab);
-				if(data.localPlayer.groupMask & ADMIN_GROUP_MASK) lab->setPalette(QPalette(0xFFFF00, 0xFFFF00, 0xFFFF00, 0xFFFF00, 0xFFFF00, 0xFFFF00, 0xFFFF00));
+				if(data.localPlayer.isAdmin) lab->setPalette(QPalette(0xFFFF00, 0xFFFF00, 0xFFFF00, 0xFFFF00, 0xFFFF00, 0xFFFF00, 0xFFFF00));
 				else lab->setPalette(QPalette(0x00FF00, 0x00FF00, 0x00FF00, 0x00FF00, 0x00FF00, 0x00FF00, 0x00FF00));
 
 				for (int i = 0; i < data.players.size(); i++)
@@ -459,7 +459,7 @@ LobbyFrame::LobbyFrame(QMainWindow* parent) : StateFrame(parent)
 					auto& p = data.players.at(i);
 					QLabel* lab = new QLabel(p.name.c_str(), this);
 					vertical_layout1->addWidget(lab);
-					if (p.groupMask & ADMIN_GROUP_MASK) lab->setPalette(QPalette(0xffd700, 0xffd700, 0xffd700, 0xffd700, 0xffd700, 0xffd700, 0xffd700));
+					if (p.isAdmin) lab->setPalette(QPalette(0xffd700, 0xffd700, 0xffd700, 0xffd700, 0xffd700, 0xffd700, 0xffd700));
 				}
 				vertical_layout1->addStretch(1);
 				playerScrollContent->setLayout(vertical_layout1);

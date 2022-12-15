@@ -14,7 +14,7 @@
 
 
 // should return the size of the packet
-typedef int(__stdcall* PacketFunction)(void* socket, void* packet);
+typedef int(__stdcall* PacketFunction)(void* socket, void* packet, int packetSize);
 
 enum class NetError
 {
@@ -46,14 +46,9 @@ enum ServerPacketID : uint16_t
 	SERVER_PACKET_REMOVE_CLIENT = 3,
 	SERVER_PACKET_CLIENTS = 4,
 	SERVER_PACKET_CLIENT_DISCONNECT = 5,
-	// END OF GENERAL MESSAGES
-
-
-	SERVER_VOTE = 6,
-	SERVER_START = 7,
-
-
-	SERVER_PACKET_SYNC_RESPONSE = 8,
+	SERVER_PACKET_SYNC = 6,
+	
+	NUM_BASE_SERVER_PACKETS = SERVER_PACKET_SYNC + 1,
 
 
 	SERVER_IMPORTANT_FLAG = (1 << 15),
@@ -64,14 +59,9 @@ enum ClientPacketID : uint16_t
 	CLIENT_PACKET_ACK = 0,
 	CLIENT_PACKET_PING = 1,
 	CLIENT_PACKET_JOIN = 2,
-	CLIENT_PACKET_SYNC_REQUEST = 3,
-	CLIENT_PACKET_DISCONNECT = 4,
-	// END OF GENERAL MESSAGES
+	CLIENT_PACKET_DISCONNECT = 3,
 
-
-	CLIENT_VOTE = 5,
-	CLIENT_START = 6,
-
+	NUM_BASE_CLIENT_PACKETS = CLIENT_PACKET_DISCONNECT + 1,
 
 	CLIENT_IMPORTANT_FLAG = (1 << 15),
 };
@@ -87,6 +77,11 @@ struct BaseHeader
 
 namespace Client
 {
+	enum LobbyPacketID
+	{
+		CLIENT_VOTE = NUM_BASE_CLIENT_PACKETS,
+		Client_START,
+	};
 
 	struct JoinPacket
 	{
@@ -94,10 +89,30 @@ namespace Client
 		uint16_t sequenceNumber;
 		char name[MAX_NAME_LENGTH];
 	};
+
+	struct VotePacket
+	{
+		uint16_t packetID;
+		uint16_t sequenceNumber;
+		uint16_t voteID;
+	};
+
+	struct VoteStartPacket
+	{
+		uint16_t packetID;
+		uint16_t sequenceNumber;
+		float timer;
+	};
+
 }
 
 namespace Server
 {
+	enum LobbyPacketID
+	{
+		SERVER_START_PLUGIN = NUM_BASE_SERVER_PACKETS,
+		SERVER_VOTE_DATA,
+	};
 	struct JoinResponsePacket
 	{
 		uint16_t packetID;
@@ -105,6 +120,7 @@ namespace Server
 		uint16_t id;
 		uint16_t error;
 		char name[MAX_NAME_LENGTH];
+		bool isAdmin;
 	};
 
 	struct AddClient
@@ -113,7 +129,42 @@ namespace Server
 		uint16_t sequenceNumber;
 		uint16_t clientID;
 		char name[MAX_NAME_LENGTH];
+		bool isAdmin;
 	};
+	struct RemoveClient
+	{
+		uint16_t packetID;
+		uint16_t sequenceNumber;
+		uint16_t clientID;
+	};
+	struct Client
+	{
+		uint16_t packetID;
+		uint16_t sequenceNumber;
+		uint16_t clientID;
+		char name[MAX_NAME_LENGTH];
+		bool isAdmin;
+	};
+	struct Disconnect
+	{
+		uint16_t packetID;
+		uint16_t sequenceNumber;
+		uint16_t reason;
+	};
+	struct StartPlugin
+	{
+		uint16_t packetID;
+		uint16_t sequenceNumber;
+		char plugin[20];
+	};
+	struct VotePacket
+	{
+		uint16_t packetID;
+		uint16_t sequenceNumber;
+		uint16_t voteID;
+		uint16_t voteCount;
+	};
+
 }
 
 

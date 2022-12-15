@@ -128,6 +128,16 @@ public:
 	void AddPacketFunction(PacketFunction fun, uint16_t packetID);
 	void RemovePacketFunction(uint16_t packetID);
 
+	struct ClientData
+	{
+		char name[MAX_NAME_LENGTH + 1];
+		float lastPacketTime = 0.0f;
+		uint16_t knownSequenceNumber = 0;
+		uint8_t addr[SOCKADDR_IN_SIZE] = { 0 };
+		bool isActive = false;
+	};
+	ClientData clients[SERVER_MAX_PLAYERS];
+	static constexpr size_t sz = sizeof(clients);
 private:
 
 	bool SendDataAllExcept(void* data, int size, ClientID exception);
@@ -137,14 +147,7 @@ private:
 	void ReceiveAck(uint16_t sequence, ClientID id);
 	
 
-	struct ClientData
-	{
-		char name[MAX_NAME_LENGTH + 1];
-		float lastPacketTime = 0.0f;
-		uint16_t knownSequenceNumber = 0;
-		uint8_t addr[SOCKADDR_IN_SIZE] = { 0 };
-		bool isActive = false;
-	};
+
 	struct ResendPacketData
 	{
 		char* data = nullptr;
@@ -157,13 +160,13 @@ private:
 	ClientData* GetClient(const struct sockaddr* clientAddr);
 	uint16_t GetClientID(const ClientData* client);
 	int AddClient(const struct sockaddr* clientAddr);
+	void RemoveClient(ClientData* client);
 	
 	void* userData;
 	uintptr_t sock;
 	uint16_t sequenceNumber;
 	uint8_t addr[SOCKADDR_IN_SIZE];
 	std::bitset<SERVER_MAX_PLAYERS> clientsBitset = {0};
-	ClientData clients[SERVER_MAX_PLAYERS];
 	char* msgBuffer;
 	std::vector<ResendPacketData> tempStorage;
 	std::vector<PacketFunction> packetHandlers;

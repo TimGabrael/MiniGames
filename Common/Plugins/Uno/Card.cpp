@@ -836,21 +836,21 @@ void CardHand::PlayCard(const CardStack& stack, CardsInAnimation& anim, int card
 		SetNextStateFromCardID(cards.at(cardIdx).front);
 		auto& c = cards.at(cardIdx);
 		CARD_ID card = c.front;
-		if (instance->backendData->localPlayer.groupMask & ADMIN_GROUP_MASK)
-		{
-			anim.AddAnim(stack, c, handID, CARD_ANIMATIONS::ANIM_PLAY_CARD);
-
-			if (c.front == CARD_ID::CARD_ID_ADD_4 || c.front == CARD_ID::CARD_ID_CHOOSE_COLOR)
-			{
-				this->choosingCardColor = true;
-			}
-			cards.erase(cards.begin() + cardIdx);
-			
-		}
-		else
-		{
-
-		}
+		//if (instance->backendData->localPlayer.groupMask & ADMIN_GROUP_MASK)
+		//{
+		//	anim.AddAnim(stack, c, handID, CARD_ANIMATIONS::ANIM_PLAY_CARD);
+		//
+		//	if (c.front == CARD_ID::CARD_ID_ADD_4 || c.front == CARD_ID::CARD_ID_CHOOSE_COLOR)
+		//	{
+		//		this->choosingCardColor = true;
+		//	}
+		//	cards.erase(cards.begin() + cardIdx);
+		//	
+		//}
+		//else
+		//{
+		//
+		//}
 	}
 	else
 	{
@@ -860,12 +860,12 @@ void CardHand::PlayCard(const CardStack& stack, CardsInAnimation& anim, int card
 void CardHand::FetchCard(const Camera& cam, const CardStack& stack, CardDeck& deck, CardsInAnimation& anim)
 {
 	UnoPlugin* instance = GetInstance();
-	if (instance->backendData->localPlayer.groupMask & ADMIN_GROUP_MASK)
-	{
-		CARD_ID card = instance->g_objs->deck.PullCard();
-		int idx = AddTemp(cam, card);
-		anim.AddAnim(stack, cards.at(idx), handID, CARD_ANIMATIONS::ANIM_FETCH_CARD);
-	}
+	//if (instance->backendData->localPlayer.groupMask & ADMIN_GROUP_MASK)
+	//{
+	//	CARD_ID card = instance->g_objs->deck.PullCard();
+	//	int idx = AddTemp(cam, card);
+	//	anim.AddAnim(stack, cards.at(idx), handID, CARD_ANIMATIONS::ANIM_FETCH_CARD);
+	//}
 }
 void CardHand::Update(CardStack& stack, CardsInAnimation& anim, ColorPicker& picker, const Camera& cam, const glm::vec3& mouseRay, const Pointer& p, bool allowInput)
 {
