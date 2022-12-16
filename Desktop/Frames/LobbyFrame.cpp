@@ -132,7 +132,6 @@ private:
 			MainApplication* app = MainApplication::GetInstance();
 
 
-
 			for (auto& v : LobbyFrame::data.votes)
 			{
 				if (v.username == app->appData.localPlayer.name) {
@@ -142,7 +141,21 @@ private:
 			}
 			LobbyFrame::data.votes.push_back({ plugID, app->appData.localPlayer.name });
 
-			//GetLobbyFrame()->StartPlugin(0);
+			for (auto& pl : app->serverPlugins)
+			{
+				std::string str(pl.pluginID, 19);
+				if (str == plugID)
+				{
+					Client::VotePacket vote;
+					vote.packetID = Client::CLIENT_VOTE;
+					vote.voteID = pl.pluginSessionID;
+					vote.sequenceNumber = app->socket.GetSequenceNumber();
+					app->socket.SendImportantData(&vote, sizeof(Client::VotePacket));
+					break;
+				}
+			}
+
+
 		}
 	}
 	virtual void mouseDoubleClickEvent(QMouseEvent* e) override
@@ -163,13 +176,21 @@ class ContentWidget : public QScrollArea
 public:
 	ContentWidget(QWidget* parent) : QScrollArea(parent)
 	{
+		contentArea = nullptr;
+		Build();
+	}
+
+	void Build()
+	{
+		if (contentArea) delete contentArea;
+		contentArea = nullptr;
 		setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 		setMinimumSize(100, 100);
 		this->setWidgetResizable(true);
 		setVerticalScrollBar(new CustomScrollBar(this));
 
-		//setPalette(QPalette(0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF));
 		contentArea = new QWidget(this);
+		const std::vector<Server::PluginData>& serverPlugins = MainApplication::GetInstance()->serverPlugins;
 		QVBoxLayout* vertical_layout1 = new QVBoxLayout(this);
 		{
 			vertical_layout1->setSpacing(30);
@@ -182,15 +203,18 @@ public:
 				for (int i = 0; i < plugs.size(); i++)
 				{
 					PLUGIN_INFO info = plugs.at(i)->GetPluginInfos();
-					LOG("RESOURCE: %s %s\n", info.previewResource, info.ID);
-					
-					GameInfo* gInf = new GameInfo(this, info.previewResource, info.ID);
-					contentList.push_back({gInf, info.ID});
-					vertical_layout1->addWidget(gInf);
+					for (int j = 0; j < serverPlugins.size(); j++)
+					{
+						if (memcmp(info.ID, serverPlugins.at(j).pluginID, 19) == 0)
+						{
+							GameInfo* gInf = new GameInfo(this, info.previewResource, info.ID);
+							contentList.push_back({ gInf, info.ID });
+							vertical_layout1->addWidget(gInf);
+							break;
+						}
+					}
 				}
 			}
-			//GameInfo* unoLabel = new GameInfo(this, "Assets/Uno.png");
-			//vertical_layout1->addWidget(unoLabel);
 
 		}
 		contentArea->setLayout(vertical_layout1);
@@ -510,7 +534,10 @@ void LobbyFrame::StartPlugin()
 		main->SetState(MAIN_WINDOW_STATE::STATE_PLUGIN);
 	}
 }
-
+void LobbyFrame::Rebuild()
+{
+	this->gamesContent->Build();
+}
 
 
 

@@ -23,6 +23,7 @@ public:
 
 	void StartPlugin();
 
+	void Rebuild();
 
 	static VoteData data;
 	std::string pluginCache;

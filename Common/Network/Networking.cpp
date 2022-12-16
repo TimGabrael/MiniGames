@@ -238,7 +238,7 @@ void* UDPSocket::GetUserData()
 	return userData;
 }
 
-void UDPSocket::AddPacketFunction(PacketFunction fun, uint16_t packetID)
+void UDPSocket::AddPacketFunction(ClientPacketFunction fun, uint16_t packetID)
 {
 	if (packetHandlers.size() <= packetID)
 	{
@@ -291,6 +291,8 @@ UDPServerSocket::UDPServerSocket()
 	memset(addr, 0, SOCKADDR_IN_SIZE);
 	msgBuffer = new char[MAX_UDP_PACKET_SIZE];
 	memset(msgBuffer, 0, MAX_UDP_PACKET_SIZE);
+	joinCb = nullptr;
+	disconnectCb = nullptr;
 }
 UDPServerSocket::~UDPServerSocket()
 {
@@ -323,6 +325,7 @@ bool UDPServerSocket::SendDataAll(void* data, int size)
 		if (clients[i].isActive)
 		{
 			int sendBytes = sendto(sock, (const char*)data, size, 0, (sockaddr*)clients[i].addr, SOCKADDR_IN_SIZE);
+			sequenceNumber++;
 			if (sendBytes != size) allSucceeded = false;
 		}
 	}
@@ -334,6 +337,17 @@ bool UDPServerSocket::SendData(void* data, int size, ClientID id)
 	if (id < SERVER_MAX_PLAYERS && clients[id].isActive)
 	{
 		int sendBytes = sendto(sock, (const char*)data, size, 0, (sockaddr*)clients[id].addr, SOCKADDR_IN_SIZE);
+		sequenceNumber++;
+		return sendBytes == size;
+	}
+	return true;
+}
+bool UDPServerSocket::SendData(void* data, int size, ClientData* client)
+{
+	if (client->isActive)
+	{
+		int sendBytes = sendto(sock, (const char*)data, size, 0, (sockaddr*)client->addr, SOCKADDR_IN_SIZE);
+		sequenceNumber++;
 		return sendBytes == size;
 	}
 	return true;
@@ -360,6 +374,22 @@ bool UDPServerSocket::SendImportantData(void* data, int size, ClientID id)
 		resendInfo.data = new char[size];
 		resendInfo.size = size;
 		memcpy(resendInfo.data, data, size);
+		resendInfo.finAck.set(id);
+		tempStorage.push_back(resendInfo);
+	}
+	return sendSucceeded;
+}
+
+bool UDPServerSocket::SendImportantData(void* data, int size, ClientData* client)
+{
+	bool sendSucceeded = SendData(data, size, client);
+	if (sendSucceeded)
+	{
+		ResendPacketData resendInfo;
+		resendInfo.data = new char[size];
+		resendInfo.size = size;
+		memcpy(resendInfo.data, data, size);
+		uint16_t id = GetClientID(client);
 		resendInfo.finAck.set(id);
 		tempStorage.push_back(resendInfo);
 	}
@@ -415,7 +445,7 @@ bool UDPServerSocket::Poll(float dt)
 			}
 			else if(id < packetHandlers.size() && packetHandlers.at(id))
 			{
-				int msgLen = packetHandlers.at(id)(this, msgBuffer, received);
+				int msgLen = packetHandlers.at(id)(this, client, msgBuffer, received);
 			}
 
 		}
@@ -556,17 +586,25 @@ void* UDPServerSocket::GetUserData()
 {
 	return userData;
 }
-void UDPServerSocket::AddPacketFunction(PacketFunction fun, uint16_t packetID)
+void UDPServerSocket::AddPacketFunction(ServerPacketFunction fun, uint16_t packetID)
 {
 	if (packetHandlers.size() < packetID)
 	{
-		packetHandlers.resize(packetID);
+		packetHandlers.resize(packetID + 1);
 	}
 	packetHandlers.at(packetID) = fun;
 }
 void UDPServerSocket::RemovePacketFunction(uint16_t packetID)
 {
 	AddPacketFunction(nullptr, packetID);
+}
+void UDPServerSocket::SetJoinCallback(JoinCallbackFunction fun)
+{
+	joinCb = fun;
+}
+void UDPServerSocket::SetDisconnectCallback(DisconnectCallbackFunction fun)
+{
+	disconnectCb = fun;
 }
 bool UDPServerSocket::SendAck(uint16_t sequence, const struct sockaddr* client)
 {
@@ -625,6 +663,15 @@ int UDPServerSocket::AddClient(const struct sockaddr* clientAddr)
 			memcpy(clients[i].addr, clientAddr, SOCKADDR_IN_SIZE);
 			clients[i].knownSequenceNumber = 0;
 			clients[i].lastPacketTime = 0.0f;
+
+			if (joinCb && !joinCb(this, &clients[i])) {
+				clients[i].isActive = false;
+				memset(clients[i].addr, 0, SOCKADDR_IN_SIZE);
+				clients[i].knownSequenceNumber = 0;
+				clients[i].lastPacketTime = 0.0f;
+				return -2;
+			}
+			
 			return i;
 		}
 	}
@@ -634,6 +681,7 @@ void UDPServerSocket::RemoveClient(ClientData* client)
 {
 	if (client->isActive)
 	{
+		if (disconnectCb) disconnectCb(this, client);
 		client->isActive = false;
 		memset(client, 0, SOCKADDR_IN_SIZE);
 		client->knownSequenceNumber = 0;

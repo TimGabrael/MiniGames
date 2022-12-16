@@ -134,9 +134,67 @@ int __stdcall VoteCallback(UDPSocket* sock, Server::VotePacket* pack, int packet
 {
     if (sizeof(Server::VotePacket) != packetSize) return -1;
 
+    const auto& p = MainApplication::GetInstance()->appData.players;
+    const auto& pls = MainApplication::GetInstance()->serverPlugins;
+    const ClientData* client = nullptr;
+    std::string pluginID;
+    for (int i = 0; i < p.size(); i++)
+    {
+        if (p.at(i).clientID == pack->clientID)
+        {
+            client = &p.at(i);
+            break;
+        }
+    }
+    for (int i = 0; i < pls.size(); i++)
+    {
+        if (pls.at(i).pluginSessionID == pack->votedPluginID)
+        {
+            pluginID = std::string(pls.at(i).pluginID, 19);
+            break;
+        }
+    }
+
+    bool changed = false;
+    for (int i = 0; i < LobbyFrame::data.votes.size(); i++)
+    {
+        if (LobbyFrame::data.votes.at(i).username == client->name)
+        {
+            if (LobbyFrame::data.votes.at(i).pluginID != pluginID)
+            {
+                LobbyFrame::data.votes.at(i).pluginID = pluginID;
+                changed = true;
+            }
+        }
+    }
+    if (changed)
+    {
+        SafeAsyncUI([](MainWindow* wnd) {
+            auto& children = wnd->children();
+            if (wnd->GetState() == MAIN_WINDOW_STATE::STATE_LOBBY)
+            {
+                for (auto& c : children)
+                {
+                    LobbyFrame* lobby = (LobbyFrame*)c;
+                    lobby->Rebuild();
+                    break;
+                }
+            }
+        });
+        
+    }
 
 
     return sizeof(Server::VotePacket);
+}
+int __stdcall AvailablePluginCallback(UDPSocket* sock, Server::PluginData* pack, int packetSize)
+{
+    if (sizeof(Server::PluginData) != packetSize) return -1;
+
+    MainApplication::GetInstance()->serverPlugins.push_back(*pack);
+
+
+    return sizeof(Server::PluginData);
 }
 
 
@@ -168,13 +226,14 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     app->isConnected = false;
 
     NetError err = app->socket.Create(DEBUG_IP, DEBUG_PORT);
-    app->socket.AddPacketFunction((PacketFunction)JoinPacketCallback, ServerPacketID::SERVER_PACKET_JOIN);
-    app->socket.AddPacketFunction((PacketFunction)AddClientPacketCallback, ServerPacketID::SERVER_PACKET_ADD_CLIENT);
-    app->socket.AddPacketFunction((PacketFunction)RemoveClientPacketCallback, ServerPacketID::SERVER_PACKET_REMOVE_CLIENT);
-    app->socket.AddPacketFunction((PacketFunction)ClientDataPacketCallback, ServerPacketID::SERVER_PACKET_CLIENTS);
-    app->socket.AddPacketFunction((PacketFunction)DisconnectPacketCallback, ServerPacketID::SERVER_PACKET_CLIENT_DISCONNECT);
-    app->socket.AddPacketFunction((PacketFunction)StartPluginCallback, Server::LobbyPacketID::SERVER_START_PLUGIN);
-    app->socket.AddPacketFunction((PacketFunction)VoteCallback, Server::LobbyPacketID::SERVER_VOTE_DATA);
+    app->socket.AddPacketFunction((ClientPacketFunction)JoinPacketCallback, ServerPacketID::SERVER_PACKET_JOIN);
+    app->socket.AddPacketFunction((ClientPacketFunction)AddClientPacketCallback, ServerPacketID::SERVER_PACKET_ADD_CLIENT);
+    app->socket.AddPacketFunction((ClientPacketFunction)RemoveClientPacketCallback, ServerPacketID::SERVER_PACKET_REMOVE_CLIENT);
+    app->socket.AddPacketFunction((ClientPacketFunction)ClientDataPacketCallback, ServerPacketID::SERVER_PACKET_CLIENTS);
+    app->socket.AddPacketFunction((ClientPacketFunction)DisconnectPacketCallback, ServerPacketID::SERVER_PACKET_CLIENT_DISCONNECT);
+    app->socket.AddPacketFunction((ClientPacketFunction)StartPluginCallback, Server::LobbyPacketID::SERVER_START_PLUGIN);
+    app->socket.AddPacketFunction((ClientPacketFunction)VoteCallback, Server::LobbyPacketID::SERVER_VOTE_DATA);
+    app->socket.AddPacketFunction((ClientPacketFunction)AvailablePluginCallback, Server::LobbyPacketID::SERVER_AVAILABLE_PLUGIN);
 
 
     LoadAllPlugins();

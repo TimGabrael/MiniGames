@@ -20,6 +20,7 @@ public:
 	MainWindow* mainWindow = nullptr;
 
 	std::thread networkPollThread;
+	std::vector<Server::PluginData> serverPlugins;
 
 	bool isConnected = false;
 	bool networkThreadShouldJoin = false;

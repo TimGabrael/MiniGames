@@ -2,20 +2,25 @@
 #include "CommonCollection.h"
 #include "Room.h"
 #include <chrono>
+#include "Network/NetServer.h"
 
 
 
 int main()
 {
 	NetError err = NetError::OK;
-	UDPServerSocket server;
+	UDPServerSocket socket;
 
+	ServerData server;
+	server.sock = &socket;
+	server.plugin = nullptr;
+	Server_SetLobbyPlugin(&server);
 	
 
 	
 	do
 	{
-		err = server.Create(DEBUG_IP, DEBUG_PORT);
+		err = socket.Create(DEBUG_IP, DEBUG_PORT);
 		if (err != NetError::OK)
 		{
 			std::cout << "error: " << (uint32_t)err << std::endl;
@@ -31,7 +36,7 @@ int main()
 		auto now = std::chrono::high_resolution_clock::now();
 		float dt = std::chrono::duration<float>(now - time).count();
 		time = now;
-		if (server.Poll(dt))
+		if (socket.Poll(dt))
 		{
 		}
 	}

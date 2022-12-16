@@ -78,9 +78,9 @@ public:
 	virtual void CleanUp() override;
 
 	ApplicationData* backendData;	// AAssetManager* for android, else nullptr
+	UnoGlobals* g_objs;
 	bool initialized = false;
 
-	UnoGlobals* g_objs;
 };
 
 

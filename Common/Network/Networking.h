@@ -77,7 +77,7 @@ public:
 	void SetUserData(void* data);
 	void* GetUserData();
 
-	void AddPacketFunction(PacketFunction fun, uint16_t packetID);
+	void AddPacketFunction(ClientPacketFunction fun, uint16_t packetID);
 	void RemovePacketFunction(uint16_t packetID);
 
 private:
@@ -98,7 +98,7 @@ private:
 	uint8_t serverAddr[SOCKADDR_IN_SIZE];
 	char* msgBuffer;
 	std::vector<ResendPacketData> tempStorage;
-	std::vector<PacketFunction> packetHandlers;
+	std::vector<ClientPacketFunction> packetHandlers;
 
 };
 
@@ -106,6 +106,14 @@ typedef uint16_t ClientID;
 class UDPServerSocket
 {
 public:
+	struct ClientData
+	{
+		char name[MAX_NAME_LENGTH + 1];
+		float lastPacketTime = 0.0f;
+		uint16_t knownSequenceNumber = 0;
+		uint8_t addr[SOCKADDR_IN_SIZE] = { 0 };
+		bool isActive = false;
+	};
 	UDPServerSocket();
 	~UDPServerSocket();
 
@@ -116,29 +124,26 @@ public:
 
 	bool SendDataAll(void* data, int size);
 	bool SendData(void* data, int size, ClientID id);
+	bool SendData(void* data, int size, ClientData* client);
 
 	bool SendImportantAll(void* data, int size);
 	bool SendImportantData(void* data, int size, ClientID id);
+	bool SendImportantData(void* data, int size, ClientData* client);
 	
 	bool SendAck(uint16_t sequence, ClientID id);
 
 	void SetUserData(void* data);
 	void* GetUserData();
 
-	void AddPacketFunction(PacketFunction fun, uint16_t packetID);
+	void AddPacketFunction(ServerPacketFunction fun, uint16_t packetID);
 	void RemovePacketFunction(uint16_t packetID);
 
-	struct ClientData
-	{
-		char name[MAX_NAME_LENGTH + 1];
-		float lastPacketTime = 0.0f;
-		uint16_t knownSequenceNumber = 0;
-		uint8_t addr[SOCKADDR_IN_SIZE] = { 0 };
-		bool isActive = false;
-	};
+	void SetJoinCallback(JoinCallbackFunction fun);
+	void SetDisconnectCallback(DisconnectCallbackFunction fun);
+
+
 	ClientData clients[SERVER_MAX_PLAYERS];
-	static constexpr size_t sz = sizeof(clients);
-private:
+
 
 	bool SendDataAllExcept(void* data, int size, ClientID exception);
 	bool SendImportantDataAllExcept(void* data, int size, ClientID exception);
@@ -164,11 +169,13 @@ private:
 	
 	void* userData;
 	uintptr_t sock;
+	JoinCallbackFunction joinCb;
+	DisconnectCallbackFunction disconnectCb;
 	uint16_t sequenceNumber;
 	uint8_t addr[SOCKADDR_IN_SIZE];
 	std::bitset<SERVER_MAX_PLAYERS> clientsBitset = {0};
 	char* msgBuffer;
 	std::vector<ResendPacketData> tempStorage;
-	std::vector<PacketFunction> packetHandlers;
+	std::vector<ServerPacketFunction> packetHandlers;
 };
 

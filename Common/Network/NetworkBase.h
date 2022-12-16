@@ -13,8 +13,11 @@
 #define MAX_NAME_LENGTH 30
 
 
-// should return the size of the packet
-typedef int(__stdcall* PacketFunction)(void* socket, void* packet, int packetSize);
+// should return the size of the packet negative numbers will discard the entire packet
+typedef int(__stdcall* ClientPacketFunction)(void* socket, void* packet, int packetSize);
+typedef int(__stdcall* ServerPacketFunction)(void* socket, void* client, void* packet, int packetSize);
+typedef bool(__stdcall* JoinCallbackFunction)(void* socket, void* client);
+typedef void(__stdcall* DisconnectCallbackFunction)(void* socket, void* client);
 
 enum class NetError
 {
@@ -112,6 +115,7 @@ namespace Server
 	{
 		SERVER_START_PLUGIN = NUM_BASE_SERVER_PACKETS,
 		SERVER_VOTE_DATA,
+		SERVER_AVAILABLE_PLUGIN,
 	};
 	struct JoinResponsePacket
 	{
@@ -161,8 +165,15 @@ namespace Server
 	{
 		uint16_t packetID;
 		uint16_t sequenceNumber;
-		uint16_t voteID;
-		uint16_t voteCount;
+		uint16_t clientID;
+		uint16_t votedPluginID;
+	};
+	struct PluginData
+	{
+		uint16_t packetID;
+		uint16_t sequenceNumber;
+		uint16_t pluginSessionID;
+		char pluginID[19];
 	};
 
 }

@@ -13,4 +13,4 @@ struct ServerData
 };
 
 
-void Server_SetLoginPlugin(ServerData* server);
+void Server_SetLobbyPlugin(ServerData* server);
