@@ -12,17 +12,6 @@ set(COMMON_SOURCES "")
 set(ADDITIONAL_LIBS "")
 set(IMGUI_BASE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/3rd-party/ImGui/imgui.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/3rd-party/ImGui/imgui_draw.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/3rd-party/ImGui/imgui_demo.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/3rd-party/ImGui/imgui_widgets.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/3rd-party/ImGui/imgui_tables.cpp")
 
-set(protobuf_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(protobuf_BUILD_LIBPROTOC ON CACHE BOOL "" FORCE)
-set(protobuf_BUILD_PROTOC_BINARIES OFF CACHE BOOL "" FORCE)
-set(protobuf_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)	# changeing this to ON will crash as protobuf uses globals and all .pb.cc files should only be compiled once into a dll/exe
-set(protobuf_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(protobuf_DISABLE_RTTI ON CACHE BOOL "" FORCE)
-set(protobuf_INSTALL OFF CACHE BOOL "" FORCE)
-
-add_subdirectory(3rd-party/protobuf)
-link_libraries(libprotobuf libprotobuf-lite libprotoc)
-
 
 
 if(NOT EMSCRIPTEN)

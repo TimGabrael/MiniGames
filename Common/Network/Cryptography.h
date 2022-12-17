@@ -79,3 +79,44 @@ void GenKeyPairU2048(uint2048_t* publicKey, uint2048_t* privateKey);
 void GenSharedSecretU2048(uint2048_t* sharedSecret, const uint2048_t privateKey, const uint2048_t publicKey);
 void GenKeyPairU4096(uint4096_t* publicKey, uint4096_t* privateKey);
 void GenSharedSecretU4096(uint4096_t* sharedSecret, const uint4096_t privateKey, const uint4096_t publicKey);
+
+
+// if this is changed, KEY_LEN needs to be changed as well !
+#define KEY_BITS_512
+#ifdef KEY_BITS_128
+typedef uint128_t ukey_t;
+typedef void(*KeyGenFunc)(ukey_t* publicKey, ukey_t* privateKey);
+typedef void(*KeyGenSharedFunc)(ukey_t* shared, const ukey_t publicKey, const ukey_t privateKey);
+static constexpr KeyGenFunc GenKeyPair = GenKeyPairU128;
+static constexpr KeyGenSharedFunc GenSharedSecret = GenSharedSecretU128;
+#elif defined(KEY_BITS_256)
+typedef uint256_t ukey_t;
+typedef void(*KeyGenFunc)(ukey_t* publicKey, ukey_t* privateKey);
+typedef void(*KeyGenSharedFunc)(ukey_t* shared, const ukey_t publicKey, const ukey_t privateKey);
+static constexpr KeyGenFunc GenKeyPair = GenKeyPairU256;
+static constexpr KeyGenSharedFunc GenSharedSecret = GenSharedSecretU256;
+#elif defined(KEY_BITS_512)
+typedef uint512_t ukey_t;
+typedef void(*KeyGenFunc)(ukey_t* publicKey, ukey_t* privateKey);
+typedef void(*KeyGenSharedFunc)(ukey_t* shared, const ukey_t publicKey, const ukey_t privateKey);
+static constexpr KeyGenFunc GenKeyPair = GenKeyPairU512;
+static constexpr KeyGenSharedFunc GenSharedSecret = GenSharedSecretU512;
+#elif defined(KEY_BITS_1024)
+typedef uint1024_t ukey_t;
+typedef void(*KeyGenFunc)(ukey_t* publicKey, ukey_t* privateKey);
+typedef void(*KeyGenSharedFunc)(ukey_t* shared, const ukey_t publicKey, const ukey_t privateKey);
+static constexpr KeyGenFunc GenKeyPair = GenKeyPairU1024;
+static constexpr KeyGenSharedFunc GenSharedSecret = GenSharedSecretU1024;
+#elif defined(KEY_BITS_2048)
+typedef uint2048_t ukey_t;
+typedef void(*KeyGenFunc)(ukey_t* publicKey, ukey_t* privateKey);
+typedef void(*KeyGenSharedFunc)(ukey_t* shared, const ukey_t publicKey, const ukey_t privateKey);
+static constexpr KeyGenFunc GenKeyPair = GenKeyPairU2048;
+static constexpr KeyGenSharedFunc GenSharedSecret = GenSharedSecretU2048;
+#elif defined(KEY_BITS_4096)
+typedef uint4096_t ukey_t;
+typedef void(*KeyGenFunc)(ukey_t* publicKey, ukey_t* privateKey);
+typedef void(*KeyGenSharedFunc)(ukey_t* shared, const ukey_t publicKey, const ukey_t privateKey);
+static constexpr KeyGenFunc GenKeyPair = GenKeyPairU4096;
+static constexpr KeyGenSharedFunc GenSharedSecret = GenSharedSecretU4096;
+#endif
