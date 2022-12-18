@@ -35,6 +35,16 @@
           "name": "Qt6GuiTools_DIR",
           "value": "C:\\Qt\\6.3.0\\msvc2019_64\\lib\\cmake\\Qt6GuiTools",
           "type": "PATH"
+        },
+        {
+          "name": "Protobuf_SRC_ROOT_FOLDER",
+          "value": "D:/SDKs/protobuf/build/bin/Release",
+          "type": "PATH"
+        },
+        {
+          "name": "protobuf_BUILD_LIBPROTOC",
+          "value": "False",
+          "type": "BOOL"
         }
       ]
     }

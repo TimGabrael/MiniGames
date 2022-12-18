@@ -1,4 +1,6 @@
 #include "NetServer.h"
+#include "NetCommon.h"
+
 
 static void SteamNetConnectionStatusChangedCallback(SteamNetConnectionStatusChangedCallback_t* pInfo)
 {
@@ -55,7 +57,7 @@ NetServer::~NetServer()
 
 }
 
-Connection* NetServer::GetConnection(uint16_t id)
+ServerConnection* NetServer::GetConnection(uint16_t id)
 {
 	return nullptr;
 }
@@ -72,7 +74,7 @@ void NetServer::SetDisconnectcallback(ServerDisconnectCallbackFunction fn)
 {
 }
 
-bool NetServer::SendData(Connection* conn, const void* data, uint32_t size, uint32_t flags)
+bool NetServer::SendData(ServerConnection* conn, const void* data, uint32_t size, uint32_t flags)
 {
 	return false;
 }

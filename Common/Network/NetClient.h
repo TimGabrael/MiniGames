@@ -1,23 +1,18 @@
 #pragma once
-#include "NetworkBase.h"
+#include "NetCommon.h"
 
-enum ConnectionError
-{
-	OK,
-	VERSION_MISMATCH,
-	SOCKET_ERROR,
-};
+
 
 struct NetClient : public NetClientInterface
 {
-	static ConnectionError Create(const char* ip, uint32_t port, NetClient** out);
+	static JoinResult Create(const char* ip, uint32_t port, const std::string& name, NetClient** out);
 
 	virtual ~NetClient();
 
 	virtual bool IsConnected() const;
 
-	virtual Connection* GetSelf();
-	virtual Connection* GetConnection(uint16_t id);
+	virtual ClientConnection* GetSelf();
+	virtual ClientConnection* GetConnection(uint16_t id);
 	virtual void SetCallback(ClientPacketFunction fn, uint16_t packetID);
 
 	virtual void SetJoinCallback(ClientJoinCallbackFunction fn);
@@ -37,7 +32,8 @@ struct NetClient : public NetClientInterface
 	// use after Poll, this is seperate as both client and server should call it only once
 	static void RunCallbacks();
 
-	NetSocket socket;
+	NetSocketClient socket;
+	ClientConnection* local = nullptr;
 	void* userData = nullptr;
 private:
 	NetClient() {};

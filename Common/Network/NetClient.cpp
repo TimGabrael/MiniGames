@@ -1,35 +1,31 @@
 #include "NetClient.h"
+#include "NetCommon.h"
+
 
 static void SteamNetConnectionStatusChangedCallback(SteamNetConnectionStatusChangedCallback_t* pInfo)
 {
 	NetClient* client = (NetClient*)pInfo->m_info.m_nUserData;
 
 }
-ConnectionError NetClient::Create(const char* ip, uint32_t port, NetClient** out)
+JoinResult NetClient::Create(const char* ip, uint32_t port, const std::string& name, NetClient** out)
 {
-	uint32_t ipAddr = 0;
+	JoinResult joinRes;
+	joinRes.success = false;
+	if (name.size() > MAX_NAME_LENGTH)
 	{
-		int ipLen = strnlen(ip, 100);
-		int curIdx = 0;
-		for (int i = 0; i < ipLen; i++)
-		{
-			if (curIdx > 4) return SOCKET_ERROR;
-
-			if (i == 0)
-			{
-				const int val = atoi(ip + i);
-				ipAddr |= val << (8 * curIdx);
-				curIdx++;
-			}
-			else if (ip[i] == '.')
-			{
-				const int val = atoi(ip + i + 1);
-				ipAddr |= val << (8 * curIdx);
-				curIdx++;
-			}
-		}
+		joinRes.reason = "Name to long";
+		return joinRes;
 	}
-
+	if (name.size() < MIN_NAME_LENGTH)
+	{
+		joinRes.reason = "Name to short";
+		return joinRes;
+	}
+	uint32_t ipAddr = ParseIP(ip);
+	if (!ipAddr) {
+		joinRes.reason = "Failed to Parse IP";
+		return joinRes;
+	}
 	*out = nullptr;
 	NetClient* temp = new NetClient();
 	temp->socket.networking = SteamNetworkingSockets();
@@ -40,19 +36,28 @@ ConnectionError NetClient::Create(const char* ip, uint32_t port, NetClient** out
 	addr.SetIPv4(ipAddr, port);
 	SteamNetworkingConfigValue_t opt;
 	opt.SetPtr(k_ESteamNetworkingConfig_Callback_ConnectionStatusChanged, (void*)SteamNetConnectionStatusChangedCallback);
-	HSteamListenSocket sock = temp->socket.networking->CreateListenSocketIP(addr, 1, &opt);
+	HSteamListenSocket sock = temp->socket.networking->ConnectByIPAddress(addr, 1, &opt);
 	if (sock == k_HSteamListenSocket_Invalid)
 	{
 		delete temp;
-		return SOCKET_ERROR;
+		joinRes.reason = "Failed to Create Socket";
+		return joinRes;
 	}
 	temp->socket.socket = sock;
 	temp->socket.networking->SetConnectionUserData(sock, (int64)temp);
 
+	SteamNetConnectionRealTimeStatus_t stat;
+	EResult res = temp->socket.networking->GetConnectionRealTimeStatus(temp->socket.socket, &stat, 0, NULL);
 
+	while (res && stat.m_eState == ESteamNetworkingConnectionState::k_ESteamNetworkingConnectionState_Connecting)
+	{
+		temp->Poll();
+		res = temp->socket.networking->GetConnectionRealTimeStatus(temp->socket.socket, &stat, 0, NULL);
+	}
 
-	*out = temp;
-	return ConnectionError::OK;
+	
+	
+	return joinRes;
 }
 
 NetClient::~NetClient()
@@ -61,15 +66,21 @@ NetClient::~NetClient()
 
 bool NetClient::IsConnected() const
 {
+	SteamNetConnectionRealTimeStatus_t stat;
+	EResult res = socket.networking->GetConnectionRealTimeStatus(socket.socket, &stat, 0, NULL);
+	if (res == EResult::k_EResultOK)
+	{
+		return stat.m_eState == ESteamNetworkingConnectionState::k_ESteamNetworkingConnectionState_Connected;
+	}
 	return false;
 }
 
-Connection* NetClient::GetSelf()
+ClientConnection* NetClient::GetSelf()
 {
 	return nullptr;
 }
 
-Connection* NetClient::GetConnection(uint16_t id)
+ClientConnection* NetClient::GetConnection(uint16_t id)
 {
 	return nullptr;
 }
@@ -88,7 +99,9 @@ void NetClient::SetDisconnectcallback(ClientDisconnectCallbackFunction fn)
 
 bool NetClient::SendData(const void* data, uint32_t size, uint32_t flags)
 {
-	return false;
+	int64 outMsgNum = 0;
+	EResult res = socket.networking->SendMessageToConnection(socket.socket, data, size, flags, &outMsgNum);
+	return EResult::k_EResultOK == res;
 }
 
 bool NetClient::IsP2P() const
