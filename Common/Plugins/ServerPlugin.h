@@ -1,5 +1,5 @@
 #pragma once
-#include "../Network/Networking.h"
+#include "Network/NetworkBase.h"
 
 struct SERVER_PLUGIN_INFO
 {
@@ -14,7 +14,7 @@ struct ServerPlugin
 	virtual void Initialize() = 0;
 	virtual void Update(float dt) = 0;
 	virtual SERVER_PLUGIN_INFO GetInfo() const = 0;
-	UDPServerSocket* socket;
+	
 };
 
 #define SERVER_PLUGIN_EXPORTS() extern "C" EXPORT ServerPlugin* GetPlugin()

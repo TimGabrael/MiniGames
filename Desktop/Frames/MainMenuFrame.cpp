@@ -125,8 +125,7 @@ MainMenuFrame::MainMenuFrame(QMainWindow* MainWindow) : StateFrame(MainWindow)
 
     auto function = []() {
         MainApplication* app = MainApplication::GetInstance();
-        NetError err = app->socket.Create(DEBUG_IP, DEBUG_PORT);
-        app->isConnected = (err == NetError::OK) ? true : false;
+        app->isConnected = false;
         if (!app->isConnected)
         {
             // POP UP MESSAGE FAILED TO CONNECT TO SERVER
@@ -193,15 +192,15 @@ void MainMenuFrame::OnCreateClick()
     
     bool canShow = true;
     std::string errorMsg = "";
-    if (ValidatePlayerName(name) == JOIN_ERROR::JOIN_OK)
+    //if (ValidatePlayerName(name) == JOIN_ERROR::JOIN_OK)
     {
         this->nameIn->setText(name.c_str());
     }
-    else
-    {
-        canShow = false;
-        errorMsg = "INVALID NAME LENGHT(3-30)";
-    }
+    //else
+    //{
+    //    canShow = false;
+    //    errorMsg = "INVALID NAME LENGHT(5-30)";
+    //}
 
     if (!canShow) {
         errortxt->setText(errorMsg.c_str());

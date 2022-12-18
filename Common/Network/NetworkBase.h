@@ -2,49 +2,100 @@
 #include <stdint.h>
 #include <vector>
 #include <string>
+#include "CommonCollection.h"
+#include "steam/isteamnetworkingsockets.h"
 
 
-// ADMIN/CREATOR OF THE ROOM
-#define ADMIN_GROUP_MASK (1 << 31)
-#define STANDARD_GROUP_MASK 1
-#define LISTEN_GROUP_ALL 0xFFFFFFFF
 
 #define MIN_NAME_LENGTH 5
 #define MAX_NAME_LENGTH 30
+#define MAX_PLAYERS 0xFF
 
 
-struct ClientInfo
+
+
+
+struct Connection
 {
 	std::string name;
-	uint16_t id;
+	HSteamNetConnection conn = 0;
+	uint16_t id = 0;
+	bool isAdmin = false;
+	bool isConnected = false;
 };
 
+struct JoinResult
+{
+	std::string reason;
+	bool success;
+};
 
-
-
+struct NetServerInterface;
+struct NetClientInterface;
 // should return the size of the packet negative numbers will discard the entire packet
-typedef int(__stdcall* ClientPacketFunction)(void* socket, void* packet, int packetSize);
-typedef int(__stdcall* ServerPacketFunction)(void* socket, void* client, void* packet, int packetSize);
-typedef bool(__stdcall* JoinCallbackFunction)(void* socket, ClientInfo* client);
-typedef void(__stdcall* DisconnectCallbackFunction)(void* socket, ClientInfo* client);
+typedef int(__stdcall* ClientPacketFunction)(NetClientInterface* socket, char* packet, int packetSize);
+typedef int(__stdcall* ServerPacketFunction)(NetServerInterface* socket, Connection* client, char* packet, int packetSize);
+typedef JoinResult(__stdcall* ServerJoinCallbackFunction)(NetServerInterface* socket, Connection* client);
+typedef void(__stdcall* ServerDisconnectCallbackFunction)(NetServerInterface* socket, Connection* client);
 
-enum class NetError
+typedef void(__stdcall* ClientJoinCallbackFunction)(NetClientInterface* socket, Connection* client);
+typedef void(__stdcall* ClientDisconnectCallbackFunction)(NetClientInterface* socket, Connection* client);
+
+enum SendFlags
 {
-	OK,
-	E_INIT,			// failed to initialize
-	E_RESOLVE,		// failed to Resolve the address
-	E_CONNECT,		// failed to Connect
-	E_LISTEN,		// failed to Listen
-	E_READ,			// failed to Read bytes from socket
-	E_HANDSHAKE,	// failed to perform handshake
-	E_VERSION,		// failed Version mismatch
+	Send_Unreliable = 0,
+	Send_NoNagle = 1,
+	Send_NoDelay = 4,
+	Send_Reliable = 8,
+	Send_CurrentThread = 16,
 };
-enum class JOIN_ERROR : uint16_t
+
+struct NetServerInterface
 {
-	JOIN_OK,
-	JOIN_NAME_COLLISION,
-	JOIN_NAME_INVALID_CHARACTER,
-	JOIN_NAME_SHORT,
-	JOIN_FULL,
+	virtual ~NetServerInterface() { };
+
+	virtual Connection* GetConnection(uint16_t id) = 0;
+	virtual void SetCallback(ServerPacketFunction fn, uint16_t packetID) = 0;
+	
+	virtual void SetJoinCallback(ServerJoinCallbackFunction fn) = 0;
+	virtual void SetDisconnectcallback(ServerDisconnectCallbackFunction fn) = 0;
+
+	virtual bool SendData(Connection* conn, const void* data, uint32_t size, uint32_t flags) = 0;
+	virtual bool SendData(uint16_t id, const void* data, uint32_t size, uint32_t flags) = 0;
+
+	virtual bool IsP2P() const = 0;
+
+	virtual void* GetUserData() const = 0;
+	virtual void SetUserData(void* userData) = 0;
 };
+struct NetClientInterface
+{
+	virtual ~NetClientInterface() { };
+
+	virtual bool IsConnected() const = 0;
+
+	virtual Connection* GetSelf() = 0;
+	virtual Connection* GetConnection(uint16_t id) = 0;
+	virtual void SetCallback(ClientPacketFunction fn, uint16_t packetID) = 0;
+
+	virtual void SetJoinCallback(ClientJoinCallbackFunction fn) = 0;
+	virtual void SetDisconnectcallback(ClientDisconnectCallbackFunction fn) = 0;
+
+	virtual bool SendData(const void* data, uint32_t size, uint32_t flags) = 0;
+
+	virtual bool IsP2P() const = 0;
+
+	virtual void* GetUserData() const = 0;
+	virtual void SetUserData(void* userData) = 0;
+};
+
+
+
+struct NetSocket
+{
+	HSteamListenSocket socket;
+	ISteamNetworkingSockets* networking;
+	Connection connected[MAX_PLAYERS];
+};
+
 

@@ -2,6 +2,7 @@
 #include <qapplication>
 #include "CommonCollection.h"
 #include "Plugins/PluginCommon.h"
+#include <thread>
 #undef max
 #undef min
 
@@ -15,12 +16,10 @@ public:
 
 
 	ApplicationData appData;
-	UDPSocket socket;
 	QWidget* backgroundWidget = nullptr;
 	MainWindow* mainWindow = nullptr;
 
 	std::thread networkPollThread;
-	std::vector<Server::PluginData> serverPlugins;
 
 	bool isConnected = false;
 	bool networkThreadShouldJoin = false;

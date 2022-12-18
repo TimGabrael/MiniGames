@@ -141,19 +141,6 @@ private:
 			}
 			LobbyFrame::data.votes.push_back({ plugID, app->appData.localPlayer.name });
 
-			for (auto& pl : app->serverPlugins)
-			{
-				std::string str(pl.pluginID, 19);
-				if (str == plugID)
-				{
-					Client::VotePacket vote;
-					vote.packetID = Client::CLIENT_VOTE;
-					vote.voteID = pl.pluginSessionID;
-					vote.sequenceNumber = app->socket.GetSequenceNumber();
-					app->socket.SendImportantData(&vote, sizeof(Client::VotePacket));
-					break;
-				}
-			}
 
 
 		}
@@ -190,7 +177,6 @@ public:
 		setVerticalScrollBar(new CustomScrollBar(this));
 
 		contentArea = new QWidget(this);
-		const std::vector<Server::PluginData>& serverPlugins = MainApplication::GetInstance()->serverPlugins;
 		QVBoxLayout* vertical_layout1 = new QVBoxLayout(this);
 		{
 			vertical_layout1->setSpacing(30);
@@ -203,16 +189,10 @@ public:
 				for (int i = 0; i < plugs.size(); i++)
 				{
 					PLUGIN_INFO info = plugs.at(i)->GetPluginInfos();
-					for (int j = 0; j < serverPlugins.size(); j++)
-					{
-						if (memcmp(info.ID, serverPlugins.at(j).pluginID, 19) == 0)
-						{
-							GameInfo* gInf = new GameInfo(this, info.previewResource, info.ID);
-							contentList.push_back({ gInf, info.ID });
-							vertical_layout1->addWidget(gInf);
-							break;
-						}
-					}
+					GameInfo* gInf = new GameInfo(this, info.previewResource, info.ID);
+					contentList.push_back({ gInf, info.ID });
+					vertical_layout1->addWidget(gInf);
+				
 				}
 			}
 

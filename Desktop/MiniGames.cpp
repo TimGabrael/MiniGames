@@ -1,6 +1,5 @@
 #include "MiniGames.h"
 
-#include "Network/Networking.h"
 #include "NFDriver/NFDriver.h"
 #undef min
 #undef max
@@ -72,130 +71,6 @@ void DidRenderCallback(void* userData)
 {
 }
 
-int __stdcall JoinPacketCallback(UDPSocket* sock, Server::JoinResponsePacket* pack, int packetSize)
-{
-    if (sizeof(Server::JoinResponsePacket) != packetSize) return -1;
-
-    if (pack->error != (uint16_t)JOIN_ERROR::JOIN_OK)
-    {
-        SafeAsyncUI([](MainWindow* wnd) {
-            const QRect& rect = wnd->rect();
-            InfoPopup* popUp = new InfoPopup(wnd, "FAILED TO CONNECT TO SERVER", QPoint(rect.width() / 2, rect.height() - 100), 20, 0xFFFF0000, 3000);
-        });
-        return sizeof(Server::JoinResponsePacket);
-    }
-    MainApplication* app = MainApplication::GetInstance();
-    app->isConnected = true;
-    app->mainWindow->SetState(MAIN_WINDOW_STATE::STATE_LOBBY);
-    
-
-    return sizeof(Server::JoinResponsePacket);
-}
-int __stdcall AddClientPacketCallback(UDPSocket* sock, Server::AddClient* pack, int packetSize)
-{
-    if (sizeof(Server::AddClient) != packetSize) return -1;
-
-    MainApplication* app = MainApplication::GetInstance();
-    ClientData cl;
-    cl.clientID = pack->clientID;
-    char name[32]{ 0 };
-    memcpy(name, pack->name, MAX_NAME_LENGTH);
-    cl.name = name;
-    cl.isAdmin = pack->isAdmin;
-    app->appData.players.push_back(cl);
-    
-    return sizeof(Server::AddClient);
-}
-int __stdcall RemoveClientPacketCallback(UDPSocket* sock, Server::RemoveClient* pack, int packetSize)
-{
-    if (sizeof(Server::RemoveClient) != packetSize) return -1;
-
-    return sizeof(Server::RemoveClient);
-}
-int __stdcall ClientDataPacketCallback(UDPSocket* sock, Server::Client* pack, int packetSize)
-{
-    if (sizeof(Server::Client) != packetSize) return -1;
-
-    return sizeof(Server::Client);
-}
-int __stdcall DisconnectPacketCallback(UDPSocket* sock, Server::Disconnect* pack, int packetSize)
-{
-    if (sizeof(Server::Disconnect) != packetSize) return -1;
-
-    return sizeof(Server::Disconnect);
-}
-int __stdcall StartPluginCallback(UDPSocket* sock, Server::StartPlugin* pack, int packetSize)
-{
-    if (sizeof(Server::StartPlugin) != packetSize) return -1;
-
-    return sizeof(Server::StartPlugin);
-}
-int __stdcall VoteCallback(UDPSocket* sock, Server::VotePacket* pack, int packetSize)
-{
-    if (sizeof(Server::VotePacket) != packetSize) return -1;
-
-    const auto& p = MainApplication::GetInstance()->appData.players;
-    const auto& pls = MainApplication::GetInstance()->serverPlugins;
-    const ClientData* client = nullptr;
-    std::string pluginID;
-    for (int i = 0; i < p.size(); i++)
-    {
-        if (p.at(i).clientID == pack->clientID)
-        {
-            client = &p.at(i);
-            break;
-        }
-    }
-    for (int i = 0; i < pls.size(); i++)
-    {
-        if (pls.at(i).pluginSessionID == pack->votedPluginID)
-        {
-            pluginID = std::string(pls.at(i).pluginID, 19);
-            break;
-        }
-    }
-
-    bool changed = false;
-    for (int i = 0; i < LobbyFrame::data.votes.size(); i++)
-    {
-        if (LobbyFrame::data.votes.at(i).username == client->name)
-        {
-            if (LobbyFrame::data.votes.at(i).pluginID != pluginID)
-            {
-                LobbyFrame::data.votes.at(i).pluginID = pluginID;
-                changed = true;
-            }
-        }
-    }
-    if (changed)
-    {
-        SafeAsyncUI([](MainWindow* wnd) {
-            auto& children = wnd->children();
-            if (wnd->GetState() == MAIN_WINDOW_STATE::STATE_LOBBY)
-            {
-                for (auto& c : children)
-                {
-                    LobbyFrame* lobby = (LobbyFrame*)c;
-                    lobby->Rebuild();
-                    break;
-                }
-            }
-        });
-        
-    }
-
-
-    return sizeof(Server::VotePacket);
-}
-int __stdcall AvailablePluginCallback(UDPSocket* sock, Server::PluginData* pack, int packetSize)
-{
-    if (sizeof(Server::PluginData) != packetSize) return -1;
-
-    MainApplication::GetInstance()->serverPlugins.push_back(*pack);
-
-
-    return sizeof(Server::PluginData);
-}
 
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
@@ -225,15 +100,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
 
     app->isConnected = false;
 
-    NetError err = app->socket.Create(DEBUG_IP, DEBUG_PORT);
-    app->socket.AddPacketFunction((ClientPacketFunction)JoinPacketCallback, ServerPacketID::SERVER_PACKET_JOIN);
-    app->socket.AddPacketFunction((ClientPacketFunction)AddClientPacketCallback, ServerPacketID::SERVER_PACKET_ADD_CLIENT);
-    app->socket.AddPacketFunction((ClientPacketFunction)RemoveClientPacketCallback, ServerPacketID::SERVER_PACKET_REMOVE_CLIENT);
-    app->socket.AddPacketFunction((ClientPacketFunction)ClientDataPacketCallback, ServerPacketID::SERVER_PACKET_CLIENTS);
-    app->socket.AddPacketFunction((ClientPacketFunction)DisconnectPacketCallback, ServerPacketID::SERVER_PACKET_CLIENT_DISCONNECT);
-    app->socket.AddPacketFunction((ClientPacketFunction)StartPluginCallback, Server::LobbyPacketID::SERVER_START_PLUGIN);
-    app->socket.AddPacketFunction((ClientPacketFunction)VoteCallback, Server::LobbyPacketID::SERVER_VOTE_DATA);
-    app->socket.AddPacketFunction((ClientPacketFunction)AvailablePluginCallback, Server::LobbyPacketID::SERVER_AVAILABLE_PLUGIN);
+    //NetError err = app->socket.Create(DEBUG_IP, DEBUG_PORT);
 
 
     LoadAllPlugins();

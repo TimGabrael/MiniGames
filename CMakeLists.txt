@@ -13,6 +13,7 @@ set(ADDITIONAL_LIBS "")
 set(IMGUI_BASE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/3rd-party/ImGui/imgui.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/3rd-party/ImGui/imgui_draw.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/3rd-party/ImGui/imgui_demo.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/3rd-party/ImGui/imgui_widgets.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/3rd-party/ImGui/imgui_tables.cpp")
 
 
+set(GameNetworkingSocketsPath "D:/SDKs/GameNetworkingSockets")
 
 if(NOT EMSCRIPTEN)
 add_subdirectory(3rd-party/glad)
@@ -26,8 +27,12 @@ endif()
 include_directories(3rd-party/glm)
 include_directories(3rd-party/ImGui)
 
+include_directories(${GameNetworkingSocketsPath}/include/)
+link_libraries(${GameNetworkingSocketsPath}/lib/GameNetworkingSockets.lib)
+
 include_directories(Common)
 add_subdirectory(Common)
+
 
 
 

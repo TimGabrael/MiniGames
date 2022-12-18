@@ -10,7 +10,6 @@
 #include "Graphics/Renderer.h"
 #include "Graphics/ReflectiveSurfaceRendering.h"
 #include "Graphics/BloomRendering.h"
-#include "Network/Networking.h"
 #include "imgui.h"
 
 #define _USE_MATH_DEFINES

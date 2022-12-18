@@ -84,8 +84,8 @@ bool TryConnectToServer(const std::string& name)
 	if (app->isConnected) return true;
 	MainWindow* main = app->mainWindow;
 	
-	NetError err = app->socket.Connect(DEBUG_IP, DEBUG_PORT, name);
-	if (err != NetError::OK)
+	//NetError err = app->socket.Connect(DEBUG_IP, DEBUG_PORT, name);
+	//if (err != NetError::OK)
 	{
 		QTimer::singleShot(0, main, [main]() {
 			MainApplication* app = MainApplication::GetInstance();

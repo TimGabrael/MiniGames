@@ -11,10 +11,10 @@ void NetworkPollFunction(MainApplication* app)
 		auto now = std::chrono::high_resolution_clock::now();
 		float dt = std::chrono::duration<float>(now - time).count();
 		time = now;
-		if (app->socket.Poll(dt))
-		{
-
-		}
+		//if (app->socket.Poll(dt))
+		//{
+		//
+		//}
 
 		std::this_thread::sleep_for(std::chrono::duration<float>(0.1f));
 	}
