@@ -13,7 +13,10 @@ enum NameValidationResult
 	Name_ErrSymbol,
 };
 
+
 bool InitNetworking();
 
 uint32_t ParseIP(const char* ip);
 NameValidationResult ValidateName(const std::string& name);
+
+void NetRunCallbacks();

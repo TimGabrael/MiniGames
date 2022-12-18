@@ -56,8 +56,7 @@ PROTOBUF_CONSTEXPR ClientJoin::ClientJoin(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_._has_bits_)*/{}
   , /*decltype(_impl_._cached_size_)*/{}
-  , /*decltype(_impl_.name_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
-  , /*decltype(_impl_.type_)*/0} {}
+  , /*decltype(_impl_.name_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}} {}
 struct ClientJoinDefaultTypeInternal {
   PROTOBUF_CONSTEXPR ClientJoinDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
   ~ClientJoinDefaultTypeInternal() {}
@@ -72,7 +71,6 @@ PROTOBUF_CONSTEXPR ClientState::ClientState(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_._has_bits_)*/{}
   , /*decltype(_impl_._cached_size_)*/{}
-  , /*decltype(_impl_.type_)*/0
   , /*decltype(_impl_.plugin_session_id_)*/0
   , /*decltype(_impl_.state_)*/0} {}
 struct ClientStateDefaultTypeInternal {
@@ -90,7 +88,6 @@ PROTOBUF_CONSTEXPR ServerJoin::ServerJoin(
     /*decltype(_impl_._has_bits_)*/{}
   , /*decltype(_impl_._cached_size_)*/{}
   , /*decltype(_impl_.data_)*/nullptr
-  , /*decltype(_impl_.type_)*/0
   , /*decltype(_impl_.is_local_)*/false} {}
 struct ServerJoinDefaultTypeInternal {
   PROTOBUF_CONSTEXPR ServerJoinDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
@@ -106,8 +103,7 @@ PROTOBUF_CONSTEXPR ServerPlugin::ServerPlugin(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_._has_bits_)*/{}
   , /*decltype(_impl_._cached_size_)*/{}
-  , /*decltype(_impl_.data_)*/nullptr
-  , /*decltype(_impl_.type_)*/0} {}
+  , /*decltype(_impl_.data_)*/nullptr} {}
 struct ServerPluginDefaultTypeInternal {
   PROTOBUF_CONSTEXPR ServerPluginDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
   ~ServerPluginDefaultTypeInternal() {}
@@ -122,7 +118,6 @@ PROTOBUF_CONSTEXPR ServerSetState::ServerSetState(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_._has_bits_)*/{}
   , /*decltype(_impl_._cached_size_)*/{}
-  , /*decltype(_impl_.type_)*/0
   , /*decltype(_impl_.plugin_id_)*/0
   , /*decltype(_impl_.state_)*/0} {}
 struct ServerSetStateDefaultTypeInternal {
@@ -177,9 +172,7 @@ const ::uint32_t TableStruct_BaseMessages_2eproto::offsets[] PROTOBUF_SECTION_VA
     ~0u,  // no _inlined_string_donated_
     ~0u,  // no _split_
     ~0u,  // no sizeof(Split)
-    PROTOBUF_FIELD_OFFSET(::base::ClientJoin, _impl_.type_),
     PROTOBUF_FIELD_OFFSET(::base::ClientJoin, _impl_.name_),
-    1,
     0,
     PROTOBUF_FIELD_OFFSET(::base::ClientState, _impl_._has_bits_),
     PROTOBUF_FIELD_OFFSET(::base::ClientState, _internal_metadata_),
@@ -189,12 +182,10 @@ const ::uint32_t TableStruct_BaseMessages_2eproto::offsets[] PROTOBUF_SECTION_VA
     ~0u,  // no _inlined_string_donated_
     ~0u,  // no _split_
     ~0u,  // no sizeof(Split)
-    PROTOBUF_FIELD_OFFSET(::base::ClientState, _impl_.type_),
     PROTOBUF_FIELD_OFFSET(::base::ClientState, _impl_.plugin_session_id_),
     PROTOBUF_FIELD_OFFSET(::base::ClientState, _impl_.state_),
     0,
     1,
-    2,
     PROTOBUF_FIELD_OFFSET(::base::ServerJoin, _impl_._has_bits_),
     PROTOBUF_FIELD_OFFSET(::base::ServerJoin, _internal_metadata_),
     ~0u,  // no _extensions_
@@ -203,12 +194,10 @@ const ::uint32_t TableStruct_BaseMessages_2eproto::offsets[] PROTOBUF_SECTION_VA
     ~0u,  // no _inlined_string_donated_
     ~0u,  // no _split_
     ~0u,  // no sizeof(Split)
-    PROTOBUF_FIELD_OFFSET(::base::ServerJoin, _impl_.type_),
     PROTOBUF_FIELD_OFFSET(::base::ServerJoin, _impl_.data_),
     PROTOBUF_FIELD_OFFSET(::base::ServerJoin, _impl_.is_local_),
-    1,
     0,
-    2,
+    1,
     PROTOBUF_FIELD_OFFSET(::base::ServerPlugin, _impl_._has_bits_),
     PROTOBUF_FIELD_OFFSET(::base::ServerPlugin, _internal_metadata_),
     ~0u,  // no _extensions_
@@ -217,9 +206,7 @@ const ::uint32_t TableStruct_BaseMessages_2eproto::offsets[] PROTOBUF_SECTION_VA
     ~0u,  // no _inlined_string_donated_
     ~0u,  // no _split_
     ~0u,  // no sizeof(Split)
-    PROTOBUF_FIELD_OFFSET(::base::ServerPlugin, _impl_.type_),
     PROTOBUF_FIELD_OFFSET(::base::ServerPlugin, _impl_.data_),
-    1,
     0,
     PROTOBUF_FIELD_OFFSET(::base::ServerSetState, _impl_._has_bits_),
     PROTOBUF_FIELD_OFFSET(::base::ServerSetState, _internal_metadata_),
@@ -229,23 +216,21 @@ const ::uint32_t TableStruct_BaseMessages_2eproto::offsets[] PROTOBUF_SECTION_VA
     ~0u,  // no _inlined_string_donated_
     ~0u,  // no _split_
     ~0u,  // no sizeof(Split)
-    PROTOBUF_FIELD_OFFSET(::base::ServerSetState, _impl_.type_),
     PROTOBUF_FIELD_OFFSET(::base::ServerSetState, _impl_.plugin_id_),
     PROTOBUF_FIELD_OFFSET(::base::ServerSetState, _impl_.state_),
     0,
     1,
-    2,
 };
 
 static const ::_pbi::MigrationSchema
     schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
         { 0, 11, -1, sizeof(::base::ClientData)},
         { 14, 24, -1, sizeof(::base::PluginData)},
-        { 26, 36, -1, sizeof(::base::ClientJoin)},
-        { 38, 49, -1, sizeof(::base::ClientState)},
-        { 52, 63, -1, sizeof(::base::ServerJoin)},
-        { 66, 76, -1, sizeof(::base::ServerPlugin)},
-        { 78, 89, -1, sizeof(::base::ServerSetState)},
+        { 26, 35, -1, sizeof(::base::ClientJoin)},
+        { 36, 46, -1, sizeof(::base::ClientState)},
+        { 48, 58, -1, sizeof(::base::ServerJoin)},
+        { 60, 69, -1, sizeof(::base::ServerPlugin)},
+        { 70, 80, -1, sizeof(::base::ServerSetState)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -261,21 +246,19 @@ const char descriptor_table_protodef_BaseMessages_2eproto[] PROTOBUF_SECTION_VAR
     "\n\022BaseMessages.proto\022\004base\"8\n\nClientData"
     "\022\014\n\004name\030\001 \002(\t\022\n\n\002id\030\002 \002(\005\022\020\n\010is_admin\030\003"
     " \002(\010\",\n\nPluginData\022\n\n\002id\030\001 \002(\t\022\022\n\nsessio"
-    "n_id\030\002 \002(\005\"(\n\nClientJoin\022\014\n\004type\030\001 \002(\005\022\014"
-    "\n\004name\030\002 \002(\t\"E\n\013ClientState\022\014\n\004type\030\001 \002("
-    "\005\022\031\n\021plugin_session_id\030\002 \001(\005\022\r\n\005state\030\003 "
-    "\002(\005\"L\n\nServerJoin\022\014\n\004type\030\001 \002(\005\022\036\n\004data\030"
-    "\002 \002(\0132\020.base.ClientData\022\020\n\010is_local\030\003 \002("
-    "\010\"<\n\014ServerPlugin\022\014\n\004type\030\001 \002(\005\022\036\n\004data\030"
-    "\002 \002(\0132\020.base.PluginData\"@\n\016ServerSetStat"
-    "e\022\014\n\004type\030\001 \002(\005\022\021\n\tplugin_id\030\002 \001(\005\022\r\n\005st"
-    "ate\030\003 \002(\005"
+    "n_id\030\002 \002(\005\"\032\n\nClientJoin\022\014\n\004name\030\001 \002(\t\"7"
+    "\n\013ClientState\022\031\n\021plugin_session_id\030\001 \001(\005"
+    "\022\r\n\005state\030\002 \002(\005\">\n\nServerJoin\022\036\n\004data\030\001 "
+    "\002(\0132\020.base.ClientData\022\020\n\010is_local\030\002 \002(\010\""
+    ".\n\014ServerPlugin\022\036\n\004data\030\001 \002(\0132\020.base.Plu"
+    "ginData\"2\n\016ServerSetState\022\021\n\tplugin_id\030\001"
+    " \001(\005\022\r\n\005state\030\002 \002(\005"
 };
 static ::absl::once_flag descriptor_table_BaseMessages_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_BaseMessages_2eproto = {
     false,
     false,
-    449,
+    379,
     descriptor_table_protodef_BaseMessages_2eproto,
     "BaseMessages.proto",
     &descriptor_table_BaseMessages_2eproto_once,
@@ -920,14 +903,11 @@ class ClientJoin::_Internal {
   using HasBits = decltype(std::declval<ClientJoin>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
     8 * PROTOBUF_FIELD_OFFSET(ClientJoin, _impl_._has_bits_);
-  static void set_has_type(HasBits* has_bits) {
-    (*has_bits)[0] |= 2u;
-  }
   static void set_has_name(HasBits* has_bits) {
     (*has_bits)[0] |= 1u;
   }
   static bool MissingRequiredFields(const HasBits& has_bits) {
-    return ((has_bits[0] & 0x00000003) ^ 0x00000003) != 0;
+    return ((has_bits[0] & 0x00000001) ^ 0x00000001) != 0;
   }
 };
 
@@ -942,8 +922,7 @@ ClientJoin::ClientJoin(const ClientJoin& from)
   new (&_impl_) Impl_{
       decltype(_impl_._has_bits_){from._impl_._has_bits_}
     , /*decltype(_impl_._cached_size_)*/{}
-    , decltype(_impl_.name_){}
-    , decltype(_impl_.type_){}};
+    , decltype(_impl_.name_){}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   _impl_.name_.InitDefault();
@@ -954,7 +933,6 @@ ClientJoin::ClientJoin(const ClientJoin& from)
     _this->_impl_.name_.Set(from._internal_name(), 
       _this->GetArenaForAllocation());
   }
-  _this->_impl_.type_ = from._impl_.type_;
   // @@protoc_insertion_point(copy_constructor:base.ClientJoin)
 }
 
@@ -964,7 +942,6 @@ inline void ClientJoin::SharedCtor(::_pb::Arena* arena) {
       decltype(_impl_._has_bits_){}
     , /*decltype(_impl_._cached_size_)*/{}
     , decltype(_impl_.name_){}
-    , decltype(_impl_.type_){0}
   };
   _impl_.name_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
@@ -1000,7 +977,6 @@ void ClientJoin::Clear() {
   if (cached_has_bits & 0x00000001u) {
     _impl_.name_.ClearNonDefaultToEmpty();
   }
-  _impl_.type_ = 0;
   _impl_._has_bits_.Clear();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
@@ -1013,19 +989,9 @@ const char* ClientJoin::_InternalParse(const char* ptr, ::_pbi::ParseContext* ct
     ::uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
-      // required int32 type = 1;
+      // required string name = 1;
       case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 8)) {
-          _Internal::set_has_type(&has_bits);
-          _impl_.type_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
-          CHK_(ptr);
-        } else {
-          goto handle_unusual;
-        }
-        continue;
-      // required string name = 2;
-      case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 18)) {
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 10)) {
           auto str = _internal_mutable_name();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
@@ -1068,20 +1034,14 @@ failure:
   (void) cached_has_bits;
 
   cached_has_bits = _impl_._has_bits_[0];
-  // required int32 type = 1;
-  if (cached_has_bits & 0x00000002u) {
-    target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteInt32ToArray(1, this->_internal_type(), target);
-  }
-
-  // required string name = 2;
+  // required string name = 1;
   if (cached_has_bits & 0x00000001u) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::VerifyUTF8StringNamedField(
       this->_internal_name().data(), static_cast<int>(this->_internal_name().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::SERIALIZE,
       "base.ClientJoin.name");
     target = stream->WriteStringMaybeAliased(
-        2, this->_internal_name(), target);
+        1, this->_internal_name(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -1092,40 +1052,16 @@ failure:
   return target;
 }
 
-::size_t ClientJoin::RequiredFieldsByteSizeFallback() const {
-// @@protoc_insertion_point(required_fields_byte_size_fallback_start:base.ClientJoin)
-  ::size_t total_size = 0;
-
-  if ((_impl_._has_bits_[0] & 0x00000001u) != 0) {
-    // required string name = 2;
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_name());
-  }
-
-  if ((_impl_._has_bits_[0] & 0x00000002u) != 0) {
-    // required int32 type = 1;
-    total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_type());
-  }
-
-  return total_size;
-}
 ::size_t ClientJoin::ByteSizeLong() const {
 
 // @@protoc_insertion_point(message_byte_size_start:base.ClientJoin)
   ::size_t total_size = 0;
 
-  if (((_impl_._has_bits_[0] & 0x00000003) ^ 0x00000003) == 0) {  // All required fields are present.
-    // required string name = 2;
+  // required string name = 1;
+  if ((_impl_._has_bits_[0] & 0x00000001u) != 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
         this->_internal_name());
-
-    // required int32 type = 1;
-    total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_type());
-
-  } else {
-    total_size += RequiredFieldsByteSizeFallback();
   }
   ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
@@ -1150,15 +1086,8 @@ void ClientJoin::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PRO
   ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  cached_has_bits = from._impl_._has_bits_[0];
-  if (cached_has_bits & 0x00000003u) {
-    if (cached_has_bits & 0x00000001u) {
-      _this->_internal_set_name(from._internal_name());
-    }
-    if (cached_has_bits & 0x00000002u) {
-      _this->_impl_.type_ = from._impl_.type_;
-    }
-    _this->_impl_._has_bits_[0] |= cached_has_bits;
+  if ((from._impl_._has_bits_[0] & 0x00000001u) != 0) {
+    _this->_internal_set_name(from._internal_name());
   }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
@@ -1185,7 +1114,6 @@ void ClientJoin::InternalSwap(ClientJoin* other) {
       &_impl_.name_, lhs_arena,
       &other->_impl_.name_, rhs_arena
   );
-  swap(_impl_.type_, other->_impl_.type_);
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata ClientJoin::GetMetadata() const {
@@ -1201,17 +1129,14 @@ class ClientState::_Internal {
   using HasBits = decltype(std::declval<ClientState>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
     8 * PROTOBUF_FIELD_OFFSET(ClientState, _impl_._has_bits_);
-  static void set_has_type(HasBits* has_bits) {
+  static void set_has_plugin_session_id(HasBits* has_bits) {
     (*has_bits)[0] |= 1u;
   }
-  static void set_has_plugin_session_id(HasBits* has_bits) {
+  static void set_has_state(HasBits* has_bits) {
     (*has_bits)[0] |= 2u;
   }
-  static void set_has_state(HasBits* has_bits) {
-    (*has_bits)[0] |= 4u;
-  }
   static bool MissingRequiredFields(const HasBits& has_bits) {
-    return ((has_bits[0] & 0x00000005) ^ 0x00000005) != 0;
+    return ((has_bits[0] & 0x00000002) ^ 0x00000002) != 0;
   }
 };
 
@@ -1232,7 +1157,6 @@ inline void ClientState::SharedCtor(::_pb::Arena* arena) {
   new (&_impl_) Impl_{
       decltype(_impl_._has_bits_){}
     , /*decltype(_impl_._cached_size_)*/{}
-    , decltype(_impl_.type_){0}
     , decltype(_impl_.plugin_session_id_){0}
     , decltype(_impl_.state_){0}
   };
@@ -1262,10 +1186,10 @@ void ClientState::Clear() {
   (void) cached_has_bits;
 
   cached_has_bits = _impl_._has_bits_[0];
-  if (cached_has_bits & 0x00000007u) {
-    ::memset(&_impl_.type_, 0, static_cast<::size_t>(
+  if (cached_has_bits & 0x00000003u) {
+    ::memset(&_impl_.plugin_session_id_, 0, static_cast<::size_t>(
         reinterpret_cast<char*>(&_impl_.state_) -
-        reinterpret_cast<char*>(&_impl_.type_)) + sizeof(_impl_.state_));
+        reinterpret_cast<char*>(&_impl_.plugin_session_id_)) + sizeof(_impl_.state_));
   }
   _impl_._has_bits_.Clear();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
@@ -1279,19 +1203,9 @@ const char* ClientState::_InternalParse(const char* ptr, ::_pbi::ParseContext* c
     ::uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
-      // required int32 type = 1;
+      // optional int32 plugin_session_id = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 8)) {
-          _Internal::set_has_type(&has_bits);
-          _impl_.type_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
-          CHK_(ptr);
-        } else {
-          goto handle_unusual;
-        }
-        continue;
-      // optional int32 plugin_session_id = 2;
-      case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 16)) {
           _Internal::set_has_plugin_session_id(&has_bits);
           _impl_.plugin_session_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
           CHK_(ptr);
@@ -1299,9 +1213,9 @@ const char* ClientState::_InternalParse(const char* ptr, ::_pbi::ParseContext* c
           goto handle_unusual;
         }
         continue;
-      // required int32 state = 3;
-      case 3:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 24)) {
+      // required int32 state = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 16)) {
           _Internal::set_has_state(&has_bits);
           _impl_.state_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
           CHK_(ptr);
@@ -1341,22 +1255,16 @@ failure:
   (void) cached_has_bits;
 
   cached_has_bits = _impl_._has_bits_[0];
-  // required int32 type = 1;
+  // optional int32 plugin_session_id = 1;
   if (cached_has_bits & 0x00000001u) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteInt32ToArray(1, this->_internal_type(), target);
+    target = ::_pbi::WireFormatLite::WriteInt32ToArray(1, this->_internal_plugin_session_id(), target);
   }
 
-  // optional int32 plugin_session_id = 2;
+  // required int32 state = 2;
   if (cached_has_bits & 0x00000002u) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteInt32ToArray(2, this->_internal_plugin_session_id(), target);
-  }
-
-  // required int32 state = 3;
-  if (cached_has_bits & 0x00000004u) {
-    target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteInt32ToArray(3, this->_internal_state(), target);
+    target = ::_pbi::WireFormatLite::WriteInt32ToArray(2, this->_internal_state(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -1367,44 +1275,22 @@ failure:
   return target;
 }
 
-::size_t ClientState::RequiredFieldsByteSizeFallback() const {
-// @@protoc_insertion_point(required_fields_byte_size_fallback_start:base.ClientState)
-  ::size_t total_size = 0;
-
-  if ((_impl_._has_bits_[0] & 0x00000001u) != 0) {
-    // required int32 type = 1;
-    total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_type());
-  }
-
-  if ((_impl_._has_bits_[0] & 0x00000004u) != 0) {
-    // required int32 state = 3;
-    total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_state());
-  }
-
-  return total_size;
-}
 ::size_t ClientState::ByteSizeLong() const {
 
 // @@protoc_insertion_point(message_byte_size_start:base.ClientState)
   ::size_t total_size = 0;
 
-  if (((_impl_._has_bits_[0] & 0x00000005) ^ 0x00000005) == 0) {  // All required fields are present.
-    // required int32 type = 1;
-    total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_type());
-
-    // required int32 state = 3;
+  // required int32 state = 2;
+  if ((_impl_._has_bits_[0] & 0x00000002u) != 0) {
     total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_state());
-
-  } else {
-    total_size += RequiredFieldsByteSizeFallback();
   }
   ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // optional int32 plugin_session_id = 2;
+  // optional int32 plugin_session_id = 1;
   cached_has_bits = _impl_._has_bits_[0];
-  if (cached_has_bits & 0x00000002u) {
+  if (cached_has_bits & 0x00000001u) {
     total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_plugin_session_id());
   }
 
@@ -1428,14 +1314,11 @@ void ClientState::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PR
   (void) cached_has_bits;
 
   cached_has_bits = from._impl_._has_bits_[0];
-  if (cached_has_bits & 0x00000007u) {
+  if (cached_has_bits & 0x00000003u) {
     if (cached_has_bits & 0x00000001u) {
-      _this->_impl_.type_ = from._impl_.type_;
-    }
-    if (cached_has_bits & 0x00000002u) {
       _this->_impl_.plugin_session_id_ = from._impl_.plugin_session_id_;
     }
-    if (cached_has_bits & 0x00000004u) {
+    if (cached_has_bits & 0x00000002u) {
       _this->_impl_.state_ = from._impl_.state_;
     }
     _this->_impl_._has_bits_[0] |= cached_has_bits;
@@ -1462,9 +1345,9 @@ void ClientState::InternalSwap(ClientState* other) {
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
       PROTOBUF_FIELD_OFFSET(ClientState, _impl_.state_)
       + sizeof(ClientState::_impl_.state_)
-      - PROTOBUF_FIELD_OFFSET(ClientState, _impl_.type_)>(
-          reinterpret_cast<char*>(&_impl_.type_),
-          reinterpret_cast<char*>(&other->_impl_.type_));
+      - PROTOBUF_FIELD_OFFSET(ClientState, _impl_.plugin_session_id_)>(
+          reinterpret_cast<char*>(&_impl_.plugin_session_id_),
+          reinterpret_cast<char*>(&other->_impl_.plugin_session_id_));
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata ClientState::GetMetadata() const {
@@ -1480,18 +1363,15 @@ class ServerJoin::_Internal {
   using HasBits = decltype(std::declval<ServerJoin>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
     8 * PROTOBUF_FIELD_OFFSET(ServerJoin, _impl_._has_bits_);
-  static void set_has_type(HasBits* has_bits) {
-    (*has_bits)[0] |= 2u;
-  }
   static const ::base::ClientData& data(const ServerJoin* msg);
   static void set_has_data(HasBits* has_bits) {
     (*has_bits)[0] |= 1u;
   }
   static void set_has_is_local(HasBits* has_bits) {
-    (*has_bits)[0] |= 4u;
+    (*has_bits)[0] |= 2u;
   }
   static bool MissingRequiredFields(const HasBits& has_bits) {
-    return ((has_bits[0] & 0x00000007) ^ 0x00000007) != 0;
+    return ((has_bits[0] & 0x00000003) ^ 0x00000003) != 0;
   }
 };
 
@@ -1511,16 +1391,13 @@ ServerJoin::ServerJoin(const ServerJoin& from)
       decltype(_impl_._has_bits_){from._impl_._has_bits_}
     , /*decltype(_impl_._cached_size_)*/{}
     , decltype(_impl_.data_){nullptr}
-    , decltype(_impl_.type_){}
     , decltype(_impl_.is_local_){}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   if ((from._impl_._has_bits_[0] & 0x00000001u) != 0) {
     _this->_impl_.data_ = new ::base::ClientData(*from._impl_.data_);
   }
-  ::memcpy(&_impl_.type_, &from._impl_.type_,
-    static_cast<::size_t>(reinterpret_cast<char*>(&_impl_.is_local_) -
-    reinterpret_cast<char*>(&_impl_.type_)) + sizeof(_impl_.is_local_));
+  _this->_impl_.is_local_ = from._impl_.is_local_;
   // @@protoc_insertion_point(copy_constructor:base.ServerJoin)
 }
 
@@ -1530,7 +1407,6 @@ inline void ServerJoin::SharedCtor(::_pb::Arena* arena) {
       decltype(_impl_._has_bits_){}
     , /*decltype(_impl_._cached_size_)*/{}
     , decltype(_impl_.data_){nullptr}
-    , decltype(_impl_.type_){0}
     , decltype(_impl_.is_local_){false}
   };
 }
@@ -1564,11 +1440,7 @@ void ServerJoin::Clear() {
     GOOGLE_ABSL_DCHECK(_impl_.data_ != nullptr);
     _impl_.data_->Clear();
   }
-  if (cached_has_bits & 0x00000006u) {
-    ::memset(&_impl_.type_, 0, static_cast<::size_t>(
-        reinterpret_cast<char*>(&_impl_.is_local_) -
-        reinterpret_cast<char*>(&_impl_.type_)) + sizeof(_impl_.is_local_));
-  }
+  _impl_.is_local_ = false;
   _impl_._has_bits_.Clear();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
@@ -1581,28 +1453,18 @@ const char* ServerJoin::_InternalParse(const char* ptr, ::_pbi::ParseContext* ct
     ::uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
-      // required int32 type = 1;
+      // required .base.ClientData data = 1;
       case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 8)) {
-          _Internal::set_has_type(&has_bits);
-          _impl_.type_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
-          CHK_(ptr);
-        } else {
-          goto handle_unusual;
-        }
-        continue;
-      // required .base.ClientData data = 2;
-      case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 18)) {
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 10)) {
           ptr = ctx->ParseMessage(_internal_mutable_data(), ptr);
           CHK_(ptr);
         } else {
           goto handle_unusual;
         }
         continue;
-      // required bool is_local = 3;
-      case 3:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 24)) {
+      // required bool is_local = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 16)) {
           _Internal::set_has_is_local(&has_bits);
           _impl_.is_local_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
@@ -1642,23 +1504,17 @@ failure:
   (void) cached_has_bits;
 
   cached_has_bits = _impl_._has_bits_[0];
-  // required int32 type = 1;
-  if (cached_has_bits & 0x00000002u) {
-    target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteInt32ToArray(1, this->_internal_type(), target);
-  }
-
-  // required .base.ClientData data = 2;
+  // required .base.ClientData data = 1;
   if (cached_has_bits & 0x00000001u) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(2, _Internal::data(this),
+      InternalWriteMessage(1, _Internal::data(this),
         _Internal::data(this).GetCachedSize(), target, stream);
   }
 
-  // required bool is_local = 3;
-  if (cached_has_bits & 0x00000004u) {
+  // required bool is_local = 2;
+  if (cached_has_bits & 0x00000002u) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteBoolToArray(3, this->_internal_is_local(), target);
+    target = ::_pbi::WireFormatLite::WriteBoolToArray(2, this->_internal_is_local(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -1674,19 +1530,14 @@ failure:
   ::size_t total_size = 0;
 
   if ((_impl_._has_bits_[0] & 0x00000001u) != 0) {
-    // required .base.ClientData data = 2;
+    // required .base.ClientData data = 1;
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
         *_impl_.data_);
   }
 
   if ((_impl_._has_bits_[0] & 0x00000002u) != 0) {
-    // required int32 type = 1;
-    total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_type());
-  }
-
-  if ((_impl_._has_bits_[0] & 0x00000004u) != 0) {
-    // required bool is_local = 3;
+    // required bool is_local = 2;
     total_size += 1 + 1;
   }
 
@@ -1697,16 +1548,13 @@ failure:
 // @@protoc_insertion_point(message_byte_size_start:base.ServerJoin)
   ::size_t total_size = 0;
 
-  if (((_impl_._has_bits_[0] & 0x00000007) ^ 0x00000007) == 0) {  // All required fields are present.
-    // required .base.ClientData data = 2;
+  if (((_impl_._has_bits_[0] & 0x00000003) ^ 0x00000003) == 0) {  // All required fields are present.
+    // required .base.ClientData data = 1;
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
         *_impl_.data_);
 
-    // required int32 type = 1;
-    total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_type());
-
-    // required bool is_local = 3;
+    // required bool is_local = 2;
     total_size += 1 + 1;
 
   } else {
@@ -1736,15 +1584,12 @@ void ServerJoin::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PRO
   (void) cached_has_bits;
 
   cached_has_bits = from._impl_._has_bits_[0];
-  if (cached_has_bits & 0x00000007u) {
+  if (cached_has_bits & 0x00000003u) {
     if (cached_has_bits & 0x00000001u) {
       _this->_internal_mutable_data()->::base::ClientData::MergeFrom(
           from._internal_data());
     }
     if (cached_has_bits & 0x00000002u) {
-      _this->_impl_.type_ = from._impl_.type_;
-    }
-    if (cached_has_bits & 0x00000004u) {
       _this->_impl_.is_local_ = from._impl_.is_local_;
     }
     _this->_impl_._has_bits_[0] |= cached_has_bits;
@@ -1792,15 +1637,12 @@ class ServerPlugin::_Internal {
   using HasBits = decltype(std::declval<ServerPlugin>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
     8 * PROTOBUF_FIELD_OFFSET(ServerPlugin, _impl_._has_bits_);
-  static void set_has_type(HasBits* has_bits) {
-    (*has_bits)[0] |= 2u;
-  }
   static const ::base::PluginData& data(const ServerPlugin* msg);
   static void set_has_data(HasBits* has_bits) {
     (*has_bits)[0] |= 1u;
   }
   static bool MissingRequiredFields(const HasBits& has_bits) {
-    return ((has_bits[0] & 0x00000003) ^ 0x00000003) != 0;
+    return ((has_bits[0] & 0x00000001) ^ 0x00000001) != 0;
   }
 };
 
@@ -1819,14 +1661,12 @@ ServerPlugin::ServerPlugin(const ServerPlugin& from)
   new (&_impl_) Impl_{
       decltype(_impl_._has_bits_){from._impl_._has_bits_}
     , /*decltype(_impl_._cached_size_)*/{}
-    , decltype(_impl_.data_){nullptr}
-    , decltype(_impl_.type_){}};
+    , decltype(_impl_.data_){nullptr}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   if ((from._impl_._has_bits_[0] & 0x00000001u) != 0) {
     _this->_impl_.data_ = new ::base::PluginData(*from._impl_.data_);
   }
-  _this->_impl_.type_ = from._impl_.type_;
   // @@protoc_insertion_point(copy_constructor:base.ServerPlugin)
 }
 
@@ -1836,7 +1676,6 @@ inline void ServerPlugin::SharedCtor(::_pb::Arena* arena) {
       decltype(_impl_._has_bits_){}
     , /*decltype(_impl_._cached_size_)*/{}
     , decltype(_impl_.data_){nullptr}
-    , decltype(_impl_.type_){0}
   };
 }
 
@@ -1869,7 +1708,6 @@ void ServerPlugin::Clear() {
     GOOGLE_ABSL_DCHECK(_impl_.data_ != nullptr);
     _impl_.data_->Clear();
   }
-  _impl_.type_ = 0;
   _impl_._has_bits_.Clear();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
@@ -1882,19 +1720,9 @@ const char* ServerPlugin::_InternalParse(const char* ptr, ::_pbi::ParseContext* 
     ::uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
-      // required int32 type = 1;
+      // required .base.PluginData data = 1;
       case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 8)) {
-          _Internal::set_has_type(&has_bits);
-          _impl_.type_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
-          CHK_(ptr);
-        } else {
-          goto handle_unusual;
-        }
-        continue;
-      // required .base.PluginData data = 2;
-      case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 18)) {
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 10)) {
           ptr = ctx->ParseMessage(_internal_mutable_data(), ptr);
           CHK_(ptr);
         } else {
@@ -1933,16 +1761,10 @@ failure:
   (void) cached_has_bits;
 
   cached_has_bits = _impl_._has_bits_[0];
-  // required int32 type = 1;
-  if (cached_has_bits & 0x00000002u) {
-    target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteInt32ToArray(1, this->_internal_type(), target);
-  }
-
-  // required .base.PluginData data = 2;
+  // required .base.PluginData data = 1;
   if (cached_has_bits & 0x00000001u) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(2, _Internal::data(this),
+      InternalWriteMessage(1, _Internal::data(this),
         _Internal::data(this).GetCachedSize(), target, stream);
   }
 
@@ -1954,40 +1776,16 @@ failure:
   return target;
 }
 
-::size_t ServerPlugin::RequiredFieldsByteSizeFallback() const {
-// @@protoc_insertion_point(required_fields_byte_size_fallback_start:base.ServerPlugin)
-  ::size_t total_size = 0;
-
-  if ((_impl_._has_bits_[0] & 0x00000001u) != 0) {
-    // required .base.PluginData data = 2;
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *_impl_.data_);
-  }
-
-  if ((_impl_._has_bits_[0] & 0x00000002u) != 0) {
-    // required int32 type = 1;
-    total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_type());
-  }
-
-  return total_size;
-}
 ::size_t ServerPlugin::ByteSizeLong() const {
 
 // @@protoc_insertion_point(message_byte_size_start:base.ServerPlugin)
   ::size_t total_size = 0;
 
-  if (((_impl_._has_bits_[0] & 0x00000003) ^ 0x00000003) == 0) {  // All required fields are present.
-    // required .base.PluginData data = 2;
+  // required .base.PluginData data = 1;
+  if ((_impl_._has_bits_[0] & 0x00000001u) != 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
         *_impl_.data_);
-
-    // required int32 type = 1;
-    total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_type());
-
-  } else {
-    total_size += RequiredFieldsByteSizeFallback();
   }
   ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
@@ -2012,16 +1810,9 @@ void ServerPlugin::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::P
   ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  cached_has_bits = from._impl_._has_bits_[0];
-  if (cached_has_bits & 0x00000003u) {
-    if (cached_has_bits & 0x00000001u) {
-      _this->_internal_mutable_data()->::base::PluginData::MergeFrom(
-          from._internal_data());
-    }
-    if (cached_has_bits & 0x00000002u) {
-      _this->_impl_.type_ = from._impl_.type_;
-    }
-    _this->_impl_._has_bits_[0] |= cached_has_bits;
+  if ((from._impl_._has_bits_[0] & 0x00000001u) != 0) {
+    _this->_internal_mutable_data()->::base::PluginData::MergeFrom(
+        from._internal_data());
   }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
@@ -2045,12 +1836,7 @@ void ServerPlugin::InternalSwap(ServerPlugin* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
-  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(ServerPlugin, _impl_.type_)
-      + sizeof(ServerPlugin::_impl_.type_)
-      - PROTOBUF_FIELD_OFFSET(ServerPlugin, _impl_.data_)>(
-          reinterpret_cast<char*>(&_impl_.data_),
-          reinterpret_cast<char*>(&other->_impl_.data_));
+  swap(_impl_.data_, other->_impl_.data_);
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata ServerPlugin::GetMetadata() const {
@@ -2066,17 +1852,14 @@ class ServerSetState::_Internal {
   using HasBits = decltype(std::declval<ServerSetState>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
     8 * PROTOBUF_FIELD_OFFSET(ServerSetState, _impl_._has_bits_);
-  static void set_has_type(HasBits* has_bits) {
+  static void set_has_plugin_id(HasBits* has_bits) {
     (*has_bits)[0] |= 1u;
   }
-  static void set_has_plugin_id(HasBits* has_bits) {
+  static void set_has_state(HasBits* has_bits) {
     (*has_bits)[0] |= 2u;
   }
-  static void set_has_state(HasBits* has_bits) {
-    (*has_bits)[0] |= 4u;
-  }
   static bool MissingRequiredFields(const HasBits& has_bits) {
-    return ((has_bits[0] & 0x00000005) ^ 0x00000005) != 0;
+    return ((has_bits[0] & 0x00000002) ^ 0x00000002) != 0;
   }
 };
 
@@ -2097,7 +1880,6 @@ inline void ServerSetState::SharedCtor(::_pb::Arena* arena) {
   new (&_impl_) Impl_{
       decltype(_impl_._has_bits_){}
     , /*decltype(_impl_._cached_size_)*/{}
-    , decltype(_impl_.type_){0}
     , decltype(_impl_.plugin_id_){0}
     , decltype(_impl_.state_){0}
   };
@@ -2127,10 +1909,10 @@ void ServerSetState::Clear() {
   (void) cached_has_bits;
 
   cached_has_bits = _impl_._has_bits_[0];
-  if (cached_has_bits & 0x00000007u) {
-    ::memset(&_impl_.type_, 0, static_cast<::size_t>(
+  if (cached_has_bits & 0x00000003u) {
+    ::memset(&_impl_.plugin_id_, 0, static_cast<::size_t>(
         reinterpret_cast<char*>(&_impl_.state_) -
-        reinterpret_cast<char*>(&_impl_.type_)) + sizeof(_impl_.state_));
+        reinterpret_cast<char*>(&_impl_.plugin_id_)) + sizeof(_impl_.state_));
   }
   _impl_._has_bits_.Clear();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
@@ -2144,19 +1926,9 @@ const char* ServerSetState::_InternalParse(const char* ptr, ::_pbi::ParseContext
     ::uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
-      // required int32 type = 1;
+      // optional int32 plugin_id = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 8)) {
-          _Internal::set_has_type(&has_bits);
-          _impl_.type_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
-          CHK_(ptr);
-        } else {
-          goto handle_unusual;
-        }
-        continue;
-      // optional int32 plugin_id = 2;
-      case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 16)) {
           _Internal::set_has_plugin_id(&has_bits);
           _impl_.plugin_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
           CHK_(ptr);
@@ -2164,9 +1936,9 @@ const char* ServerSetState::_InternalParse(const char* ptr, ::_pbi::ParseContext
           goto handle_unusual;
         }
         continue;
-      // required int32 state = 3;
-      case 3:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 24)) {
+      // required int32 state = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 16)) {
           _Internal::set_has_state(&has_bits);
           _impl_.state_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
           CHK_(ptr);
@@ -2206,22 +1978,16 @@ failure:
   (void) cached_has_bits;
 
   cached_has_bits = _impl_._has_bits_[0];
-  // required int32 type = 1;
+  // optional int32 plugin_id = 1;
   if (cached_has_bits & 0x00000001u) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteInt32ToArray(1, this->_internal_type(), target);
+    target = ::_pbi::WireFormatLite::WriteInt32ToArray(1, this->_internal_plugin_id(), target);
   }
 
-  // optional int32 plugin_id = 2;
+  // required int32 state = 2;
   if (cached_has_bits & 0x00000002u) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteInt32ToArray(2, this->_internal_plugin_id(), target);
-  }
-
-  // required int32 state = 3;
-  if (cached_has_bits & 0x00000004u) {
-    target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteInt32ToArray(3, this->_internal_state(), target);
+    target = ::_pbi::WireFormatLite::WriteInt32ToArray(2, this->_internal_state(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -2232,44 +1998,22 @@ failure:
   return target;
 }
 
-::size_t ServerSetState::RequiredFieldsByteSizeFallback() const {
-// @@protoc_insertion_point(required_fields_byte_size_fallback_start:base.ServerSetState)
-  ::size_t total_size = 0;
-
-  if ((_impl_._has_bits_[0] & 0x00000001u) != 0) {
-    // required int32 type = 1;
-    total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_type());
-  }
-
-  if ((_impl_._has_bits_[0] & 0x00000004u) != 0) {
-    // required int32 state = 3;
-    total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_state());
-  }
-
-  return total_size;
-}
 ::size_t ServerSetState::ByteSizeLong() const {
 
 // @@protoc_insertion_point(message_byte_size_start:base.ServerSetState)
   ::size_t total_size = 0;
 
-  if (((_impl_._has_bits_[0] & 0x00000005) ^ 0x00000005) == 0) {  // All required fields are present.
-    // required int32 type = 1;
-    total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_type());
-
-    // required int32 state = 3;
+  // required int32 state = 2;
+  if ((_impl_._has_bits_[0] & 0x00000002u) != 0) {
     total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_state());
-
-  } else {
-    total_size += RequiredFieldsByteSizeFallback();
   }
   ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // optional int32 plugin_id = 2;
+  // optional int32 plugin_id = 1;
   cached_has_bits = _impl_._has_bits_[0];
-  if (cached_has_bits & 0x00000002u) {
+  if (cached_has_bits & 0x00000001u) {
     total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_plugin_id());
   }
 
@@ -2293,14 +2037,11 @@ void ServerSetState::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const :
   (void) cached_has_bits;
 
   cached_has_bits = from._impl_._has_bits_[0];
-  if (cached_has_bits & 0x00000007u) {
+  if (cached_has_bits & 0x00000003u) {
     if (cached_has_bits & 0x00000001u) {
-      _this->_impl_.type_ = from._impl_.type_;
-    }
-    if (cached_has_bits & 0x00000002u) {
       _this->_impl_.plugin_id_ = from._impl_.plugin_id_;
     }
-    if (cached_has_bits & 0x00000004u) {
+    if (cached_has_bits & 0x00000002u) {
       _this->_impl_.state_ = from._impl_.state_;
     }
     _this->_impl_._has_bits_[0] |= cached_has_bits;
@@ -2327,9 +2068,9 @@ void ServerSetState::InternalSwap(ServerSetState* other) {
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
       PROTOBUF_FIELD_OFFSET(ServerSetState, _impl_.state_)
       + sizeof(ServerSetState::_impl_.state_)
-      - PROTOBUF_FIELD_OFFSET(ServerSetState, _impl_.type_)>(
-          reinterpret_cast<char*>(&_impl_.type_),
-          reinterpret_cast<char*>(&other->_impl_.type_));
+      - PROTOBUF_FIELD_OFFSET(ServerSetState, _impl_.plugin_id_)>(
+          reinterpret_cast<char*>(&_impl_.plugin_id_),
+          reinterpret_cast<char*>(&other->_impl_.plugin_id_));
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata ServerSetState::GetMetadata() const {

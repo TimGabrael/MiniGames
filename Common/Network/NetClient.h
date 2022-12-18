@@ -14,11 +14,12 @@ struct NetClient : public NetClientInterface
 	virtual ClientConnection* GetSelf();
 	virtual ClientConnection* GetConnection(uint16_t id);
 	virtual void SetCallback(ClientPacketFunction fn, uint16_t packetID);
+	virtual void SetDeserializer(DeserializationFunc fn, uint16_t packetID);
 
 	virtual void SetJoinCallback(ClientJoinCallbackFunction fn);
-	virtual void SetDisconnectcallback(ClientDisconnectCallbackFunction fn);
+	virtual void SetDisconnectCallback(ClientDisconnectCallbackFunction fn);
 
-	virtual bool SendData(const void* data, uint32_t size, uint32_t flags);
+	virtual bool SendData(uint16_t packetID, const void* data, uint32_t size, uint32_t flags);
 
 	virtual bool IsP2P() const;
 
@@ -29,13 +30,20 @@ struct NetClient : public NetClientInterface
 
 	void Poll();
 
-	// use after Poll, this is seperate as both client and server should call it only once
-	static void RunCallbacks();
 
 	NetSocketClient socket;
-	ClientConnection* local = nullptr;
 	void* userData = nullptr;
 private:
+	ClientConnection* local = nullptr;
+	ClientDisconnectCallbackFunction disconnectCB = nullptr;
+	ClientJoinCallbackFunction joinCB = nullptr;
+	struct CallbackInfo
+	{
+		DeserializationFunc deserializer = nullptr;
+		ClientPacketFunction receiver = nullptr;
+	};
+	std::vector<CallbackInfo> callbacks;
+	std::vector<char> tempStorage;
 	NetClient() {};
 
 };

@@ -46,3 +46,7 @@ NameValidationResult ValidateName(const std::string& name)
 
 	return Name_Ok;
 }
+void NetRunCallbacks()
+{
+	SteamNetworkingSockets()->RunCallbacks();
+}

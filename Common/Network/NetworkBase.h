@@ -65,12 +65,15 @@ struct JoinResult
 
 struct NetServerInterface;
 struct NetClientInterface;
-// should return the size of the packet negative numbers will discard the entire packet
-typedef int(__stdcall* ClientPacketFunction)(NetClientInterface* socket, char* packet, int packetSize);
-typedef int(__stdcall* ServerPacketFunction)(NetServerInterface* socket, ServerConnection* client, char* packet, int packetSize);
+
+typedef void*(__stdcall* DeserializationFunc)(char* packet, int packetSize);
+
+typedef bool(__stdcall* ServerPacketFunction)(NetServerInterface* socket, ServerConnection* client, void* packet, int packetSize);
 typedef JoinResult(__stdcall* ServerJoinCallbackFunction)(NetServerInterface* socket, ServerConnection* client);
 typedef void(__stdcall* ServerDisconnectCallbackFunction)(NetServerInterface* socket, ServerConnection* client);
 
+
+typedef bool(__stdcall* ClientPacketFunction)(NetClientInterface* socket, void* packet, int packetSize);
 typedef void(__stdcall* ClientJoinCallbackFunction)(NetClientInterface* socket, ClientConnection* client);
 typedef void(__stdcall* ClientDisconnectCallbackFunction)(NetClientInterface* socket, ClientConnection* client);
 
@@ -89,12 +92,12 @@ struct NetServerInterface
 
 	virtual ServerConnection* GetConnection(uint16_t id) = 0;
 	virtual void SetCallback(ServerPacketFunction fn, uint16_t packetID) = 0;
+	virtual void SetDeserializer(DeserializationFunc fn, uint16_t packetID) = 0;
 	
 	virtual void SetJoinCallback(ServerJoinCallbackFunction fn) = 0;
-	virtual void SetDisconnectcallback(ServerDisconnectCallbackFunction fn) = 0;
+	virtual void SetDisconnectCallback(ServerDisconnectCallbackFunction fn) = 0;
 
-	virtual bool SendData(ServerConnection* conn, const void* data, uint32_t size, uint32_t flags) = 0;
-	virtual bool SendData(uint16_t id, const void* data, uint32_t size, uint32_t flags) = 0;
+	virtual bool SendData(ServerConnection* conn, uint16_t packetID, const void* data, uint32_t size, uint32_t flags) = 0;
 
 	virtual bool IsP2P() const = 0;
 
@@ -110,11 +113,12 @@ struct NetClientInterface
 	virtual ClientConnection* GetSelf() = 0;
 	virtual ClientConnection* GetConnection(uint16_t id) = 0;
 	virtual void SetCallback(ClientPacketFunction fn, uint16_t packetID) = 0;
+	virtual void SetDeserializer(DeserializationFunc fn, uint16_t packetID) = 0;
 
 	virtual void SetJoinCallback(ClientJoinCallbackFunction fn) = 0;
-	virtual void SetDisconnectcallback(ClientDisconnectCallbackFunction fn) = 0;
+	virtual void SetDisconnectCallback(ClientDisconnectCallbackFunction fn) = 0;
 
-	virtual bool SendData(const void* data, uint32_t size, uint32_t flags) = 0;
+	virtual bool SendData(uint16_t packetID, const void* data, uint32_t size, uint32_t flags) = 0;
 
 	virtual bool IsP2P() const = 0;
 

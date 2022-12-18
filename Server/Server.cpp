@@ -2,7 +2,7 @@
 #include "CommonCollection.h"
 #include <chrono>
 #include "Network/NetServer.h"
-
+#include "Network/NetCommon.h"
 
 
 int main()
@@ -13,7 +13,7 @@ int main()
 		while (true)
 		{
 			server->Poll();
-			NetServer::RunCallbacks();
+			NetRunCallbacks();
 		}
 	}
 	//NetError err = NetError::OK;

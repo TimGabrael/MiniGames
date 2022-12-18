@@ -581,10 +581,9 @@ class ClientJoin final :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kNameFieldNumber = 2,
-    kTypeFieldNumber = 1,
+    kNameFieldNumber = 1,
   };
-  // required string name = 2;
+  // required string name = 1;
   bool has_name() const;
   void clear_name() ;
   const std::string& name() const;
@@ -598,21 +597,9 @@ class ClientJoin final :
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_name(const std::string& value);
   std::string* _internal_mutable_name();
   public:
-  // required int32 type = 1;
-  bool has_type() const;
-  void clear_type() ;
-  ::int32_t type() const;
-  void set_type(::int32_t value);
-  private:
-  ::int32_t _internal_type() const;
-  void _internal_set_type(::int32_t value);
-  public:
   // @@protoc_insertion_point(class_scope:base.ClientJoin)
  private:
   class _Internal;
-
-  // helper for ByteSizeLong()
-  ::size_t RequiredFieldsByteSizeFallback() const;
 
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
@@ -621,7 +608,6 @@ class ClientJoin final :
     ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr name_;
-    ::int32_t type_;
   };
   union { Impl_ _impl_; };
   friend struct ::TableStruct_BaseMessages_2eproto;
@@ -754,20 +740,10 @@ class ClientState final :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kTypeFieldNumber = 1,
-    kPluginSessionIdFieldNumber = 2,
-    kStateFieldNumber = 3,
+    kPluginSessionIdFieldNumber = 1,
+    kStateFieldNumber = 2,
   };
-  // required int32 type = 1;
-  bool has_type() const;
-  void clear_type() ;
-  ::int32_t type() const;
-  void set_type(::int32_t value);
-  private:
-  ::int32_t _internal_type() const;
-  void _internal_set_type(::int32_t value);
-  public:
-  // optional int32 plugin_session_id = 2;
+  // optional int32 plugin_session_id = 1;
   bool has_plugin_session_id() const;
   void clear_plugin_session_id() ;
   ::int32_t plugin_session_id() const;
@@ -776,7 +752,7 @@ class ClientState final :
   ::int32_t _internal_plugin_session_id() const;
   void _internal_set_plugin_session_id(::int32_t value);
   public:
-  // required int32 state = 3;
+  // required int32 state = 2;
   bool has_state() const;
   void clear_state() ;
   ::int32_t state() const;
@@ -789,16 +765,12 @@ class ClientState final :
  private:
   class _Internal;
 
-  // helper for ByteSizeLong()
-  ::size_t RequiredFieldsByteSizeFallback() const;
-
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   struct Impl_ {
     ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
-    ::int32_t type_;
     ::int32_t plugin_session_id_;
     ::int32_t state_;
   };
@@ -933,11 +905,10 @@ class ServerJoin final :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kDataFieldNumber = 2,
-    kTypeFieldNumber = 1,
-    kIsLocalFieldNumber = 3,
+    kDataFieldNumber = 1,
+    kIsLocalFieldNumber = 2,
   };
-  // required .base.ClientData data = 2;
+  // required .base.ClientData data = 1;
   bool has_data() const;
   void clear_data() ;
   const ::base::ClientData& data() const;
@@ -951,16 +922,7 @@ class ServerJoin final :
   void unsafe_arena_set_allocated_data(
       ::base::ClientData* data);
   ::base::ClientData* unsafe_arena_release_data();
-  // required int32 type = 1;
-  bool has_type() const;
-  void clear_type() ;
-  ::int32_t type() const;
-  void set_type(::int32_t value);
-  private:
-  ::int32_t _internal_type() const;
-  void _internal_set_type(::int32_t value);
-  public:
-  // required bool is_local = 3;
+  // required bool is_local = 2;
   bool has_is_local() const;
   void clear_is_local() ;
   bool is_local() const;
@@ -983,7 +945,6 @@ class ServerJoin final :
     ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
     ::base::ClientData* data_;
-    ::int32_t type_;
     bool is_local_;
   };
   union { Impl_ _impl_; };
@@ -1117,10 +1078,9 @@ class ServerPlugin final :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kDataFieldNumber = 2,
-    kTypeFieldNumber = 1,
+    kDataFieldNumber = 1,
   };
-  // required .base.PluginData data = 2;
+  // required .base.PluginData data = 1;
   bool has_data() const;
   void clear_data() ;
   const ::base::PluginData& data() const;
@@ -1134,21 +1094,9 @@ class ServerPlugin final :
   void unsafe_arena_set_allocated_data(
       ::base::PluginData* data);
   ::base::PluginData* unsafe_arena_release_data();
-  // required int32 type = 1;
-  bool has_type() const;
-  void clear_type() ;
-  ::int32_t type() const;
-  void set_type(::int32_t value);
-  private:
-  ::int32_t _internal_type() const;
-  void _internal_set_type(::int32_t value);
-  public:
   // @@protoc_insertion_point(class_scope:base.ServerPlugin)
  private:
   class _Internal;
-
-  // helper for ByteSizeLong()
-  ::size_t RequiredFieldsByteSizeFallback() const;
 
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
@@ -1157,7 +1105,6 @@ class ServerPlugin final :
     ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
     ::base::PluginData* data_;
-    ::int32_t type_;
   };
   union { Impl_ _impl_; };
   friend struct ::TableStruct_BaseMessages_2eproto;
@@ -1290,20 +1237,10 @@ class ServerSetState final :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kTypeFieldNumber = 1,
-    kPluginIdFieldNumber = 2,
-    kStateFieldNumber = 3,
+    kPluginIdFieldNumber = 1,
+    kStateFieldNumber = 2,
   };
-  // required int32 type = 1;
-  bool has_type() const;
-  void clear_type() ;
-  ::int32_t type() const;
-  void set_type(::int32_t value);
-  private:
-  ::int32_t _internal_type() const;
-  void _internal_set_type(::int32_t value);
-  public:
-  // optional int32 plugin_id = 2;
+  // optional int32 plugin_id = 1;
   bool has_plugin_id() const;
   void clear_plugin_id() ;
   ::int32_t plugin_id() const;
@@ -1312,7 +1249,7 @@ class ServerSetState final :
   ::int32_t _internal_plugin_id() const;
   void _internal_set_plugin_id(::int32_t value);
   public:
-  // required int32 state = 3;
+  // required int32 state = 2;
   bool has_state() const;
   void clear_state() ;
   ::int32_t state() const;
@@ -1325,16 +1262,12 @@ class ServerSetState final :
  private:
   class _Internal;
 
-  // helper for ByteSizeLong()
-  ::size_t RequiredFieldsByteSizeFallback() const;
-
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   struct Impl_ {
     ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
-    ::int32_t type_;
     ::int32_t plugin_id_;
     ::int32_t state_;
   };
@@ -1567,32 +1500,7 @@ inline void PluginData::set_session_id(::int32_t value) {
 
 // ClientJoin
 
-// required int32 type = 1;
-inline bool ClientJoin::has_type() const {
-  bool value = (_impl_._has_bits_[0] & 0x00000002u) != 0;
-  return value;
-}
-inline void ClientJoin::clear_type() {
-  _impl_.type_ = 0;
-  _impl_._has_bits_[0] &= ~0x00000002u;
-}
-inline ::int32_t ClientJoin::_internal_type() const {
-  return _impl_.type_;
-}
-inline ::int32_t ClientJoin::type() const {
-  // @@protoc_insertion_point(field_get:base.ClientJoin.type)
-  return _internal_type();
-}
-inline void ClientJoin::_internal_set_type(::int32_t value) {
-  _impl_._has_bits_[0] |= 0x00000002u;
-  _impl_.type_ = value;
-}
-inline void ClientJoin::set_type(::int32_t value) {
-  _internal_set_type(value);
-  // @@protoc_insertion_point(field_set:base.ClientJoin.type)
-}
-
-// required string name = 2;
+// required string name = 1;
 inline bool ClientJoin::has_name() const {
   bool value = (_impl_._has_bits_[0] & 0x00000001u) != 0;
   return value;
@@ -1659,39 +1567,14 @@ inline void ClientJoin::set_allocated_name(std::string* name) {
 
 // ClientState
 
-// required int32 type = 1;
-inline bool ClientState::has_type() const {
-  bool value = (_impl_._has_bits_[0] & 0x00000001u) != 0;
-  return value;
-}
-inline void ClientState::clear_type() {
-  _impl_.type_ = 0;
-  _impl_._has_bits_[0] &= ~0x00000001u;
-}
-inline ::int32_t ClientState::_internal_type() const {
-  return _impl_.type_;
-}
-inline ::int32_t ClientState::type() const {
-  // @@protoc_insertion_point(field_get:base.ClientState.type)
-  return _internal_type();
-}
-inline void ClientState::_internal_set_type(::int32_t value) {
-  _impl_._has_bits_[0] |= 0x00000001u;
-  _impl_.type_ = value;
-}
-inline void ClientState::set_type(::int32_t value) {
-  _internal_set_type(value);
-  // @@protoc_insertion_point(field_set:base.ClientState.type)
-}
-
-// optional int32 plugin_session_id = 2;
+// optional int32 plugin_session_id = 1;
 inline bool ClientState::has_plugin_session_id() const {
-  bool value = (_impl_._has_bits_[0] & 0x00000002u) != 0;
+  bool value = (_impl_._has_bits_[0] & 0x00000001u) != 0;
   return value;
 }
 inline void ClientState::clear_plugin_session_id() {
   _impl_.plugin_session_id_ = 0;
-  _impl_._has_bits_[0] &= ~0x00000002u;
+  _impl_._has_bits_[0] &= ~0x00000001u;
 }
 inline ::int32_t ClientState::_internal_plugin_session_id() const {
   return _impl_.plugin_session_id_;
@@ -1701,7 +1584,7 @@ inline ::int32_t ClientState::plugin_session_id() const {
   return _internal_plugin_session_id();
 }
 inline void ClientState::_internal_set_plugin_session_id(::int32_t value) {
-  _impl_._has_bits_[0] |= 0x00000002u;
+  _impl_._has_bits_[0] |= 0x00000001u;
   _impl_.plugin_session_id_ = value;
 }
 inline void ClientState::set_plugin_session_id(::int32_t value) {
@@ -1709,14 +1592,14 @@ inline void ClientState::set_plugin_session_id(::int32_t value) {
   // @@protoc_insertion_point(field_set:base.ClientState.plugin_session_id)
 }
 
-// required int32 state = 3;
+// required int32 state = 2;
 inline bool ClientState::has_state() const {
-  bool value = (_impl_._has_bits_[0] & 0x00000004u) != 0;
+  bool value = (_impl_._has_bits_[0] & 0x00000002u) != 0;
   return value;
 }
 inline void ClientState::clear_state() {
   _impl_.state_ = 0;
-  _impl_._has_bits_[0] &= ~0x00000004u;
+  _impl_._has_bits_[0] &= ~0x00000002u;
 }
 inline ::int32_t ClientState::_internal_state() const {
   return _impl_.state_;
@@ -1726,7 +1609,7 @@ inline ::int32_t ClientState::state() const {
   return _internal_state();
 }
 inline void ClientState::_internal_set_state(::int32_t value) {
-  _impl_._has_bits_[0] |= 0x00000004u;
+  _impl_._has_bits_[0] |= 0x00000002u;
   _impl_.state_ = value;
 }
 inline void ClientState::set_state(::int32_t value) {
@@ -1738,32 +1621,7 @@ inline void ClientState::set_state(::int32_t value) {
 
 // ServerJoin
 
-// required int32 type = 1;
-inline bool ServerJoin::has_type() const {
-  bool value = (_impl_._has_bits_[0] & 0x00000002u) != 0;
-  return value;
-}
-inline void ServerJoin::clear_type() {
-  _impl_.type_ = 0;
-  _impl_._has_bits_[0] &= ~0x00000002u;
-}
-inline ::int32_t ServerJoin::_internal_type() const {
-  return _impl_.type_;
-}
-inline ::int32_t ServerJoin::type() const {
-  // @@protoc_insertion_point(field_get:base.ServerJoin.type)
-  return _internal_type();
-}
-inline void ServerJoin::_internal_set_type(::int32_t value) {
-  _impl_._has_bits_[0] |= 0x00000002u;
-  _impl_.type_ = value;
-}
-inline void ServerJoin::set_type(::int32_t value) {
-  _internal_set_type(value);
-  // @@protoc_insertion_point(field_set:base.ServerJoin.type)
-}
-
-// required .base.ClientData data = 2;
+// required .base.ClientData data = 1;
 inline bool ServerJoin::has_data() const {
   bool value = (_impl_._has_bits_[0] & 0x00000001u) != 0;
   PROTOBUF_ASSUME(!value || _impl_.data_ != nullptr);
@@ -1850,14 +1708,14 @@ inline void ServerJoin::set_allocated_data(::base::ClientData* data) {
   // @@protoc_insertion_point(field_set_allocated:base.ServerJoin.data)
 }
 
-// required bool is_local = 3;
+// required bool is_local = 2;
 inline bool ServerJoin::has_is_local() const {
-  bool value = (_impl_._has_bits_[0] & 0x00000004u) != 0;
+  bool value = (_impl_._has_bits_[0] & 0x00000002u) != 0;
   return value;
 }
 inline void ServerJoin::clear_is_local() {
   _impl_.is_local_ = false;
-  _impl_._has_bits_[0] &= ~0x00000004u;
+  _impl_._has_bits_[0] &= ~0x00000002u;
 }
 inline bool ServerJoin::_internal_is_local() const {
   return _impl_.is_local_;
@@ -1867,7 +1725,7 @@ inline bool ServerJoin::is_local() const {
   return _internal_is_local();
 }
 inline void ServerJoin::_internal_set_is_local(bool value) {
-  _impl_._has_bits_[0] |= 0x00000004u;
+  _impl_._has_bits_[0] |= 0x00000002u;
   _impl_.is_local_ = value;
 }
 inline void ServerJoin::set_is_local(bool value) {
@@ -1879,32 +1737,7 @@ inline void ServerJoin::set_is_local(bool value) {
 
 // ServerPlugin
 
-// required int32 type = 1;
-inline bool ServerPlugin::has_type() const {
-  bool value = (_impl_._has_bits_[0] & 0x00000002u) != 0;
-  return value;
-}
-inline void ServerPlugin::clear_type() {
-  _impl_.type_ = 0;
-  _impl_._has_bits_[0] &= ~0x00000002u;
-}
-inline ::int32_t ServerPlugin::_internal_type() const {
-  return _impl_.type_;
-}
-inline ::int32_t ServerPlugin::type() const {
-  // @@protoc_insertion_point(field_get:base.ServerPlugin.type)
-  return _internal_type();
-}
-inline void ServerPlugin::_internal_set_type(::int32_t value) {
-  _impl_._has_bits_[0] |= 0x00000002u;
-  _impl_.type_ = value;
-}
-inline void ServerPlugin::set_type(::int32_t value) {
-  _internal_set_type(value);
-  // @@protoc_insertion_point(field_set:base.ServerPlugin.type)
-}
-
-// required .base.PluginData data = 2;
+// required .base.PluginData data = 1;
 inline bool ServerPlugin::has_data() const {
   bool value = (_impl_._has_bits_[0] & 0x00000001u) != 0;
   PROTOBUF_ASSUME(!value || _impl_.data_ != nullptr);
@@ -1995,39 +1828,14 @@ inline void ServerPlugin::set_allocated_data(::base::PluginData* data) {
 
 // ServerSetState
 
-// required int32 type = 1;
-inline bool ServerSetState::has_type() const {
-  bool value = (_impl_._has_bits_[0] & 0x00000001u) != 0;
-  return value;
-}
-inline void ServerSetState::clear_type() {
-  _impl_.type_ = 0;
-  _impl_._has_bits_[0] &= ~0x00000001u;
-}
-inline ::int32_t ServerSetState::_internal_type() const {
-  return _impl_.type_;
-}
-inline ::int32_t ServerSetState::type() const {
-  // @@protoc_insertion_point(field_get:base.ServerSetState.type)
-  return _internal_type();
-}
-inline void ServerSetState::_internal_set_type(::int32_t value) {
-  _impl_._has_bits_[0] |= 0x00000001u;
-  _impl_.type_ = value;
-}
-inline void ServerSetState::set_type(::int32_t value) {
-  _internal_set_type(value);
-  // @@protoc_insertion_point(field_set:base.ServerSetState.type)
-}
-
-// optional int32 plugin_id = 2;
+// optional int32 plugin_id = 1;
 inline bool ServerSetState::has_plugin_id() const {
-  bool value = (_impl_._has_bits_[0] & 0x00000002u) != 0;
+  bool value = (_impl_._has_bits_[0] & 0x00000001u) != 0;
   return value;
 }
 inline void ServerSetState::clear_plugin_id() {
   _impl_.plugin_id_ = 0;
-  _impl_._has_bits_[0] &= ~0x00000002u;
+  _impl_._has_bits_[0] &= ~0x00000001u;
 }
 inline ::int32_t ServerSetState::_internal_plugin_id() const {
   return _impl_.plugin_id_;
@@ -2037,7 +1845,7 @@ inline ::int32_t ServerSetState::plugin_id() const {
   return _internal_plugin_id();
 }
 inline void ServerSetState::_internal_set_plugin_id(::int32_t value) {
-  _impl_._has_bits_[0] |= 0x00000002u;
+  _impl_._has_bits_[0] |= 0x00000001u;
   _impl_.plugin_id_ = value;
 }
 inline void ServerSetState::set_plugin_id(::int32_t value) {
@@ -2045,14 +1853,14 @@ inline void ServerSetState::set_plugin_id(::int32_t value) {
   // @@protoc_insertion_point(field_set:base.ServerSetState.plugin_id)
 }
 
-// required int32 state = 3;
+// required int32 state = 2;
 inline bool ServerSetState::has_state() const {
-  bool value = (_impl_._has_bits_[0] & 0x00000004u) != 0;
+  bool value = (_impl_._has_bits_[0] & 0x00000002u) != 0;
   return value;
 }
 inline void ServerSetState::clear_state() {
   _impl_.state_ = 0;
-  _impl_._has_bits_[0] &= ~0x00000004u;
+  _impl_._has_bits_[0] &= ~0x00000002u;
 }
 inline ::int32_t ServerSetState::_internal_state() const {
   return _impl_.state_;
@@ -2062,7 +1870,7 @@ inline ::int32_t ServerSetState::state() const {
   return _internal_state();
 }
 inline void ServerSetState::_internal_set_state(::int32_t value) {
-  _impl_._has_bits_[0] |= 0x00000004u;
+  _impl_._has_bits_[0] |= 0x00000002u;
   _impl_.state_ = value;
 }
 inline void ServerSetState::set_state(::int32_t value) {

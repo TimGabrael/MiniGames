@@ -19,31 +19,26 @@ message PluginData
 
 message ClientJoin
 {
-	required int32 type = 1;
-	required string name = 2;
+	required string name = 1;
 }
 message ClientState
 {
-	required int32 type = 1;
-	optional int32 plugin_session_id = 2;
-	required int32 state = 3;
+	optional int32 plugin_session_id = 1;
+	required int32 state = 2;
 }
 
 
 message ServerJoin
 {
-	required int32 type = 1;
-	required ClientData data = 2;
-	required bool is_local = 3;
+	required ClientData data = 1;
+	required bool is_local = 2;
 }
 message ServerPlugin
 {
-	required int32 type = 1;
-	required PluginData data = 2;
+	required PluginData data = 1;
 }
 message ServerSetState
 {
-	required int32 type = 1;
-	optional int32 plugin_id = 2;
-	required int32 state = 3;
+	optional int32 plugin_id = 1;
+	required int32 state = 2;
 }

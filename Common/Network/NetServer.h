@@ -13,12 +13,12 @@ struct NetServer : public NetServerInterface
 
 	virtual ServerConnection* GetConnection(uint16_t id);
 	virtual void SetCallback(ServerPacketFunction fn, uint16_t packetID);
+	virtual void SetDeserializer(DeserializationFunc fn, uint16_t packetID);
 
 	virtual void SetJoinCallback(ServerJoinCallbackFunction fn);
-	virtual void SetDisconnectcallback(ServerDisconnectCallbackFunction fn);
+	virtual void SetDisconnectCallback(ServerDisconnectCallbackFunction fn);
 
-	virtual bool SendData(ServerConnection* conn, const void* data, uint32_t size, uint32_t flags);
-	virtual bool SendData(uint16_t id, const void* data, uint32_t size, uint32_t flags);
+	virtual bool SendData(ServerConnection* conn, uint16_t packetID, const void* data, uint32_t size, uint32_t flags);
 
 	virtual bool IsP2P() const;
 
@@ -27,10 +27,24 @@ struct NetServer : public NetServerInterface
 
 	void Poll();
 
-	// use after Poll, this is seperate as both client and server should call it only once
-	static void RunCallbacks();
-
 	NetSocketServer socket;
 	HSteamNetPollGroup group = 0;
 	void* userData = nullptr;
+
+private:
+	static void SteamNetServerConnectionStatusChangedCallback(SteamNetConnectionStatusChangedCallback_t* pInfo);
+	ServerConnection* GetNew();
+	uint16_t GetClientID(ServerConnection* conn);
+	
+
+	struct CallbackInfo
+	{
+		DeserializationFunc deserializer;
+		ServerPacketFunction receiver;
+	};
+	ServerJoinCallbackFunction joinCB = nullptr;
+	ServerDisconnectCallbackFunction disconnectCB = nullptr;
+	std::vector<CallbackInfo> callbacks;
+	std::vector<char> tempStorage;
+
 };

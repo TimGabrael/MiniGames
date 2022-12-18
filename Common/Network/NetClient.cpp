@@ -54,13 +54,17 @@ JoinResult NetClient::Create(const char* ip, uint32_t port, const std::string& n
 		res = temp->socket.networking->GetConnectionRealTimeStatus(temp->socket.socket, &stat, 0, NULL);
 	}
 	
+	
+
 	base::ClientJoin join;
 	join.set_name(name);
 	join.set_type(ClientBaseMessages::Client_Join);
 	
 	std::string str = join.SerializeAsString();
 	
-	
+	temp->SendData(Client_Join, str.data(), str.length(), SendFlags::Send_Reliable);
+
+	*out = temp;
 	return joinRes;
 }
 
@@ -81,30 +85,58 @@ bool NetClient::IsConnected() const
 
 ClientConnection* NetClient::GetSelf()
 {
-	return nullptr;
+	return local;
 }
 
 ClientConnection* NetClient::GetConnection(uint16_t id)
 {
+	if (id < MAX_PLAYERS)
+	{
+		if (socket.connected[id].isConnected != ConnectionState::Disconnected)
+		{
+			return &socket.connected[id];
+		}
+	}
 	return nullptr;
 }
 
 void NetClient::SetCallback(ClientPacketFunction fn, uint16_t packetID)
 {
+	if (callbacks.size() < packetID + 1)
+	{
+		callbacks.resize(packetID + 1);
+	}
+	callbacks.at(packetID).receiver = fn;
+}
+void NetClient::SetDeserializer(DeserializationFunc fn, uint16_t packetID)
+{
+	if (callbacks.size() < packetID + 1)
+	{
+		callbacks.resize(packetID + 1);
+	}
+	callbacks.at(packetID).deserializer = fn;
 }
 
 void NetClient::SetJoinCallback(ClientJoinCallbackFunction fn)
 {
+	joinCB = fn;
 }
 
-void NetClient::SetDisconnectcallback(ClientDisconnectCallbackFunction fn)
+void NetClient::SetDisconnectCallback(ClientDisconnectCallbackFunction fn)
 {
+	disconnectCB = fn;
 }
 
-bool NetClient::SendData(const void* data, uint32_t size, uint32_t flags)
+bool NetClient::SendData(uint16_t packetID, const void* data, uint32_t size, uint32_t flags)
 {
+	if (tempStorage.size() < size + 10)
+	{
+		tempStorage.resize(size + 10);
+	}
+	*(uint16_t*)&tempStorage.at(0) = packetID;
+	memcpy(&tempStorage.at(sizeof(packetID)), data, size);
 	int64 outMsgNum = 0;
-	EResult res = socket.networking->SendMessageToConnection(socket.socket, data, size, flags, &outMsgNum);
+	EResult res = socket.networking->SendMessageToConnection(socket.socket, tempStorage.data(), size + sizeof(packetID), flags, &outMsgNum);
 	return EResult::k_EResultOK == res;
 }
 
@@ -122,13 +154,30 @@ void NetClient::Poll()
 		if (numMsgs == 0)
 			break;
 		if (numMsgs < 0) return;
+		const uint32 size = pIncomingMsg->GetSize();
+		if (size < sizeof(uint16_t)) {
+			pIncomingMsg->Release();
+			continue;
+		}
 
+		const uint16_t* data = (const uint16_t*)pIncomingMsg->GetData();
+		const uint16_t packetID = *data;
+		if (packetID < callbacks.size())
+		{
+			NetClient::CallbackInfo& info = callbacks.at(packetID);
+			if (info.receiver)
+			{
+				const void* packet = data + 1;
+				if (info.deserializer) {
+					packet = info.deserializer((char*)packet, size - 2);
+				}
+				if (packet)
+				{
+					info.receiver(this, (void*)packet, size - 2);
+				}
+			}
+		}
 
 		pIncomingMsg->Release();
 	}
-}
-
-void NetClient::RunCallbacks()
-{
-	SteamNetworkingSockets()->RunCallbacks();
 }
