@@ -7,21 +7,22 @@ set(OPENGL_SOURCES ${CMAKE_CURRENT_LIST_DIR}/Graphics/GLCompat.cpp ${CMAKE_CURRE
 
 
 
-add_library(Uno SHARED "Plugins/Uno/Uno.cpp" "Plugins/Uno/Card.h" "Plugins/Uno/Card.cpp" ${IMGUI_BASE_SOURCES} ${LOCAL_COLLECTION_SOURCES} ${OPENGL_SOURCES} "Plugins/Uno/Animator.h" "Plugins/Uno/Animator.cpp" "Plugins/Uno/Pointer.h" "Plugins/Uno/Pointer.cpp" "Graphics/Scene.h" "Graphics/Scene.cpp" "Graphics/Renderer.h" "Graphics/Renderer.cpp" "Graphics/ReflectiveSurfaceRendering.cpp" "Graphics/ReflectiveSurfaceRendering.h" "Graphics/BloomRendering.h" "Graphics/BloomRendering.cpp" "Graphics/AmbientOcclusionRendering.h" "Graphics/AmbientOcclusionRendering.cpp" "Network/NetworkBase.h" "Network/NetServer.h" "Network/NetServer.cpp" "Plugins/ServerPlugin.h" "Network/NetClient.h" "Network/NetClient.cpp"   "Network/NetCommon.h" "Network/NetCommon.cpp")
+add_library(Uno SHARED "Plugins/Uno/Uno.cpp" "Plugins/Uno/Card.h" "Plugins/Uno/Card.cpp" ${IMGUI_BASE_SOURCES} ${LOCAL_COLLECTION_SOURCES} ${OPENGL_SOURCES} "Plugins/Uno/Animator.h" "Plugins/Uno/Animator.cpp" "Plugins/Uno/Pointer.h" "Plugins/Uno/Pointer.cpp" "Graphics/Scene.h" "Graphics/Scene.cpp" "Graphics/Renderer.h" "Graphics/Renderer.cpp" "Graphics/ReflectiveSurfaceRendering.cpp" "Graphics/ReflectiveSurfaceRendering.h" "Graphics/BloomRendering.h" "Graphics/BloomRendering.cpp" "Graphics/AmbientOcclusionRendering.h" "Graphics/AmbientOcclusionRendering.cpp" "Network/NetworkBase.h")
 
 
 if(EMSCRIPTEN)
 set_target_properties(Uno PROPERTIES LINK_FLAGS "-s FULL_ES3=1 -s USE_GLFW=3")
 endif()
 
+
 if(WIN32)
 	set(ADDITIONAL_LIBS ${ADDITIONAL_LIBS} ws2_32.lib PARENT_SCOPE)
 	set_target_properties(Uno PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${MY_OUTPUT_DIRECTORY}/Plugins)
-	target_link_libraries(Uno PUBLIC ws2_32.lib)
+	target_link_libraries(Uno PRIVATE ws2_32.lib ${Protobuf_LIBRARIES})
 endif()
 
 if(ANDROID)
   	target_link_libraries(Uno PUBLIC log android EGL GLESv3)
 endif()
 
-set(COMMON_SOURCES ${LOCAL_COLLECTION_SOURCES} PARENT_SCOPE)
+set(COMMON_SOURCES ${LOCAL_COLLECTION_SOURCES} ${CMAKE_CURRENT_LIST_DIR}/Network/NetServer.cpp ${CMAKE_CURRENT_LIST_DIR}/Network/NetClient.cpp  ${CMAKE_CURRENT_LIST_DIR}/Network/NetCommon.cpp  ${CMAKE_CURRENT_LIST_DIR}/Network/BaseMessages.pb.cc PARENT_SCOPE)

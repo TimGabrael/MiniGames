@@ -29,7 +29,6 @@ JoinResult NetClient::Create(const char* ip, uint32_t port, const std::string& n
 	*out = nullptr;
 	NetClient* temp = new NetClient();
 	temp->socket.networking = SteamNetworkingSockets();
-
 	
 	SteamNetworkingIPAddr addr;
 	addr.Clear();
@@ -54,7 +53,12 @@ JoinResult NetClient::Create(const char* ip, uint32_t port, const std::string& n
 		temp->Poll();
 		res = temp->socket.networking->GetConnectionRealTimeStatus(temp->socket.socket, &stat, 0, NULL);
 	}
-
+	
+	base::ClientJoin join;
+	join.set_name(name);
+	join.set_type(ClientBaseMessages::Client_Join);
+	
+	std::string str = join.SerializeAsString();
 	
 	
 	return joinRes;

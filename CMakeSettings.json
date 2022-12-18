@@ -45,6 +45,16 @@
           "name": "protobuf_BUILD_LIBPROTOC",
           "value": "False",
           "type": "BOOL"
+        },
+        {
+          "name": "protobuf_MSVC_STATIC_RUNTIME",
+          "value": "True",
+          "type": "BOOL"
+        },
+        {
+          "name": "protobuf_DISABLE_RTTI",
+          "value": "True",
+          "type": "BOOL"
         }
       ]
     }

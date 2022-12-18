@@ -1,4 +1,4 @@
-syntax = "proto3";
+syntax = "proto2";
 
 package base;
 
@@ -6,44 +6,44 @@ package base;
 
 message ClientData
 {
-	string name = 1;
-	int32 id = 2;
-	bool is_admin = 3;
+	required string name = 1;
+	required int32 id = 2;
+	required bool is_admin = 3;
 }
 message PluginData
 {
-	string id = 1;
-	int32 session_id = 2;
+	required string id = 1;
+	required int32 session_id = 2;
 }
 
 
 message ClientJoin
 {
-	int32 type = 1;
-	string name = 2;
+	required int32 type = 1;
+	required string name = 2;
 }
 message ClientState
 {
-	int32 type = 1;
+	required int32 type = 1;
 	optional int32 plugin_session_id = 2;
-	int32 state = 3;
+	required int32 state = 3;
 }
 
 
 message ServerJoin
 {
-	int32 type = 1;
-	ClientData data = 2;
-	bool is_local = 3;
+	required int32 type = 1;
+	required ClientData data = 2;
+	required bool is_local = 3;
 }
 message ServerPlugin
 {
-	int32 type = 1;
-	PluginData data = 2;
+	required int32 type = 1;
+	required PluginData data = 2;
 }
 message ServerSetState
 {
-	int32 type = 1;
+	required int32 type = 1;
 	optional int32 plugin_id = 2;
-	int32 state = 3;
+	required int32 state = 3;
 }

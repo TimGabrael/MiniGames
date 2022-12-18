@@ -2,6 +2,7 @@
 #include <qapplication>
 #include "CommonCollection.h"
 #include "Plugins/PluginCommon.h"
+#include "Network/NetClient.h"
 #include <thread>
 #undef max
 #undef min
@@ -18,7 +19,7 @@ public:
 	ApplicationData appData;
 	QWidget* backgroundWidget = nullptr;
 	MainWindow* mainWindow = nullptr;
-
+	NetClient* client = nullptr;
 	std::thread networkPollThread;
 
 	bool isConnected = false;

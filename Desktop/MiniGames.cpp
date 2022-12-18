@@ -37,6 +37,7 @@
 #include "util/PluginLoader.h"
 
 
+
 AudioBuffer<400000> testAudioBuffer;
 
 
@@ -99,8 +100,6 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     this->resize(1200, 800);
 
     app->isConnected = false;
-
-    //NetError err = app->socket.Create(DEBUG_IP, DEBUG_PORT);
 
 
     LoadAllPlugins();

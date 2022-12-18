@@ -3,7 +3,9 @@
 #include <vector>
 #include <string>
 #include "CommonCollection.h"
-#include "steam/isteamnetworkingsockets.h"
+#include <steam/steamnetworkingsockets.h>
+#include <steam/isteamnetworkingutils.h>
+
 
 
 

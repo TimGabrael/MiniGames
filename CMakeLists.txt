@@ -6,6 +6,8 @@ set(CMAKE_CXX_STANDARD 11)
 set(MY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 
 find_package(Protobuf REQUIRED)
+include_directories(${Protobuf_INCLUDE_DIRS})
+add_compile_definitions(PROTOBUF_USE_DLLS)
 
 
 set(ADDITIONAL_SOURCES "")
@@ -29,8 +31,7 @@ include_directories(3rd-party/glm)
 include_directories(3rd-party/ImGui)
 
 include_directories(${GameNetworkingSocketsPath}/include/)
-include_directories(${Protobuf_INCLUDE_DIRS})
-link_libraries(${GameNetworkingSocketsPath}/lib/GameNetworkingSockets.lib  ${Protobuf_LIBRARIES})
+link_libraries(${GameNetworkingSocketsPath}/lib/GameNetworkingSockets.lib)
 
 include_directories(Common)
 add_subdirectory(Common)

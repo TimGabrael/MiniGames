@@ -1,5 +1,11 @@
 #include "NetCommon.h"
 
+bool InitNetworking()
+{
+	SteamDatagramErrMsg errMsg;
+	return GameNetworkingSockets_Init(nullptr, errMsg);
+}
+
 uint32_t ParseIP(const char* ip)
 {
 	uint32_t ipAddr = 0;
