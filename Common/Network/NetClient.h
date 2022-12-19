@@ -34,6 +34,11 @@ struct NetClient : public NetClientInterface
 	NetSocketClient socket;
 	void* userData = nullptr;
 private:
+
+	static void SteamNetClientConnectionStatusChangedCallback(SteamNetConnectionStatusChangedCallback_t* pInfo);
+
+	static bool ServerJoinCallback(NetClient* c, base::ServerJoin* join, int size);
+
 	ClientConnection* local = nullptr;
 	ClientDisconnectCallbackFunction disconnectCB = nullptr;
 	ClientJoinCallbackFunction joinCB = nullptr;

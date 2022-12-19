@@ -2,22 +2,64 @@
 #include "NetCommon.h"
 
 
+static void* __stdcall JoinDeserializer(char* packet, int size)
+{
+	static base::ClientJoin join;
+	if (join.ParseFromArray(packet, size)) return &join;
+	return nullptr;
+}
+static void* __stdcall StateDeserializer(char* packet, int size)
+{
+	static base::ClientState state;
+	if (state.ParseFromArray(packet, size)) return &state;
+	return nullptr;
+}
+
+
+
 void NetServer::SteamNetServerConnectionStatusChangedCallback(SteamNetConnectionStatusChangedCallback_t* pInfo)
 {
 	NetServer* server = (NetServer*)pInfo->m_info.m_nUserData;
-	ServerConnection* conn = server->GetNew();
-	if (conn)
+	switch (pInfo->m_info.m_eState)
 	{
-		conn->conn = pInfo->m_hConn;
-		conn->isConnected = ConnectionState::Connecting;
-		conn->id = server->GetClientID(conn);
-		conn->state = ClientState::INVALID;
-		conn->name = "";
-		conn->activePlugin = INVALID_ID;
+	case k_ESteamNetworkingConnectionState_ClosedByPeer:
+	case k_ESteamNetworkingConnectionState_ProblemDetectedLocally:
+	{
+		ServerConnection* conn = server->GetFromNetworkConnection(pInfo->m_hConn);
+		if (conn)
+		{
+			server->CloseConnection(conn);
+		}
+		else
+		{
+			server->socket.networking->CloseConnection(pInfo->m_hConn, 17, "internal problems", false);
+		}
+		break;
 	}
-	else
+
+	case k_ESteamNetworkingConnectionState_Connecting:
 	{
-		server->socket.networking->CloseConnection(pInfo->m_hConn, 1, "Server is Full", false);
+		ServerConnection* conn = server->GetNew();
+		if (conn)
+		{
+			conn->conn = pInfo->m_hConn;
+			conn->isConnected = ConnectionState::Connecting;
+			conn->id = server->GetClientID(conn);
+			conn->state = ClientState::INVALID;
+			conn->name = "";
+			conn->activePlugin = INVALID_ID;
+		}
+		else
+		{
+			server->socket.networking->CloseConnection(pInfo->m_hConn, 1, "Server is Full", false);
+		}
+		break;
+	}
+
+	case k_ESteamNetworkingConnectionState_None:
+	case k_ESteamNetworkingConnectionState_Connected:
+	default:
+		break;
 	}
 }
 
@@ -61,6 +103,12 @@ NetServer* NetServer::Create(const char* ip, uint32_t port)
 	out->group = out->socket.networking->CreatePollGroup();
 	if (out->group == k_HSteamNetPollGroup_Invalid) return nullptr;
 	out->socket.networking->SetConnectionUserData(out->socket.socket, (int64)out);
+
+	out->SetDeserializer(JoinDeserializer, Client_Join);
+	out->SetDeserializer(StateDeserializer, Client_State);
+
+	out->SetCallback((ServerPacketFunction)ClientJoinPacketCallback, Client_Join);
+	out->SetCallback((ServerPacketFunction)ClientStatePacketCallback, Client_State);
 
 	return out;
 }
@@ -153,6 +201,30 @@ ServerConnection* NetServer::GetNew()
 	}
 	return nullptr;
 }
+ServerConnection* NetServer::GetFromNetworkConnection(HSteamNetConnection conn)
+{
+	for (int i = 0; i < MAX_PLAYERS; i++)
+	{
+		if (socket.connected[i].isConnected != ConnectionState::Disconnected && socket.connected[i].conn == conn)
+		{
+			return &socket.connected[i];
+		}
+	}
+	return nullptr;
+}
+void NetServer::CloseConnection(ServerConnection* c)
+{
+	if (c->isConnected != ConnectionState::Disconnected && c->conn != 0)
+	{
+		socket.networking->CloseConnection(c->conn, 1, nullptr, false);
+		c->isAdmin = false;
+		c->activePlugin = INVALID_ID;
+		c->conn = 0;
+		c->isConnected = ConnectionState::Disconnected;
+		c->name = "";
+		c->state = ClientState::INVALID;
+	}
+}
 uint16_t NetServer::GetClientID(ServerConnection* conn)
 {
 	uintptr_t id = ((uintptr_t)conn - (uintptr_t)socket.connected) / sizeof(ServerConnection);
@@ -161,4 +233,39 @@ uint16_t NetServer::GetClientID(ServerConnection* conn)
 		return id;
 	}
 	return INVALID_ID;
+}
+bool NetServer::ClientJoinPacketCallback(NetServer* s, ServerConnection* client, base::ClientJoin* join, int size)
+{
+	NameValidationResult res = ValidateName(join->name());
+	if (res != NameValidationResult::Name_Ok)
+	{
+		s->CloseConnection(client);
+	}
+
+	join->Clear();
+	return true;
+}
+bool NetServer::ClientStatePacketCallback(NetServer* s, ServerConnection* client, base::ClientState* state, int size)
+{
+	int32 stateVal = state->state();
+	if (stateVal >= 0 && stateVal <= (int32)ClientState::PLUGIN)
+	{
+		client->state = (ClientState)stateVal;
+		if (state->has_plugin_session_id())
+		{
+			client->activePlugin = state->plugin_session_id();
+		}
+		else
+		{
+			client->activePlugin = INVALID_ID;
+		}
+	}
+	else
+	{
+		client->state = ClientState::INVALID;
+		client->activePlugin = INVALID_ID;
+	}
+	
+	state->Clear();
+	return true;
 }

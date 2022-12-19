@@ -1,10 +1,48 @@
 #include "NetClient.h"
 #include "NetCommon.h"
 
+static void* __stdcall JoinDeserializer(char* packet, int size)
+{
+	static base::ServerJoin join;
+	if (join.ParseFromArray(packet, size)) return &join;
+	return nullptr;
+}
+static void* __stdcall PluginDeserializer(char* packet, int size)
+{
+	static base::ServerPlugin plugin;
+	if (plugin.ParseFromArray(packet, size)) return &plugin;
+	return nullptr;
+}
+static void* __stdcall SetStateDeserializer(char* packet, int size)
+{
+	static base::ServerSetState state;
+	if (state.ParseFromArray(packet, size)) return &state;
+	return nullptr;
+}
 
-static void SteamNetConnectionStatusChangedCallback(SteamNetConnectionStatusChangedCallback_t* pInfo)
+void NetClient::SteamNetClientConnectionStatusChangedCallback(SteamNetConnectionStatusChangedCallback_t* pInfo)
 {
 	NetClient* client = (NetClient*)pInfo->m_info.m_nUserData;
+
+	switch (pInfo->m_info.m_eState)
+	{
+	case k_ESteamNetworkingConnectionState_ClosedByPeer:
+	case k_ESteamNetworkingConnectionState_ProblemDetectedLocally:
+	{
+		client->socket.networking->CloseConnection(pInfo->m_hConn, 0, nullptr, false);
+		client->socket.socket = 0;
+		if (client->disconnectCB) client->disconnectCB(client, client->local);
+		break;
+	}
+
+
+	case k_ESteamNetworkingConnectionState_None:
+	case k_ESteamNetworkingConnectionState_Connected:
+	case k_ESteamNetworkingConnectionState_Connecting:
+	default:
+		break;
+	}
+
 
 }
 JoinResult NetClient::Create(const char* ip, uint32_t port, const std::string& name, NetClient** out)
@@ -34,7 +72,7 @@ JoinResult NetClient::Create(const char* ip, uint32_t port, const std::string& n
 	addr.Clear();
 	addr.SetIPv4(ipAddr, port);
 	SteamNetworkingConfigValue_t opt;
-	opt.SetPtr(k_ESteamNetworkingConfig_Callback_ConnectionStatusChanged, (void*)SteamNetConnectionStatusChangedCallback);
+	opt.SetPtr(k_ESteamNetworkingConfig_Callback_ConnectionStatusChanged, (void*)SteamNetClientConnectionStatusChangedCallback);
 	HSteamListenSocket sock = temp->socket.networking->ConnectByIPAddress(addr, 1, &opt);
 	if (sock == k_HSteamListenSocket_Invalid)
 	{
@@ -44,22 +82,12 @@ JoinResult NetClient::Create(const char* ip, uint32_t port, const std::string& n
 	}
 	temp->socket.socket = sock;
 	temp->socket.networking->SetConnectionUserData(sock, (int64)temp);
-
-	SteamNetConnectionRealTimeStatus_t stat;
-	EResult res = temp->socket.networking->GetConnectionRealTimeStatus(temp->socket.socket, &stat, 0, NULL);
-
-	while (res && stat.m_eState == ESteamNetworkingConnectionState::k_ESteamNetworkingConnectionState_Connecting)
-	{
-		temp->Poll();
-		res = temp->socket.networking->GetConnectionRealTimeStatus(temp->socket.socket, &stat, 0, NULL);
-	}
 	
-	
+
+
 
 	base::ClientJoin join;
 	join.set_name(name);
-	join.set_type(ClientBaseMessages::Client_Join);
-	
 	std::string str = join.SerializeAsString();
 	
 	temp->SendData(Client_Join, str.data(), str.length(), SendFlags::Send_Reliable);
@@ -180,4 +208,30 @@ void NetClient::Poll()
 
 		pIncomingMsg->Release();
 	}
+}
+bool NetClient::ServerJoinCallback(NetClient* c, base::ServerJoin* join, int size)
+{
+	
+	const int32 idVal = join->data().id();
+	if (idVal < MAX_PLAYERS && idVal >= 0)
+	{
+		ClientConnection* cl = &c->socket.connected[idVal];
+		cl->isAdmin = join->data().is_admin();
+		cl->id = idVal;
+		cl->isConnected = ConnectionState::Connected;
+		cl->name = join->data().name();
+		if (join->is_local())
+		{
+			c->local = cl;
+		}
+		if (c->joinCB)
+		{
+			c->joinCB(c, cl);
+		}
+	}
+	else
+	{
+		c->socket.networking->CloseConnection(c->socket.socket, 1, "received invalid player id", false);
+	}
+	return true;
 }

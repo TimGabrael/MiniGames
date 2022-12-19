@@ -1,7 +1,7 @@
 #pragma once
 #include "NetworkBase.h"
 #include "../Plugins/ServerPlugin.h"
-
+#include "BaseMessages.pb.h"
 
 
 
@@ -34,8 +34,13 @@ struct NetServer : public NetServerInterface
 private:
 	static void SteamNetServerConnectionStatusChangedCallback(SteamNetConnectionStatusChangedCallback_t* pInfo);
 	ServerConnection* GetNew();
+	ServerConnection* GetFromNetworkConnection(HSteamNetConnection conn);
+	void CloseConnection(ServerConnection* c);
+
 	uint16_t GetClientID(ServerConnection* conn);
 	
+	static bool ClientJoinPacketCallback(NetServer* s, ServerConnection* client, base::ClientJoin* join, int size);
+	static bool ClientStatePacketCallback(NetServer* s, ServerConnection* client, base::ClientState* state, int size);
 
 	struct CallbackInfo
 	{
