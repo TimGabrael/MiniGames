@@ -47,17 +47,12 @@ struct ClientData
 
 struct ApplicationData
 {
-	PLATFORM_ID platform;
+	void* assetManager;
+	ImGuiContext* imGuiCtx;
 	std::vector<ClientData> players;
 	ClientData localPlayer;
-	int addedClientIdx = -1;
-	ClientData* removedClient = nullptr;
-	uint8_t localPlayerID[16];
-	std::string roomName;
-	std::string tempSyncDataStorage;
-	void* assetManager;
-	PSendDataFunction _sendDataFunction;
-	ImGuiContext* imGuiCtx;
+	std::string serverIP;
+	PLATFORM_ID platform;
 };
 
 

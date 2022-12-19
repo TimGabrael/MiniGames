@@ -20,14 +20,14 @@ uint32_t ParseIP(const char* ip)
 		{
 			const int val = atoi(ip + i);
 			if (val > 255 || val < 0) return 0;
-			ipAddr |= val << (8 * curIdx);
+			ipAddr |= val << (8 * (3 - curIdx));
 			curIdx++;
 		}
 		else if (ip[i] == '.')
 		{
 			const int val = atoi(ip + i + 1);
 			if (val > 255 || val < 0) return 0;
-			ipAddr |= val << (8 * curIdx);
+			ipAddr |= val << (8 * (3 - curIdx));
 			curIdx++;
 		}
 	}
@@ -41,7 +41,10 @@ NameValidationResult ValidateName(const std::string& name)
 	
 	for (auto c : name)
 	{
-
+		if (c != ' ' && !(c >= 'a' && c <= 'z') && !(c >= '0' && c <= '9'))
+		{
+			return Name_ErrSymbol;
+		}
 	}
 
 	return Name_Ok;

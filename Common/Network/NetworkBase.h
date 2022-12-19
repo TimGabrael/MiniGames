@@ -57,7 +57,7 @@ struct ServerConnection
 	ClientState state = ClientState::INVALID;
 };
 
-struct JoinResult
+struct NetResult
 {
 	std::string reason;
 	bool success;
@@ -69,7 +69,7 @@ struct NetClientInterface;
 typedef void*(__stdcall* DeserializationFunc)(char* packet, int packetSize);
 
 typedef bool(__stdcall* ServerPacketFunction)(NetServerInterface* socket, ServerConnection* client, void* packet, int packetSize);
-typedef JoinResult(__stdcall* ServerJoinCallbackFunction)(NetServerInterface* socket, ServerConnection* client);
+typedef NetResult(__stdcall* ServerJoinCallbackFunction)(NetServerInterface* socket, ServerConnection* client);
 typedef void(__stdcall* ServerDisconnectCallbackFunction)(NetServerInterface* socket, ServerConnection* client);
 
 
@@ -136,8 +136,8 @@ struct NetSocketServer
 };
 struct NetSocketClient
 {
-	HSteamListenSocket socket;
-	ISteamNetworkingSockets* networking;
+	HSteamListenSocket socket = 0;
+	ISteamNetworkingSockets* networking = nullptr;
 	ClientConnection connected[MAX_PLAYERS];
 };
 

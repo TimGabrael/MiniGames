@@ -67,7 +67,7 @@ HeaderWidget::HeaderWidget(QWidget* parent, const QColor& stylebg, const QColor&
 		text->setPalette(QPalette(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF));
 		horizontal_layout->addWidget(text, 1, Qt::AlignmentFlag::AlignHCenter);
 
-		QLabel* currentLobby = new QLabel(("ROOM: " + MainApplication::GetInstance()->appData.roomName).c_str(), this);
+		QLabel* currentLobby = new QLabel(("IP: " + MainApplication::GetInstance()->appData.serverIP).c_str(), this);
 		text->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);
 		currentLobby->setMinimumWidth(100);
 		

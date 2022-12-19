@@ -5,7 +5,17 @@
 
 struct NetClient : public NetClientInterface
 {
-	static JoinResult Create(const char* ip, uint32_t port, const std::string& name, NetClient** out);
+	enum State
+	{
+		Disconnected,
+		Connecting,
+		ReceivedAnswer,
+		Connected,
+	};
+	static NetClient* Create();
+
+	NetResult Connect(const char* ip, uint32_t port, const std::string& name);
+
 
 	virtual ~NetClient();
 
@@ -33,11 +43,12 @@ struct NetClient : public NetClientInterface
 
 	NetSocketClient socket;
 	void* userData = nullptr;
+	State state = State::Disconnected;
 private:
 
 	static void SteamNetClientConnectionStatusChangedCallback(SteamNetConnectionStatusChangedCallback_t* pInfo);
 
-	static bool ServerJoinCallback(NetClient* c, base::ServerJoin* join, int size);
+	static bool __stdcall ServerJoinCallback(NetClient* c, base::ServerJoin* join, int size);
 
 	ClientConnection* local = nullptr;
 	ClientDisconnectCallbackFunction disconnectCB = nullptr;

@@ -41,15 +41,6 @@ GameStateData* GetGameState()
 {
 	return &game;
 }
-void SendNetworkData(uint32_t packetID, uint32_t group, uint16_t additionalFlags, uint16_t clientID, size_t size, const void* data)
-{
-	instance->backendData->_sendDataFunction(packetID, group, additionalFlags, clientID, size, data);
-}
-void SendNetworkData(uint32_t packetID, uint32_t group, uint16_t additionalFlags, uint16_t clientID, const std::string& str)
-{
-	instance->backendData->_sendDataFunction(packetID, group, additionalFlags, clientID, str.size(), str.data());
-}
-
 
 
 

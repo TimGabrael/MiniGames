@@ -49,7 +49,6 @@ void PluginWidget::initializeGL()
 	
 
 	app->appData.imGuiCtx = ImGui::GetCurrentContext();
-	app->appData._sendDataFunction = nullptr;
 	app->appData.platform = _CURRENT_PLATFORM_ID;
 	plugin->Init(&app->appData);
 	isInitialized = true;

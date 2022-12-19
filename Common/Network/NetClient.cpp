@@ -23,6 +23,7 @@ static void* __stdcall SetStateDeserializer(char* packet, int size)
 void NetClient::SteamNetClientConnectionStatusChangedCallback(SteamNetConnectionStatusChangedCallback_t* pInfo)
 {
 	NetClient* client = (NetClient*)pInfo->m_info.m_nUserData;
+	if (client == (NetClient*)0xFFFFFFFFFFFFFFFF) return;
 
 	switch (pInfo->m_info.m_eState)
 	{
@@ -31,68 +32,93 @@ void NetClient::SteamNetClientConnectionStatusChangedCallback(SteamNetConnection
 	{
 		client->socket.networking->CloseConnection(pInfo->m_hConn, 0, nullptr, false);
 		client->socket.socket = 0;
+		client->state = State::Disconnected;
 		if (client->disconnectCB) client->disconnectCB(client, client->local);
 		break;
 	}
 
-
-	case k_ESteamNetworkingConnectionState_None:
 	case k_ESteamNetworkingConnectionState_Connected:
 	case k_ESteamNetworkingConnectionState_Connecting:
+		client->state = State::ReceivedAnswer;
+		break;
+
+	case k_ESteamNetworkingConnectionState_None:
 	default:
 		break;
 	}
 
 
 }
-JoinResult NetClient::Create(const char* ip, uint32_t port, const std::string& name, NetClient** out)
+NetClient* NetClient::Create()
 {
-	JoinResult joinRes;
+	NetClient* out = new NetClient();
+	out->socket.networking = SteamNetworkingSockets();
+
+	out->SetDeserializer(SetStateDeserializer, Server_SetState);
+	out->SetDeserializer(PluginDeserializer, Server_Plugin);
+	out->SetDeserializer(JoinDeserializer, Server_Join);
+
+	out->SetCallback((ClientPacketFunction)ServerJoinCallback, Server_Join);
+
+	return out;
+}
+NetResult NetClient::Connect(const char* ip, uint32_t port, const std::string& name)
+{
+	NetResult joinRes;
 	joinRes.success = false;
-	if (name.size() > MAX_NAME_LENGTH)
+	if (state != State::Disconnected)
 	{
-		joinRes.reason = "Name to long";
+		joinRes.success = true;
 		return joinRes;
 	}
-	if (name.size() < MIN_NAME_LENGTH)
+	NameValidationResult validation = ValidateName(name);
+	switch (validation)
 	{
+	case Name_Ok:
+		break;
+	case Name_ErrSmall:
 		joinRes.reason = "Name to short";
 		return joinRes;
+	case Name_ErrLarge:
+		joinRes.reason = "Name to long";
+		return joinRes;
+	case Name_ErrSymbol:
+		joinRes.reason = "Invalid Symbol in Name";
+		return joinRes;
+	default:
+		break;
 	}
 	uint32_t ipAddr = ParseIP(ip);
 	if (!ipAddr) {
 		joinRes.reason = "Failed to Parse IP";
 		return joinRes;
 	}
-	*out = nullptr;
-	NetClient* temp = new NetClient();
-	temp->socket.networking = SteamNetworkingSockets();
-	
+
+
 	SteamNetworkingIPAddr addr;
 	addr.Clear();
 	addr.SetIPv4(ipAddr, port);
+
 	SteamNetworkingConfigValue_t opt;
 	opt.SetPtr(k_ESteamNetworkingConfig_Callback_ConnectionStatusChanged, (void*)SteamNetClientConnectionStatusChangedCallback);
-	HSteamListenSocket sock = temp->socket.networking->ConnectByIPAddress(addr, 1, &opt);
+	HSteamListenSocket sock = socket.networking->ConnectByIPAddress(addr, 1, &opt);
 	if (sock == k_HSteamListenSocket_Invalid)
 	{
-		delete temp;
 		joinRes.reason = "Failed to Create Socket";
 		return joinRes;
 	}
-	temp->socket.socket = sock;
-	temp->socket.networking->SetConnectionUserData(sock, (int64)temp);
-	
-
+	socket.socket = sock;
+	socket.networking->SetConnectionUserData(sock, (int64)this);
 
 
 	base::ClientJoin join;
 	join.set_name(name);
 	std::string str = join.SerializeAsString();
-	
-	temp->SendData(Client_Join, str.data(), str.length(), SendFlags::Send_Reliable);
 
-	*out = temp;
+	SendData(Client_Join, str.data(), str.length(), SendFlags::Send_Reliable);
+
+	state = State::Connecting;
+	joinRes.success = true;
 	return joinRes;
 }
 
@@ -102,11 +128,13 @@ NetClient::~NetClient()
 
 bool NetClient::IsConnected() const
 {
+	if (state == State::Disconnected) return false;
+
 	SteamNetConnectionRealTimeStatus_t stat;
 	EResult res = socket.networking->GetConnectionRealTimeStatus(socket.socket, &stat, 0, NULL);
 	if (res == EResult::k_EResultOK)
 	{
-		return stat.m_eState == ESteamNetworkingConnectionState::k_ESteamNetworkingConnectionState_Connected;
+		return (stat.m_eState == ESteamNetworkingConnectionState::k_ESteamNetworkingConnectionState_Connected);
 	}
 	return false;
 }
@@ -175,6 +203,7 @@ bool NetClient::IsP2P() const
 
 void NetClient::Poll()
 {
+	if (socket.socket == k_HSteamListenSocket_Invalid) return;
 	while (true)
 	{
 		ISteamNetworkingMessage* pIncomingMsg = nullptr;
@@ -187,7 +216,6 @@ void NetClient::Poll()
 			pIncomingMsg->Release();
 			continue;
 		}
-
 		const uint16_t* data = (const uint16_t*)pIncomingMsg->GetData();
 		const uint16_t packetID = *data;
 		if (packetID < callbacks.size())
@@ -209,7 +237,7 @@ void NetClient::Poll()
 		pIncomingMsg->Release();
 	}
 }
-bool NetClient::ServerJoinCallback(NetClient* c, base::ServerJoin* join, int size)
+bool __stdcall NetClient::ServerJoinCallback(NetClient* c, base::ServerJoin* join, int size)
 {
 	
 	const int32 idVal = join->data().id();

@@ -84,13 +84,14 @@ bool TryConnectToServer(const std::string& name)
 	if (app->isConnected) return true;
 	MainWindow* main = app->mainWindow;
 	
-	//NetError err = app->socket.Connect(DEBUG_IP, DEBUG_PORT, name);
-	//if (err != NetError::OK)
+	NetResult err = app->client->Connect(DEBUG_IP, DEBUG_PORT, name);
+	if(!err.success)
 	{
-		QTimer::singleShot(0, main, [main]() {
+		QTimer::singleShot(0, main, [&]() {
 			MainApplication* app = MainApplication::GetInstance();
 			auto rect = main->geometry();
-			InfoPopup* popUp = new InfoPopup(main, "FAILED TO CONNECT TO SERVER", QPoint(rect.width() / 2, rect.height() - 100), 20, 0xFFFF0000, 3000);
+			//InfoPopup* popUp = new InfoPopup(main, "FAILED TO CONNECT TO SERVER", QPoint(rect.width() / 2, rect.height() - 100), 20, 0xFFFF0000, 3000);
+			InfoPopup* popUp = new InfoPopup(main, err.reason.c_str(), QPoint(rect.width() / 2, rect.height() - 100), 20, 0xFFFF0000, 3000);
 		});
 		return false;
 	}

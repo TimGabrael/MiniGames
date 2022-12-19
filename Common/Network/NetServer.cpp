@@ -16,10 +16,12 @@ static void* __stdcall StateDeserializer(char* packet, int size)
 }
 
 
-
+static NetServer* g_serverInstance = nullptr;
 void NetServer::SteamNetServerConnectionStatusChangedCallback(SteamNetConnectionStatusChangedCallback_t* pInfo)
 {
-	NetServer* server = (NetServer*)pInfo->m_info.m_nUserData;
+	NetServer* server = g_serverInstance;
+	if (!server) return;
+
 	switch (pInfo->m_info.m_eState)
 	{
 	case k_ESteamNetworkingConnectionState_ClosedByPeer:
@@ -48,6 +50,16 @@ void NetServer::SteamNetServerConnectionStatusChangedCallback(SteamNetConnection
 			conn->state = ClientState::INVALID;
 			conn->name = "";
 			conn->activePlugin = INVALID_ID;
+			if (server->socket.networking->AcceptConnection(pInfo->m_hConn) != k_EResultOK)
+			{
+				server->CloseConnection(conn);
+				return;
+			}
+			if (!server->socket.networking->SetConnectionPollGroup(pInfo->m_hConn, server->group))
+			{
+				server->CloseConnection(conn);
+			}
+			server->socket.networking->SetConnectionUserData(pInfo->m_hConn, (int64)conn);
 		}
 		else
 		{
@@ -65,29 +77,7 @@ void NetServer::SteamNetServerConnectionStatusChangedCallback(SteamNetConnection
 
 NetServer* NetServer::Create(const char* ip, uint32_t port)
 {
-	uint32_t ipAddr = 0;
-	{
-		int ipLen = strnlen(ip, 100);
-		int curIdx = 0;
-		for (int i = 0; i < ipLen; i++)
-		{
-			if (curIdx > 4) return nullptr;
-
-			if (i == 0)
-			{
-				const int val = atoi(ip + i);
-				ipAddr |= val << (8 * curIdx);
-				curIdx++;
-			}
-			else if (ip[i] == '.')
-			{
-				const int val = atoi(ip + i + 1);
-				ipAddr |= val << (8 * curIdx);
-				curIdx++;
-			}
-		}
-	}
-
+	uint32_t ipAddr = ParseIP(ip);
 
 	NetServer* out = new NetServer();
 	out->socket.networking = SteamNetworkingSockets();
@@ -99,16 +89,23 @@ NetServer* NetServer::Create(const char* ip, uint32_t port)
 	SteamNetworkingConfigValue_t opt;
 	opt.SetPtr(k_ESteamNetworkingConfig_Callback_ConnectionStatusChanged, (void*)SteamNetServerConnectionStatusChangedCallback);
 	out->socket.socket = out->socket.networking->CreateListenSocketIP(serverLocalAddr, 1, &opt);
-	if (out->socket.socket == k_HSteamListenSocket_Invalid) return nullptr;
+	if (out->socket.socket == k_HSteamListenSocket_Invalid) {
+		delete out;
+		return nullptr;
+	}
 	out->group = out->socket.networking->CreatePollGroup();
-	if (out->group == k_HSteamNetPollGroup_Invalid) return nullptr;
-	out->socket.networking->SetConnectionUserData(out->socket.socket, (int64)out);
+	if (out->group == k_HSteamNetPollGroup_Invalid) {
+		delete out;
+		return nullptr;
+	}
 
-	out->SetDeserializer(JoinDeserializer, Client_Join);
+	g_serverInstance = out;
+
 	out->SetDeserializer(StateDeserializer, Client_State);
+	out->SetDeserializer(JoinDeserializer, Client_Join);
 
-	out->SetCallback((ServerPacketFunction)ClientJoinPacketCallback, Client_Join);
 	out->SetCallback((ServerPacketFunction)ClientStatePacketCallback, Client_State);
+	out->SetCallback((ServerPacketFunction)ClientJoinPacketCallback, Client_Join);
 
 	return out;
 }
@@ -177,6 +174,7 @@ bool NetServer::IsP2P() const
 
 void NetServer::Poll()
 {
+	if (group == k_HSteamNetPollGroup_Invalid) return;
 	while (true)
 	{
 		ISteamNetworkingMessage* pIncomingMsg = nullptr;
@@ -185,6 +183,30 @@ void NetServer::Poll()
 		if (numMsgs == 0)
 			break;
 		if (numMsgs < 0) return;
+
+		uint32 msgSize = pIncomingMsg->GetSize();
+		if (pIncomingMsg->GetSize() < sizeof(uint16_t))
+		{
+			pIncomingMsg->Release();
+			continue;
+		}
+		const uint16_t header = *(uint16_t*)pIncomingMsg->GetData();
+
+		if (header < callbacks.size())
+		{
+			CallbackInfo& info = callbacks.at(header);
+			if (info.receiver)
+			{
+				void* packet = (void*)((uint16_t*)pIncomingMsg->GetData() + 1);
+				if (info.deserializer) packet = info.deserializer((char*)packet, msgSize - sizeof(uint16_t));
+				if (packet)
+				{
+					info.receiver(this, (ServerConnection*)pIncomingMsg->GetConnectionUserData(), packet, msgSize);
+				}
+			}
+		}
+
+
 
 		pIncomingMsg->Release();
 	}
@@ -240,6 +262,10 @@ bool NetServer::ClientJoinPacketCallback(NetServer* s, ServerConnection* client,
 	if (res != NameValidationResult::Name_Ok)
 	{
 		s->CloseConnection(client);
+	}
+	else
+	{
+		std::cout << "joined: " << join->name() << std::endl;
 	}
 
 	join->Clear();

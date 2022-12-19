@@ -123,18 +123,17 @@ MainMenuFrame::MainMenuFrame(QMainWindow* MainWindow) : StateFrame(MainWindow)
     connect(settingsBtn, &QPushButton::clicked, this, &MainMenuFrame::OnSettingsClick);
     connect(exitBtn, &QPushButton::clicked, this, &MainMenuFrame::OnExitClick);
 
-    auto function = []() {
-        MainApplication* app = MainApplication::GetInstance();
-        app->isConnected = false;
-        if (!app->isConnected)
-        {
-            // POP UP MESSAGE FAILED TO CONNECT TO SERVER
-            //LOG("COULD NOT ESTABLISH A CONNECTION TO THE SERVER: %p\n", wnd);
-            //auto rect = wnd->geometry();
-            //InfoPopup* popUp = new InfoPopup(wnd, "TestContent", QPoint(rect.width() / 2, rect.height() - 100), 40, 0xFFFFFFFF, 100000);
-            //LOG("HIERBINICHSF\n");
-        }
-    };
+    //auto function = []() {
+    //    MainApplication* app = MainApplication::GetInstance();
+    //    app->isConnected = false;
+    //    if (!app->isConnected)
+    //    {
+    //        // POP UP MESSAGE FAILED TO CONNECT TO SERVER
+    //        //LOG("COULD NOT ESTABLISH A CONNECTION TO THE SERVER: %p\n", wnd);
+    //        //auto rect = wnd->geometry();
+    //        //InfoPopup* popUp = new InfoPopup(wnd, "TestContent", QPoint(rect.width() / 2, rect.height() - 100), 40, 0xFFFFFFFF, 100000);
+    //    }
+    //};
 
     MainWindow->setCentralWidget(this);
 }
@@ -192,17 +191,26 @@ void MainMenuFrame::OnCreateClick()
     
     bool canShow = true;
     std::string errorMsg = "";
-    //if (ValidatePlayerName(name) == JOIN_ERROR::JOIN_OK)
+    NameValidationResult validation = ValidateName(name);
+    switch (validation)
     {
-        this->nameIn->setText(name.c_str());
+    case Name_Ok:
+        canShow = false;
+        break;
+    case Name_ErrSmall:
+        errorMsg = "MIN NAME LENGTH 5!";
+        break;
+    case Name_ErrLarge:
+        errorMsg = "MAX NAME LENGTH 30!";
+        break;
+    case Name_ErrSymbol:
+        errorMsg = "INVALID SYMBOLS";
+        break;
+    default:
+        break;
     }
-    //else
-    //{
-    //    canShow = false;
-    //    errorMsg = "INVALID NAME LENGHT(5-30)";
-    //}
 
-    if (!canShow) {
+    if (canShow) {
         errortxt->setText(errorMsg.c_str());
         errortxt->show();
         return;
