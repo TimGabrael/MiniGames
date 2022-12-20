@@ -47,8 +47,8 @@ struct ClientData
 
 struct ApplicationData
 {
-	void* assetManager;
-	ImGuiContext* imGuiCtx;
+	void* assetManager = nullptr;
+	ImGuiContext* imGuiCtx = nullptr;
 	std::vector<ClientData> players;
 	ClientData localPlayer;
 	std::string serverIP;

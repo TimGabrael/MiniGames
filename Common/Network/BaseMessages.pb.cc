@@ -83,22 +83,23 @@ struct ClientStateDefaultTypeInternal {
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
     PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ClientStateDefaultTypeInternal _ClientState_default_instance_;
-PROTOBUF_CONSTEXPR ServerJoin::ServerJoin(
+PROTOBUF_CONSTEXPR ServerClientInfo::ServerClientInfo(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_._has_bits_)*/{}
   , /*decltype(_impl_._cached_size_)*/{}
   , /*decltype(_impl_.data_)*/nullptr
-  , /*decltype(_impl_.is_local_)*/false} {}
-struct ServerJoinDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR ServerJoinDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
-  ~ServerJoinDefaultTypeInternal() {}
+  , /*decltype(_impl_.is_local_)*/false
+  , /*decltype(_impl_.is_connected_)*/false} {}
+struct ServerClientInfoDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR ServerClientInfoDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~ServerClientInfoDefaultTypeInternal() {}
   union {
-    ServerJoin _instance;
+    ServerClientInfo _instance;
   };
 };
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
-    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ServerJoinDefaultTypeInternal _ServerJoin_default_instance_;
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ServerClientInfoDefaultTypeInternal _ServerClientInfo_default_instance_;
 PROTOBUF_CONSTEXPR ServerPlugin::ServerPlugin(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_._has_bits_)*/{}
@@ -186,18 +187,20 @@ const ::uint32_t TableStruct_BaseMessages_2eproto::offsets[] PROTOBUF_SECTION_VA
     PROTOBUF_FIELD_OFFSET(::base::ClientState, _impl_.state_),
     0,
     1,
-    PROTOBUF_FIELD_OFFSET(::base::ServerJoin, _impl_._has_bits_),
-    PROTOBUF_FIELD_OFFSET(::base::ServerJoin, _internal_metadata_),
+    PROTOBUF_FIELD_OFFSET(::base::ServerClientInfo, _impl_._has_bits_),
+    PROTOBUF_FIELD_OFFSET(::base::ServerClientInfo, _internal_metadata_),
     ~0u,  // no _extensions_
     ~0u,  // no _oneof_case_
     ~0u,  // no _weak_field_map_
     ~0u,  // no _inlined_string_donated_
     ~0u,  // no _split_
     ~0u,  // no sizeof(Split)
-    PROTOBUF_FIELD_OFFSET(::base::ServerJoin, _impl_.data_),
-    PROTOBUF_FIELD_OFFSET(::base::ServerJoin, _impl_.is_local_),
+    PROTOBUF_FIELD_OFFSET(::base::ServerClientInfo, _impl_.data_),
+    PROTOBUF_FIELD_OFFSET(::base::ServerClientInfo, _impl_.is_local_),
+    PROTOBUF_FIELD_OFFSET(::base::ServerClientInfo, _impl_.is_connected_),
     0,
     1,
+    2,
     PROTOBUF_FIELD_OFFSET(::base::ServerPlugin, _impl_._has_bits_),
     PROTOBUF_FIELD_OFFSET(::base::ServerPlugin, _internal_metadata_),
     ~0u,  // no _extensions_
@@ -228,9 +231,9 @@ static const ::_pbi::MigrationSchema
         { 14, 24, -1, sizeof(::base::PluginData)},
         { 26, 35, -1, sizeof(::base::ClientJoin)},
         { 36, 46, -1, sizeof(::base::ClientState)},
-        { 48, 58, -1, sizeof(::base::ServerJoin)},
-        { 60, 69, -1, sizeof(::base::ServerPlugin)},
-        { 70, 80, -1, sizeof(::base::ServerSetState)},
+        { 48, 59, -1, sizeof(::base::ServerClientInfo)},
+        { 62, 71, -1, sizeof(::base::ServerPlugin)},
+        { 72, 82, -1, sizeof(::base::ServerSetState)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -238,7 +241,7 @@ static const ::_pb::Message* const file_default_instances[] = {
     &::base::_PluginData_default_instance_._instance,
     &::base::_ClientJoin_default_instance_._instance,
     &::base::_ClientState_default_instance_._instance,
-    &::base::_ServerJoin_default_instance_._instance,
+    &::base::_ServerClientInfo_default_instance_._instance,
     &::base::_ServerPlugin_default_instance_._instance,
     &::base::_ServerSetState_default_instance_._instance,
 };
@@ -248,17 +251,18 @@ const char descriptor_table_protodef_BaseMessages_2eproto[] PROTOBUF_SECTION_VAR
     " \002(\010\",\n\nPluginData\022\n\n\002id\030\001 \002(\t\022\022\n\nsessio"
     "n_id\030\002 \002(\005\"\032\n\nClientJoin\022\014\n\004name\030\001 \002(\t\"7"
     "\n\013ClientState\022\031\n\021plugin_session_id\030\001 \001(\005"
-    "\022\r\n\005state\030\002 \002(\005\">\n\nServerJoin\022\036\n\004data\030\001 "
-    "\002(\0132\020.base.ClientData\022\020\n\010is_local\030\002 \002(\010\""
-    ".\n\014ServerPlugin\022\036\n\004data\030\001 \002(\0132\020.base.Plu"
-    "ginData\"2\n\016ServerSetState\022\021\n\tplugin_id\030\001"
-    " \001(\005\022\r\n\005state\030\002 \002(\005"
+    "\022\r\n\005state\030\002 \002(\005\"Z\n\020ServerClientInfo\022\036\n\004d"
+    "ata\030\001 \002(\0132\020.base.ClientData\022\020\n\010is_local\030"
+    "\002 \002(\010\022\024\n\014is_connected\030\003 \002(\010\".\n\014ServerPlu"
+    "gin\022\036\n\004data\030\001 \002(\0132\020.base.PluginData\"2\n\016S"
+    "erverSetState\022\021\n\tplugin_id\030\001 \001(\005\022\r\n\005stat"
+    "e\030\002 \002(\005"
 };
 static ::absl::once_flag descriptor_table_BaseMessages_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_BaseMessages_2eproto = {
     false,
     false,
-    379,
+    407,
     descriptor_table_protodef_BaseMessages_2eproto,
     "BaseMessages.proto",
     &descriptor_table_BaseMessages_2eproto_once,
@@ -1358,61 +1362,68 @@ void ClientState::InternalSwap(ClientState* other) {
 }
 // ===================================================================
 
-class ServerJoin::_Internal {
+class ServerClientInfo::_Internal {
  public:
-  using HasBits = decltype(std::declval<ServerJoin>()._impl_._has_bits_);
+  using HasBits = decltype(std::declval<ServerClientInfo>()._impl_._has_bits_);
   static constexpr ::int32_t kHasBitsOffset =
-    8 * PROTOBUF_FIELD_OFFSET(ServerJoin, _impl_._has_bits_);
-  static const ::base::ClientData& data(const ServerJoin* msg);
+    8 * PROTOBUF_FIELD_OFFSET(ServerClientInfo, _impl_._has_bits_);
+  static const ::base::ClientData& data(const ServerClientInfo* msg);
   static void set_has_data(HasBits* has_bits) {
     (*has_bits)[0] |= 1u;
   }
   static void set_has_is_local(HasBits* has_bits) {
     (*has_bits)[0] |= 2u;
   }
+  static void set_has_is_connected(HasBits* has_bits) {
+    (*has_bits)[0] |= 4u;
+  }
   static bool MissingRequiredFields(const HasBits& has_bits) {
-    return ((has_bits[0] & 0x00000003) ^ 0x00000003) != 0;
+    return ((has_bits[0] & 0x00000007) ^ 0x00000007) != 0;
   }
 };
 
 const ::base::ClientData&
-ServerJoin::_Internal::data(const ServerJoin* msg) {
+ServerClientInfo::_Internal::data(const ServerClientInfo* msg) {
   return *msg->_impl_.data_;
 }
-ServerJoin::ServerJoin(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+ServerClientInfo::ServerClientInfo(::PROTOBUF_NAMESPACE_ID::Arena* arena)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
   SharedCtor(arena);
-  // @@protoc_insertion_point(arena_constructor:base.ServerJoin)
+  // @@protoc_insertion_point(arena_constructor:base.ServerClientInfo)
 }
-ServerJoin::ServerJoin(const ServerJoin& from)
+ServerClientInfo::ServerClientInfo(const ServerClientInfo& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
-  ServerJoin* const _this = this; (void)_this;
+  ServerClientInfo* const _this = this; (void)_this;
   new (&_impl_) Impl_{
       decltype(_impl_._has_bits_){from._impl_._has_bits_}
     , /*decltype(_impl_._cached_size_)*/{}
     , decltype(_impl_.data_){nullptr}
-    , decltype(_impl_.is_local_){}};
+    , decltype(_impl_.is_local_){}
+    , decltype(_impl_.is_connected_){}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   if ((from._impl_._has_bits_[0] & 0x00000001u) != 0) {
     _this->_impl_.data_ = new ::base::ClientData(*from._impl_.data_);
   }
-  _this->_impl_.is_local_ = from._impl_.is_local_;
-  // @@protoc_insertion_point(copy_constructor:base.ServerJoin)
+  ::memcpy(&_impl_.is_local_, &from._impl_.is_local_,
+    static_cast<::size_t>(reinterpret_cast<char*>(&_impl_.is_connected_) -
+    reinterpret_cast<char*>(&_impl_.is_local_)) + sizeof(_impl_.is_connected_));
+  // @@protoc_insertion_point(copy_constructor:base.ServerClientInfo)
 }
 
-inline void ServerJoin::SharedCtor(::_pb::Arena* arena) {
+inline void ServerClientInfo::SharedCtor(::_pb::Arena* arena) {
   (void)arena;
   new (&_impl_) Impl_{
       decltype(_impl_._has_bits_){}
     , /*decltype(_impl_._cached_size_)*/{}
     , decltype(_impl_.data_){nullptr}
     , decltype(_impl_.is_local_){false}
+    , decltype(_impl_.is_connected_){false}
   };
 }
 
-ServerJoin::~ServerJoin() {
-  // @@protoc_insertion_point(destructor:base.ServerJoin)
+ServerClientInfo::~ServerClientInfo() {
+  // @@protoc_insertion_point(destructor:base.ServerClientInfo)
   if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
   (void)arena;
     return;
@@ -1420,17 +1431,17 @@ ServerJoin::~ServerJoin() {
   SharedDtor();
 }
 
-inline void ServerJoin::SharedDtor() {
+inline void ServerClientInfo::SharedDtor() {
   GOOGLE_ABSL_DCHECK(GetArenaForAllocation() == nullptr);
   if (this != internal_default_instance()) delete _impl_.data_;
 }
 
-void ServerJoin::SetCachedSize(int size) const {
+void ServerClientInfo::SetCachedSize(int size) const {
   _impl_._cached_size_.Set(size);
 }
 
-void ServerJoin::Clear() {
-// @@protoc_insertion_point(message_clear_start:base.ServerJoin)
+void ServerClientInfo::Clear() {
+// @@protoc_insertion_point(message_clear_start:base.ServerClientInfo)
   ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
@@ -1440,12 +1451,14 @@ void ServerJoin::Clear() {
     GOOGLE_ABSL_DCHECK(_impl_.data_ != nullptr);
     _impl_.data_->Clear();
   }
-  _impl_.is_local_ = false;
+  ::memset(&_impl_.is_local_, 0, static_cast<::size_t>(
+      reinterpret_cast<char*>(&_impl_.is_connected_) -
+      reinterpret_cast<char*>(&_impl_.is_local_)) + sizeof(_impl_.is_connected_));
   _impl_._has_bits_.Clear();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
-const char* ServerJoin::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+const char* ServerClientInfo::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
 
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
   _Internal::HasBits has_bits{};
@@ -1467,6 +1480,16 @@ const char* ServerJoin::_InternalParse(const char* ptr, ::_pbi::ParseContext* ct
         if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 16)) {
           _Internal::set_has_is_local(&has_bits);
           _impl_.is_local_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else {
+          goto handle_unusual;
+        }
+        continue;
+      // required bool is_connected = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 24)) {
+          _Internal::set_has_is_connected(&has_bits);
+          _impl_.is_connected_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else {
           goto handle_unusual;
@@ -1496,10 +1519,10 @@ failure:
 #undef CHK_
 }
 
-::uint8_t* ServerJoin::_InternalSerialize(
+::uint8_t* ServerClientInfo::_InternalSerialize(
     ::uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
 
-  // @@protoc_insertion_point(serialize_to_array_start:base.ServerJoin)
+  // @@protoc_insertion_point(serialize_to_array_start:base.ServerClientInfo)
   ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
@@ -1517,16 +1540,22 @@ failure:
     target = ::_pbi::WireFormatLite::WriteBoolToArray(2, this->_internal_is_local(), target);
   }
 
+  // required bool is_connected = 3;
+  if (cached_has_bits & 0x00000004u) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteBoolToArray(3, this->_internal_is_connected(), target);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
   }
-  // @@protoc_insertion_point(serialize_to_array_end:base.ServerJoin)
+  // @@protoc_insertion_point(serialize_to_array_end:base.ServerClientInfo)
   return target;
 }
 
-::size_t ServerJoin::RequiredFieldsByteSizeFallback() const {
-// @@protoc_insertion_point(required_fields_byte_size_fallback_start:base.ServerJoin)
+::size_t ServerClientInfo::RequiredFieldsByteSizeFallback() const {
+// @@protoc_insertion_point(required_fields_byte_size_fallback_start:base.ServerClientInfo)
   ::size_t total_size = 0;
 
   if ((_impl_._has_bits_[0] & 0x00000001u) != 0) {
@@ -1541,20 +1570,28 @@ failure:
     total_size += 1 + 1;
   }
 
+  if ((_impl_._has_bits_[0] & 0x00000004u) != 0) {
+    // required bool is_connected = 3;
+    total_size += 1 + 1;
+  }
+
   return total_size;
 }
-::size_t ServerJoin::ByteSizeLong() const {
+::size_t ServerClientInfo::ByteSizeLong() const {
 
-// @@protoc_insertion_point(message_byte_size_start:base.ServerJoin)
+// @@protoc_insertion_point(message_byte_size_start:base.ServerClientInfo)
   ::size_t total_size = 0;
 
-  if (((_impl_._has_bits_[0] & 0x00000003) ^ 0x00000003) == 0) {  // All required fields are present.
+  if (((_impl_._has_bits_[0] & 0x00000007) ^ 0x00000007) == 0) {  // All required fields are present.
     // required .base.ClientData data = 1;
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
         *_impl_.data_);
 
     // required bool is_local = 2;
+    total_size += 1 + 1;
+
+    // required bool is_connected = 3;
     total_size += 1 + 1;
 
   } else {
@@ -1567,24 +1604,24 @@ failure:
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData ServerJoin::_class_data_ = {
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData ServerClientInfo::_class_data_ = {
     ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
-    ServerJoin::MergeImpl
+    ServerClientInfo::MergeImpl
 };
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*ServerJoin::GetClassData() const { return &_class_data_; }
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*ServerClientInfo::GetClassData() const { return &_class_data_; }
 
 
-void ServerJoin::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
-  auto* const _this = static_cast<ServerJoin*>(&to_msg);
-  auto& from = static_cast<const ServerJoin&>(from_msg);
+void ServerClientInfo::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<ServerClientInfo*>(&to_msg);
+  auto& from = static_cast<const ServerClientInfo&>(from_msg);
 
-  // @@protoc_insertion_point(class_specific_merge_from_start:base.ServerJoin)
+  // @@protoc_insertion_point(class_specific_merge_from_start:base.ServerClientInfo)
   GOOGLE_ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
   cached_has_bits = from._impl_._has_bits_[0];
-  if (cached_has_bits & 0x00000003u) {
+  if (cached_has_bits & 0x00000007u) {
     if (cached_has_bits & 0x00000001u) {
       _this->_internal_mutable_data()->::base::ClientData::MergeFrom(
           from._internal_data());
@@ -1592,19 +1629,22 @@ void ServerJoin::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PRO
     if (cached_has_bits & 0x00000002u) {
       _this->_impl_.is_local_ = from._impl_.is_local_;
     }
+    if (cached_has_bits & 0x00000004u) {
+      _this->_impl_.is_connected_ = from._impl_.is_connected_;
+    }
     _this->_impl_._has_bits_[0] |= cached_has_bits;
   }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
-void ServerJoin::CopyFrom(const ServerJoin& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:base.ServerJoin)
+void ServerClientInfo::CopyFrom(const ServerClientInfo& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:base.ServerClientInfo)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
-bool ServerJoin::IsInitialized() const {
+bool ServerClientInfo::IsInitialized() const {
   if (_Internal::MissingRequiredFields(_impl_._has_bits_)) return false;
   if ((_impl_._has_bits_[0] & 0x00000001u) != 0) {
     if (!_impl_.data_->IsInitialized()) return false;
@@ -1612,19 +1652,19 @@ bool ServerJoin::IsInitialized() const {
   return true;
 }
 
-void ServerJoin::InternalSwap(ServerJoin* other) {
+void ServerClientInfo::InternalSwap(ServerClientInfo* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(ServerJoin, _impl_.is_local_)
-      + sizeof(ServerJoin::_impl_.is_local_)
-      - PROTOBUF_FIELD_OFFSET(ServerJoin, _impl_.data_)>(
+      PROTOBUF_FIELD_OFFSET(ServerClientInfo, _impl_.is_connected_)
+      + sizeof(ServerClientInfo::_impl_.is_connected_)
+      - PROTOBUF_FIELD_OFFSET(ServerClientInfo, _impl_.data_)>(
           reinterpret_cast<char*>(&_impl_.data_),
           reinterpret_cast<char*>(&other->_impl_.data_));
 }
 
-::PROTOBUF_NAMESPACE_ID::Metadata ServerJoin::GetMetadata() const {
+::PROTOBUF_NAMESPACE_ID::Metadata ServerClientInfo::GetMetadata() const {
 
   return ::_pbi::AssignDescriptors(
       &descriptor_table_BaseMessages_2eproto_getter, &descriptor_table_BaseMessages_2eproto_once,
@@ -2098,9 +2138,9 @@ template<> PROTOBUF_NOINLINE ::base::ClientState*
 Arena::CreateMaybeMessage< ::base::ClientState >(Arena* arena) {
   return Arena::CreateMessageInternal< ::base::ClientState >(arena);
 }
-template<> PROTOBUF_NOINLINE ::base::ServerJoin*
-Arena::CreateMaybeMessage< ::base::ServerJoin >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::base::ServerJoin >(arena);
+template<> PROTOBUF_NOINLINE ::base::ServerClientInfo*
+Arena::CreateMaybeMessage< ::base::ServerClientInfo >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::base::ServerClientInfo >(arena);
 }
 template<> PROTOBUF_NOINLINE ::base::ServerPlugin*
 Arena::CreateMaybeMessage< ::base::ServerPlugin >(Arena* arena) {

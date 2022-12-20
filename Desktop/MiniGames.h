@@ -28,12 +28,13 @@ public:
     MAIN_WINDOW_STATE GetState();
 
 
+    void* stateWidget = nullptr;
 private:
 
     void InternalSetState(MAIN_WINDOW_STATE state);
 
     static constexpr uint32_t MAX_STACK_SIZE = 16;
-    MAIN_WINDOW_STATE state;
+    MAIN_WINDOW_STATE state = MAIN_WINDOW_STATE::STATE_INVALID;
     MAIN_WINDOW_STATE stateStack[MAX_STACK_SIZE];
     uint8_t stackPtr;
     nativeformat::driver::NFDriver* audioDriver;

@@ -42,6 +42,8 @@ private:
 	static bool ClientJoinPacketCallback(NetServer* s, ServerConnection* client, base::ClientJoin* join, int size);
 	static bool ClientStatePacketCallback(NetServer* s, ServerConnection* client, base::ClientState* state, int size);
 
+	bool hasAdmin() const;
+
 	struct CallbackInfo
 	{
 		DeserializationFunc deserializer;

@@ -25,7 +25,7 @@ public:
 	bool isConnected = false;
 	bool networkThreadShouldJoin = false;
 
-	bool fullscreen;
+	bool fullscreen = false;
 
 
 	static MainApplication* GetInstance();

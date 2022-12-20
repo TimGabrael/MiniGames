@@ -168,16 +168,16 @@ void MainWindow::InternalSetState(MAIN_WINDOW_STATE state)
     switch (state)
     {
     case MAIN_WINDOW_STATE::STATE_MENU:
-        new MainMenuFrame(this);
+        stateWidget = new MainMenuFrame(this);
         break;
     case MAIN_WINDOW_STATE::STATE_LOBBY:
-        new LobbyFrame(this);
+        stateWidget = new LobbyFrame(this);
         break;
     case MAIN_WINDOW_STATE::STATE_SETTINGS:
-        new SettingsFrame(this);
+        stateWidget = new SettingsFrame(this);
         break;
     case MAIN_WINDOW_STATE::STATE_PLUGIN:
-        new PluginFrame(this);
+        stateWidget = new PluginFrame(this);
         break;
 
 

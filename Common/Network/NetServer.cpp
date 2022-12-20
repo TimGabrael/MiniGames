@@ -119,7 +119,7 @@ ServerConnection* NetServer::GetConnection(uint16_t id)
 {
 	if (id < MAX_PLAYERS)
 	{
-		if (socket.connected[id].isConnected != ConnectionState::Disconnected)
+		if (socket.connected[id].isConnected == ConnectionState::Connected)
 		{
 			return &socket.connected[id];
 		}
@@ -238,6 +238,56 @@ void NetServer::CloseConnection(ServerConnection* c)
 {
 	if (c->isConnected != ConnectionState::Disconnected && c->conn != 0)
 	{
+		if (c->isConnected == ConnectionState::Connected)
+		{
+			base::ServerClientInfo info;
+			info.set_is_connected(false);
+			info.set_is_local(false);
+			info.mutable_data()->set_name(c->name);
+			info.mutable_data()->set_id(c->id);
+			info.mutable_data()->set_is_admin(c->isAdmin);
+
+			std::string serMsg = info.SerializeAsString();
+			ServerConnection* firstAvailable = nullptr;
+			for (int i = 0; i < MAX_PLAYERS; i++)
+			{
+				ServerConnection* other = &socket.connected[i];
+				if (other == c) continue;
+				if (other->isConnected == ConnectionState::Connected && other->conn != k_HSteamNetConnection_Invalid)
+				{
+					SendData(other, Server_ClientInfo, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
+					firstAvailable = other;
+				}
+			}
+
+			if (c->isAdmin && firstAvailable)
+			{
+				firstAvailable->isAdmin = true;
+				info.set_is_connected(true);
+				info.set_is_local(false);
+				info.mutable_data()->set_name(firstAvailable->name);
+				info.mutable_data()->set_id(firstAvailable->id);
+				info.mutable_data()->set_is_admin(true);
+
+				std::string serAdmin = info.SerializeAsString();
+				{
+					info.set_is_local(true);
+					std::string adminToAdmin = info.SerializeAsString();
+					SendData(firstAvailable, Server_ClientInfo, adminToAdmin.data(), adminToAdmin.length(), SendFlags::Send_Reliable);
+				}
+				for (int i = 0; i < MAX_PLAYERS; i++)
+				{
+					ServerConnection* other = &socket.connected[i];
+					if (other == c || other == firstAvailable) continue;
+					if (other->isConnected == ConnectionState::Connected && other->conn != k_HSteamNetConnection_Invalid)
+					{
+						SendData(other, Server_ClientInfo, serAdmin.data(), serAdmin.length(), SendFlags::Send_Reliable);
+					}
+				}
+			}
+
+		}
+
 		socket.networking->CloseConnection(c->conn, 1, nullptr, false);
 		c->isAdmin = false;
 		c->activePlugin = INVALID_ID;
@@ -265,7 +315,52 @@ bool NetServer::ClientJoinPacketCallback(NetServer* s, ServerConnection* client,
 	}
 	else
 	{
-		std::cout << "joined: " << join->name() << std::endl;
+		client->name = join->name();
+		client->isAdmin = !s->hasAdmin();
+		client->isConnected = ConnectionState::Connected;
+		client->id = s->GetClientID(client);
+		client->activePlugin = INVALID_ID;
+		
+		// Send New Client Info To All Connected Clients
+		{
+			base::ServerClientInfo msg;
+
+			msg.set_is_local(true);
+			msg.set_is_connected(true);
+			msg.mutable_data()->set_id(client->id);
+			msg.mutable_data()->set_is_admin(client->isAdmin);
+			msg.mutable_data()->set_name(client->name);
+
+			std::string serMsg = msg.SerializeAsString();
+			s->SendData(client, Server_ClientInfo, serMsg.data(), serMsg.size(), SendFlags::Send_Reliable);
+
+			msg.set_is_local(false);
+			serMsg = msg.SerializeAsString();
+			for (int i = 0; i < MAX_PLAYERS; i++)
+			{
+				ServerConnection* conn = s->GetConnection(i);
+				if (conn == client) continue;
+				if (conn) {
+					s->SendData(conn, Server_ClientInfo, serMsg.data(), serMsg.size(), SendFlags::Send_Reliable);
+
+					base::ServerClientInfo otherConn;
+					otherConn.mutable_data()->set_name(conn->name);
+					otherConn.mutable_data()->set_id(conn->id);
+					otherConn.mutable_data()->set_is_admin(conn->isAdmin);
+					otherConn.set_is_local(false);
+					otherConn.set_is_connected(true);
+					std::string otherMsg = otherConn.SerializeAsString();
+					s->SendData(client, Server_ClientInfo, otherMsg.data(), otherMsg.size(), SendFlags::Send_Reliable);
+
+				}
+			}
+		}
+
+		base::ServerSetState newState;
+		newState.set_state((int32_t)ClientState::LOBBY);
+		std::string serMsg = newState.SerializeAsString();
+		s->SendData(client, Server_SetState, serMsg.data(), serMsg.length(), Send_Reliable);
+
 	}
 
 	join->Clear();
@@ -294,4 +389,16 @@ bool NetServer::ClientStatePacketCallback(NetServer* s, ServerConnection* client
 	
 	state->Clear();
 	return true;
+}
+
+bool NetServer::hasAdmin() const
+{
+	for (int i = 0; i < MAX_PLAYERS; i++)
+	{
+		if (socket.connected[i].isConnected == ConnectionState::Connected && socket.connected[i].isAdmin)
+		{
+			return true;
+		}
+	}
+	return false;
 }

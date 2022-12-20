@@ -1,10 +1,10 @@
 #include "NetClient.h"
 #include "NetCommon.h"
 
-static void* __stdcall JoinDeserializer(char* packet, int size)
+static void* __stdcall ClientInfoDeserializer(char* packet, int size)
 {
-	static base::ServerJoin join;
-	if (join.ParseFromArray(packet, size)) return &join;
+	static base::ServerClientInfo info;
+	if (info.ParseFromArray(packet, size)) return &info;
 	return nullptr;
 }
 static void* __stdcall PluginDeserializer(char* packet, int size)
@@ -56,9 +56,9 @@ NetClient* NetClient::Create()
 
 	out->SetDeserializer(SetStateDeserializer, Server_SetState);
 	out->SetDeserializer(PluginDeserializer, Server_Plugin);
-	out->SetDeserializer(JoinDeserializer, Server_Join);
+	out->SetDeserializer(ClientInfoDeserializer, Server_ClientInfo);
 
-	out->SetCallback((ClientPacketFunction)ServerJoinCallback, Server_Join);
+	out->SetCallback((ClientPacketFunction)ServerInfoCallback, Server_ClientInfo);
 
 	return out;
 }
@@ -173,9 +173,9 @@ void NetClient::SetDeserializer(DeserializationFunc fn, uint16_t packetID)
 	callbacks.at(packetID).deserializer = fn;
 }
 
-void NetClient::SetJoinCallback(ClientJoinCallbackFunction fn)
+void NetClient::SetClientInfoCallback(ClientInfoCallbackFunction fn)
 {
-	joinCB = fn;
+	infoCB = fn;
 }
 
 void NetClient::SetDisconnectCallback(ClientDisconnectCallbackFunction fn)
@@ -237,24 +237,34 @@ void NetClient::Poll()
 		pIncomingMsg->Release();
 	}
 }
-bool __stdcall NetClient::ServerJoinCallback(NetClient* c, base::ServerJoin* join, int size)
+bool __stdcall NetClient::ServerInfoCallback(NetClient* c, base::ServerClientInfo* info, int size)
 {
 	
-	const int32 idVal = join->data().id();
+	const int32 idVal = info->data().id();
 	if (idVal < MAX_PLAYERS && idVal >= 0)
 	{
 		ClientConnection* cl = &c->socket.connected[idVal];
-		cl->isAdmin = join->data().is_admin();
+		cl->isAdmin = info->data().is_admin();
 		cl->id = idVal;
 		cl->isConnected = ConnectionState::Connected;
-		cl->name = join->data().name();
-		if (join->is_local())
+		cl->name = info->data().name();
+		if (info->is_local())
 		{
 			c->local = cl;
 		}
-		if (c->joinCB)
+		if (info->is_connected())
 		{
-			c->joinCB(c, cl);
+			if (c->infoCB)
+			{
+				c->infoCB(c, cl);
+			}
+		}
+		else
+		{
+			if(c->disconnectCB)
+			{
+				c->disconnectCB(c, cl);
+			}
 		}
 	}
 	else

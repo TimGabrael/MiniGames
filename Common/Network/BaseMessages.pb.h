@@ -63,9 +63,9 @@ extern ClientStateDefaultTypeInternal _ClientState_default_instance_;
 class PluginData;
 struct PluginDataDefaultTypeInternal;
 extern PluginDataDefaultTypeInternal _PluginData_default_instance_;
-class ServerJoin;
-struct ServerJoinDefaultTypeInternal;
-extern ServerJoinDefaultTypeInternal _ServerJoin_default_instance_;
+class ServerClientInfo;
+struct ServerClientInfoDefaultTypeInternal;
+extern ServerClientInfoDefaultTypeInternal _ServerClientInfo_default_instance_;
 class ServerPlugin;
 struct ServerPluginDefaultTypeInternal;
 extern ServerPluginDefaultTypeInternal _ServerPlugin_default_instance_;
@@ -83,7 +83,7 @@ template <>
 template <>
 ::base::PluginData* Arena::CreateMaybeMessage<::base::PluginData>(Arena*);
 template <>
-::base::ServerJoin* Arena::CreateMaybeMessage<::base::ServerJoin>(Arena*);
+::base::ServerClientInfo* Arena::CreateMaybeMessage<::base::ServerClientInfo>(Arena*);
 template <>
 ::base::ServerPlugin* Arena::CreateMaybeMessage<::base::ServerPlugin>(Arena*);
 template <>
@@ -778,24 +778,24 @@ class ClientState final :
   friend struct ::TableStruct_BaseMessages_2eproto;
 };// -------------------------------------------------------------------
 
-class ServerJoin final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:base.ServerJoin) */ {
+class ServerClientInfo final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:base.ServerClientInfo) */ {
  public:
-  inline ServerJoin() : ServerJoin(nullptr) {}
-  ~ServerJoin() override;
-  explicit PROTOBUF_CONSTEXPR ServerJoin(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+  inline ServerClientInfo() : ServerClientInfo(nullptr) {}
+  ~ServerClientInfo() override;
+  explicit PROTOBUF_CONSTEXPR ServerClientInfo(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
 
-  ServerJoin(const ServerJoin& from);
-  ServerJoin(ServerJoin&& from) noexcept
-    : ServerJoin() {
+  ServerClientInfo(const ServerClientInfo& from);
+  ServerClientInfo(ServerClientInfo&& from) noexcept
+    : ServerClientInfo() {
     *this = ::std::move(from);
   }
 
-  inline ServerJoin& operator=(const ServerJoin& from) {
+  inline ServerClientInfo& operator=(const ServerClientInfo& from) {
     CopyFrom(from);
     return *this;
   }
-  inline ServerJoin& operator=(ServerJoin&& from) noexcept {
+  inline ServerClientInfo& operator=(ServerClientInfo&& from) noexcept {
     if (this == &from) return *this;
     if (GetOwningArena() == from.GetOwningArena()
   #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
@@ -825,20 +825,20 @@ class ServerJoin final :
   static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
     return default_instance().GetMetadata().reflection;
   }
-  static const ServerJoin& default_instance() {
+  static const ServerClientInfo& default_instance() {
     return *internal_default_instance();
   }
-  static inline const ServerJoin* internal_default_instance() {
-    return reinterpret_cast<const ServerJoin*>(
-               &_ServerJoin_default_instance_);
+  static inline const ServerClientInfo* internal_default_instance() {
+    return reinterpret_cast<const ServerClientInfo*>(
+               &_ServerClientInfo_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
     4;
 
-  friend void swap(ServerJoin& a, ServerJoin& b) {
+  friend void swap(ServerClientInfo& a, ServerClientInfo& b) {
     a.Swap(&b);
   }
-  inline void Swap(ServerJoin* other) {
+  inline void Swap(ServerClientInfo* other) {
     if (other == this) return;
   #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
     if (GetOwningArena() != nullptr &&
@@ -851,7 +851,7 @@ class ServerJoin final :
       ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
     }
   }
-  void UnsafeArenaSwap(ServerJoin* other) {
+  void UnsafeArenaSwap(ServerClientInfo* other) {
     if (other == this) return;
     GOOGLE_ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
@@ -859,14 +859,14 @@ class ServerJoin final :
 
   // implements Message ----------------------------------------------
 
-  ServerJoin* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
-    return CreateMaybeMessage<ServerJoin>(arena);
+  ServerClientInfo* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<ServerClientInfo>(arena);
   }
   using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
-  void CopyFrom(const ServerJoin& from);
+  void CopyFrom(const ServerClientInfo& from);
   using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
-  void MergeFrom( const ServerJoin& from) {
-    ServerJoin::MergeImpl(*this, from);
+  void MergeFrom( const ServerClientInfo& from) {
+    ServerClientInfo::MergeImpl(*this, from);
   }
   private:
   static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
@@ -884,15 +884,15 @@ class ServerJoin final :
   void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
   void SharedDtor();
   void SetCachedSize(int size) const final;
-  void InternalSwap(ServerJoin* other);
+  void InternalSwap(ServerClientInfo* other);
 
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::absl::string_view FullMessageName() {
-    return "base.ServerJoin";
+    return "base.ServerClientInfo";
   }
   protected:
-  explicit ServerJoin(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  explicit ServerClientInfo(::PROTOBUF_NAMESPACE_ID::Arena* arena);
   public:
 
   static const ClassData _class_data_;
@@ -907,6 +907,7 @@ class ServerJoin final :
   enum : int {
     kDataFieldNumber = 1,
     kIsLocalFieldNumber = 2,
+    kIsConnectedFieldNumber = 3,
   };
   // required .base.ClientData data = 1;
   bool has_data() const;
@@ -931,7 +932,16 @@ class ServerJoin final :
   bool _internal_is_local() const;
   void _internal_set_is_local(bool value);
   public:
-  // @@protoc_insertion_point(class_scope:base.ServerJoin)
+  // required bool is_connected = 3;
+  bool has_is_connected() const;
+  void clear_is_connected() ;
+  bool is_connected() const;
+  void set_is_connected(bool value);
+  private:
+  bool _internal_is_connected() const;
+  void _internal_set_is_connected(bool value);
+  public:
+  // @@protoc_insertion_point(class_scope:base.ServerClientInfo)
  private:
   class _Internal;
 
@@ -946,6 +956,7 @@ class ServerJoin final :
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
     ::base::ClientData* data_;
     bool is_local_;
+    bool is_connected_;
   };
   union { Impl_ _impl_; };
   friend struct ::TableStruct_BaseMessages_2eproto;
@@ -1619,28 +1630,28 @@ inline void ClientState::set_state(::int32_t value) {
 
 // -------------------------------------------------------------------
 
-// ServerJoin
+// ServerClientInfo
 
 // required .base.ClientData data = 1;
-inline bool ServerJoin::has_data() const {
+inline bool ServerClientInfo::has_data() const {
   bool value = (_impl_._has_bits_[0] & 0x00000001u) != 0;
   PROTOBUF_ASSUME(!value || _impl_.data_ != nullptr);
   return value;
 }
-inline void ServerJoin::clear_data() {
+inline void ServerClientInfo::clear_data() {
   if (_impl_.data_ != nullptr) _impl_.data_->Clear();
   _impl_._has_bits_[0] &= ~0x00000001u;
 }
-inline const ::base::ClientData& ServerJoin::_internal_data() const {
+inline const ::base::ClientData& ServerClientInfo::_internal_data() const {
   const ::base::ClientData* p = _impl_.data_;
   return p != nullptr ? *p : reinterpret_cast<const ::base::ClientData&>(
       ::base::_ClientData_default_instance_);
 }
-inline const ::base::ClientData& ServerJoin::data() const {
-  // @@protoc_insertion_point(field_get:base.ServerJoin.data)
+inline const ::base::ClientData& ServerClientInfo::data() const {
+  // @@protoc_insertion_point(field_get:base.ServerClientInfo.data)
   return _internal_data();
 }
-inline void ServerJoin::unsafe_arena_set_allocated_data(
+inline void ServerClientInfo::unsafe_arena_set_allocated_data(
     ::base::ClientData* data) {
   if (GetArenaForAllocation() == nullptr) {
     delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.data_);
@@ -1651,9 +1662,9 @@ inline void ServerJoin::unsafe_arena_set_allocated_data(
   } else {
     _impl_._has_bits_[0] &= ~0x00000001u;
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:base.ServerJoin.data)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:base.ServerClientInfo.data)
 }
-inline ::base::ClientData* ServerJoin::release_data() {
+inline ::base::ClientData* ServerClientInfo::release_data() {
   _impl_._has_bits_[0] &= ~0x00000001u;
   ::base::ClientData* temp = _impl_.data_;
   _impl_.data_ = nullptr;
@@ -1668,14 +1679,14 @@ inline ::base::ClientData* ServerJoin::release_data() {
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::base::ClientData* ServerJoin::unsafe_arena_release_data() {
-  // @@protoc_insertion_point(field_release:base.ServerJoin.data)
+inline ::base::ClientData* ServerClientInfo::unsafe_arena_release_data() {
+  // @@protoc_insertion_point(field_release:base.ServerClientInfo.data)
   _impl_._has_bits_[0] &= ~0x00000001u;
   ::base::ClientData* temp = _impl_.data_;
   _impl_.data_ = nullptr;
   return temp;
 }
-inline ::base::ClientData* ServerJoin::_internal_mutable_data() {
+inline ::base::ClientData* ServerClientInfo::_internal_mutable_data() {
   _impl_._has_bits_[0] |= 0x00000001u;
   if (_impl_.data_ == nullptr) {
     auto* p = CreateMaybeMessage<::base::ClientData>(GetArenaForAllocation());
@@ -1683,12 +1694,12 @@ inline ::base::ClientData* ServerJoin::_internal_mutable_data() {
   }
   return _impl_.data_;
 }
-inline ::base::ClientData* ServerJoin::mutable_data() {
+inline ::base::ClientData* ServerClientInfo::mutable_data() {
   ::base::ClientData* _msg = _internal_mutable_data();
-  // @@protoc_insertion_point(field_mutable:base.ServerJoin.data)
+  // @@protoc_insertion_point(field_mutable:base.ServerClientInfo.data)
   return _msg;
 }
-inline void ServerJoin::set_allocated_data(::base::ClientData* data) {
+inline void ServerClientInfo::set_allocated_data(::base::ClientData* data) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
     delete _impl_.data_;
@@ -1705,32 +1716,57 @@ inline void ServerJoin::set_allocated_data(::base::ClientData* data) {
     _impl_._has_bits_[0] &= ~0x00000001u;
   }
   _impl_.data_ = data;
-  // @@protoc_insertion_point(field_set_allocated:base.ServerJoin.data)
+  // @@protoc_insertion_point(field_set_allocated:base.ServerClientInfo.data)
 }
 
 // required bool is_local = 2;
-inline bool ServerJoin::has_is_local() const {
+inline bool ServerClientInfo::has_is_local() const {
   bool value = (_impl_._has_bits_[0] & 0x00000002u) != 0;
   return value;
 }
-inline void ServerJoin::clear_is_local() {
+inline void ServerClientInfo::clear_is_local() {
   _impl_.is_local_ = false;
   _impl_._has_bits_[0] &= ~0x00000002u;
 }
-inline bool ServerJoin::_internal_is_local() const {
+inline bool ServerClientInfo::_internal_is_local() const {
   return _impl_.is_local_;
 }
-inline bool ServerJoin::is_local() const {
-  // @@protoc_insertion_point(field_get:base.ServerJoin.is_local)
+inline bool ServerClientInfo::is_local() const {
+  // @@protoc_insertion_point(field_get:base.ServerClientInfo.is_local)
   return _internal_is_local();
 }
-inline void ServerJoin::_internal_set_is_local(bool value) {
+inline void ServerClientInfo::_internal_set_is_local(bool value) {
   _impl_._has_bits_[0] |= 0x00000002u;
   _impl_.is_local_ = value;
 }
-inline void ServerJoin::set_is_local(bool value) {
+inline void ServerClientInfo::set_is_local(bool value) {
   _internal_set_is_local(value);
-  // @@protoc_insertion_point(field_set:base.ServerJoin.is_local)
+  // @@protoc_insertion_point(field_set:base.ServerClientInfo.is_local)
+}
+
+// required bool is_connected = 3;
+inline bool ServerClientInfo::has_is_connected() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000004u) != 0;
+  return value;
+}
+inline void ServerClientInfo::clear_is_connected() {
+  _impl_.is_connected_ = false;
+  _impl_._has_bits_[0] &= ~0x00000004u;
+}
+inline bool ServerClientInfo::_internal_is_connected() const {
+  return _impl_.is_connected_;
+}
+inline bool ServerClientInfo::is_connected() const {
+  // @@protoc_insertion_point(field_get:base.ServerClientInfo.is_connected)
+  return _internal_is_connected();
+}
+inline void ServerClientInfo::_internal_set_is_connected(bool value) {
+  _impl_._has_bits_[0] |= 0x00000004u;
+  _impl_.is_connected_ = value;
+}
+inline void ServerClientInfo::set_is_connected(bool value) {
+  _internal_set_is_connected(value);
+  // @@protoc_insertion_point(field_set:base.ServerClientInfo.is_connected)
 }
 
 // -------------------------------------------------------------------

@@ -34,7 +34,7 @@ enum ClientBaseMessages : uint16_t
 };
 enum ServerBaseMessages : uint16_t
 {
-	Server_Join,
+	Server_ClientInfo,
 	Server_Plugin,
 	Server_SetState,
 };
@@ -74,7 +74,7 @@ typedef void(__stdcall* ServerDisconnectCallbackFunction)(NetServerInterface* so
 
 
 typedef bool(__stdcall* ClientPacketFunction)(NetClientInterface* socket, void* packet, int packetSize);
-typedef void(__stdcall* ClientJoinCallbackFunction)(NetClientInterface* socket, ClientConnection* client);
+typedef void(__stdcall* ClientInfoCallbackFunction)(NetClientInterface* socket, ClientConnection* client);
 typedef void(__stdcall* ClientDisconnectCallbackFunction)(NetClientInterface* socket, ClientConnection* client);
 
 enum SendFlags
@@ -115,7 +115,7 @@ struct NetClientInterface
 	virtual void SetCallback(ClientPacketFunction fn, uint16_t packetID) = 0;
 	virtual void SetDeserializer(DeserializationFunc fn, uint16_t packetID) = 0;
 
-	virtual void SetJoinCallback(ClientJoinCallbackFunction fn) = 0;
+	virtual void SetClientInfoCallback(ClientInfoCallbackFunction fn) = 0;
 	virtual void SetDisconnectCallback(ClientDisconnectCallbackFunction fn) = 0;
 
 	virtual bool SendData(uint16_t packetID, const void* data, uint32_t size, uint32_t flags) = 0;

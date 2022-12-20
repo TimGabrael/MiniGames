@@ -26,7 +26,7 @@ struct NetClient : public NetClientInterface
 	virtual void SetCallback(ClientPacketFunction fn, uint16_t packetID);
 	virtual void SetDeserializer(DeserializationFunc fn, uint16_t packetID);
 
-	virtual void SetJoinCallback(ClientJoinCallbackFunction fn);
+	virtual void SetClientInfoCallback(ClientInfoCallbackFunction fn);
 	virtual void SetDisconnectCallback(ClientDisconnectCallbackFunction fn);
 
 	virtual bool SendData(uint16_t packetID, const void* data, uint32_t size, uint32_t flags);
@@ -48,11 +48,11 @@ private:
 
 	static void SteamNetClientConnectionStatusChangedCallback(SteamNetConnectionStatusChangedCallback_t* pInfo);
 
-	static bool __stdcall ServerJoinCallback(NetClient* c, base::ServerJoin* join, int size);
+	static bool __stdcall ServerInfoCallback(NetClient* c, base::ServerClientInfo* info, int size);
 
 	ClientConnection* local = nullptr;
 	ClientDisconnectCallbackFunction disconnectCB = nullptr;
-	ClientJoinCallbackFunction joinCB = nullptr;
+	ClientInfoCallbackFunction infoCB = nullptr;
 	struct CallbackInfo
 	{
 		DeserializationFunc deserializer = nullptr;

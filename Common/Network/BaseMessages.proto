@@ -28,10 +28,11 @@ message ClientState
 }
 
 
-message ServerJoin
+message ServerClientInfo
 {
 	required ClientData data = 1;
 	required bool is_local = 2;
+	required bool is_connected = 3;
 }
 message ServerPlugin
 {
