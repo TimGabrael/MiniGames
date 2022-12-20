@@ -40,6 +40,8 @@ struct NetClient : public NetClientInterface
 
 	void Poll();
 
+	void SetLobbyDeserializers();
+
 
 	NetSocketClient socket;
 	void* userData = nullptr;

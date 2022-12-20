@@ -31,12 +31,25 @@ enum ClientBaseMessages : uint16_t
 {
 	Client_Join,
 	Client_State,
+	Client_Adminkick,
 };
 enum ServerBaseMessages : uint16_t
 {
 	Server_ClientInfo,
 	Server_Plugin,
 	Server_SetState,
+};
+
+enum ClientLobbyMessages : uint16_t
+{
+	Client_LobbyAdminTimer,
+	Client_LobbyVote,
+};
+
+enum ServerLobbyMessages : uint16_t
+{
+	Server_LobbyTimer,
+	Server_LobbyVote,
 };
 
 struct ClientConnection

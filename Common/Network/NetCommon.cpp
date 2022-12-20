@@ -41,7 +41,7 @@ NameValidationResult ValidateName(const std::string& name)
 	
 	for (auto c : name)
 	{
-		if (c != ' ' && !(c >= 'a' && c <= 'z') && !(c >= '0' && c <= '9'))
+		if (c != ' ' && !(c >= 'a' && c <= 'z') && !(c >= 'A' && c <= 'Z') && !(c >= '0' && c <= '9'))
 		{
 			return Name_ErrSymbol;
 		}

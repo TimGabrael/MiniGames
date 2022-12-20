@@ -14,7 +14,24 @@ static void* __stdcall StateDeserializer(char* packet, int size)
 	if (state.ParseFromArray(packet, size)) return &state;
 	return nullptr;
 }
-
+static void* __stdcall KickDeserializer(char* packet, int size)
+{
+	static base::ClientAdminKick kick;
+	if (kick.ParseFromArray(packet, size)) return &kick;
+	return nullptr;
+}
+static void* __stdcall LobbyAdminTimerDeserializer(char* packet, int size)
+{
+	static base::ClientLobbyAdminTimer timer;
+	if (timer.ParseFromArray(packet, size)) return &timer;
+	return nullptr;
+}
+static void* __stdcall LobbyVoteDeserializer(char* packet, int size)
+{
+	static base::ClientLobbyVote vote;
+	if (vote.ParseFromArray(packet, size)) return &vote;
+	return nullptr;
+}
 
 static NetServer* g_serverInstance = nullptr;
 void NetServer::SteamNetServerConnectionStatusChangedCallback(SteamNetConnectionStatusChangedCallback_t* pInfo)
@@ -101,9 +118,12 @@ NetServer* NetServer::Create(const char* ip, uint32_t port)
 
 	g_serverInstance = out;
 
+	out->SetLobbyCallbacks();
+	out->SetDeserializer(KickDeserializer, Client_Adminkick);
 	out->SetDeserializer(StateDeserializer, Client_State);
 	out->SetDeserializer(JoinDeserializer, Client_Join);
 
+	out->SetCallback((ServerPacketFunction)ClientAdminKickPacketCallback, Client_Adminkick);
 	out->SetCallback((ServerPacketFunction)ClientStatePacketCallback, Client_State);
 	out->SetCallback((ServerPacketFunction)ClientJoinPacketCallback, Client_Join);
 
@@ -210,6 +230,12 @@ void NetServer::Poll()
 
 		pIncomingMsg->Release();
 	}
+}
+
+void NetServer::SetLobbyCallbacks()
+{
+	SetDeserializer(LobbyAdminTimerDeserializer, Client_LobbyVote);
+	SetDeserializer(LobbyAdminTimerDeserializer, Client_LobbyAdminTimer);
 }
 
 ServerConnection* NetServer::GetNew()
@@ -320,6 +346,11 @@ bool NetServer::ClientJoinPacketCallback(NetServer* s, ServerConnection* client,
 		client->isConnected = ConnectionState::Connected;
 		client->id = s->GetClientID(client);
 		client->activePlugin = INVALID_ID;
+
+		// Send Available Plugins
+		{
+
+		}
 		
 		// Send New Client Info To All Connected Clients
 		{
@@ -356,11 +387,13 @@ bool NetServer::ClientJoinPacketCallback(NetServer* s, ServerConnection* client,
 			}
 		}
 
-		base::ServerSetState newState;
-		newState.set_state((int32_t)ClientState::LOBBY);
-		std::string serMsg = newState.SerializeAsString();
-		s->SendData(client, Server_SetState, serMsg.data(), serMsg.length(), Send_Reliable);
-
+		// Send State Change
+		{
+			base::ServerSetState newState;
+			newState.set_state((int32_t)ClientState::LOBBY);
+			std::string serMsg = newState.SerializeAsString();
+			s->SendData(client, Server_SetState, serMsg.data(), serMsg.length(), Send_Reliable);
+		}
 	}
 
 	join->Clear();
@@ -388,6 +421,19 @@ bool NetServer::ClientStatePacketCallback(NetServer* s, ServerConnection* client
 	}
 	
 	state->Clear();
+	return true;
+}
+bool NetServer::ClientAdminKickPacketCallback(NetServer* s, ServerConnection* client, base::ClientAdminKick* kick, int size)
+{
+	if (client->isAdmin)
+	{
+		ServerConnection* conn = s->GetConnection(kick->id());
+		if (conn)
+		{
+			s->CloseConnection(conn);
+		}
+	}
+
 	return true;
 }
 

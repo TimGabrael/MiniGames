@@ -81,10 +81,22 @@ void SafeAsyncUI(void(*uiFunction)(MainWindow* wnd))
 bool TryConnectToServer(const std::string& name)
 {
 	MainApplication* app = MainApplication::GetInstance();
-	if (app->isConnected) return true;
+	if (app->client->state != NetClient::Disconnected) return true;
 	MainWindow* main = app->mainWindow;
 	
-	NetResult err = app->client->Connect(DEBUG_IP, DEBUG_PORT, name);
+	size_t idx = app->input.ip.find(":");
+	NetResult err;
+	err.reason = "Failed to Parse IP-Port";
+	err.success = false;
+	if (idx != -1)
+	{
+		uint32_t port = atoi(&app->input.ip.at(idx + 1));
+		if (port != 0)
+		{
+			LOG("PORT: %d\n", port);
+			err = app->client->Connect(app->input.ip.c_str(), port, name);
+		}
+	}
 	if(!err.success)
 	{
 		QTimer::singleShot(0, main, [&]() {

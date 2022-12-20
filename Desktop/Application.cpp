@@ -3,6 +3,7 @@
 #include "UtilFuncs.h"
 #include "CustomWidgets/InfoPopup.h"
 #include "Frames/LobbyFrame.h"
+#include "util/FileStorage.h"
 
 void NetworkPollFunction(MainApplication* app)
 {
@@ -103,9 +104,30 @@ bool __stdcall NetSetStateCallback(NetClient* c, base::ServerSetState* state, in
 		if (state->state() == (int32_t)ClientState::LOBBY)
 		{
 			MainApplication* app = (MainApplication*)c->GetUserData(); 
-			if(app->mainWindow) app->mainWindow->SetState(MAIN_WINDOW_STATE::STATE_LOBBY);
+			SafeAsyncUI([](MainWindow* wnd) {
+
+				MainApplication* app = MainApplication::GetInstance();
+				wnd->SetState(MAIN_WINDOW_STATE::STATE_LOBBY);
+				base::ClientState response;
+				response.set_state((int32_t)ClientState::LOBBY);
+				std::string serMsg = response.SerializeAsString();
+				app->client->SendData(Client_State, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
+			});
+
 		}
 	}
+	state->Clear();
+	return true;
+}
+bool __stdcall NetPluginCallback(NetClient* c, base::ServerPlugin* plugin, int packetSize)
+{
+	MainApplication* app = (MainApplication*)c->GetUserData();
+	std::string id = plugin->data().id();
+	int32_t sessionID = plugin->data().session_id();
+
+	app->serverPlugins.emplace_back(id, sessionID);
+
+	plugin->Clear();
 	return true;
 }
 
@@ -119,6 +141,16 @@ MainApplication::MainApplication(int& argc, char** argv) : QApplication(argc, ar
 	appData.localPlayer.isAdmin = false;
 	appData.localPlayer.name = "";
 
+	IniFile file;
+	if (!file.LoadFile("settings.ini"))
+	{
+		file.SetStringValue("IP", "192.168.2.100:20000");
+		file.Store("settings.ini");
+	}
+	else
+	{
+		file.GetStringValue("IP", input.ip);
+	}
 
 	InitNetworking();
 
@@ -135,7 +167,6 @@ MainApplication::~MainApplication()
 {
 	networkThreadShouldJoin = true;
 	if(networkPollThread.joinable()) networkPollThread.join();
-
 }
 MainApplication* MainApplication::GetInstance()
 {

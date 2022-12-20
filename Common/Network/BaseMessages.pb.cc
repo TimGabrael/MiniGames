@@ -83,6 +83,21 @@ struct ClientStateDefaultTypeInternal {
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
     PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ClientStateDefaultTypeInternal _ClientState_default_instance_;
+PROTOBUF_CONSTEXPR ClientAdminKick::ClientAdminKick(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_._has_bits_)*/{}
+  , /*decltype(_impl_._cached_size_)*/{}
+  , /*decltype(_impl_.id_)*/0} {}
+struct ClientAdminKickDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR ClientAdminKickDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~ClientAdminKickDefaultTypeInternal() {}
+  union {
+    ClientAdminKick _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ClientAdminKickDefaultTypeInternal _ClientAdminKick_default_instance_;
 PROTOBUF_CONSTEXPR ServerClientInfo::ServerClientInfo(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_._has_bits_)*/{}
@@ -131,8 +146,69 @@ struct ServerSetStateDefaultTypeInternal {
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
     PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ServerSetStateDefaultTypeInternal _ServerSetState_default_instance_;
+PROTOBUF_CONSTEXPR ClientLobbyAdminTimer::ClientLobbyAdminTimer(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_._has_bits_)*/{}
+  , /*decltype(_impl_._cached_size_)*/{}
+  , /*decltype(_impl_.time_)*/0} {}
+struct ClientLobbyAdminTimerDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR ClientLobbyAdminTimerDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~ClientLobbyAdminTimerDefaultTypeInternal() {}
+  union {
+    ClientLobbyAdminTimer _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ClientLobbyAdminTimerDefaultTypeInternal _ClientLobbyAdminTimer_default_instance_;
+PROTOBUF_CONSTEXPR ClientLobbyVote::ClientLobbyVote(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_._has_bits_)*/{}
+  , /*decltype(_impl_._cached_size_)*/{}
+  , /*decltype(_impl_.plugin_id_)*/0} {}
+struct ClientLobbyVoteDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR ClientLobbyVoteDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~ClientLobbyVoteDefaultTypeInternal() {}
+  union {
+    ClientLobbyVote _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ClientLobbyVoteDefaultTypeInternal _ClientLobbyVote_default_instance_;
+PROTOBUF_CONSTEXPR ServerLobbyTimer::ServerLobbyTimer(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_._has_bits_)*/{}
+  , /*decltype(_impl_._cached_size_)*/{}
+  , /*decltype(_impl_.time_)*/0} {}
+struct ServerLobbyTimerDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR ServerLobbyTimerDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~ServerLobbyTimerDefaultTypeInternal() {}
+  union {
+    ServerLobbyTimer _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ServerLobbyTimerDefaultTypeInternal _ServerLobbyTimer_default_instance_;
+PROTOBUF_CONSTEXPR ServerLobbyVote::ServerLobbyVote(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_._has_bits_)*/{}
+  , /*decltype(_impl_._cached_size_)*/{}
+  , /*decltype(_impl_.client_id_)*/0
+  , /*decltype(_impl_.plugin_id_)*/0} {}
+struct ServerLobbyVoteDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR ServerLobbyVoteDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~ServerLobbyVoteDefaultTypeInternal() {}
+  union {
+    ServerLobbyVote _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ServerLobbyVoteDefaultTypeInternal _ServerLobbyVote_default_instance_;
 }  // namespace base
-static ::_pb::Metadata file_level_metadata_BaseMessages_2eproto[7];
+static ::_pb::Metadata file_level_metadata_BaseMessages_2eproto[12];
 static constexpr const ::_pb::EnumDescriptor**
     file_level_enum_descriptors_BaseMessages_2eproto = nullptr;
 static constexpr const ::_pb::ServiceDescriptor**
@@ -187,6 +263,16 @@ const ::uint32_t TableStruct_BaseMessages_2eproto::offsets[] PROTOBUF_SECTION_VA
     PROTOBUF_FIELD_OFFSET(::base::ClientState, _impl_.state_),
     0,
     1,
+    PROTOBUF_FIELD_OFFSET(::base::ClientAdminKick, _impl_._has_bits_),
+    PROTOBUF_FIELD_OFFSET(::base::ClientAdminKick, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::base::ClientAdminKick, _impl_.id_),
+    0,
     PROTOBUF_FIELD_OFFSET(::base::ServerClientInfo, _impl_._has_bits_),
     PROTOBUF_FIELD_OFFSET(::base::ServerClientInfo, _internal_metadata_),
     ~0u,  // no _extensions_
@@ -223,6 +309,48 @@ const ::uint32_t TableStruct_BaseMessages_2eproto::offsets[] PROTOBUF_SECTION_VA
     PROTOBUF_FIELD_OFFSET(::base::ServerSetState, _impl_.state_),
     0,
     1,
+    PROTOBUF_FIELD_OFFSET(::base::ClientLobbyAdminTimer, _impl_._has_bits_),
+    PROTOBUF_FIELD_OFFSET(::base::ClientLobbyAdminTimer, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::base::ClientLobbyAdminTimer, _impl_.time_),
+    0,
+    PROTOBUF_FIELD_OFFSET(::base::ClientLobbyVote, _impl_._has_bits_),
+    PROTOBUF_FIELD_OFFSET(::base::ClientLobbyVote, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::base::ClientLobbyVote, _impl_.plugin_id_),
+    0,
+    PROTOBUF_FIELD_OFFSET(::base::ServerLobbyTimer, _impl_._has_bits_),
+    PROTOBUF_FIELD_OFFSET(::base::ServerLobbyTimer, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::base::ServerLobbyTimer, _impl_.time_),
+    0,
+    PROTOBUF_FIELD_OFFSET(::base::ServerLobbyVote, _impl_._has_bits_),
+    PROTOBUF_FIELD_OFFSET(::base::ServerLobbyVote, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::base::ServerLobbyVote, _impl_.client_id_),
+    PROTOBUF_FIELD_OFFSET(::base::ServerLobbyVote, _impl_.plugin_id_),
+    0,
+    1,
 };
 
 static const ::_pbi::MigrationSchema
@@ -231,9 +359,14 @@ static const ::_pbi::MigrationSchema
         { 14, 24, -1, sizeof(::base::PluginData)},
         { 26, 35, -1, sizeof(::base::ClientJoin)},
         { 36, 46, -1, sizeof(::base::ClientState)},
-        { 48, 59, -1, sizeof(::base::ServerClientInfo)},
-        { 62, 71, -1, sizeof(::base::ServerPlugin)},
-        { 72, 82, -1, sizeof(::base::ServerSetState)},
+        { 48, 57, -1, sizeof(::base::ClientAdminKick)},
+        { 58, 69, -1, sizeof(::base::ServerClientInfo)},
+        { 72, 81, -1, sizeof(::base::ServerPlugin)},
+        { 82, 92, -1, sizeof(::base::ServerSetState)},
+        { 94, 103, -1, sizeof(::base::ClientLobbyAdminTimer)},
+        { 104, 113, -1, sizeof(::base::ClientLobbyVote)},
+        { 114, 123, -1, sizeof(::base::ServerLobbyTimer)},
+        { 124, 134, -1, sizeof(::base::ServerLobbyVote)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -241,9 +374,14 @@ static const ::_pb::Message* const file_default_instances[] = {
     &::base::_PluginData_default_instance_._instance,
     &::base::_ClientJoin_default_instance_._instance,
     &::base::_ClientState_default_instance_._instance,
+    &::base::_ClientAdminKick_default_instance_._instance,
     &::base::_ServerClientInfo_default_instance_._instance,
     &::base::_ServerPlugin_default_instance_._instance,
     &::base::_ServerSetState_default_instance_._instance,
+    &::base::_ClientLobbyAdminTimer_default_instance_._instance,
+    &::base::_ClientLobbyVote_default_instance_._instance,
+    &::base::_ServerLobbyTimer_default_instance_._instance,
+    &::base::_ServerLobbyVote_default_instance_._instance,
 };
 const char descriptor_table_protodef_BaseMessages_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
     "\n\022BaseMessages.proto\022\004base\"8\n\nClientData"
@@ -251,24 +389,29 @@ const char descriptor_table_protodef_BaseMessages_2eproto[] PROTOBUF_SECTION_VAR
     " \002(\010\",\n\nPluginData\022\n\n\002id\030\001 \002(\t\022\022\n\nsessio"
     "n_id\030\002 \002(\005\"\032\n\nClientJoin\022\014\n\004name\030\001 \002(\t\"7"
     "\n\013ClientState\022\031\n\021plugin_session_id\030\001 \001(\005"
-    "\022\r\n\005state\030\002 \002(\005\"Z\n\020ServerClientInfo\022\036\n\004d"
-    "ata\030\001 \002(\0132\020.base.ClientData\022\020\n\010is_local\030"
-    "\002 \002(\010\022\024\n\014is_connected\030\003 \002(\010\".\n\014ServerPlu"
-    "gin\022\036\n\004data\030\001 \002(\0132\020.base.PluginData\"2\n\016S"
-    "erverSetState\022\021\n\tplugin_id\030\001 \001(\005\022\r\n\005stat"
-    "e\030\002 \002(\005"
+    "\022\r\n\005state\030\002 \002(\005\"\035\n\017ClientAdminKick\022\n\n\002id"
+    "\030\001 \002(\005\"Z\n\020ServerClientInfo\022\036\n\004data\030\001 \002(\013"
+    "2\020.base.ClientData\022\020\n\010is_local\030\002 \002(\010\022\024\n\014"
+    "is_connected\030\003 \002(\010\".\n\014ServerPlugin\022\036\n\004da"
+    "ta\030\001 \002(\0132\020.base.PluginData\"2\n\016ServerSetS"
+    "tate\022\021\n\tplugin_id\030\001 \001(\005\022\r\n\005state\030\002 \002(\005\"%"
+    "\n\025ClientLobbyAdminTimer\022\014\n\004time\030\001 \002(\002\"$\n"
+    "\017ClientLobbyVote\022\021\n\tplugin_id\030\001 \002(\005\" \n\020S"
+    "erverLobbyTimer\022\014\n\004time\030\001 \002(\002\"7\n\017ServerL"
+    "obbyVote\022\021\n\tclient_id\030\001 \002(\005\022\021\n\tplugin_id"
+    "\030\002 \002(\005"
 };
 static ::absl::once_flag descriptor_table_BaseMessages_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_BaseMessages_2eproto = {
     false,
     false,
-    407,
+    606,
     descriptor_table_protodef_BaseMessages_2eproto,
     "BaseMessages.proto",
     &descriptor_table_BaseMessages_2eproto_once,
     nullptr,
     0,
-    7,
+    12,
     schemas,
     file_default_instances,
     TableStruct_BaseMessages_2eproto::offsets,
@@ -1362,6 +1505,197 @@ void ClientState::InternalSwap(ClientState* other) {
 }
 // ===================================================================
 
+class ClientAdminKick::_Internal {
+ public:
+  using HasBits = decltype(std::declval<ClientAdminKick>()._impl_._has_bits_);
+  static constexpr ::int32_t kHasBitsOffset =
+    8 * PROTOBUF_FIELD_OFFSET(ClientAdminKick, _impl_._has_bits_);
+  static void set_has_id(HasBits* has_bits) {
+    (*has_bits)[0] |= 1u;
+  }
+  static bool MissingRequiredFields(const HasBits& has_bits) {
+    return ((has_bits[0] & 0x00000001) ^ 0x00000001) != 0;
+  }
+};
+
+ClientAdminKick::ClientAdminKick(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
+  SharedCtor(arena);
+  // @@protoc_insertion_point(arena_constructor:base.ClientAdminKick)
+}
+ClientAdminKick::ClientAdminKick(const ClientAdminKick& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message(), _impl_(from._impl_) {
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(
+      from._internal_metadata_);
+  // @@protoc_insertion_point(copy_constructor:base.ClientAdminKick)
+}
+
+inline void ClientAdminKick::SharedCtor(::_pb::Arena* arena) {
+  (void)arena;
+  new (&_impl_) Impl_{
+      decltype(_impl_._has_bits_){}
+    , /*decltype(_impl_._cached_size_)*/{}
+    , decltype(_impl_.id_){0}
+  };
+}
+
+ClientAdminKick::~ClientAdminKick() {
+  // @@protoc_insertion_point(destructor:base.ClientAdminKick)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void ClientAdminKick::SharedDtor() {
+  GOOGLE_ABSL_DCHECK(GetArenaForAllocation() == nullptr);
+}
+
+void ClientAdminKick::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void ClientAdminKick::Clear() {
+// @@protoc_insertion_point(message_clear_start:base.ClientAdminKick)
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.id_ = 0;
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* ClientAdminKick::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  _Internal::HasBits has_bits{};
+  while (!ctx->Done(&ptr)) {
+    ::uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // required int32 id = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 8)) {
+          _Internal::set_has_id(&has_bits);
+          _impl_.id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else {
+          goto handle_unusual;
+        }
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  _impl_._has_bits_.Or(has_bits);
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+::uint8_t* ClientAdminKick::_InternalSerialize(
+    ::uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+
+  // @@protoc_insertion_point(serialize_to_array_start:base.ClientAdminKick)
+  ::uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  cached_has_bits = _impl_._has_bits_[0];
+  // required int32 id = 1;
+  if (cached_has_bits & 0x00000001u) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteInt32ToArray(1, this->_internal_id(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:base.ClientAdminKick)
+  return target;
+}
+
+::size_t ClientAdminKick::ByteSizeLong() const {
+
+// @@protoc_insertion_point(message_byte_size_start:base.ClientAdminKick)
+  ::size_t total_size = 0;
+
+  // required int32 id = 1;
+  if ((_impl_._has_bits_[0] & 0x00000001u) != 0) {
+    total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_id());
+  }
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData ClientAdminKick::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    ClientAdminKick::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*ClientAdminKick::GetClassData() const { return &_class_data_; }
+
+
+void ClientAdminKick::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<ClientAdminKick*>(&to_msg);
+  auto& from = static_cast<const ClientAdminKick&>(from_msg);
+
+  // @@protoc_insertion_point(class_specific_merge_from_start:base.ClientAdminKick)
+  GOOGLE_ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if ((from._impl_._has_bits_[0] & 0x00000001u) != 0) {
+    _this->_internal_set_id(from._internal_id());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void ClientAdminKick::CopyFrom(const ClientAdminKick& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:base.ClientAdminKick)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool ClientAdminKick::IsInitialized() const {
+  if (_Internal::MissingRequiredFields(_impl_._has_bits_)) return false;
+  return true;
+}
+
+void ClientAdminKick::InternalSwap(ClientAdminKick* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  swap(_impl_.id_, other->_impl_.id_);
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata ClientAdminKick::GetMetadata() const {
+
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_BaseMessages_2eproto_getter, &descriptor_table_BaseMessages_2eproto_once,
+      file_level_metadata_BaseMessages_2eproto[4]);
+}
+// ===================================================================
+
 class ServerClientInfo::_Internal {
  public:
   using HasBits = decltype(std::declval<ServerClientInfo>()._impl_._has_bits_);
@@ -1668,7 +2002,7 @@ void ServerClientInfo::InternalSwap(ServerClientInfo* other) {
 
   return ::_pbi::AssignDescriptors(
       &descriptor_table_BaseMessages_2eproto_getter, &descriptor_table_BaseMessages_2eproto_once,
-      file_level_metadata_BaseMessages_2eproto[4]);
+      file_level_metadata_BaseMessages_2eproto[5]);
 }
 // ===================================================================
 
@@ -1883,7 +2217,7 @@ void ServerPlugin::InternalSwap(ServerPlugin* other) {
 
   return ::_pbi::AssignDescriptors(
       &descriptor_table_BaseMessages_2eproto_getter, &descriptor_table_BaseMessages_2eproto_once,
-      file_level_metadata_BaseMessages_2eproto[5]);
+      file_level_metadata_BaseMessages_2eproto[6]);
 }
 // ===================================================================
 
@@ -2117,7 +2451,830 @@ void ServerSetState::InternalSwap(ServerSetState* other) {
 
   return ::_pbi::AssignDescriptors(
       &descriptor_table_BaseMessages_2eproto_getter, &descriptor_table_BaseMessages_2eproto_once,
-      file_level_metadata_BaseMessages_2eproto[6]);
+      file_level_metadata_BaseMessages_2eproto[7]);
+}
+// ===================================================================
+
+class ClientLobbyAdminTimer::_Internal {
+ public:
+  using HasBits = decltype(std::declval<ClientLobbyAdminTimer>()._impl_._has_bits_);
+  static constexpr ::int32_t kHasBitsOffset =
+    8 * PROTOBUF_FIELD_OFFSET(ClientLobbyAdminTimer, _impl_._has_bits_);
+  static void set_has_time(HasBits* has_bits) {
+    (*has_bits)[0] |= 1u;
+  }
+  static bool MissingRequiredFields(const HasBits& has_bits) {
+    return ((has_bits[0] & 0x00000001) ^ 0x00000001) != 0;
+  }
+};
+
+ClientLobbyAdminTimer::ClientLobbyAdminTimer(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
+  SharedCtor(arena);
+  // @@protoc_insertion_point(arena_constructor:base.ClientLobbyAdminTimer)
+}
+ClientLobbyAdminTimer::ClientLobbyAdminTimer(const ClientLobbyAdminTimer& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message(), _impl_(from._impl_) {
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(
+      from._internal_metadata_);
+  // @@protoc_insertion_point(copy_constructor:base.ClientLobbyAdminTimer)
+}
+
+inline void ClientLobbyAdminTimer::SharedCtor(::_pb::Arena* arena) {
+  (void)arena;
+  new (&_impl_) Impl_{
+      decltype(_impl_._has_bits_){}
+    , /*decltype(_impl_._cached_size_)*/{}
+    , decltype(_impl_.time_){0}
+  };
+}
+
+ClientLobbyAdminTimer::~ClientLobbyAdminTimer() {
+  // @@protoc_insertion_point(destructor:base.ClientLobbyAdminTimer)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void ClientLobbyAdminTimer::SharedDtor() {
+  GOOGLE_ABSL_DCHECK(GetArenaForAllocation() == nullptr);
+}
+
+void ClientLobbyAdminTimer::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void ClientLobbyAdminTimer::Clear() {
+// @@protoc_insertion_point(message_clear_start:base.ClientLobbyAdminTimer)
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.time_ = 0;
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* ClientLobbyAdminTimer::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  _Internal::HasBits has_bits{};
+  while (!ctx->Done(&ptr)) {
+    ::uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // required float time = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 13)) {
+          _Internal::set_has_time(&has_bits);
+          _impl_.time_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else {
+          goto handle_unusual;
+        }
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  _impl_._has_bits_.Or(has_bits);
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+::uint8_t* ClientLobbyAdminTimer::_InternalSerialize(
+    ::uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+
+  // @@protoc_insertion_point(serialize_to_array_start:base.ClientLobbyAdminTimer)
+  ::uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  cached_has_bits = _impl_._has_bits_[0];
+  // required float time = 1;
+  if (cached_has_bits & 0x00000001u) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(1, this->_internal_time(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:base.ClientLobbyAdminTimer)
+  return target;
+}
+
+::size_t ClientLobbyAdminTimer::ByteSizeLong() const {
+
+// @@protoc_insertion_point(message_byte_size_start:base.ClientLobbyAdminTimer)
+  ::size_t total_size = 0;
+
+  // required float time = 1;
+  if ((_impl_._has_bits_[0] & 0x00000001u) != 0) {
+    total_size += 1 + 4;
+  }
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData ClientLobbyAdminTimer::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    ClientLobbyAdminTimer::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*ClientLobbyAdminTimer::GetClassData() const { return &_class_data_; }
+
+
+void ClientLobbyAdminTimer::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<ClientLobbyAdminTimer*>(&to_msg);
+  auto& from = static_cast<const ClientLobbyAdminTimer&>(from_msg);
+
+  // @@protoc_insertion_point(class_specific_merge_from_start:base.ClientLobbyAdminTimer)
+  GOOGLE_ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if ((from._impl_._has_bits_[0] & 0x00000001u) != 0) {
+    _this->_internal_set_time(from._internal_time());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void ClientLobbyAdminTimer::CopyFrom(const ClientLobbyAdminTimer& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:base.ClientLobbyAdminTimer)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool ClientLobbyAdminTimer::IsInitialized() const {
+  if (_Internal::MissingRequiredFields(_impl_._has_bits_)) return false;
+  return true;
+}
+
+void ClientLobbyAdminTimer::InternalSwap(ClientLobbyAdminTimer* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  swap(_impl_.time_, other->_impl_.time_);
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata ClientLobbyAdminTimer::GetMetadata() const {
+
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_BaseMessages_2eproto_getter, &descriptor_table_BaseMessages_2eproto_once,
+      file_level_metadata_BaseMessages_2eproto[8]);
+}
+// ===================================================================
+
+class ClientLobbyVote::_Internal {
+ public:
+  using HasBits = decltype(std::declval<ClientLobbyVote>()._impl_._has_bits_);
+  static constexpr ::int32_t kHasBitsOffset =
+    8 * PROTOBUF_FIELD_OFFSET(ClientLobbyVote, _impl_._has_bits_);
+  static void set_has_plugin_id(HasBits* has_bits) {
+    (*has_bits)[0] |= 1u;
+  }
+  static bool MissingRequiredFields(const HasBits& has_bits) {
+    return ((has_bits[0] & 0x00000001) ^ 0x00000001) != 0;
+  }
+};
+
+ClientLobbyVote::ClientLobbyVote(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
+  SharedCtor(arena);
+  // @@protoc_insertion_point(arena_constructor:base.ClientLobbyVote)
+}
+ClientLobbyVote::ClientLobbyVote(const ClientLobbyVote& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message(), _impl_(from._impl_) {
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(
+      from._internal_metadata_);
+  // @@protoc_insertion_point(copy_constructor:base.ClientLobbyVote)
+}
+
+inline void ClientLobbyVote::SharedCtor(::_pb::Arena* arena) {
+  (void)arena;
+  new (&_impl_) Impl_{
+      decltype(_impl_._has_bits_){}
+    , /*decltype(_impl_._cached_size_)*/{}
+    , decltype(_impl_.plugin_id_){0}
+  };
+}
+
+ClientLobbyVote::~ClientLobbyVote() {
+  // @@protoc_insertion_point(destructor:base.ClientLobbyVote)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void ClientLobbyVote::SharedDtor() {
+  GOOGLE_ABSL_DCHECK(GetArenaForAllocation() == nullptr);
+}
+
+void ClientLobbyVote::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void ClientLobbyVote::Clear() {
+// @@protoc_insertion_point(message_clear_start:base.ClientLobbyVote)
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.plugin_id_ = 0;
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* ClientLobbyVote::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  _Internal::HasBits has_bits{};
+  while (!ctx->Done(&ptr)) {
+    ::uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // required int32 plugin_id = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 8)) {
+          _Internal::set_has_plugin_id(&has_bits);
+          _impl_.plugin_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else {
+          goto handle_unusual;
+        }
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  _impl_._has_bits_.Or(has_bits);
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+::uint8_t* ClientLobbyVote::_InternalSerialize(
+    ::uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+
+  // @@protoc_insertion_point(serialize_to_array_start:base.ClientLobbyVote)
+  ::uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  cached_has_bits = _impl_._has_bits_[0];
+  // required int32 plugin_id = 1;
+  if (cached_has_bits & 0x00000001u) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteInt32ToArray(1, this->_internal_plugin_id(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:base.ClientLobbyVote)
+  return target;
+}
+
+::size_t ClientLobbyVote::ByteSizeLong() const {
+
+// @@protoc_insertion_point(message_byte_size_start:base.ClientLobbyVote)
+  ::size_t total_size = 0;
+
+  // required int32 plugin_id = 1;
+  if ((_impl_._has_bits_[0] & 0x00000001u) != 0) {
+    total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_plugin_id());
+  }
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData ClientLobbyVote::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    ClientLobbyVote::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*ClientLobbyVote::GetClassData() const { return &_class_data_; }
+
+
+void ClientLobbyVote::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<ClientLobbyVote*>(&to_msg);
+  auto& from = static_cast<const ClientLobbyVote&>(from_msg);
+
+  // @@protoc_insertion_point(class_specific_merge_from_start:base.ClientLobbyVote)
+  GOOGLE_ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if ((from._impl_._has_bits_[0] & 0x00000001u) != 0) {
+    _this->_internal_set_plugin_id(from._internal_plugin_id());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void ClientLobbyVote::CopyFrom(const ClientLobbyVote& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:base.ClientLobbyVote)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool ClientLobbyVote::IsInitialized() const {
+  if (_Internal::MissingRequiredFields(_impl_._has_bits_)) return false;
+  return true;
+}
+
+void ClientLobbyVote::InternalSwap(ClientLobbyVote* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  swap(_impl_.plugin_id_, other->_impl_.plugin_id_);
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata ClientLobbyVote::GetMetadata() const {
+
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_BaseMessages_2eproto_getter, &descriptor_table_BaseMessages_2eproto_once,
+      file_level_metadata_BaseMessages_2eproto[9]);
+}
+// ===================================================================
+
+class ServerLobbyTimer::_Internal {
+ public:
+  using HasBits = decltype(std::declval<ServerLobbyTimer>()._impl_._has_bits_);
+  static constexpr ::int32_t kHasBitsOffset =
+    8 * PROTOBUF_FIELD_OFFSET(ServerLobbyTimer, _impl_._has_bits_);
+  static void set_has_time(HasBits* has_bits) {
+    (*has_bits)[0] |= 1u;
+  }
+  static bool MissingRequiredFields(const HasBits& has_bits) {
+    return ((has_bits[0] & 0x00000001) ^ 0x00000001) != 0;
+  }
+};
+
+ServerLobbyTimer::ServerLobbyTimer(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
+  SharedCtor(arena);
+  // @@protoc_insertion_point(arena_constructor:base.ServerLobbyTimer)
+}
+ServerLobbyTimer::ServerLobbyTimer(const ServerLobbyTimer& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message(), _impl_(from._impl_) {
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(
+      from._internal_metadata_);
+  // @@protoc_insertion_point(copy_constructor:base.ServerLobbyTimer)
+}
+
+inline void ServerLobbyTimer::SharedCtor(::_pb::Arena* arena) {
+  (void)arena;
+  new (&_impl_) Impl_{
+      decltype(_impl_._has_bits_){}
+    , /*decltype(_impl_._cached_size_)*/{}
+    , decltype(_impl_.time_){0}
+  };
+}
+
+ServerLobbyTimer::~ServerLobbyTimer() {
+  // @@protoc_insertion_point(destructor:base.ServerLobbyTimer)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void ServerLobbyTimer::SharedDtor() {
+  GOOGLE_ABSL_DCHECK(GetArenaForAllocation() == nullptr);
+}
+
+void ServerLobbyTimer::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void ServerLobbyTimer::Clear() {
+// @@protoc_insertion_point(message_clear_start:base.ServerLobbyTimer)
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.time_ = 0;
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* ServerLobbyTimer::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  _Internal::HasBits has_bits{};
+  while (!ctx->Done(&ptr)) {
+    ::uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // required float time = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 13)) {
+          _Internal::set_has_time(&has_bits);
+          _impl_.time_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else {
+          goto handle_unusual;
+        }
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  _impl_._has_bits_.Or(has_bits);
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+::uint8_t* ServerLobbyTimer::_InternalSerialize(
+    ::uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+
+  // @@protoc_insertion_point(serialize_to_array_start:base.ServerLobbyTimer)
+  ::uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  cached_has_bits = _impl_._has_bits_[0];
+  // required float time = 1;
+  if (cached_has_bits & 0x00000001u) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(1, this->_internal_time(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:base.ServerLobbyTimer)
+  return target;
+}
+
+::size_t ServerLobbyTimer::ByteSizeLong() const {
+
+// @@protoc_insertion_point(message_byte_size_start:base.ServerLobbyTimer)
+  ::size_t total_size = 0;
+
+  // required float time = 1;
+  if ((_impl_._has_bits_[0] & 0x00000001u) != 0) {
+    total_size += 1 + 4;
+  }
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData ServerLobbyTimer::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    ServerLobbyTimer::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*ServerLobbyTimer::GetClassData() const { return &_class_data_; }
+
+
+void ServerLobbyTimer::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<ServerLobbyTimer*>(&to_msg);
+  auto& from = static_cast<const ServerLobbyTimer&>(from_msg);
+
+  // @@protoc_insertion_point(class_specific_merge_from_start:base.ServerLobbyTimer)
+  GOOGLE_ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if ((from._impl_._has_bits_[0] & 0x00000001u) != 0) {
+    _this->_internal_set_time(from._internal_time());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void ServerLobbyTimer::CopyFrom(const ServerLobbyTimer& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:base.ServerLobbyTimer)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool ServerLobbyTimer::IsInitialized() const {
+  if (_Internal::MissingRequiredFields(_impl_._has_bits_)) return false;
+  return true;
+}
+
+void ServerLobbyTimer::InternalSwap(ServerLobbyTimer* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  swap(_impl_.time_, other->_impl_.time_);
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata ServerLobbyTimer::GetMetadata() const {
+
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_BaseMessages_2eproto_getter, &descriptor_table_BaseMessages_2eproto_once,
+      file_level_metadata_BaseMessages_2eproto[10]);
+}
+// ===================================================================
+
+class ServerLobbyVote::_Internal {
+ public:
+  using HasBits = decltype(std::declval<ServerLobbyVote>()._impl_._has_bits_);
+  static constexpr ::int32_t kHasBitsOffset =
+    8 * PROTOBUF_FIELD_OFFSET(ServerLobbyVote, _impl_._has_bits_);
+  static void set_has_client_id(HasBits* has_bits) {
+    (*has_bits)[0] |= 1u;
+  }
+  static void set_has_plugin_id(HasBits* has_bits) {
+    (*has_bits)[0] |= 2u;
+  }
+  static bool MissingRequiredFields(const HasBits& has_bits) {
+    return ((has_bits[0] & 0x00000003) ^ 0x00000003) != 0;
+  }
+};
+
+ServerLobbyVote::ServerLobbyVote(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
+  SharedCtor(arena);
+  // @@protoc_insertion_point(arena_constructor:base.ServerLobbyVote)
+}
+ServerLobbyVote::ServerLobbyVote(const ServerLobbyVote& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message(), _impl_(from._impl_) {
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(
+      from._internal_metadata_);
+  // @@protoc_insertion_point(copy_constructor:base.ServerLobbyVote)
+}
+
+inline void ServerLobbyVote::SharedCtor(::_pb::Arena* arena) {
+  (void)arena;
+  new (&_impl_) Impl_{
+      decltype(_impl_._has_bits_){}
+    , /*decltype(_impl_._cached_size_)*/{}
+    , decltype(_impl_.client_id_){0}
+    , decltype(_impl_.plugin_id_){0}
+  };
+}
+
+ServerLobbyVote::~ServerLobbyVote() {
+  // @@protoc_insertion_point(destructor:base.ServerLobbyVote)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void ServerLobbyVote::SharedDtor() {
+  GOOGLE_ABSL_DCHECK(GetArenaForAllocation() == nullptr);
+}
+
+void ServerLobbyVote::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void ServerLobbyVote::Clear() {
+// @@protoc_insertion_point(message_clear_start:base.ServerLobbyVote)
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000003u) {
+    ::memset(&_impl_.client_id_, 0, static_cast<::size_t>(
+        reinterpret_cast<char*>(&_impl_.plugin_id_) -
+        reinterpret_cast<char*>(&_impl_.client_id_)) + sizeof(_impl_.plugin_id_));
+  }
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* ServerLobbyVote::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  _Internal::HasBits has_bits{};
+  while (!ctx->Done(&ptr)) {
+    ::uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // required int32 client_id = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 8)) {
+          _Internal::set_has_client_id(&has_bits);
+          _impl_.client_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else {
+          goto handle_unusual;
+        }
+        continue;
+      // required int32 plugin_id = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 16)) {
+          _Internal::set_has_plugin_id(&has_bits);
+          _impl_.plugin_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else {
+          goto handle_unusual;
+        }
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  _impl_._has_bits_.Or(has_bits);
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+::uint8_t* ServerLobbyVote::_InternalSerialize(
+    ::uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+
+  // @@protoc_insertion_point(serialize_to_array_start:base.ServerLobbyVote)
+  ::uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  cached_has_bits = _impl_._has_bits_[0];
+  // required int32 client_id = 1;
+  if (cached_has_bits & 0x00000001u) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteInt32ToArray(1, this->_internal_client_id(), target);
+  }
+
+  // required int32 plugin_id = 2;
+  if (cached_has_bits & 0x00000002u) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteInt32ToArray(2, this->_internal_plugin_id(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:base.ServerLobbyVote)
+  return target;
+}
+
+::size_t ServerLobbyVote::RequiredFieldsByteSizeFallback() const {
+// @@protoc_insertion_point(required_fields_byte_size_fallback_start:base.ServerLobbyVote)
+  ::size_t total_size = 0;
+
+  if ((_impl_._has_bits_[0] & 0x00000001u) != 0) {
+    // required int32 client_id = 1;
+    total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_client_id());
+  }
+
+  if ((_impl_._has_bits_[0] & 0x00000002u) != 0) {
+    // required int32 plugin_id = 2;
+    total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_plugin_id());
+  }
+
+  return total_size;
+}
+::size_t ServerLobbyVote::ByteSizeLong() const {
+
+// @@protoc_insertion_point(message_byte_size_start:base.ServerLobbyVote)
+  ::size_t total_size = 0;
+
+  if (((_impl_._has_bits_[0] & 0x00000003) ^ 0x00000003) == 0) {  // All required fields are present.
+    // required int32 client_id = 1;
+    total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_client_id());
+
+    // required int32 plugin_id = 2;
+    total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_plugin_id());
+
+  } else {
+    total_size += RequiredFieldsByteSizeFallback();
+  }
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData ServerLobbyVote::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    ServerLobbyVote::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*ServerLobbyVote::GetClassData() const { return &_class_data_; }
+
+
+void ServerLobbyVote::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<ServerLobbyVote*>(&to_msg);
+  auto& from = static_cast<const ServerLobbyVote&>(from_msg);
+
+  // @@protoc_insertion_point(class_specific_merge_from_start:base.ServerLobbyVote)
+  GOOGLE_ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  cached_has_bits = from._impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000003u) {
+    if (cached_has_bits & 0x00000001u) {
+      _this->_impl_.client_id_ = from._impl_.client_id_;
+    }
+    if (cached_has_bits & 0x00000002u) {
+      _this->_impl_.plugin_id_ = from._impl_.plugin_id_;
+    }
+    _this->_impl_._has_bits_[0] |= cached_has_bits;
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void ServerLobbyVote::CopyFrom(const ServerLobbyVote& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:base.ServerLobbyVote)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool ServerLobbyVote::IsInitialized() const {
+  if (_Internal::MissingRequiredFields(_impl_._has_bits_)) return false;
+  return true;
+}
+
+void ServerLobbyVote::InternalSwap(ServerLobbyVote* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(ServerLobbyVote, _impl_.plugin_id_)
+      + sizeof(ServerLobbyVote::_impl_.plugin_id_)
+      - PROTOBUF_FIELD_OFFSET(ServerLobbyVote, _impl_.client_id_)>(
+          reinterpret_cast<char*>(&_impl_.client_id_),
+          reinterpret_cast<char*>(&other->_impl_.client_id_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata ServerLobbyVote::GetMetadata() const {
+
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_BaseMessages_2eproto_getter, &descriptor_table_BaseMessages_2eproto_once,
+      file_level_metadata_BaseMessages_2eproto[11]);
 }
 // @@protoc_insertion_point(namespace_scope)
 }  // namespace base
@@ -2138,6 +3295,10 @@ template<> PROTOBUF_NOINLINE ::base::ClientState*
 Arena::CreateMaybeMessage< ::base::ClientState >(Arena* arena) {
   return Arena::CreateMessageInternal< ::base::ClientState >(arena);
 }
+template<> PROTOBUF_NOINLINE ::base::ClientAdminKick*
+Arena::CreateMaybeMessage< ::base::ClientAdminKick >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::base::ClientAdminKick >(arena);
+}
 template<> PROTOBUF_NOINLINE ::base::ServerClientInfo*
 Arena::CreateMaybeMessage< ::base::ServerClientInfo >(Arena* arena) {
   return Arena::CreateMessageInternal< ::base::ServerClientInfo >(arena);
@@ -2149,6 +3310,22 @@ Arena::CreateMaybeMessage< ::base::ServerPlugin >(Arena* arena) {
 template<> PROTOBUF_NOINLINE ::base::ServerSetState*
 Arena::CreateMaybeMessage< ::base::ServerSetState >(Arena* arena) {
   return Arena::CreateMessageInternal< ::base::ServerSetState >(arena);
+}
+template<> PROTOBUF_NOINLINE ::base::ClientLobbyAdminTimer*
+Arena::CreateMaybeMessage< ::base::ClientLobbyAdminTimer >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::base::ClientLobbyAdminTimer >(arena);
+}
+template<> PROTOBUF_NOINLINE ::base::ClientLobbyVote*
+Arena::CreateMaybeMessage< ::base::ClientLobbyVote >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::base::ClientLobbyVote >(arena);
+}
+template<> PROTOBUF_NOINLINE ::base::ServerLobbyTimer*
+Arena::CreateMaybeMessage< ::base::ServerLobbyTimer >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::base::ServerLobbyTimer >(arena);
+}
+template<> PROTOBUF_NOINLINE ::base::ServerLobbyVote*
+Arena::CreateMaybeMessage< ::base::ServerLobbyVote >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::base::ServerLobbyVote >(arena);
 }
 PROTOBUF_NAMESPACE_CLOSE
 // @@protoc_insertion_point(global_scope)

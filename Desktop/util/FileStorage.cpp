@@ -5,10 +5,10 @@
 
 
 
-void IniFile::LoadFile(const char* fileName)
+bool IniFile::LoadFile(const char* fileName)
 {
 	std::ifstream file(fileName);
-	if (!file.is_open())return;
+	if (!file.is_open()) return false;
 
 	std::string line;
 	while (file >> line)
@@ -22,6 +22,7 @@ void IniFile::LoadFile(const char* fileName)
 		}
 	}
 	file.close();
+	return true;
 }
 
 void IniFile::Store(const char* fileName)
@@ -46,6 +47,10 @@ void IniFile::SetHexValue(const char* name, uint32_t hexVal)
 	ss << "0x" << std::hex << hexVal;
 	attribs[name] = ss.str();
 }
+void IniFile::SetStringValue(const char* name, const char* str)
+{
+	attribs[name] = str;
+}
 
 bool IniFile::GetIntegerValue(const char* name, int* val)
 {
@@ -68,5 +73,12 @@ bool IniFile::GetIntegerValue(const char* name, int* val)
 		if (ss.fail()) return false;
 		ss >> *val;
 	}
+	return true;
+}
+bool IniFile::GetStringValue(const char* name, std::string& str)
+{
+	if (attribs.find(name) == attribs.end()) return false;
+
+	str = attribs[name];
 	return true;
 }

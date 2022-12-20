@@ -30,6 +30,8 @@ MainMenuFrame::MainMenuFrame(QMainWindow* MainWindow) : StateFrame(MainWindow)
 
         verticalLayout->addStretch(2);
 
+        const SessionInput& input = MainApplication::GetInstance()->input;
+
         QFont font2;
         font2.setPointSize(14);
         font2.setUnderline(true);
@@ -44,6 +46,7 @@ MainMenuFrame::MainMenuFrame(QMainWindow* MainWindow) : StateFrame(MainWindow)
             nameIn = new CustomTextInput(this);
             nameIn->setMinimumSize(QSize(200, 0));
             nameIn->setPlaceholderText("Name");
+            nameIn->setText(input.name.c_str());
             horizontalLayout->addWidget(nameIn, 0, Qt::AlignRight);
             horizontalLayout->addStretch(10);
         }
@@ -60,6 +63,7 @@ MainMenuFrame::MainMenuFrame(QMainWindow* MainWindow) : StateFrame(MainWindow)
             lobbyIn = new CustomTextInput(this);
             lobbyIn->setMinimumSize(QSize(200, 0));
             lobbyIn->setPlaceholderText("LobbyID");
+            lobbyIn->setText(input.ip.c_str());
             horizontalLayout_1->addWidget(lobbyIn, 0, Qt::AlignRight);
             horizontalLayout_1->addStretch(10);
         }
@@ -123,17 +127,6 @@ MainMenuFrame::MainMenuFrame(QMainWindow* MainWindow) : StateFrame(MainWindow)
     connect(settingsBtn, &QPushButton::clicked, this, &MainMenuFrame::OnSettingsClick);
     connect(exitBtn, &QPushButton::clicked, this, &MainMenuFrame::OnExitClick);
 
-    //auto function = []() {
-    //    MainApplication* app = MainApplication::GetInstance();
-    //    app->isConnected = false;
-    //    if (!app->isConnected)
-    //    {
-    //        // POP UP MESSAGE FAILED TO CONNECT TO SERVER
-    //        //LOG("COULD NOT ESTABLISH A CONNECTION TO THE SERVER: %p\n", wnd);
-    //        //auto rect = wnd->geometry();
-    //        //InfoPopup* popUp = new InfoPopup(wnd, "TestContent", QPoint(rect.width() / 2, rect.height() - 100), 40, 0xFFFFFFFF, 100000);
-    //    }
-    //};
 
     MainWindow->setCentralWidget(this);
 }
@@ -149,17 +142,26 @@ void MainMenuFrame::OnJoinClick()
 
     bool canShow = true;
     std::string errorMsg = "";
-    if (name.size() > 3 && name.size() < MAX_NAME_LENGTH)
+    NameValidationResult validation = ValidateName(name);
+    switch (validation)
     {
-        this->nameIn->setText(name.c_str());
-    }
-    else
-    {
+    case Name_Ok:
         canShow = false;
-        errorMsg = "INVALID NAME LENGHT(3-30)";
+        break;
+    case Name_ErrSmall:
+        errorMsg = "MIN NAME LENGTH 5!";
+        break;
+    case Name_ErrLarge:
+        errorMsg = "MAX NAME LENGTH 30!";
+        break;
+    case Name_ErrSymbol:
+        errorMsg = "INVALID SYMBOLS";
+        break;
+    default:
+        break;
     }
 
-    if (!canShow) {
+    if (canShow) {
         errortxt->setText(errorMsg.c_str());
         errortxt->show();
         return;
@@ -168,7 +170,6 @@ void MainMenuFrame::OnJoinClick()
 
 
     static std::future<void> fut;
-
     if (fut.valid() && fut._Is_ready()) fut.get();
     if (!fut.valid())
     {
@@ -177,6 +178,8 @@ void MainMenuFrame::OnJoinClick()
             MainWindow* main = app->mainWindow;
             QString name = this->nameIn->text();
             QString server = this->lobbyIn->text();
+            app->input.ip = server.toStdString();
+            app->input.name = name.toStdString();
             if (TryConnectToServer(name.toStdString()))
             {
                 
@@ -227,6 +230,8 @@ void MainMenuFrame::OnCreateClick()
             MainWindow* main = (MainWindow*)GetMainWindow();
             QString name = this->nameIn->text();
             QString server = this->lobbyIn->text();
+            app->input.ip = server.toStdString();
+            app->input.name = name.toStdString();
             if (TryConnectToServer(name.toStdString()))
             {
 

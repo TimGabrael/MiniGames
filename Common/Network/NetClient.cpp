@@ -19,6 +19,18 @@ static void* __stdcall SetStateDeserializer(char* packet, int size)
 	if (state.ParseFromArray(packet, size)) return &state;
 	return nullptr;
 }
+static void* __stdcall TimerDeserializer(char* packet, int size)
+{
+	static base::ServerLobbyTimer timer;
+	if (timer.ParseFromArray(packet, size)) return &timer;
+	return nullptr;
+}
+static void* __stdcall LobbyVote(char* packet, int size)
+{
+	static base::ServerLobbyVote vote;
+	if (vote.ParseFromArray(packet, size)) return &vote;
+	return nullptr;
+}
 
 void NetClient::SteamNetClientConnectionStatusChangedCallback(SteamNetConnectionStatusChangedCallback_t* pInfo)
 {
@@ -54,11 +66,14 @@ NetClient* NetClient::Create()
 	NetClient* out = new NetClient();
 	out->socket.networking = SteamNetworkingSockets();
 
+	out->SetLobbyDeserializers();
+
 	out->SetDeserializer(SetStateDeserializer, Server_SetState);
 	out->SetDeserializer(PluginDeserializer, Server_Plugin);
 	out->SetDeserializer(ClientInfoDeserializer, Server_ClientInfo);
 
 	out->SetCallback((ClientPacketFunction)ServerInfoCallback, Server_ClientInfo);
+
 
 	return out;
 }
@@ -237,6 +252,14 @@ void NetClient::Poll()
 		pIncomingMsg->Release();
 	}
 }
+
+void NetClient::SetLobbyDeserializers()
+{
+	SetDeserializer(TimerDeserializer, Server_LobbyTimer);
+	SetDeserializer(LobbyVote, Server_LobbyVote);
+}
+
+
 bool __stdcall NetClient::ServerInfoCallback(NetClient* c, base::ServerClientInfo* info, int size)
 {
 	

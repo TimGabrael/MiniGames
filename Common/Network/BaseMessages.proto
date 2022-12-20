@@ -26,6 +26,10 @@ message ClientState
 	optional int32 plugin_session_id = 1;
 	required int32 state = 2;
 }
+message ClientAdminKick
+{
+	required int32 id = 1;
+}
 
 
 message ServerClientInfo
@@ -42,4 +46,27 @@ message ServerSetState
 {
 	optional int32 plugin_id = 1;
 	required int32 state = 2;
+}
+
+
+
+
+message ClientLobbyAdminTimer
+{
+	required float time = 1;
+}
+message ClientLobbyVote
+{
+	required int32 plugin_id = 1;
+}
+
+
+message ServerLobbyTimer
+{
+	required float time = 1;
+}
+message ServerLobbyVote
+{
+	required int32 client_id = 1;
+	required int32 plugin_id = 2;
 }
