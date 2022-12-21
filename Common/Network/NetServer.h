@@ -16,6 +16,7 @@ struct NetServer : public NetServerInterface
 	virtual void SetDeserializer(DeserializationFunc fn, uint16_t packetID);
 
 	virtual void SetJoinCallback(ServerJoinCallbackFunction fn);
+	virtual void SetClientStateCallback(ServerClientStateChangeCallbackFunction fn);
 	virtual void SetDisconnectCallback(ServerDisconnectCallbackFunction fn);
 
 	virtual bool SendData(ServerConnection* conn, uint16_t packetID, const void* data, uint32_t size, uint32_t flags);
@@ -27,13 +28,18 @@ struct NetServer : public NetServerInterface
 
 	void Poll();
 
-	void SetLobbyCallbacks();
+
+	// Verify ServerData state, needs to have ServerData set as userdata
+	bool CheckConnectionStateAndSend(ServerConnection* c);
 
 	NetSocketServer socket;
-	HSteamNetPollGroup group = 0;
-	void* userData = nullptr;
-
 private:
+
+	// Sends on mismatch
+	bool CheckConnectionStateAndSendInternal(ServerConnection* c, AppState s, uint16_t pluginID);
+	
+	NetServer() {};
+
 	static void SteamNetServerConnectionStatusChangedCallback(SteamNetConnectionStatusChangedCallback_t* pInfo);
 	ServerConnection* GetNew();
 	ServerConnection* GetFromNetworkConnection(HSteamNetConnection conn);
@@ -52,9 +58,38 @@ private:
 		DeserializationFunc deserializer;
 		ServerPacketFunction receiver;
 	};
+	HSteamNetPollGroup group = 0;
+	void* userData = nullptr;
 	ServerJoinCallbackFunction joinCB = nullptr;
+	ServerClientStateChangeCallbackFunction stateCB = nullptr;
 	ServerDisconnectCallbackFunction disconnectCB = nullptr;
 	std::vector<CallbackInfo> callbacks;
 	std::vector<char> tempStorage;
 
+};
+
+struct ServerData
+{
+	ServerData(const char* ip, uint32_t port);
+	~ServerData();
+	void SetLobbyState();
+	void Update(float dt);
+
+	
+	struct ClientVoteData
+	{
+		uint16_t clientID;
+		uint16_t pluginID;
+	};
+	struct LobbyData
+	{
+		std::vector<ClientVoteData> votes;
+		float timer;
+		bool timerRunning;
+	}lobbyData;
+
+	NetServer* net = nullptr;
+	ServerPlugin* plugin = nullptr;
+	float updateInterval = 0.0f;
+	uint16_t activePluingID = 0xFFFF;
 };

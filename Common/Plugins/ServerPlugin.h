@@ -8,10 +8,11 @@ struct SERVER_PLUGIN_INFO
 	bool allowLateJoin;
 };
 
+
 struct ServerPlugin
 {
 	virtual ~ServerPlugin() {};
-	virtual void Initialize() = 0;
+	virtual void Initialize(NetServerInterface* s) = 0;
 	virtual void Update(float dt) = 0;
 	virtual SERVER_PLUGIN_INFO GetInfo() const = 0;
 	

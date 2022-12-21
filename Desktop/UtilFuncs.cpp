@@ -81,7 +81,7 @@ void SafeAsyncUI(void(*uiFunction)(MainWindow* wnd))
 bool TryConnectToServer(const std::string& name)
 {
 	MainApplication* app = MainApplication::GetInstance();
-	if (app->client->state != NetClient::Disconnected) return true;
+	if (app->client->connectionState != NetClient::Disconnected) return true;
 	MainWindow* main = app->mainWindow;
 	
 	size_t idx = app->input.ip.find(":");
@@ -93,7 +93,6 @@ bool TryConnectToServer(const std::string& name)
 		uint32_t port = atoi(&app->input.ip.at(idx + 1));
 		if (port != 0)
 		{
-			LOG("PORT: %d\n", port);
 			err = app->client->Connect(app->input.ip.c_str(), port, name);
 		}
 	}
@@ -102,7 +101,6 @@ bool TryConnectToServer(const std::string& name)
 		QTimer::singleShot(0, main, [&]() {
 			MainApplication* app = MainApplication::GetInstance();
 			auto rect = main->geometry();
-			//InfoPopup* popUp = new InfoPopup(main, "FAILED TO CONNECT TO SERVER", QPoint(rect.width() / 2, rect.height() - 100), 20, 0xFFFF0000, 3000);
 			InfoPopup* popUp = new InfoPopup(main, err.reason.c_str(), QPoint(rect.width() / 2, rect.height() - 100), 20, 0xFFFF0000, 3000);
 		});
 		return false;

@@ -3,8 +3,8 @@
 
 struct VoteInfo
 {
-	std::string pluginID;
-	std::string username;
+	uint16_t clientID;
+	uint16_t pluginID;
 };
 struct VoteData
 {
@@ -24,12 +24,12 @@ public:
 	void StartPlugin();
 
 	void Rebuild();
+	void UpdateFromData();
 
 	static VoteData data;
 	std::string pluginCache;
 private:
 
-	void UpdateFromData();
 
 	AdminWidget* adminWidget = nullptr;
 

@@ -28,7 +28,7 @@ constexpr QSize gamePopUpSize = { 400, 300 };
 class GameInfo : public QWidget
 {
 public:
-	GameInfo(QWidget* parent, const QString& imgPath, const std::string& plID) : QWidget(parent), img(imgPath), voteCount(0), anim(this), plugID(plID) { 
+	GameInfo(QWidget* parent, const QString& imgPath, uint16_t plID) : QWidget(parent), img(imgPath), voteCount(0), anim(this), plugID(plID) { 
 		setMinimumSize(gamePopUpSize); setMaximumSize(gamePopUpSize); anim.SetDuration(300); selected = nullptr;
 	}
 
@@ -40,13 +40,23 @@ public:
 			for (int i = 0; i < LobbyFrame::data.votes.size(); i++)
 			{
 				auto& v = LobbyFrame::data.votes.at(i);
-				if (v.username == app->appData.localPlayer.name)
-					v.pluginID = "";
+				if (v.clientID == app->appData.localPlayer.clientID)
+				{
+					v.pluginID = INVALID_ID;
+
+					break;
+				}
 			}
 
 			GameInfo* cpy = GameInfo::selected;
 			cpy->voteCount--;
 			GameInfo::selected = nullptr;
+
+			base::ClientLobbyVote netVote;
+			netVote.set_plugin_id(INVALID_ID);
+			std::string serMsg = netVote.SerializeAsString();
+			app->client->SendData(Client_LobbyVote, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
+
 		}
 	}
 	void SetCount(int count)
@@ -131,17 +141,25 @@ private:
 
 			MainApplication* app = MainApplication::GetInstance();
 
-
-			for (auto& v : LobbyFrame::data.votes)
+			VoteInfo* voteInfo = nullptr;
+			for (VoteInfo& v : LobbyFrame::data.votes)
 			{
-				if (v.username == app->appData.localPlayer.name) {
+				if (v.clientID == app->appData.localPlayer.clientID) {
 					v.pluginID = plugID;
-					return;
+					voteInfo = &v;
+					break;
 				}
 			}
-			LobbyFrame::data.votes.push_back({ plugID, app->appData.localPlayer.name });
 
-
+			if(!voteInfo)
+			{
+				LobbyFrame::data.votes.push_back({ app->appData.localPlayer.clientID, plugID });
+			}
+			
+			base::ClientLobbyVote netVote;
+			netVote.set_plugin_id(plugID);
+			std::string serMsg = netVote.SerializeAsString();
+			app->client->SendData(Client_LobbyVote, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
 
 		}
 	}
@@ -151,7 +169,7 @@ private:
 	}
 	GrowingCircleAnim anim;
 	QPixmap img;
-	std::string plugID;
+	uint16_t plugID;
 	int voteCount;
 };
 GameInfo* GameInfo::selected = nullptr;
@@ -165,6 +183,13 @@ public:
 	{
 		contentArea = nullptr;
 		Build();
+	}
+	~ContentWidget()
+	{
+		for (auto& c : contentList)
+		{
+			delete c.element;
+		}
 	}
 
 	void Build()
@@ -185,14 +210,31 @@ public:
 			QSize gamePrevSize(400, 300);
 
 			{
+				MainApplication* app = MainApplication::GetInstance();
+
 				const std::vector<PluginClass*>& plugs = GetPlugins();
 				for (int i = 0; i < plugs.size(); i++)
 				{
 					PLUGIN_INFO info = plugs.at(i)->GetPluginInfos();
-					GameInfo* gInf = new GameInfo(this, info.previewResource, info.ID);
-					contentList.push_back({ gInf, info.ID });
-					vertical_layout1->addWidget(gInf);
-				
+
+					uint16_t found = INVALID_ID;
+					for (int j = 0; j < app->serverPlugins.size(); i++)
+					{
+						const PluginInfo& serverInfo = app->serverPlugins.at(j);
+
+						if (serverInfo.id.compare(info.ID) == 0)
+						{
+							found = serverInfo.sessionID;
+							break;
+						}
+					}
+					if (found != INVALID_ID)
+					{
+						GameInfo* gInf = new GameInfo(this, info.previewResource, found);
+						contentList.push_back({ gInf, found });
+						vertical_layout1->addWidget(gInf);
+					}
+					
 				}
 			}
 
@@ -213,7 +255,7 @@ public:
 				if (v.pluginID == c.pluginID)
 				{
 					count++;
-					if (v.username == app.localPlayer.name)
+					if (v.clientID == app.localPlayer.clientID)
 					{
 						GameInfo::selected = c.element;
 					}
@@ -227,7 +269,7 @@ private:
 	struct GameInfoData
 	{
 		GameInfo* element;
-		std::string pluginID;
+		uint16_t pluginID;
 	};
 
 	virtual void mouseReleaseEvent(QMouseEvent* e) override
@@ -297,43 +339,6 @@ public:
 			
 
 		}
-	}
-	std::string GetPluginByVotes()
-	{
-		std::string outVal;
-		int highestCount = -1;
-		const std::vector<PluginClass*>& pl = GetPlugins();
-		for (int i = 0; i < pl.size(); i++)
-		{
-			int curCount = 0;
-			std::string id = pl.at(i)->GetPluginInfos().ID;
-			for (int j = 0; j < LobbyFrame::data.votes.size(); j++)
-			{
-				auto& v = LobbyFrame::data.votes.at(j);
-				if (v.pluginID == id)
-				{
-					curCount++;
-				}
-			}
-			if (curCount > 0 && highestCount < curCount)
-			{
-				outVal = id;
-				highestCount = curCount;
-			}
-		}
-
-		if (highestCount != -1 && !outVal.empty())
-		{
-			return outVal;
-		}
-
-		int randIDX = rand() % pl.size();
-		if (randIDX < pl.size())
-		{
-			return pl.at(randIDX)->GetPluginInfos().ID;
-		}
-
-		return "";
 	}
 
 	void OnPressStart()
@@ -486,6 +491,8 @@ LobbyFrame::LobbyFrame(QMainWindow* parent) : StateFrame(parent)
 	}
 	this->setLayout(vertical_layout);
 	parent->setCentralWidget(this);
+
+	UpdateFromData();
 }
 LobbyFrame::~LobbyFrame()
 {

@@ -5,7 +5,7 @@
 #include "Frames/LobbyFrame.h"
 #include "util/FileStorage.h"
 
-void NetworkPollFunction(MainApplication* app)
+static void NetworkPollFunction(MainApplication* app)
 {
 	auto time = std::chrono::high_resolution_clock::now();
 	while (!app->networkThreadShouldJoin)
@@ -19,7 +19,7 @@ void NetworkPollFunction(MainApplication* app)
 	}
 }
 
-void __stdcall NetJoinCallback(NetClient* c, ClientConnection* conn)
+static void __stdcall NetJoinCallback(NetClient* c, ClientConnection* conn)
 {
 	MainApplication* app = (MainApplication*)c->GetUserData();
 	ClientData* cl = nullptr;
@@ -60,7 +60,7 @@ void __stdcall NetJoinCallback(NetClient* c, ClientConnection* conn)
 	}
 
 }
-void __stdcall NetDisconnectCallback(NetClient* c, ClientConnection* conn)
+static void __stdcall NetDisconnectCallback(NetClient* c, ClientConnection* conn)
 {
 	MainApplication* app = (MainApplication*)c->GetUserData();
 	if (c->GetSelf() == conn)
@@ -93,7 +93,7 @@ void __stdcall NetDisconnectCallback(NetClient* c, ClientConnection* conn)
 	
 
 }
-bool __stdcall NetSetStateCallback(NetClient* c, base::ServerSetState* state, int packetSize)
+static bool __stdcall NetSetStateCallback(NetClient* c, base::ServerSetState* state, int packetSize)
 {
 	if (state->has_plugin_id())
 	{
@@ -101,17 +101,14 @@ bool __stdcall NetSetStateCallback(NetClient* c, base::ServerSetState* state, in
 	}
 	else
 	{
-		if (state->state() == (int32_t)ClientState::LOBBY)
+		if (state->state() == (int32_t)AppState::LOBBY)
 		{
 			MainApplication* app = (MainApplication*)c->GetUserData(); 
 			SafeAsyncUI([](MainWindow* wnd) {
 
 				MainApplication* app = MainApplication::GetInstance();
 				wnd->SetState(MAIN_WINDOW_STATE::STATE_LOBBY);
-				base::ClientState response;
-				response.set_state((int32_t)ClientState::LOBBY);
-				std::string serMsg = response.SerializeAsString();
-				app->client->SendData(Client_State, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
+				app->SetNetworkingLobbyState();
 			});
 
 		}
@@ -119,7 +116,7 @@ bool __stdcall NetSetStateCallback(NetClient* c, base::ServerSetState* state, in
 	state->Clear();
 	return true;
 }
-bool __stdcall NetPluginCallback(NetClient* c, base::ServerPlugin* plugin, int packetSize)
+static bool __stdcall NetPluginCallback(NetClient* c, base::ServerPlugin* plugin, int packetSize)
 {
 	MainApplication* app = (MainApplication*)c->GetUserData();
 	std::string id = plugin->data().id();
@@ -130,6 +127,7 @@ bool __stdcall NetPluginCallback(NetClient* c, base::ServerPlugin* plugin, int p
 	plugin->Clear();
 	return true;
 }
+
 
 static MainApplication* g_mainApplicationInstance = nullptr;
 MainApplication::MainApplication(int& argc, char** argv) : QApplication(argc, argv), networkPollThread(std::bind(NetworkPollFunction, this))
@@ -158,6 +156,7 @@ MainApplication::MainApplication(int& argc, char** argv) : QApplication(argc, ar
 	client = NetClient::Create();
 	client->SetUserData(this);
 	client->SetCallback((ClientPacketFunction)NetSetStateCallback, Server_SetState);
+	client->SetCallback((ClientPacketFunction)NetPluginCallback, Server_Plugin);
 	client->SetClientInfoCallback((ClientInfoCallbackFunction)NetJoinCallback);
 	client->SetDisconnectCallback((ClientDisconnectCallbackFunction)NetDisconnectCallback);
 
@@ -171,4 +170,58 @@ MainApplication::~MainApplication()
 MainApplication* MainApplication::GetInstance()
 {
 	return g_mainApplicationInstance;
+}
+
+
+static bool __stdcall NetLobbyVoteCallback(NetClient* c, base::ServerLobbyVote* vote, int packetSize)
+{
+	uint16_t client = vote->client_id();
+	uint16_t plugin = vote->plugin_id();
+
+	bool found = false;
+	for (int i = 0; i < LobbyFrame::data.votes.size(); i++)
+	{
+		if (LobbyFrame::data.votes.at(i).clientID == client)
+		{
+			if (plugin == 0xFFFF) LobbyFrame::data.votes.erase(LobbyFrame::data.votes.begin() + i);
+			else LobbyFrame::data.votes.at(i).pluginID = plugin;
+			found = true;
+			break;
+		}
+	}
+
+	if (!found) LobbyFrame::data.votes.push_back({ client, plugin });
+
+
+	SafeAsyncUI([](MainWindow* wnd) {
+		if (wnd->GetState() == MAIN_WINDOW_STATE::STATE_LOBBY)
+		{
+			LobbyFrame* frame = (LobbyFrame*)wnd->stateWidget;
+			frame->UpdateFromData();
+		}
+	});
+
+	return true;
+}
+static bool __stdcall NetLobbyTimerCallback(NetClient* c, base::ServerLobbyTimer* timer, int packetSize)
+{
+	return true;
+}
+
+
+void MainApplication::SetNetworkingLobbyState()
+{
+	MainApplication* app = MainApplication::GetInstance();
+
+	app->client->SetLobbyDeserializers();
+	app->client->SetCallback((ClientPacketFunction)NetLobbyVoteCallback, Server_LobbyVote);
+	app->client->SetCallback((ClientPacketFunction)NetLobbyTimerCallback, Server_LobbyTimer);
+
+	base::ClientState response;
+	response.set_state((int32_t)AppState::LOBBY);
+	std::string serMsg = response.SerializeAsString();
+	app->client->SendData(Client_State, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
+
+	
+
 }

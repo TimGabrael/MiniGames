@@ -44,14 +44,14 @@ void NetClient::SteamNetClientConnectionStatusChangedCallback(SteamNetConnection
 	{
 		client->socket.networking->CloseConnection(pInfo->m_hConn, 0, nullptr, false);
 		client->socket.socket = 0;
-		client->state = State::Disconnected;
+		client->connectionState = State::Disconnected;
 		if (client->disconnectCB) client->disconnectCB(client, client->local);
 		break;
 	}
 
 	case k_ESteamNetworkingConnectionState_Connected:
 	case k_ESteamNetworkingConnectionState_Connecting:
-		client->state = State::ReceivedAnswer;
+		client->connectionState = State::ReceivedAnswer;
 		break;
 
 	case k_ESteamNetworkingConnectionState_None:
@@ -81,7 +81,7 @@ NetResult NetClient::Connect(const char* ip, uint32_t port, const std::string& n
 {
 	NetResult joinRes;
 	joinRes.success = false;
-	if (state != State::Disconnected)
+	if (connectionState != State::Disconnected)
 	{
 		joinRes.success = true;
 		return joinRes;
@@ -132,7 +132,7 @@ NetResult NetClient::Connect(const char* ip, uint32_t port, const std::string& n
 
 	SendData(Client_Join, str.data(), str.length(), SendFlags::Send_Reliable);
 
-	state = State::Connecting;
+	connectionState = State::Connecting;
 	joinRes.success = true;
 	return joinRes;
 }
@@ -143,7 +143,7 @@ NetClient::~NetClient()
 
 bool NetClient::IsConnected() const
 {
-	if (state == State::Disconnected) return false;
+	if (connectionState == State::Disconnected) return false;
 
 	SteamNetConnectionRealTimeStatus_t stat;
 	EResult res = socket.networking->GetConnectionRealTimeStatus(socket.socket, &stat, 0, NULL);

@@ -45,7 +45,7 @@ struct NetClient : public NetClientInterface
 
 	NetSocketClient socket;
 	void* userData = nullptr;
-	State state = State::Disconnected;
+	State connectionState = State::Disconnected;
 private:
 
 	static void SteamNetClientConnectionStatusChangedCallback(SteamNetConnectionStatusChangedCallback_t* pInfo);

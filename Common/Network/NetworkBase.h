@@ -21,7 +21,7 @@ enum class ConnectionState : uint8_t
 	Connected,
 	Connecting,
 };
-enum class ClientState : uint8_t
+enum class AppState : uint8_t
 {
 	INVALID,
 	LOBBY,
@@ -32,23 +32,25 @@ enum ClientBaseMessages : uint16_t
 	Client_Join,
 	Client_State,
 	Client_Adminkick,
+	NUM_CLIENT_BASE_MESSAGES,
 };
 enum ServerBaseMessages : uint16_t
 {
 	Server_ClientInfo,
 	Server_Plugin,
 	Server_SetState,
+	NUM_SERVER_BASE_MESSAGES,
 };
 
 enum ClientLobbyMessages : uint16_t
 {
-	Client_LobbyAdminTimer,
+	Client_LobbyAdminTimer = NUM_CLIENT_BASE_MESSAGES,
 	Client_LobbyVote,
 };
 
 enum ServerLobbyMessages : uint16_t
 {
-	Server_LobbyTimer,
+	Server_LobbyTimer = NUM_SERVER_BASE_MESSAGES,
 	Server_LobbyVote,
 };
 
@@ -67,7 +69,7 @@ struct ServerConnection
 	uint16_t activePlugin = -1;
 	bool isAdmin = false;
 	ConnectionState isConnected = ConnectionState::Disconnected;
-	ClientState state = ClientState::INVALID;
+	AppState state = AppState::INVALID;
 };
 
 struct NetResult
@@ -84,6 +86,7 @@ typedef void*(__stdcall* DeserializationFunc)(char* packet, int packetSize);
 typedef bool(__stdcall* ServerPacketFunction)(NetServerInterface* socket, ServerConnection* client, void* packet, int packetSize);
 typedef NetResult(__stdcall* ServerJoinCallbackFunction)(NetServerInterface* socket, ServerConnection* client);
 typedef void(__stdcall* ServerDisconnectCallbackFunction)(NetServerInterface* socket, ServerConnection* client);
+typedef void(__stdcall* ServerClientStateChangeCallbackFunction)(NetServerInterface* socket, ServerConnection* client);
 
 
 typedef bool(__stdcall* ClientPacketFunction)(NetClientInterface* socket, void* packet, int packetSize);
@@ -108,6 +111,7 @@ struct NetServerInterface
 	virtual void SetDeserializer(DeserializationFunc fn, uint16_t packetID) = 0;
 	
 	virtual void SetJoinCallback(ServerJoinCallbackFunction fn) = 0;
+	virtual void SetClientStateCallback(ServerClientStateChangeCallbackFunction fn) = 0;
 	virtual void SetDisconnectCallback(ServerDisconnectCallbackFunction fn) = 0;
 
 	virtual bool SendData(ServerConnection* conn, uint16_t packetID, const void* data, uint32_t size, uint32_t flags) = 0;

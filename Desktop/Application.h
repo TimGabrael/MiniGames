@@ -26,7 +26,7 @@ public:
 	MainApplication(int& argc, char** argv);
 	~MainApplication();
 
-
+	void SetNetworkingLobbyState();
 
 	ApplicationData appData;
 	std::vector<PluginInfo> serverPlugins;

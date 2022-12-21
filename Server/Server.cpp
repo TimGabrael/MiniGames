@@ -8,16 +8,16 @@
 int main()
 {
 	InitNetworking();
-	NetServer* server = NetServer::Create(DEBUG_IP, DEBUG_PORT);
-	if (server)
+
+	ServerData* server = new ServerData(DEBUG_IP, DEBUG_PORT);
+
+	
+	std::cout << "waiting for clients\n";
+	while (true)
 	{
-		std::cout << "waiting for clients\n";
-		while (true)
-		{
-			server->Poll();
-			NetRunCallbacks();
-		}
+		server->Update(0.0f);
 	}
+	
 	system("pause");
 	//NetError err = NetError::OK;
 	//UDPServerSocket socket;
