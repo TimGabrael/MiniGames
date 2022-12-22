@@ -1,5 +1,6 @@
 #include "NetClient.h"
 #include "NetCommon.h"
+#include "Plugins/PluginCommon.h"
 
 static void* __stdcall ClientInfoDeserializer(char* packet, int size)
 {
@@ -45,7 +46,7 @@ void NetClient::SteamNetClientConnectionStatusChangedCallback(SteamNetConnection
 		client->socket.networking->CloseConnection(pInfo->m_hConn, 0, nullptr, false);
 		client->socket.socket = 0;
 		client->connectionState = State::Disconnected;
-		if (client->disconnectCB) client->disconnectCB(client, client->local);
+		if (client->disconnectCB) client->disconnectCB(client->appData, client->local);
 		break;
 	}
 
@@ -244,7 +245,7 @@ void NetClient::Poll()
 				}
 				if (packet)
 				{
-					info.receiver(this, (void*)packet, size - 2);
+					info.receiver(appData, (void*)packet, size - 2);
 				}
 			}
 		}
@@ -260,10 +261,11 @@ void NetClient::SetLobbyDeserializers()
 }
 
 
-bool __stdcall NetClient::ServerInfoCallback(NetClient* c, base::ServerClientInfo* info, int size)
+bool __stdcall NetClient::ServerInfoCallback(ApplicationData* app, base::ServerClientInfo* info, int size)
 {
 	
 	const int32 idVal = info->data().id();
+	NetClient* c = (NetClient*)app->net;
 	if (idVal < MAX_PLAYERS && idVal >= 0)
 	{
 		ClientConnection* cl = &c->socket.connected[idVal];
@@ -279,14 +281,14 @@ bool __stdcall NetClient::ServerInfoCallback(NetClient* c, base::ServerClientInf
 		{
 			if (c->infoCB)
 			{
-				c->infoCB(c, cl);
+				c->infoCB(c->appData, cl);
 			}
 		}
 		else
 		{
 			if(c->disconnectCB)
 			{
-				c->disconnectCB(c, cl);
+				c->disconnectCB(c->appData, cl);
 			}
 		}
 	}

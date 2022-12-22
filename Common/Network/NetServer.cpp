@@ -1,5 +1,6 @@
 #include "NetServer.h"
 #include "NetCommon.h"
+#include <unordered_map>
 
 
 static void* __stdcall JoinDeserializer(char* packet, int size)
@@ -225,7 +226,7 @@ void NetServer::Poll()
 				if (info.deserializer) packet = info.deserializer((char*)packet, msgSize - sizeof(uint16_t));
 				if (packet)
 				{
-					info.receiver(this, (ServerConnection*)pIncomingMsg->GetConnectionUserData(), packet, msgSize);
+					info.receiver((NetServerInfo*)data, (ServerConnection*)pIncomingMsg->GetConnectionUserData(), packet, msgSize);
 				}
 			}
 		}
@@ -238,10 +239,9 @@ void NetServer::Poll()
 
 bool NetServer::CheckConnectionStateAndSend(ServerConnection* c)
 {
-	ServerData* data = (ServerData*)userData;
 	assert(data != nullptr);
-	
-	if (data->plugin)
+
+	if (data->info.plugin)
 	{
 		return CheckConnectionStateAndSendInternal(c, AppState::PLUGIN, data->activePluingID);
 	}
@@ -301,6 +301,8 @@ void NetServer::CloseConnection(ServerConnection* c)
 	{
 		if (c->isConnected == ConnectionState::Connected)
 		{
+			if (disconnectCB) disconnectCB((NetServerInfo*)data, c);
+
 			base::ServerClientInfo info;
 			info.set_is_connected(false);
 			info.set_is_local(false);
@@ -336,6 +338,7 @@ void NetServer::CloseConnection(ServerConnection* c)
 					std::string adminToAdmin = info.SerializeAsString();
 					SendData(firstAvailable, Server_ClientInfo, adminToAdmin.data(), adminToAdmin.length(), SendFlags::Send_Reliable);
 				}
+				
 				for (int i = 0; i < MAX_PLAYERS; i++)
 				{
 					ServerConnection* other = &socket.connected[i];
@@ -367,20 +370,33 @@ uint16_t NetServer::GetClientID(ServerConnection* conn)
 	}
 	return INVALID_ID;
 }
-bool NetServer::ClientJoinPacketCallback(NetServer* s, ServerConnection* client, base::ClientJoin* join, int size)
+bool NetServer::ClientJoinPacketCallback(ServerData* s, ServerConnection* client, base::ClientJoin* join, int size)
 {
 	NameValidationResult res = ValidateName(join->name());
+	bool worked = true;;
 	if (res != NameValidationResult::Name_Ok)
 	{
-		s->CloseConnection(client);
+		worked = false;
+		s->info.net->CloseConnection(client);
 	}
 	else
 	{
 		client->name = join->name();
-		client->isAdmin = !s->hasAdmin();
+		client->isAdmin = !s->info.net->hasAdmin();
 		client->isConnected = ConnectionState::Connected;
-		client->id = s->GetClientID(client);
+		client->id = s->info.net->GetClientID(client);
 		client->activePlugin = INVALID_ID;
+		NetResult joinRes = { "", true };
+		if (s->info.net->joinCB)
+		{
+			joinRes = s->info.net->joinCB((NetServerInfo*)s, client);
+			worked = joinRes.success;
+			if(!worked) s->info.net->CloseConnection(client);
+		}
+	}
+
+	if(worked)
+	{
 
 		// Send Available Plugins
 		{
@@ -388,9 +404,9 @@ bool NetServer::ClientJoinPacketCallback(NetServer* s, ServerConnection* client,
 			pluginData.mutable_data()->set_id("a3fV-6giK-10Eb-2rdT");
 			pluginData.mutable_data()->set_session_id(0);
 			std::string serMsg = pluginData.SerializeAsString();
-			s->SendData(client, Server_Plugin, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
+			s->info.net->SendData(client, Server_Plugin, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
 		}
-		
+
 		// Send New Client Info To All Connected Clients
 		{
 			base::ServerClientInfo msg;
@@ -402,16 +418,16 @@ bool NetServer::ClientJoinPacketCallback(NetServer* s, ServerConnection* client,
 			msg.mutable_data()->set_name(client->name);
 
 			std::string serMsg = msg.SerializeAsString();
-			s->SendData(client, Server_ClientInfo, serMsg.data(), serMsg.size(), SendFlags::Send_Reliable);
+			s->info.net->SendData(client, Server_ClientInfo, serMsg.data(), serMsg.size(), SendFlags::Send_Reliable);
 
 			msg.set_is_local(false);
 			serMsg = msg.SerializeAsString();
 			for (int i = 0; i < MAX_PLAYERS; i++)
 			{
-				ServerConnection* conn = s->GetConnection(i);
+				ServerConnection* conn = s->info.net->GetConnection(i);
 				if (conn == client) continue;
 				if (conn) {
-					s->SendData(conn, Server_ClientInfo, serMsg.data(), serMsg.size(), SendFlags::Send_Reliable);
+					s->info.net->SendData(conn, Server_ClientInfo, serMsg.data(), serMsg.size(), SendFlags::Send_Reliable);
 
 					base::ServerClientInfo otherConn;
 					otherConn.mutable_data()->set_name(conn->name);
@@ -420,7 +436,7 @@ bool NetServer::ClientJoinPacketCallback(NetServer* s, ServerConnection* client,
 					otherConn.set_is_local(false);
 					otherConn.set_is_connected(true);
 					std::string otherMsg = otherConn.SerializeAsString();
-					s->SendData(client, Server_ClientInfo, otherMsg.data(), otherMsg.size(), SendFlags::Send_Reliable);
+					s->info.net->SendData(client, Server_ClientInfo, otherMsg.data(), otherMsg.size(), SendFlags::Send_Reliable);
 
 				}
 			}
@@ -431,14 +447,15 @@ bool NetServer::ClientJoinPacketCallback(NetServer* s, ServerConnection* client,
 			base::ServerSetState newState;
 			newState.set_state((int32_t)AppState::LOBBY);
 			std::string serMsg = newState.SerializeAsString();
-			s->SendData(client, Server_SetState, serMsg.data(), serMsg.length(), Send_Reliable);
+			s->info.net->SendData(client, Server_SetState, serMsg.data(), serMsg.length(), Send_Reliable);
 		}
+	
 	}
 
 	join->Clear();
 	return true;
 }
-bool NetServer::ClientStatePacketCallback(NetServer* s, ServerConnection* client, base::ClientState* state, int size)
+bool NetServer::ClientStatePacketCallback(ServerData* s, ServerConnection* client, base::ClientState* state, int size)
 {
 	const int32 stateVal = state->state();
 	const AppState oldAppState = client->state;
@@ -461,22 +478,22 @@ bool NetServer::ClientStatePacketCallback(NetServer* s, ServerConnection* client
 		client->activePlugin = INVALID_ID;
 	}
 
-	if (s->stateCB && ((oldAppState != client->state) || (oldPlugin != client->activePlugin)))
+	if (s->info.net->stateCB && ((oldAppState != client->state) || (oldPlugin != client->activePlugin)))
 	{
-		s->stateCB(s, client);
+		s->info.net->stateCB((NetServerInfo*)s, client);
 	}
 	
 	state->Clear();
 	return true;
 }
-bool NetServer::ClientAdminKickPacketCallback(NetServer* s, ServerConnection* client, base::ClientAdminKick* kick, int size)
+bool NetServer::ClientAdminKickPacketCallback(ServerData* s, ServerConnection* client, base::ClientAdminKick* kick, int size)
 {
 	if (client->isAdmin)
 	{
-		ServerConnection* conn = s->GetConnection(kick->id());
+		ServerConnection* conn = s->info.net->GetConnection(kick->id());
 		if (conn)
 		{
-			s->CloseConnection(conn);
+			s->info.net->CloseConnection(conn);
 		}
 	}
 
@@ -499,11 +516,68 @@ bool NetServer::hasAdmin() const
 
 
 
-static bool __stdcall ClientLobbyVotePacketCallback(NetServer* s, ServerConnection* client, base::ClientLobbyVote* vote, int size)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+static NetResult _stdcall LobbyJoinCallback(ServerData* s, ServerConnection* c)
 {
-	if (s->CheckConnectionStateAndSend(client))
+	for (int i = 0; i < s->lobbyData.votes.size(); i++)
 	{
-		ServerData* server = (ServerData*)s->GetUserData();
+		
+		base::ServerLobbyVote vote;
+		vote.set_client_id(s->lobbyData.votes.at(i).clientID);
+		vote.set_plugin_id(s->lobbyData.votes.at(i).pluginID);
+
+		const std::string serMsg = vote.SerializeAsString();
+		s->info.net->SendData(c, Server_LobbyVote, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
+	}
+
+
+	NetResult res {"", true};
+	return res;
+}
+static void __stdcall LobbyDisconnectCallback(ServerData* s, ServerConnection* c)
+{
+	for (int i = 0; i < s->lobbyData.votes.size(); i++)
+	{
+		if (s->lobbyData.votes.at(i).clientID == c->id)
+		{
+			base::ServerLobbyVote vote;
+			vote.set_client_id(c->id);
+			vote.set_plugin_id(INVALID_ID);
+			s->lobbyData.votes.erase(s->lobbyData.votes.begin() + i);
+			
+			const std::string serMsg = vote.SerializeAsString();
+			for (uint16_t j = 0; j < MAX_PLAYERS; j++)
+			{
+				ServerConnection* conn = s->info.net->GetConnection(j);
+				if (conn && conn != c)
+				{
+					s->info.net->SendData(conn, Server_LobbyVote, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
+				}
+			}
+			i--;
+		}
+	}
+
+
+}
+
+static bool __stdcall ClientLobbyVotePacketCallback(ServerData* s, ServerConnection* client, base::ClientLobbyVote* vote, int size)
+{
+	if (s->info.net->CheckConnectionStateAndSend(client))
+	{
 		assert(server != nullptr);
 
 		std::string serMsg;
@@ -532,7 +606,7 @@ static bool __stdcall ClientLobbyVotePacketCallback(NetServer* s, ServerConnecti
 		}
 
 		ServerData::ClientVoteData* found = nullptr;
-		for (ServerData::ClientVoteData& v : server->lobbyData.votes)
+		for (ServerData::ClientVoteData& v : s->lobbyData.votes)
 		{
 			if (v.clientID == data.clientID)
 			{
@@ -550,7 +624,7 @@ static bool __stdcall ClientLobbyVotePacketCallback(NetServer* s, ServerConnecti
 		}
 		else
 		{
-			server->lobbyData.votes.push_back(data);
+			s->lobbyData.votes.push_back(data);
 		}
 
 		if (isValid)
@@ -558,10 +632,10 @@ static bool __stdcall ClientLobbyVotePacketCallback(NetServer* s, ServerConnecti
 			// send to other clients
 			for (uint16_t i = 0; i < MAX_PLAYERS; i++)
 			{
-				ServerConnection* conn = s->GetConnection(i);
-				if (conn && conn != client && s->CheckConnectionStateAndSend(conn))
+				ServerConnection* conn = s->info.net->GetConnection(i);
+				if (conn && conn != client && s->info.net->CheckConnectionStateAndSend(conn))
 				{
-					s->SendData(conn, Server_LobbyVote, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
+					s->info.net->SendData(conn, Server_LobbyVote, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
 				}
 			}
 		}
@@ -570,10 +644,10 @@ static bool __stdcall ClientLobbyVotePacketCallback(NetServer* s, ServerConnecti
 			// send to all clients
 			for (uint16_t i = 0; i < MAX_PLAYERS; i++)
 			{
-				ServerConnection* conn = s->GetConnection(i);
-				if (conn && s->CheckConnectionStateAndSend(conn))
+				ServerConnection* conn = s->info.net->GetConnection(i);
+				if (conn && s->info.net->CheckConnectionStateAndSend(conn))
 				{
-					s->SendData(conn, Server_LobbyVote, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
+					s->info.net->SendData(conn, Server_LobbyVote, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
 				}
 			}
 		}
@@ -583,63 +657,103 @@ static bool __stdcall ClientLobbyVotePacketCallback(NetServer* s, ServerConnecti
 	vote->Clear();
 	return true;
 }
-static bool __stdcall ClientLobbyAdminTimerPacketCallback(NetServer* s, ServerConnection* client, base::ClientLobbyAdminTimer* timer, int size)
+static bool __stdcall ClientLobbyAdminTimerPacketCallback(ServerData* s, ServerConnection* client, base::ClientLobbyAdminTimer* timer, int size)
 {
-	if (s->CheckConnectionStateAndSend(client) && client->isAdmin)
+	if (s->info.net->CheckConnectionStateAndSend(client) && client->isAdmin)
 	{
-		ServerData* serverData = (ServerData*)s->GetUserData();
+		assert(serverData != nullptr);
+
 		float time = std::min(timer->time(), 120.0f);// max time 120.0f
 		if (time > 0.0f)
 		{
-			serverData->lobbyData.timerRunning = true;
-			serverData->lobbyData.timer = time;
+			s->lobbyData.timerRunning = true;
+			s->lobbyData.timer = time;
 			base::ServerLobbyTimer response;
 			response.set_time(time);
 			const std::string serMsg = response.SerializeAsString();
 			for (uint16_t i = 0; i < MAX_PLAYERS; i++)
 			{
-				ServerConnection* conn = s->GetConnection(i);
-				if (conn && s->CheckConnectionStateAndSend(conn))
+				ServerConnection* conn = s->info.net->GetConnection(i);
+				if (conn && s->info.net->CheckConnectionStateAndSend(conn))
 				{
-					s->SendData(conn, Server_LobbyTimer, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
+					s->info.net->SendData(conn, Server_LobbyTimer, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
 				}
 			}
+		}
+		else
+		{
+			std::string serMsg;
+			if (s->lobbyData.votes.size() > 0)
+			{
+				// Get most voted plugin ID
+				std::unordered_map<uint16_t, uint16_t> votes;
+				for (int i = 0; i < s->lobbyData.votes.size(); i++)
+				{
+					votes[s->lobbyData.votes.at(i).pluginID]++;
+				}
+				auto val = std::max_element(votes.begin(), votes.end(), [](const std::pair<uint16_t, uint16_t>& f, const std::pair<uint16_t, uint16_t>& s) {
+					return f.second < s.second;
+				});
+				
+				printf("Most voted Plugin/numVotes: %d %d\n", val->first, val->second);
+
+				base::ServerSetState state;
+				state.set_plugin_id(val->first);
+				state.set_state((int32_t)AppState::PLUGIN);
+				serMsg = state.SerializeAsString();
+			}
+			else
+			{
+				
+				base::ServerSetState state;
+				state.set_plugin_id(0);
+				state.set_state((int32_t)AppState::PLUGIN);
+				serMsg = state.SerializeAsString();
+			}
+
+			for (uint16_t i = 0; i < MAX_PLAYERS; i++)
+			{
+				ServerConnection* conn = s->info.net->GetConnection(i);
+				if (conn)
+				{
+					s->info.net->SendData(conn, Server_SetState, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
+				}
+			}
+
 		}
 	}
 	timer->Clear();
 	return true;
 }
-static void __stdcall LobbyClientStateChangeCallback(NetServer* s, ServerConnection* client)
+static void __stdcall LobbyClientStateChangeCallback(ServerData* s, ServerConnection* client)
 {
-	if (s->CheckConnectionStateAndSend(client))
+	if (s->info.net->CheckConnectionStateAndSend(client))
 	{
-		ServerData* serverData = (ServerData*)s->GetUserData();
 		assert(serverData != nullptr);
 
-
-		for (const auto& v : serverData->lobbyData.votes)
+		for (const auto& v : s->lobbyData.votes)
 		{
 			base::ServerLobbyVote vote;
 			vote.set_client_id(v.clientID);
 			vote.set_plugin_id(v.pluginID);
 			const std::string serMsg = vote.SerializeAsString();
-			s->SendData(client, Server_LobbyVote, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
+			s->info.net->SendData(client, Server_LobbyVote, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
 		}
 
-		if (serverData->lobbyData.timerRunning)
+		if (s->lobbyData.timerRunning)
 		{
 			base::ServerLobbyTimer timer;
-			timer.set_time(serverData->lobbyData.timer);
+			timer.set_time(s->lobbyData.timer);
 			const std::string serMsg = timer.SerializeAsString();
-			s->SendData(client, Server_LobbyTimer, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
+			s->info.net->SendData(client, Server_LobbyTimer, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
 		}
 
 	}
 }
 ServerData::ServerData(const char* ip, uint32_t port)
 {
-	net = NetServer::Create(ip, port);	
-	net->SetUserData(this);
+	info.net = NetServer::Create(ip, port);
+	info.net->data = this;
 	SetLobbyState();
 }
 ServerData::~ServerData()
@@ -648,17 +762,18 @@ ServerData::~ServerData()
 }
 void ServerData::SetLobbyState()
 {
-	net->SetDeserializer(LobbyVoteDeserializer, Client_LobbyVote);
-	net->SetDeserializer(LobbyAdminTimerDeserializer, Client_LobbyAdminTimer);
+	info.net->SetDeserializer(LobbyVoteDeserializer, Client_LobbyVote);
+	info.net->SetDeserializer(LobbyAdminTimerDeserializer, Client_LobbyAdminTimer);
 
-	net->SetCallback((ServerPacketFunction)ClientLobbyVotePacketCallback, Client_LobbyVote);
-	net->SetCallback((ServerPacketFunction)ClientLobbyAdminTimerPacketCallback, Client_LobbyAdminTimer);
+	info.net->SetCallback((ServerPacketFunction)ClientLobbyVotePacketCallback, Client_LobbyVote);
+	info.net->SetCallback((ServerPacketFunction)ClientLobbyAdminTimerPacketCallback, Client_LobbyAdminTimer);
 
-	net->SetClientStateCallback((ServerClientStateChangeCallbackFunction)LobbyClientStateChangeCallback);
-
+	info.net->SetClientStateCallback((ServerClientStateChangeCallbackFunction)LobbyClientStateChangeCallback);
+	info.net->SetJoinCallback((ServerJoinCallbackFunction)LobbyJoinCallback);
+	info.net->SetDisconnectCallback((ServerDisconnectCallbackFunction)LobbyDisconnectCallback);
 }
 void ServerData::Update(float dt)
 {
-	net->Poll();
+	info.net->Poll();
 	NetRunCallbacks();
 }

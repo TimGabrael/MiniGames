@@ -47,6 +47,8 @@ struct ClientData
 
 struct ApplicationData
 {
+	NetClientInterface* net = nullptr;
+	class PluginClass* plugin = nullptr;
 	void* assetManager = nullptr;
 	ImGuiContext* imGuiCtx = nullptr;
 	std::vector<ClientData> players;

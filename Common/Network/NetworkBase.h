@@ -78,20 +78,28 @@ struct NetResult
 	bool success;
 };
 
-struct NetServerInterface;
-struct NetClientInterface;
+
 
 typedef void*(__stdcall* DeserializationFunc)(char* packet, int packetSize);
 
-typedef bool(__stdcall* ServerPacketFunction)(NetServerInterface* socket, ServerConnection* client, void* packet, int packetSize);
-typedef NetResult(__stdcall* ServerJoinCallbackFunction)(NetServerInterface* socket, ServerConnection* client);
-typedef void(__stdcall* ServerDisconnectCallbackFunction)(NetServerInterface* socket, ServerConnection* client);
-typedef void(__stdcall* ServerClientStateChangeCallbackFunction)(NetServerInterface* socket, ServerConnection* client);
+
+struct NetServerInterface;
+struct NetServerInfo;
+
+typedef bool(__stdcall* ServerPacketFunction)(NetServerInfo* info, ServerConnection* client, void* packet, int packetSize);
+typedef NetResult(__stdcall* ServerJoinCallbackFunction)(NetServerInfo* info, ServerConnection* client);
+typedef void(__stdcall* ServerDisconnectCallbackFunction)(NetServerInfo* info, ServerConnection* client);
+typedef void(__stdcall* ServerClientStateChangeCallbackFunction)(NetServerInfo* info, ServerConnection* client);
 
 
-typedef bool(__stdcall* ClientPacketFunction)(NetClientInterface* socket, void* packet, int packetSize);
-typedef void(__stdcall* ClientInfoCallbackFunction)(NetClientInterface* socket, ClientConnection* client);
-typedef void(__stdcall* ClientDisconnectCallbackFunction)(NetClientInterface* socket, ClientConnection* client);
+struct NetClientInterface;
+struct ApplicationData;
+
+typedef bool(__stdcall* ClientPacketFunction)(ApplicationData* app, void* packet, int packetSize);
+typedef void(__stdcall* ClientInfoCallbackFunction)(ApplicationData* app, ClientConnection* client);
+typedef void(__stdcall* ClientDisconnectCallbackFunction)(ApplicationData* app, ClientConnection* client);
+
+
 
 enum SendFlags
 {
@@ -117,9 +125,6 @@ struct NetServerInterface
 	virtual bool SendData(ServerConnection* conn, uint16_t packetID, const void* data, uint32_t size, uint32_t flags) = 0;
 
 	virtual bool IsP2P() const = 0;
-
-	virtual void* GetUserData() const = 0;
-	virtual void SetUserData(void* userData) = 0;
 };
 struct NetClientInterface
 {
@@ -139,10 +144,13 @@ struct NetClientInterface
 
 	virtual bool IsP2P() const = 0;
 
-	virtual void* GetUserData() const = 0;
-	virtual void SetUserData(void* userData) = 0;
 };
 
+struct NetServerInfo
+{
+	NetServerInterface* net = nullptr;
+	struct ServerPlugin* plugin = nullptr;
+};
 
 
 struct NetSocketServer

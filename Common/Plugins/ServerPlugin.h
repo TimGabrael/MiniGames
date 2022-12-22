@@ -18,5 +18,5 @@ struct ServerPlugin
 	
 };
 
-#define SERVER_PLUGIN_EXPORTS() extern "C" EXPORT ServerPlugin* GetPlugin()
-#define SERVER_PLUGIN_EXPORT_DEFINITION(PlugClass, _ID, dt, allow) extern "C" EXPORT ServerPlugin* GetPlugin(){ return new ServerPlugin(); }
+#define SERVER_PLUGIN_EXPORTS() extern "C" EXPORT ServerPlugin* GetServerPlugin()
+#define SERVER_PLUGIN_EXPORT_DEFINITION(PlugClass, _ID, dt, allow) extern "C" EXPORT ServerPlugin* GetServerPlugin(){ return new ServerPlugin(); }

@@ -23,8 +23,6 @@ struct NetServer : public NetServerInterface
 
 	virtual bool IsP2P() const;
 
-	virtual void* GetUserData() const { return userData; };
-	virtual void SetUserData(void* userData) { this->userData = userData; };
 
 	void Poll();
 
@@ -32,6 +30,7 @@ struct NetServer : public NetServerInterface
 	// Verify ServerData state, needs to have ServerData set as userdata
 	bool CheckConnectionStateAndSend(ServerConnection* c);
 
+	struct ServerData* data = nullptr;
 	NetSocketServer socket;
 private:
 
@@ -47,9 +46,9 @@ private:
 
 	uint16_t GetClientID(ServerConnection* conn);
 	
-	static bool ClientJoinPacketCallback(NetServer* s, ServerConnection* client, base::ClientJoin* join, int size);
-	static bool ClientStatePacketCallback(NetServer* s, ServerConnection* client, base::ClientState* state, int size);
-	static bool ClientAdminKickPacketCallback(NetServer* s, ServerConnection* client, base::ClientAdminKick* kick, int size);
+	static bool ClientJoinPacketCallback(ServerData* s, ServerConnection* client, base::ClientJoin* join, int size);
+	static bool ClientStatePacketCallback(ServerData* s, ServerConnection* client, base::ClientState* state, int size);
+	static bool ClientAdminKickPacketCallback(ServerData* s, ServerConnection* client, base::ClientAdminKick* kick, int size);
 
 	bool hasAdmin() const;
 
@@ -59,7 +58,6 @@ private:
 		ServerPacketFunction receiver;
 	};
 	HSteamNetPollGroup group = 0;
-	void* userData = nullptr;
 	ServerJoinCallbackFunction joinCB = nullptr;
 	ServerClientStateChangeCallbackFunction stateCB = nullptr;
 	ServerDisconnectCallbackFunction disconnectCB = nullptr;
@@ -75,7 +73,13 @@ struct ServerData
 	void SetLobbyState();
 	void Update(float dt);
 
-	
+
+	struct InternalNetServerInfo
+	{
+		NetServer* net = nullptr; 
+		ServerPlugin* plugin = nullptr;
+	} info;
+
 	struct ClientVoteData
 	{
 		uint16_t clientID;
@@ -88,8 +92,6 @@ struct ServerData
 		bool timerRunning;
 	}lobbyData;
 
-	NetServer* net = nullptr;
-	ServerPlugin* plugin = nullptr;
 	float updateInterval = 0.0f;
 	uint16_t activePluingID = 0xFFFF;
 };

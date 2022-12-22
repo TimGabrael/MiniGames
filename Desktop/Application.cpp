@@ -19,11 +19,11 @@ static void NetworkPollFunction(MainApplication* app)
 	}
 }
 
-static void __stdcall NetJoinCallback(NetClient* c, ClientConnection* conn)
+static void __stdcall NetJoinCallback(ApplicationData* c, ClientConnection* conn)
 {
-	MainApplication* app = (MainApplication*)c->GetUserData();
+	MainApplication* app = MainApplication::GetInstance();
 	ClientData* cl = nullptr;
-	if(conn == c->GetSelf())
+	if(conn == c->net->GetSelf())
 	{
 		cl = &app->appData.localPlayer;
 	}
@@ -40,9 +40,9 @@ static void __stdcall NetJoinCallback(NetClient* c, ClientConnection* conn)
 	}
 	if (cl)
 	{
-		app->appData.localPlayer.clientID = conn->id;
-		app->appData.localPlayer.name = conn->name;
-		app->appData.localPlayer.isAdmin = conn->isAdmin;
+		cl->clientID = conn->id;
+		cl->name = conn->name;
+		cl->isAdmin = conn->isAdmin;
 	}
 	else
 	{
@@ -60,10 +60,10 @@ static void __stdcall NetJoinCallback(NetClient* c, ClientConnection* conn)
 	}
 
 }
-static void __stdcall NetDisconnectCallback(NetClient* c, ClientConnection* conn)
+static void __stdcall NetDisconnectCallback(ApplicationData* c, ClientConnection* conn)
 {
-	MainApplication* app = (MainApplication*)c->GetUserData();
-	if (c->GetSelf() == conn)
+	MainApplication* app = MainApplication::GetInstance();
+	if (c->net->GetSelf() == conn)
 	{
 		app->appData.localPlayer.clientID = 0;
 		app->appData.localPlayer.isAdmin = false;
@@ -93,7 +93,7 @@ static void __stdcall NetDisconnectCallback(NetClient* c, ClientConnection* conn
 	
 
 }
-static bool __stdcall NetSetStateCallback(NetClient* c, base::ServerSetState* state, int packetSize)
+static bool __stdcall NetSetStateCallback(ApplicationData* c, base::ServerSetState* state, int packetSize)
 {
 	if (state->has_plugin_id())
 	{
@@ -103,7 +103,7 @@ static bool __stdcall NetSetStateCallback(NetClient* c, base::ServerSetState* st
 	{
 		if (state->state() == (int32_t)AppState::LOBBY)
 		{
-			MainApplication* app = (MainApplication*)c->GetUserData(); 
+			MainApplication* app = MainApplication::GetInstance();
 			SafeAsyncUI([](MainWindow* wnd) {
 
 				MainApplication* app = MainApplication::GetInstance();
@@ -116,9 +116,9 @@ static bool __stdcall NetSetStateCallback(NetClient* c, base::ServerSetState* st
 	state->Clear();
 	return true;
 }
-static bool __stdcall NetPluginCallback(NetClient* c, base::ServerPlugin* plugin, int packetSize)
+static bool __stdcall NetPluginCallback(ApplicationData* c, base::ServerPlugin* plugin, int packetSize)
 {
-	MainApplication* app = (MainApplication*)c->GetUserData();
+	MainApplication* app = MainApplication::GetInstance();
 	std::string id = plugin->data().id();
 	int32_t sessionID = plugin->data().session_id();
 
@@ -138,6 +138,7 @@ MainApplication::MainApplication(int& argc, char** argv) : QApplication(argc, ar
 	appData.localPlayer.clientID = 0;
 	appData.localPlayer.isAdmin = false;
 	appData.localPlayer.name = "";
+	appData.plugin = nullptr;
 
 	IniFile file;
 	if (!file.LoadFile("settings.ini"))
@@ -152,9 +153,9 @@ MainApplication::MainApplication(int& argc, char** argv) : QApplication(argc, ar
 
 	InitNetworking();
 
-
 	client = NetClient::Create();
-	client->SetUserData(this);
+	appData.net = client;
+	client->appData = &appData;
 	client->SetCallback((ClientPacketFunction)NetSetStateCallback, Server_SetState);
 	client->SetCallback((ClientPacketFunction)NetPluginCallback, Server_Plugin);
 	client->SetClientInfoCallback((ClientInfoCallbackFunction)NetJoinCallback);
@@ -173,7 +174,7 @@ MainApplication* MainApplication::GetInstance()
 }
 
 
-static bool __stdcall NetLobbyVoteCallback(NetClient* c, base::ServerLobbyVote* vote, int packetSize)
+static bool __stdcall NetLobbyVoteCallback(ApplicationData* c, base::ServerLobbyVote* vote, int packetSize)
 {
 	uint16_t client = vote->client_id();
 	uint16_t plugin = vote->plugin_id();
@@ -203,8 +204,13 @@ static bool __stdcall NetLobbyVoteCallback(NetClient* c, base::ServerLobbyVote* 
 
 	return true;
 }
-static bool __stdcall NetLobbyTimerCallback(NetClient* c, base::ServerLobbyTimer* timer, int packetSize)
+static bool __stdcall NetLobbyTimerCallback(ApplicationData* c, base::ServerLobbyTimer* timer, int packetSize)
 {
+	MainApplication* app = MainApplication::GetInstance();
+	
+	LobbyFrame::data.isRunning = true;
+	LobbyFrame::data.remainingTime = timer->time();
+
 	return true;
 }
 

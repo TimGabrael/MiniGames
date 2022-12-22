@@ -34,23 +34,19 @@ struct NetClient : public NetClientInterface
 	virtual bool IsP2P() const;
 
 
-	virtual void* GetUserData() const { return userData; };
-	virtual void SetUserData(void* userData) { this->userData = userData; };
-
-
 	void Poll();
 
 	void SetLobbyDeserializers();
 
 
 	NetSocketClient socket;
-	void* userData = nullptr;
+	ApplicationData* appData = nullptr;
 	State connectionState = State::Disconnected;
 private:
 
 	static void SteamNetClientConnectionStatusChangedCallback(SteamNetConnectionStatusChangedCallback_t* pInfo);
 
-	static bool __stdcall ServerInfoCallback(NetClient* c, base::ServerClientInfo* info, int size);
+	static bool __stdcall ServerInfoCallback(ApplicationData* app, base::ServerClientInfo* info, int size);
 
 	ClientConnection* local = nullptr;
 	ClientDisconnectCallbackFunction disconnectCB = nullptr;

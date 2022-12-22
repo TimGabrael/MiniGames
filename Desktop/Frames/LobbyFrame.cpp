@@ -326,21 +326,6 @@ public:
 		connect(startBtn, &QPushButton::pressed, this, &AdminWidget::OnPressStart);
 	}
 
-	void AdminSyncData()
-	{
-		MainApplication* app = MainApplication::GetInstance();
-		
-	}
-	void AdminStart()
-	{
-		MainApplication* app = MainApplication::GetInstance();
-		if (app->appData.localPlayer.isAdmin)
-		{
-			
-
-		}
-	}
-
 	void OnPressStart()
 	{
 		if (!countDown.isActive())
@@ -348,7 +333,9 @@ public:
 			MainApplication* app = MainApplication::GetInstance();
 			if (adminChooses->checkState() == Qt::CheckState::Checked)
 			{
-				AdminStart();
+				countDown.start();
+				LobbyFrame::data.remainingTime = 0;
+				LobbyFrame::data.isRunning = true;
 			}
 			else
 			{
@@ -356,7 +343,6 @@ public:
 				LobbyFrame::data.remainingTime = maxTimer;
 				LobbyFrame::data.isRunning = true;
 				UpdateWithRemainingTime();
-				AdminSyncData();
 			}
 		}
 	}
@@ -375,14 +361,12 @@ public:
 			if (LobbyFrame::data.remainingTime <= 0) {
 				LobbyFrame::data.remainingTime = 0;
 				LobbyFrame::data.isRunning = false;
-				AdminSyncData();
 			}
 			UpdateWithRemainingTime();
 		}
 		else
 		{
 			countDown.stop();
-			AdminStart();
 		}
 	}
 
