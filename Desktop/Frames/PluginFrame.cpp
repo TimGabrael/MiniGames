@@ -8,7 +8,7 @@
 #include "../CustomWidgets/PluginWidget.h"
 
 PluginClass* PluginFrame::activePlugin = nullptr;
-
+uint16_t PluginFrame::activePluginID = 0xFFFF;
 PluginFrame::PluginFrame(QMainWindow* parent) : StateFrame(parent)
 {
 	QVBoxLayout* lay = new QVBoxLayout(this);

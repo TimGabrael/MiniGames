@@ -26,6 +26,8 @@ public:
 	void Rebuild();
 	void UpdateFromData();
 
+	void SetTimer(float timer);
+
 	static VoteData data;
 	std::string pluginCache;
 private:
@@ -38,5 +40,6 @@ private:
 	void ReSync();
 	QWidget* playerScrollContent = nullptr;
 	ContentWidget* gamesContent = nullptr;
+	float timerCache;
 	
 };

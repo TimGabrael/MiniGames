@@ -216,13 +216,12 @@ public:
 				for (int i = 0; i < plugs.size(); i++)
 				{
 					PLUGIN_INFO info = plugs.at(i)->GetPluginInfos();
-
+					std::string infoStr(info.ID, 19);
 					uint16_t found = INVALID_ID;
-					for (int j = 0; j < app->serverPlugins.size(); i++)
+					for (int j = 0; j < app->serverPlugins.size(); j++)
 					{
 						const PluginInfo& serverInfo = app->serverPlugins.at(j);
-
-						if (serverInfo.id.compare(info.ID) == 0)
+						if (serverInfo.id == infoStr)
 						{
 							found = serverInfo.sessionID;
 							break;
@@ -326,23 +325,26 @@ public:
 		connect(startBtn, &QPushButton::pressed, this, &AdminWidget::OnPressStart);
 	}
 
+
+	void SetTimer(float time)
+	{
+		countDown.start();
+		LobbyFrame::data.remainingTime = time;
+		LobbyFrame::data.isRunning = true;
+	}
+
 	void OnPressStart()
 	{
-		if (!countDown.isActive())
+		MainApplication* app = MainApplication::GetInstance();
+		if (app->appData.localPlayer.isAdmin)
 		{
-			MainApplication* app = MainApplication::GetInstance();
-			if (adminChooses->checkState() == Qt::CheckState::Checked)
+			if (!countDown.isActive())
 			{
-				countDown.start();
-				LobbyFrame::data.remainingTime = 0;
-				LobbyFrame::data.isRunning = true;
-			}
-			else
-			{
-				countDown.start();
-				LobbyFrame::data.remainingTime = maxTimer;
-				LobbyFrame::data.isRunning = true;
-				UpdateWithRemainingTime();
+				base::ClientLobbyAdminTimer timerMsg;
+				timerMsg.set_time(maxTimer);
+				const std::string serMsg = timerMsg.SerializeAsString();
+
+				app->client->SendData(Client_LobbyAdminTimer, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
 			}
 		}
 	}
@@ -463,7 +465,6 @@ LobbyFrame::LobbyFrame(QMainWindow* parent) : StateFrame(parent)
 
 
 			adminWidget = new AdminWidget(this);
-
 			horizontal_layout->addWidget(adminWidget, 4, Qt::AlignTop | Qt::AlignLeft);
 
 
@@ -473,8 +474,10 @@ LobbyFrame::LobbyFrame(QMainWindow* parent) : StateFrame(parent)
 		gamesContent = new ContentWidget(this);
 		vertical_layout->addWidget(gamesContent, 25);
 	}
+
 	this->setLayout(vertical_layout);
 	parent->setCentralWidget(this);
+
 
 	UpdateFromData();
 }
@@ -556,4 +559,11 @@ void LobbyFrame::UpdateFromData()
 	adminWidget->UpdateFromData();
 }
 
-
+void LobbyFrame::SetTimer(float timer)
+{
+	timerCache = timer;
+	SafeAsyncUI([](MainWindow* wnd) {
+		LobbyFrame* frame = (LobbyFrame*)wnd->stateWidget;
+		frame->adminWidget->SetTimer(frame->timerCache);
+	});
+}

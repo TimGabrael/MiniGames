@@ -104,15 +104,8 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
 
     LoadAllPlugins();
 
-    auto& pl = GetPlugins();
-    //if (!pl.empty()) {
-    //    PluginFrame::activePlugin = pl.at(0);
-    //    SetState(MAIN_WINDOW_STATE::STATE_PLUGIN);
-    //}
-    //else
-    {
-        SetState(MAIN_WINDOW_STATE::STATE_MENU);  
-    }
+    SetState(MAIN_WINDOW_STATE::STATE_MENU);  
+    
 }
 
 MainWindow::~MainWindow()

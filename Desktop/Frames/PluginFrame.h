@@ -16,5 +16,6 @@ public:
 	
 
 	static PluginClass* activePlugin;
+	static uint16_t activePluginID;
 private:
 };

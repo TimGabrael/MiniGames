@@ -657,17 +657,62 @@ static bool __stdcall ClientLobbyVotePacketCallback(ServerData* s, ServerConnect
 	vote->Clear();
 	return true;
 }
+
+static void StartHighestPlugin(ServerData* s)
+{
+	std::string serMsg;
+	if (s->lobbyData.votes.size() > 0)
+	{
+		// Get most voted plugin ID
+		std::unordered_map<uint16_t, uint16_t> votes;
+		for (int i = 0; i < s->lobbyData.votes.size(); i++)
+		{
+			votes[s->lobbyData.votes.at(i).pluginID]++;
+		}
+		auto val = std::max_element(votes.begin(), votes.end(), [](const std::pair<uint16_t, uint16_t>& f, const std::pair<uint16_t, uint16_t>& s) {
+			return f.second < s.second;
+			});
+
+		base::ServerSetState state;
+		state.set_plugin_id(val->first);
+		state.set_state((int32_t)AppState::PLUGIN);
+		serMsg = state.SerializeAsString();
+	}
+	else
+	{
+
+		base::ServerSetState state;
+		state.set_plugin_id(0);
+		state.set_state((int32_t)AppState::PLUGIN);
+		serMsg = state.SerializeAsString();
+	}
+
+	// IMPORTANT TODO: SET THE SERVER PLUGIN IN HERE
+	// OTHERWISE THE CLIENTS WILL BE SEND BACK TO THE LOBBY SCREEN IMMEDIATLY
+	// s->activePluingID = 0;
+	// s->info.plugin = (ServerPlugin*)10;
+
+
+
+	for (uint16_t i = 0; i < MAX_PLAYERS; i++)
+	{
+		ServerConnection* conn = s->info.net->GetConnection(i);
+		if (conn)
+		{
+			s->info.net->SendData(conn, Server_SetState, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
+		}
+	}
+}
 static bool __stdcall ClientLobbyAdminTimerPacketCallback(ServerData* s, ServerConnection* client, base::ClientLobbyAdminTimer* timer, int size)
 {
 	if (s->info.net->CheckConnectionStateAndSend(client) && client->isAdmin)
 	{
 		assert(serverData != nullptr);
-
 		float time = std::min(timer->time(), 120.0f);// max time 120.0f
 		if (time > 0.0f)
 		{
-			s->lobbyData.timerRunning = true;
 			s->lobbyData.timer = time;
+			s->lobbyData.timerRunning = true;
 			base::ServerLobbyTimer response;
 			response.set_time(time);
 			const std::string serMsg = response.SerializeAsString();
@@ -682,44 +727,7 @@ static bool __stdcall ClientLobbyAdminTimerPacketCallback(ServerData* s, ServerC
 		}
 		else
 		{
-			std::string serMsg;
-			if (s->lobbyData.votes.size() > 0)
-			{
-				// Get most voted plugin ID
-				std::unordered_map<uint16_t, uint16_t> votes;
-				for (int i = 0; i < s->lobbyData.votes.size(); i++)
-				{
-					votes[s->lobbyData.votes.at(i).pluginID]++;
-				}
-				auto val = std::max_element(votes.begin(), votes.end(), [](const std::pair<uint16_t, uint16_t>& f, const std::pair<uint16_t, uint16_t>& s) {
-					return f.second < s.second;
-				});
-				
-				printf("Most voted Plugin/numVotes: %d %d\n", val->first, val->second);
-
-				base::ServerSetState state;
-				state.set_plugin_id(val->first);
-				state.set_state((int32_t)AppState::PLUGIN);
-				serMsg = state.SerializeAsString();
-			}
-			else
-			{
-				
-				base::ServerSetState state;
-				state.set_plugin_id(0);
-				state.set_state((int32_t)AppState::PLUGIN);
-				serMsg = state.SerializeAsString();
-			}
-
-			for (uint16_t i = 0; i < MAX_PLAYERS; i++)
-			{
-				ServerConnection* conn = s->info.net->GetConnection(i);
-				if (conn)
-				{
-					s->info.net->SendData(conn, Server_SetState, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
-				}
-			}
-
+			StartHighestPlugin(s);
 		}
 	}
 	timer->Clear();
@@ -771,9 +779,28 @@ void ServerData::SetLobbyState()
 	info.net->SetClientStateCallback((ServerClientStateChangeCallbackFunction)LobbyClientStateChangeCallback);
 	info.net->SetJoinCallback((ServerJoinCallbackFunction)LobbyJoinCallback);
 	info.net->SetDisconnectCallback((ServerDisconnectCallbackFunction)LobbyDisconnectCallback);
+
 }
 void ServerData::Update(float dt)
 {
 	info.net->Poll();
 	NetRunCallbacks();
+
+	if (info.plugin)
+	{
+
+	}
+	else
+	{
+		if (lobbyData.timerRunning)
+		{
+			lobbyData.timer = std::max(lobbyData.timer - dt, 0.0f);
+			if (lobbyData.timer == 0.0f)
+			{
+				lobbyData.timerRunning = false;
+				StartHighestPlugin(this);
+			}
+		}
+	}
+
 }

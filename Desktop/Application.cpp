@@ -4,6 +4,8 @@
 #include "CustomWidgets/InfoPopup.h"
 #include "Frames/LobbyFrame.h"
 #include "util/FileStorage.h"
+#include "util/PluginLoader.h"
+#include "Frames/PluginFrame.h"
 
 static void NetworkPollFunction(MainApplication* app)
 {
@@ -95,17 +97,46 @@ static void __stdcall NetDisconnectCallback(ApplicationData* c, ClientConnection
 }
 static bool __stdcall NetSetStateCallback(ApplicationData* c, base::ServerSetState* state, int packetSize)
 {
-	if (state->has_plugin_id())
+	MainApplication* app = MainApplication::GetInstance();
+	uint16_t pluginID = state->has_plugin_id() ? state->plugin_id() : INVALID_ID;
+	if (pluginID != INVALID_ID)
 	{
-
+		const std::vector<PluginClass*>& pls = GetPlugins();
+		for (int i = 0; i < app->serverPlugins.size(); i++)
+		{
+			const PluginInfo& plInfo = app->serverPlugins.at(i);
+			if (plInfo.sessionID == state->plugin_id())
+			{
+				for (int j = 0; j < pls.size(); j++)
+				{
+					PLUGIN_INFO info = pls.at(j)->GetPluginInfos();
+					std::string infoStr(info.ID, 19);
+					if (infoStr == plInfo.id)
+					{
+						PluginFrame::activePlugin = pls.at(j);
+						PluginFrame::activePluginID = plInfo.sessionID;
+						SafeAsyncUI([](MainWindow* wnd) {
+							MainApplication* app = MainApplication::GetInstance();
+							app->mainWindow->SetState(MAIN_WINDOW_STATE::STATE_PLUGIN);
+		
+							base::ClientState response;
+							response.set_state((int32_t)AppState::PLUGIN);
+							response.set_plugin_session_id(PluginFrame::activePluginID);
+							std::string serMsg = response.SerializeAsString();
+							app->client->SendData(Client_State, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
+						});
+						break;
+					}
+				}
+				break;
+			}
+		}
 	}
 	else
 	{
 		if (state->state() == (int32_t)AppState::LOBBY)
 		{
-			MainApplication* app = MainApplication::GetInstance();
 			SafeAsyncUI([](MainWindow* wnd) {
-
 				MainApplication* app = MainApplication::GetInstance();
 				wnd->SetState(MAIN_WINDOW_STATE::STATE_LOBBY);
 				app->SetNetworkingLobbyState();
@@ -208,8 +239,8 @@ static bool __stdcall NetLobbyTimerCallback(ApplicationData* c, base::ServerLobb
 {
 	MainApplication* app = MainApplication::GetInstance();
 	
-	LobbyFrame::data.isRunning = true;
-	LobbyFrame::data.remainingTime = timer->time();
+	LobbyFrame* frame = (LobbyFrame*)app->mainWindow->stateWidget;
+	frame->SetTimer(timer->time());
 
 	return true;
 }

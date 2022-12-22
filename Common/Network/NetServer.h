@@ -88,8 +88,8 @@ struct ServerData
 	struct LobbyData
 	{
 		std::vector<ClientVoteData> votes;
-		float timer;
-		bool timerRunning;
+		float timer = 0.0f;
+		bool timerRunning = false;
 	}lobbyData;
 
 	float updateInterval = 0.0f;
