@@ -248,17 +248,14 @@ static bool __stdcall NetLobbyTimerCallback(ApplicationData* c, base::ServerLobb
 
 void MainApplication::SetNetworkingLobbyState()
 {
-	MainApplication* app = MainApplication::GetInstance();
-
-	app->client->SetLobbyDeserializers();
-	app->client->SetCallback((ClientPacketFunction)NetLobbyVoteCallback, Server_LobbyVote);
-	app->client->SetCallback((ClientPacketFunction)NetLobbyTimerCallback, Server_LobbyTimer);
+	client->SetLobbyDeserializers();
+	client->SetCallback((ClientPacketFunction)NetLobbyVoteCallback, Server_LobbyVote);
+	client->SetCallback((ClientPacketFunction)NetLobbyTimerCallback, Server_LobbyTimer);
 
 	base::ClientState response;
 	response.set_state((int32_t)AppState::LOBBY);
 	std::string serMsg = response.SerializeAsString();
-	app->client->SendData(Client_State, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
+	client->SendData(Client_State, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
 
-	
 
 }

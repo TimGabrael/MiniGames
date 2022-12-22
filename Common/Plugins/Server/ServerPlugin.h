@@ -1,5 +1,13 @@
 #pragma once
 #include "Network/NetworkBase.h"
+#ifdef _WIN32
+#define EXPORT __declspec(dllexport)
+#elif defined(EMSCRIPTEN)
+#include "emscripten.h"
+#define EXPORT EMSCRIPTEN_KEEPALIVE
+#else
+#define EXPORT 
+#endif
 
 struct SERVER_PLUGIN_INFO
 {
@@ -21,4 +29,4 @@ struct ServerPlugin
 };
 
 #define SERVER_PLUGIN_EXPORTS() extern "C" EXPORT ServerPlugin* GetServerPlugin()
-#define SERVER_PLUGIN_EXPORT_DEFINITION(PlugClass, _ID, dt, allow) extern "C" EXPORT ServerPlugin* GetServerPlugin(){ return new ServerPlugin(); }
+#define SERVER_PLUGIN_EXPORT_DEFINITION(PlugClass) extern "C" EXPORT ServerPlugin* GetServerPlugin(){ return new PlugClass(); }

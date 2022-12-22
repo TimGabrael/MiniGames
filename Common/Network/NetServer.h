@@ -92,6 +92,15 @@ struct ServerData
 		bool timerRunning = false;
 	}lobbyData;
 
-	float updateInterval = 0.0f;
+	struct Plugin
+	{
+		ServerPlugin* pl = nullptr;
+		std::string id;
+		uint16_t pluginID = 0xFFFF;
+	};
+
+	std::vector<Plugin> plugins;
+
+	float updateInterval_ms = 1.0f;
 	uint16_t activePluingID = 0xFFFF;
 };

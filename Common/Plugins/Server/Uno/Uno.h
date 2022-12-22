@@ -33,3 +33,5 @@ struct Uno : public ServerPlugin
 
 	UnoData* data = nullptr;
 };
+
+SERVER_PLUGIN_EXPORTS();

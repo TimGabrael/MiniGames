@@ -1,6 +1,24 @@
 #include "NetServer.h"
+#include <filesystem>
 #include "NetCommon.h"
 #include <unordered_map>
+
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#define DYNAMIC_LIBRARY_EXTENSION ".dll"
+#define LOAD(file) (void*)LoadLibraryA(file)
+#define SYM(handle, procName) (void*)GetProcAddress((HMODULE)handle, procName)
+#define FREE(handle) FreeLibrary((HMODULE)handle);
+#else
+#include <dlfcn.h>
+#define DYNAMIC_LIBRARY_EXTENSION ".so"
+#define LOAD(file) dlopen(file, RTLD_NOW)
+#define SYM(handle, procName) dlsym((void*)handle, procName)
+#define FREE(handle) dlclose((void*)handle)
+#endif
+
+
 
 
 static void* __stdcall JoinDeserializer(char* packet, int size)
@@ -401,10 +419,14 @@ bool NetServer::ClientJoinPacketCallback(ServerData* s, ServerConnection* client
 		// Send Available Plugins
 		{
 			base::ServerPlugin pluginData;
-			pluginData.mutable_data()->set_id("a3fV-6giK-10Eb-2rdT");
-			pluginData.mutable_data()->set_session_id(0);
-			std::string serMsg = pluginData.SerializeAsString();
-			s->info.net->SendData(client, Server_Plugin, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
+			for (int i = 0; i < s->plugins.size(); i++)
+			{
+				ServerData::Plugin& p = s->plugins.at(i);
+				pluginData.mutable_data()->set_id(p.id);
+				pluginData.mutable_data()->set_session_id(p.pluginID);
+				std::string serMsg = pluginData.SerializeAsString();
+				s->info.net->SendData(client, Server_Plugin, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
+			}
 		}
 
 		// Send New Client Info To All Connected Clients
@@ -660,6 +682,8 @@ static bool __stdcall ClientLobbyVotePacketCallback(ServerData* s, ServerConnect
 
 static void StartHighestPlugin(ServerData* s)
 {
+	if (s->plugins.size() == 0) return;
+
 	std::string serMsg;
 	if (s->lobbyData.votes.size() > 0)
 	{
@@ -673,6 +697,7 @@ static void StartHighestPlugin(ServerData* s)
 			return f.second < s.second;
 			});
 
+		s->activePluingID = val->first;
 		base::ServerSetState state;
 		state.set_plugin_id(val->first);
 		state.set_state((int32_t)AppState::PLUGIN);
@@ -681,18 +706,19 @@ static void StartHighestPlugin(ServerData* s)
 	else
 	{
 
+		s->activePluingID = rand() % s->plugins.size();
 		base::ServerSetState state;
-		state.set_plugin_id(0);
+		state.set_plugin_id(s->activePluingID);
 		state.set_state((int32_t)AppState::PLUGIN);
 		serMsg = state.SerializeAsString();
 	}
 
-	// IMPORTANT TODO: SET THE SERVER PLUGIN IN HERE
+	// SET THE SERVER PLUGIN IN HERE
 	// OTHERWISE THE CLIENTS WILL BE SEND BACK TO THE LOBBY SCREEN IMMEDIATLY
-	// s->activePluingID = 0;
-	// s->info.plugin = (ServerPlugin*)10;
-
-
+	if (s->activePluingID != INVALID_ID)
+	{
+		s->info.plugin = s->plugins.at(s->activePluingID).pl;
+	}
 
 	for (uint16_t i = 0; i < MAX_PLAYERS; i++)
 	{
@@ -760,6 +786,38 @@ static void __stdcall LobbyClientStateChangeCallback(ServerData* s, ServerConnec
 }
 ServerData::ServerData(const char* ip, uint32_t port)
 {
+	typedef ServerPlugin* (*PluginCreateFunction)();
+	uint16_t curplugID = 0;
+	std::filesystem::path pluginPath("ServerPlugins");
+	std::filesystem::directory_iterator iter(pluginPath);
+	for (auto& f : iter)
+	{
+		if (f.is_regular_file() && f.path().has_extension() && f.path().extension() == DYNAMIC_LIBRARY_EXTENSION) {
+			std::string file = f.path().string();
+			void* outModule = LoadLibraryA(file.c_str());
+			if (outModule)
+			{
+				PluginCreateFunction plugFunc = (PluginCreateFunction)SYM(outModule, "GetServerPlugin");
+				if (plugFunc)
+				{
+					ServerPlugin* pl = plugFunc();
+					SERVER_PLUGIN_INFO data = pl->GetInfo();
+					ServerData::Plugin infos;
+					infos.pl = pl;
+					infos.id = std::string(data.ID, 19);
+					infos.pluginID = curplugID;
+					this->plugins.push_back(infos);
+					curplugID++;
+				}
+				else
+				{
+					FREE(outModule);
+				}
+			}
+		}
+	}
+
+
 	info.net = NetServer::Create(ip, port);
 	info.net->data = this;
 	SetLobbyState();

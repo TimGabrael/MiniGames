@@ -1,5 +1,8 @@
 #include "Uno.h"
 
+SERVER_PLUGIN_EXPORT_DEFINITION(Uno);
+
+
 void Uno::Initialize(NetServerInfo* s)
 {
 	
@@ -7,6 +10,7 @@ void Uno::Initialize(NetServerInfo* s)
 
 void Uno::Update(float dt)
 {
+
 }
 
 SERVER_PLUGIN_INFO Uno::GetInfo() const
