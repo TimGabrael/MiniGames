@@ -1,8 +1,6 @@
 #include "FileStorage.h"
 #include <fstream>
-#include <string>
 #include <sstream>
-
 
 
 bool IniFile::LoadFile(const char* fileName)

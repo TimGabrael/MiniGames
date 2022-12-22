@@ -1,7 +1,7 @@
 #pragma once
 #include <qapplication>
 #include "CommonCollection.h"
-#include "Plugins/PluginCommon.h"
+#include "Plugins/Client/PluginCommon.h"
 #include "Network/NetClient.h"
 #include <thread>
 #undef max

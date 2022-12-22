@@ -1,6 +1,6 @@
 #include "NetClient.h"
 #include "NetCommon.h"
-#include "Plugins/PluginCommon.h"
+#include "Plugins/CLient/PluginCommon.h"
 
 static void* __stdcall ClientInfoDeserializer(char* packet, int size)
 {

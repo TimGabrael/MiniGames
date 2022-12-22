@@ -12,10 +12,13 @@
 #include "Graphics/BloomRendering.h"
 #include "imgui.h"
 
+
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-PLUGIN_EXPORT_DEFINITION(UnoPlugin, "a3fV-6giK-10Eb-2rdT", "Assets/Uno.png");
+
+
+PLUGIN_EXPORT_DEFINITION(UnoPlugin, UNO_PLUGIN_ID, "Assets/Uno.png");
 #define SHADOW_TEXTURE_SIZE 2048 * 4
 
 

@@ -7,6 +7,7 @@
 #include "../InputStates.h"
 #include "Animator.h"
 #include "Pointer.h"
+#include "Plugins/Shared/Uno/UnoBase.h"
 
 struct PlayerInfo
 {
@@ -86,8 +87,6 @@ public:
 
 UnoPlugin* GetInstance();
 GameStateData* GetGameState();
-void SendNetworkData(uint32_t packetID, uint32_t group, uint16_t additionalFlags, uint16_t clientID, size_t size, const void* data);
-void SendNetworkData(uint32_t packetID, uint32_t group, uint16_t additionalFlags, uint16_t clientID, const std::string& str);
 
 
 PLUGIN_EXPORTS();

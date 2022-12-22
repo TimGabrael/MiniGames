@@ -1,5 +1,4 @@
 #include "PluginWidget.h"
-#include "Plugins/PluginCommon.h"
 #include <iostream>
 #include <qevent.h>
 #include <qtimer.h>

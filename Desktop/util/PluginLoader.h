@@ -1,5 +1,5 @@
 #pragma once
-#include "Plugins/PluginCommon.h"
+#include "Plugins/Client/PluginCommon.h"
 #include <vector>
 
 void LoadAllPlugins();

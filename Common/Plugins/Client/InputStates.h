@@ -1,6 +1,6 @@
 #pragma once
 #include "PluginCommon.h"
-#include "../logging.h"
+#include "../../logging.h"
 
 struct InputButton
 {
