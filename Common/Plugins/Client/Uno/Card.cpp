@@ -888,23 +888,28 @@ void CardHand::Update(CardStack& stack, CardsInAnimation& anim, ColorPicker& pic
 	}
 	UnoPlugin* instance = GetInstance();
 	GameStateData* state = GetGameState();
-	if (instance->g_objs->localPlayerIndex == state->playerInTurn && state->isChoosingColor)
+
+	PlayerInfo* localPlayer = state->GetLocalPlayer();
+	if (localPlayer)
 	{
-		COLOR_ID id = picker.GetSelected(p.x, p.y, cam.screenX, cam.screenY, p.Pressed(), p.Released());
-		if (id != COLOR_INVALID)
+		if (localPlayer->id == state->playerInTurn && state->isChoosingColor)
 		{
-			choosenCardColor = id;
-			stack.blackColorID = id;
-			state->isChoosingColor = false;
-			state->playerInTurn = (state->playerInTurn + 1) % state->players.size();
-			
+			COLOR_ID id = picker.GetSelected(p.x, p.y, cam.screenX, cam.screenY, p.Pressed(), p.Released());
+			if (id != COLOR_INVALID)
+			{
+				choosenCardColor = id;
+				stack.blackColorID = id;
+				state->isChoosingColor = false;
+				state->playerInTurn = (state->playerInTurn + 1) % state->players.size();
+
+			}
 		}
-	}
-	else if (allowInput)
-	{
-		if (wasReleased && oldMouseSelectedCard == hitIdx && hitIdx != -1)
+		else if (allowInput)
 		{
-			PlayCard(stack, anim, oldMouseSelectedCard);
+			if (wasReleased && oldMouseSelectedCard == hitIdx && hitIdx != -1)
+			{
+				PlayCard(stack, anim, oldMouseSelectedCard);
+			}
 		}
 	}
 

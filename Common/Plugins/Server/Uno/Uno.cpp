@@ -88,6 +88,7 @@ static bool __stdcall UnoPlayCardCallback(NetServerInfo* info, ServerConnection*
 					if (IsCardPlayable(uno->data->topCard, c))
 					{
 						uno->data->topCard = c;
+						uno->data->playerInTurn = (uno->data->playerInTurn + 1) % uno->data->playerData.size();
 						uno::ServerPlayCard play;
 						play.set_client_id(client->id);
 						play.mutable_card()->set_face(face);
@@ -118,7 +119,7 @@ static bool __stdcall UnoPlayCardCallback(NetServerInfo* info, ServerConnection*
 static bool __stdcall UnoPullCardsCallback(NetServerInfo* info, ServerConnection* client, void* pull, int packetSize)
 {
 	Uno* uno = (Uno*)info->plugin;
-	if (uno->data->accumulatedPull > 0 && uno->data->playerInTurn == client->id)
+	if (uno->data->playerInTurn == client->id)
 	{
 		
 	}

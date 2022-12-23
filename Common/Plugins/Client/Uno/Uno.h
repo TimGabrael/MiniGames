@@ -40,6 +40,9 @@ struct GameStateData
 	PlayerInfo* GetPlayerInfoForcefully(uint16_t id);
 	CardHand* GetHand(uint16_t id) { for (int i = 0; i < hands->size(); i++) { if (hands->at(i).handID == id) return &hands->at(i); } return nullptr; }
 	CardHand* GetHandForcefully(uint16_t id);
+
+	PlayerInfo* GetLocalPlayer();
+	CardHand* GetLocalPlayerHand();
 };
 
 
@@ -70,7 +73,6 @@ struct UnoGlobals
 	int offscreenX = 0;
 	int offscreenY = 0;
 	float cardHandlingTimer = 0.0f;
-	uint32_t localPlayerIndex = 0;
 };
 
 

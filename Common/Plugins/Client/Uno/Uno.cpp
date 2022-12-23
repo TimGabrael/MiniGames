@@ -63,18 +63,20 @@ PlayerInfo* GameStateData::GetPlayerInfoForcefully(uint16_t id)
 		for (int i = 0; i < uno->backendData->players.size(); i++)
 		{
 			if (uno->backendData->players.at(i).clientID == id) {
-
 				adding.name = uno->backendData->players.at(i).name;
 				break;
 			}
 		}
 	}
+
 	players.push_back(adding);
 	std::sort(players.begin(), players.end(), [](const PlayerInfo& a, const PlayerInfo& b) { return a.id > b.id; });
+
 	return GetPlayerInfoForcefully(id);
 }
 CardHand* GameStateData::GetHandForcefully(uint16_t id)
 {
+	UnoPlugin* uno = GetInstance();
 	CardHand* h = GetHand(id);
 	if (h) return h;
 	hands->emplace_back(id);
@@ -89,9 +91,45 @@ CardHand* GameStateData::GetHandForcefully(uint16_t id)
 			}
 		}
 	}
+	
+	int frontIdx = 0;
+	for (int i = 0; i < players.size(); i++)
+	{
+		if (players.at(i).id == uno->backendData->localPlayer.clientID)
+		{
+			frontIdx = i;
+			break;
+		}
+	}
+
+	float dA = 360.0f / (float)players.size();
+	for (int i = 0; i < players.size(); i++)
+	{
+		int testIdx = (frontIdx + i) % players.size();
+		players.at(testIdx).hand->rotation = dA * i;
+	}
+	
+
 	return GetHandForcefully(id);
 }
-
+PlayerInfo* GameStateData::GetLocalPlayer()
+{
+	UnoPlugin* uno = GetInstance();
+	for (int i = 0; i < players.size(); i++)
+	{
+		if (players.at(i).id == uno->backendData->localPlayer.clientID) return &players.at(i);
+	}
+	return nullptr;
+}
+CardHand* GameStateData::GetLocalPlayerHand()
+{
+	UnoPlugin* uno = GetInstance();
+	for (int i = 0; i < hands->size(); i++)
+	{
+		if (hands->at(i).handID == uno->backendData->localPlayer.clientID) return &hands->at(i);
+	}
+	return nullptr;
+}
 
 
 
@@ -100,14 +138,14 @@ CardHand* GameStateData::GetHandForcefully(uint16_t id)
 void GameUpdateFunction(UnoGlobals* g_objs, float dt)
 {
 	GameStateData& game = *GetGameState();
+	CardHand* localPlayer = game.GetLocalPlayerHand();
 
-	if (g_objs->localPlayerIndex < game.players.size())
+	if (localPlayer)
 	{
-		if (game.playerInTurn == g_objs->localPlayerIndex && g_objs->localPlayerIndex < game.players.size())
+		if (game.playerInTurn == localPlayer->handID)
 		{
-			CardHand* hand = game.players.at(g_objs->localPlayerIndex).hand;
-			hand->choosingCardColor = game.isChoosingColor;
-			hand->Update(g_objs->stack, g_objs->anims, g_objs->picker, g_objs->playerCam, g_objs->moveComp.mouseRay, g_objs->p, g_objs->anims.inputsAllowed);
+			localPlayer->choosingCardColor = game.isChoosingColor;
+			localPlayer->Update(g_objs->stack, g_objs->anims, g_objs->picker, g_objs->playerCam, g_objs->moveComp.mouseRay, g_objs->p, g_objs->anims.inputsAllowed);
 
 			if (game.isChoosingColor) {
 				g_objs->picker.Draw((float)g_objs->playerCam.screenX / (float)g_objs->playerCam.screenY, dt);
@@ -115,8 +153,13 @@ void GameUpdateFunction(UnoGlobals* g_objs, float dt)
 		}
 		else
 		{
-			Pointer p = g_objs->p;
-			game.players.at(g_objs->localPlayerIndex).hand->Update(g_objs->stack, g_objs->anims, g_objs->picker, g_objs->playerCam, g_objs->moveComp.mouseRay, p, g_objs->anims.list.empty());
+			Pointer p;
+			memset(&p, 0, sizeof(Pointer));
+			p.dx = g_objs->p.dx;
+			p.dy = g_objs->p.dy;
+			p.x = g_objs->p.x;
+			p.y = g_objs->p.y;
+			localPlayer->Update(g_objs->stack, g_objs->anims, g_objs->picker, g_objs->playerCam, g_objs->moveComp.mouseRay, p, g_objs->anims.list.empty());
 		}
 	}
 }
@@ -553,7 +596,6 @@ void UnoPlugin::KeyUpCallback(Key k, bool isRepeat)
 				else
 				{
 					const PlayerInfo* info = &game.players.at(i);
-					if (i == g_objs->localPlayerIndex) LOG("LOCAL_PLAYER:\n");
 					LOG("PLAYER: %s\n", info->name.c_str());
 					for (int j = 0; j < info->hand->cards.size(); j++)
 					{
@@ -566,7 +608,6 @@ void UnoPlugin::KeyUpCallback(Key k, bool isRepeat)
 			LOG("TOP_MOST_CARD: %d\n", g_objs->stack.GetTop(topColor));
 			LOG("TOP_MOST_COLOR: %d\n", topColor);
 			LOG("IS_CHOOSING_COLOR: %d\n", game.isChoosingColor);
-			LOG("LOCAL_PLAYER_INDEX: %d\n", g_objs->localPlayerIndex);
 		}
 	}
 #endif
