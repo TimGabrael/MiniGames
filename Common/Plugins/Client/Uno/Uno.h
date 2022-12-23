@@ -7,31 +7,54 @@
 #include "../InputStates.h"
 #include "Animator.h"
 #include "Pointer.h"
-#include "Plugins/Shared/Uno/UnoBase.h"
+
+
+
 
 struct PlayerInfo
 {
 	std::string name;
-	uint32_t id = 0;
+	uint16_t id = 0;
 	CardHand* hand = nullptr;
 };
 
-enum GAME_STATE : uint32_t
+enum GAME_STATE : uint8_t
 {
 	STATE_PENDING,
 	STATE_PLAYING,
 };
 
+struct GameStateData
+{
+	GameStateData() : topCard(CARD_UNKNOWN, CARD_COLOR_UNKOWN) {}
+	ColorPicker picker;
+	std::vector<PlayerInfo> players;
+	std::vector<CardHand>* hands;
+	CardData topCard;
+	uint16_t playerInTurn = 0xFFFF;
+	GAME_STATE state = STATE_PENDING;
+	bool isChoosingColor = false;
+	bool isClockwise = true;
+
+	PlayerInfo* GetPlayerInfo(uint16_t id) { for (int i = 0; i < players.size(); i++) { if (players.at(i).id == id) return &players.at(i); } return nullptr; }
+	PlayerInfo* GetPlayerInfoForcefully(uint16_t id);
+	CardHand* GetHand(uint16_t id) { for (int i = 0; i < hands->size(); i++) { if (hands->at(i).handID == id) return &hands->at(i); } return nullptr; }
+	CardHand* GetHandForcefully(uint16_t id);
+};
+
+
 struct UnoGlobals
 {
+	GameStateData game;
+
 	Camera playerCam;
 	OrthographicCamera shadowCam;
 	glm::vec3 lightDir;
 	MovementComponent moveComp;
 	SingleFBO reflectFBO;
 	SceneRenderData rendererData;
-	GLuint skybox;
-	GLuint refGroundTexture;
+	GLuint skybox = 0;
+	GLuint refGroundTexture = 0;
 	S3DCombinedBuffer platform;
 	std::vector<CardHand> hands;
 	MouseState ms;
@@ -41,22 +64,13 @@ struct UnoGlobals
 	CardDeck deck;
 	ColorPicker picker;
 
-	PScene UnoScene;
-	SceneObject* basePlatform;
-	CardSceneObject* cardRenderObject;
-	int offscreenX;
-	int offscreenY;
+	PScene UnoScene = nullptr;
+	SceneObject* basePlatform = nullptr;
+	CardSceneObject* cardRenderObject = nullptr;
+	int offscreenX = 0;
+	int offscreenY = 0;
 	float cardHandlingTimer = 0.0f;
 	uint32_t localPlayerIndex = 0;
-};
-struct GameStateData
-{
-	std::vector<PlayerInfo> players;
-	std::vector<CardHand>* hands;
-	int playerInTurn;
-	GAME_STATE state = STATE_PENDING;
-	bool isChoosingColor = false;
-	bool isClockwise = true;
 };
 
 
@@ -78,15 +92,13 @@ public:
 
 	virtual void CleanUp() override;
 
-	ApplicationData* backendData;	// AAssetManager* for android, else nullptr
+	ApplicationData* backendData;
 	UnoGlobals* g_objs;
 	bool initialized = false;
 
 };
 
-
 UnoPlugin* GetInstance();
 GameStateData* GetGameState();
-
 
 PLUGIN_EXPORTS();

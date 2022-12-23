@@ -12,7 +12,6 @@
 #include "Graphics/BloomRendering.h"
 #include "imgui.h"
 
-
 #define _USE_MATH_DEFINES
 #include <math.h>
 
@@ -33,8 +32,7 @@ void PrintGLMMatrix(const glm::mat4& m)
 		m[0][3], m[1][3], m[2][3], m[3][3]);
 }
 
-UnoPlugin* instance = nullptr;
-static GameStateData game;
+static UnoPlugin* instance = nullptr;
 
 UnoPlugin* GetInstance()
 {
@@ -42,149 +40,66 @@ UnoPlugin* GetInstance()
 }
 GameStateData* GetGameState()
 {
-	return &game;
+	return &instance->g_objs->game;
 }
 
 
-
-
-static int AddPlayer(const ClientData* added)
+PlayerInfo* GameStateData::GetPlayerInfoForcefully(uint16_t id)
 {
-	int pos = game.hands->size();
-	game.hands->push_back(added->clientID);
-	game.players.push_back({ added->name, added->clientID, nullptr });
-	const size_t num = game.players.size();
-	for (size_t i = 0; i < num; i++)
+	UnoPlugin* uno = GetInstance();
+	PlayerInfo* p = GetPlayerInfo(id);
+	if (p) return p;
+
+	PlayerInfo adding;
+	adding.hand = nullptr;
+	adding.id = id;
+
+	if (uno->backendData->localPlayer.clientID == id)
 	{
-		game.hands->at(i).rotation = i * 360.0f / (float)num;
-		game.hands->at(i).willBeSorted = false;
+		adding.name = uno->backendData->localPlayer.name;
 	}
-	for (int i = 0; i < game.players.size(); i++)
+	else
 	{
-		if (instance->backendData->localPlayer.clientID == game.players.at(i).id)
+		for (int i = 0; i < uno->backendData->players.size(); i++)
 		{
-			instance->g_objs->localPlayerIndex = i;
-		}
-		for (int j = 0; j < game.hands->size(); j++)
-		{
-			if (game.players.at(i).id == game.hands->at(j).handID)
-			{
-				game.players.at(i).hand = &game.hands->at(j);
+			if (uno->backendData->players.at(i).clientID == id) {
+
+				adding.name = uno->backendData->players.at(i).name;
 				break;
 			}
 		}
 	}
-	if (instance->g_objs->localPlayerIndex < game.players.size())
-	{
-		const float localPlayerRot = game.players.at(instance->g_objs->localPlayerIndex).hand->rotation;
-		for (int i = 0; i < game.hands->size(); i++)
-		{
-			game.hands->at(i).rotation -= localPlayerRot;
-		}
-		game.players.at(instance->g_objs->localPlayerIndex).hand->willBeSorted = true;	// only sort local player cards
-	}
-	return pos;
+	players.push_back(adding);
+	std::sort(players.begin(), players.end(), [](const PlayerInfo& a, const PlayerInfo& b) { return a.id > b.id; });
+	return GetPlayerInfoForcefully(id);
 }
-static void RemovePlayer(const ClientData* removed)
+CardHand* GameStateData::GetHandForcefully(uint16_t id)
 {
-	for (int i = 0; i < game.players.size(); i++)
+	CardHand* h = GetHand(id);
+	if (h) return h;
+	hands->emplace_back(id);
+	for (int i = 0; i < players.size(); i++)
 	{
-		if (game.players.at(i).id == removed->clientID) {
-			game.players.erase(game.players.begin() + i);
-			if (i < instance->g_objs->localPlayerIndex)
-			{
-				instance->g_objs->localPlayerIndex--;
-			}
-			break;
-		}
-	}
-	for (int i = 0; i < game.hands->size(); i++)
-	{
-		if (game.hands->at(i).handID == removed->clientID)
+		for (int j = 0; j < hands->size(); j++)
 		{
-			game.hands->erase(game.hands->begin() + i);
-			break;
-		}
-	}
-	for (int i = 0; i < game.players.size(); i++)
-	{
-		for (int j = 0; j < game.hands->size(); j++)
-		{
-			if (game.players.at(i).id == game.hands->at(j).handID)
+			if (players.at(i).id == hands->at(j).handID)
 			{
-				game.players.at(i).hand = &game.hands->at(j);
+				players.at(i).hand = &hands->at(j);
 				break;
 			}
 		}
 	}
+	return GetHandForcefully(id);
 }
 
 
 
-static std::vector<std::vector<CARD_ID>> pulled_card_list;
-struct PlayedCardData
-{
-	uint32_t playerIdx = -1;
-	CARD_ID  card = (CARD_ID)-1;
-}played_card_data;
-
-static void PullCardsAction(const char* data, size_t size)
-{
-	pulled_card_list.resize(game.players.size());
-	
-}
 
 
 
 void GameUpdateFunction(UnoGlobals* g_objs, float dt)
 {
-	static int curPulledPlayer = 0;
-	
-	for (int i = 0; i < pulled_card_list.size(); i++)
-	{
-		int actualIdx = (curPulledPlayer + i + 1) % pulled_card_list.size();
-		if (!pulled_card_list.at(actualIdx).empty())
-		{
- 			curPulledPlayer = actualIdx;
-			CARD_ID card = pulled_card_list.at(actualIdx).at(pulled_card_list.at(actualIdx).size() - 1);
-			int idx = g_objs->hands.at(actualIdx).AddTemp(g_objs->playerCam, card);
-			CardHand& h = g_objs->hands.at(actualIdx);
-			g_objs->anims.AddAnim(g_objs->stack, h.cards.at(idx), h.handID, CARD_ANIMATIONS::ANIM_FETCH_CARD);
-			pulled_card_list.at(actualIdx).pop_back();
-			break;
-		}
-	}
-	if (played_card_data.playerIdx  < game.players.size())
-	{
-		auto& hand = g_objs->hands.at(played_card_data.playerIdx);
-		int idx = -1;
-		for (int i = 0; i < hand.cards.size(); i++)
-		{
-			if (hand.cards.at(i).front == played_card_data.card)
-			{
-				idx = i;
-				break;
-			}
-		}
-		if (idx == -1)
-		{
-			idx = hand.cards.size();
-			if (idx == 0)
-			{
-				hand.Add(played_card_data.card);
-			}
-			else
-			{
-				hand.cards.at(0).front = played_card_data.card;
-				idx = 0;
-			}
-		}
-		g_objs->anims.AddAnim(g_objs->stack, hand.cards.at(idx), hand.handID, CARD_ANIMATIONS::ANIM_PLAY_CARD);
-		hand.cards.erase(hand.cards.begin() + idx);
-		played_card_data.playerIdx = -1;
-		played_card_data.card = (CARD_ID)-1;
-
-	}
+	GameStateData& game = *GetGameState();
 
 	if (g_objs->localPlayerIndex < game.players.size())
 	{
@@ -200,12 +115,7 @@ void GameUpdateFunction(UnoGlobals* g_objs, float dt)
 		}
 		else
 		{
-			Pointer p;
-			memset(&p, 0, sizeof(Pointer));
-			p.dx = g_objs->p.dx;
-			p.dy = g_objs->p.dy;
-			p.x = g_objs->p.x;
-			p.y = g_objs->p.y;
+			Pointer p = g_objs->p;
 			game.players.at(g_objs->localPlayerIndex).hand->Update(g_objs->stack, g_objs->anims, g_objs->picker, g_objs->playerCam, g_objs->moveComp.mouseRay, p, g_objs->anims.list.empty());
 		}
 	}
@@ -222,8 +132,68 @@ void GameUpdateFunction(UnoGlobals* g_objs, float dt)
 
 
 
+static void* __stdcall PlayCardDeserializer(char* packet, int packetSize)
+{
+	static uno::ServerPlayCard play;
+	if (play.ParseFromArray(packet, packetSize))  return &play;
+	return nullptr;
+}
+static void* __stdcall PullCardsDeserializer(char* packet, int packetSize)
+{
+	static uno::ServerPullCards pull;
+	if (pull.ParseFromArray(packet, packetSize)) return &pull;
+	return nullptr;
+}
 
+static bool __stdcall PlayCardCallback(ApplicationData* app, uno::ServerPlayCard* play, int packetSize)
+{
+	UnoPlugin* uno = GetInstance();
+	GameStateData* game = GetGameState();
+	uint16_t cID = play->client_id();
+	uint32_t face = play->card().face();
+	uint32_t color = play->card().color();
+	if (face <= CardFace::CARD_UNKNOWN && color <= CardColor::CARD_COLOR_UNKOWN)
+	{
+		CardData playing((CardFace)face, (CardColor)color);
+		CARD_ID outCard = CARD_ID::NUM_AVAILABLE_CARDS;
+		COLOR_ID outColor = COLOR_INVALID;
+		CardDataToRenderCard(playing, outCard, outColor);
+		if (cID == 0xFFFF)
+		{
+			// server plays the card
+			uno->g_objs->stack.SetTop(outCard, outColor);
+			game->playerInTurn = play->next_player_in_turn();
+		}
+		else
+		{
+			CardHand* hand = game->GetHandForcefully(cID);
+			hand->PlayCardServer(uno->g_objs->stack, uno->g_objs->anims, outCard, outColor);
+			game->playerInTurn = play->next_player_in_turn();
+		}
+		game->topCard = playing;
+	}
+	return true;
+}
+static bool __stdcall PullCardCallback(ApplicationData* app, uno::ServerPullCards* pull, int packetSize)
+{
+	GameStateData* game = GetGameState();
+	
+	for (const auto& p : pull->pulls())
+	{
+		PlayerInfo* info = game->GetPlayerInfoForcefully(p.client_id());
+		if (!info->hand) info->hand = game->GetHandForcefully(p.client_id());
 
+		for (const auto& c : p.cards())
+		{
+			CardData card((CardFace)c.face(), (CardColor)c.color());
+			CARD_ID addCard = CARD_ID_BLANK;
+			COLOR_ID temp = COLOR_INVALID;
+			CardDataToRenderCard(card, addCard, temp);
+			info->hand->Add(addCard);
+		}
+	}
+	return true;
+}
 
 
 #define ALLOW_FREEMOVEMENT
@@ -233,20 +203,33 @@ void UnoPlugin::Init(ApplicationData* data)
 	instance = this;
 	initialized = true;
 	this->backendData = data;
+	
+
+
+
+	data->net->SetDeserializer(PlayCardDeserializer, Server_UnoPlayCard);
+	data->net->SetDeserializer(PullCardsDeserializer, Server_UnoPullCards);
+	data->net->SetCallback((ClientPacketFunction)PlayCardCallback, Server_UnoPlayCard);
+	data->net->SetCallback((ClientPacketFunction)PullCardCallback, Server_UnoPullCards);
+
+
+
 
 	InitializeOpenGL(data->assetManager);
 	InitializeCardPipeline(data->assetManager);
 	ImGui::SetCurrentContext(data->imGuiCtx);
 
 
-	GLint tex;
-	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &tex);
-	LOG("MAX_TEXTURE_SIZE: %d\n", tex);
+	GLint maxTexSize = 0;
+	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTexSize);
+	LOG("MAX_TEXTURE_SIZE: %d\n", maxTexSize);
 
 
 	g_objs = new UnoGlobals;
 	g_objs->moveComp.pos = { 0.0f, 2.6f, 3.0f };
 	g_objs->moveComp.SetRotation(-90.0f, -50.0f, 0.0f);
+
+	GameStateData& game = *GetGameState();
 
 	game.hands = &g_objs->hands;
 
@@ -360,6 +343,8 @@ void UnoPlugin::Init(ApplicationData* data)
 #ifndef ANDROID
 	glEnable(GL_MULTISAMPLE);
 #endif
+
+
 }
 
 
@@ -379,135 +364,138 @@ void UnoPlugin::Resize(ApplicationData* data)
 	g_objs->rendererData.Recreate(sizeX, sizeY, SHADOW_TEXTURE_SIZE, SHADOW_TEXTURE_SIZE);
 	g_objs->rendererData.MakeMainFramebuffer();
 }
-static ColorPicker picker;
 void UnoPlugin::Render(ApplicationData* data)
 {
 	if (!(sizeX && sizeY)) return;
-
+	
+	GameStateData& game = *GetGameState();
+	
 	static auto prev = std::chrono::high_resolution_clock::now();
 	auto now = std::chrono::high_resolution_clock::now();
-
+	
 	float dt = std::chrono::duration<float>(now - prev).count();
 	prev = now;
-
+	
 	g_objs->moveComp.Update();
 	g_objs->playerCam.Update(&g_objs->moveComp);
-
-
+	
+	
 	auto& ray = g_objs->moveComp.mouseRay;
 	ray = g_objs->playerCam.ScreenToWorld(g_objs->p.x, g_objs->p.y);
-
-
-	if (game.state == STATE_PENDING)
+	
+	
+	//if (game.state == STATE_PENDING)
 	{
 		
 	}
-	else if (game.state == STATE_PLAYING)
+	//else if (game.state == STATE_PLAYING)
 	{
 		g_objs->cardHandlingTimer = 0.0f;
 		GameUpdateFunction(g_objs, dt);
 	}
 
-	{ // render all cards
-		ClearCards();
-		g_objs->deck.Draw();
-		g_objs->stack.Draw();
-		g_objs->anims.Update(g_objs->hands, g_objs->stack, dt);
 
-		for (int i = 0; i < g_objs->hands.size(); i++)
-		{
-			g_objs->hands.at(i).Draw(g_objs->playerCam);
+	// RENDER
+	{
+
+		{ // render all cards
+			ClearCards();
+			g_objs->deck.Draw();
+			g_objs->stack.Draw();
+			g_objs->anims.Update(g_objs->hands, g_objs->stack, dt);
+
+			for (int i = 0; i < g_objs->hands.size(); i++)
+			{
+				g_objs->hands.at(i).Draw(g_objs->playerCam);
+			}
+
 		}
 
+		BeginScene(g_objs->UnoScene);
+		StandardRenderPassData stdData;
+		stdData.skyBox = g_objs->skybox;
+		stdData.shadowMap = 0;
+		stdData.ambientOcclusionMap = 0;
+
+		glm::vec4 plane = { 0.0f, 1.0f, 0.0f, 0.0f };
+
+
+
+		glBindFramebuffer(GL_FRAMEBUFFER, g_objs->rendererData.shadowFBO.fbo);
+		glClearDepthf(1.0f);
+		glClear(GL_DEPTH_BUFFER_BIT);
+
+
+		RenderSceneCascadeShadow(g_objs->UnoScene, &g_objs->rendererData, &g_objs->playerCam, &g_objs->shadowCam, &light->data, { 0.0f, 0.0f }, { 1.0f, 1.0f }, 0.8f);
+
+		stdData.shadowMap = g_objs->rendererData.shadowFBO.depth;
+
+		glBindFramebuffer(GL_FRAMEBUFFER, g_objs->reflectFBO.fbo);
+		glViewport(0, 0, g_objs->offscreenX, g_objs->offscreenY);
+		glClearColor(1.0f, 0.4f, 0.4f, 1.0f);
+		glClearDepthf(1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		stdData.renderSize = { g_objs->offscreenX, g_objs->offscreenY };
+
+		Camera reflected = Camera::GetReflected(&g_objs->playerCam, plane);
+		{
+			glBindBuffer(GL_UNIFORM_BUFFER, g_objs->playerCam.uniform);
+			CameraData camData;
+			camData.camPos = reflected.pos;
+			camData.view = reflected.view;
+			camData.projection = reflected.perspective;
+			glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraData), &camData, GL_DYNAMIC_DRAW);
+		}
+		stdData.cameraUniform = g_objs->playerCam.uniform;
+		stdData.camView = &reflected.view;
+		stdData.camProj = &reflected.perspective;
+		stdData.camPos = &reflected.pos;
+		ReflectPlanePassData reflectData;
+		reflectData.base = &stdData;
+		reflectData.planeEquation = &plane;
+
+		RenderSceneReflectedOnPlane(g_objs->UnoScene, &reflectData);
+		{
+			glBindBuffer(GL_UNIFORM_BUFFER, g_objs->playerCam.uniform);
+			CameraData camData;
+			camData.camPos = g_objs->playerCam.pos;
+			camData.view = g_objs->playerCam.view;
+			camData.projection = g_objs->playerCam.perspective;
+
+			glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraData), &camData, GL_DYNAMIC_DRAW);
+		}
+		stdData.camView = &g_objs->playerCam.view;
+		stdData.camProj = &g_objs->playerCam.perspective;
+		stdData.camPos = &g_objs->playerCam.pos;
+
+		glm::ivec2 mainSize = GetMainFramebufferSize();
+		glBindFramebuffer(GL_FRAMEBUFFER, GetMainFramebuffer());
+		glViewport(0, 0, mainSize.x, mainSize.y);
+		glClearColor(1.0f, 0.4f, 0.4f, 1.0f);
+		glClearDepthf(1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		stdData.renderSize = { mainSize.x, mainSize.y };
+
+		RenderAmbientOcclusion(g_objs->UnoScene, &stdData, &g_objs->rendererData, sizeX, sizeY);
+		glBindFramebuffer(GL_FRAMEBUFFER, GetMainFramebuffer());
+		glViewport(0, 0, mainSize.x, mainSize.y);
+		RenderSceneStandard(g_objs->UnoScene, &stdData);
+
+
+
+		RenderPostProcessing(&g_objs->rendererData, GetScreenFramebuffer(), sizeX, sizeY);
+
+		DrawUI();
+
+
+
+		EndScene();
+
+		g_objs->ms.FrameEnd();
+		g_objs->p.EndFrame();
+		EndFrameAndResetData();
 	}
-
-
-
-	BeginScene(g_objs->UnoScene);
-	StandardRenderPassData stdData;
-	stdData.skyBox = g_objs->skybox;
-	stdData.shadowMap = 0;
-	stdData.ambientOcclusionMap = 0;
-
-	glm::vec4 plane = { 0.0f, 1.0f, 0.0f, 0.0f };
-
-
-	
-	glBindFramebuffer(GL_FRAMEBUFFER, g_objs->rendererData.shadowFBO.fbo);
-	glClearDepthf(1.0f);
-	glClear(GL_DEPTH_BUFFER_BIT);
-
-
-	RenderSceneCascadeShadow(g_objs->UnoScene, &g_objs->rendererData, &g_objs->playerCam, &g_objs->shadowCam, &light->data, { 0.0f, 0.0f }, { 1.0f, 1.0f }, 0.8f);
-	
-	stdData.shadowMap = g_objs->rendererData.shadowFBO.depth;
-
-	glBindFramebuffer(GL_FRAMEBUFFER, g_objs->reflectFBO.fbo);
-	glViewport(0, 0, g_objs->offscreenX, g_objs->offscreenY);
-	glClearColor(1.0f, 0.4f, 0.4f, 1.0f);
-	glClearDepthf(1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	stdData.renderSize = { g_objs->offscreenX, g_objs->offscreenY };
-
-	Camera reflected = Camera::GetReflected(&g_objs->playerCam, plane);
-	{
-		glBindBuffer(GL_UNIFORM_BUFFER, g_objs->playerCam.uniform);
-		CameraData camData;
-		camData.camPos = reflected.pos;
-		camData.view = reflected.view;
-		camData.projection = reflected.perspective;
-		glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraData), &camData, GL_DYNAMIC_DRAW);
-	}
-	stdData.cameraUniform = g_objs->playerCam.uniform;
-	stdData.camView = &reflected.view;
-	stdData.camProj = &reflected.perspective;
-	stdData.camPos = &reflected.pos;
-	ReflectPlanePassData reflectData;
-	reflectData.base = &stdData;
-	reflectData.planeEquation = &plane;
-
-	RenderSceneReflectedOnPlane(g_objs->UnoScene, &reflectData);
-	{
-		glBindBuffer(GL_UNIFORM_BUFFER, g_objs->playerCam.uniform);
-		CameraData camData;
-		camData.camPos = g_objs->playerCam.pos;
-		camData.view = g_objs->playerCam.view;
-		camData.projection = g_objs->playerCam.perspective;
-		
-		glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraData), &camData, GL_DYNAMIC_DRAW);
-	}
-	stdData.camView = &g_objs->playerCam.view;
-	stdData.camProj = &g_objs->playerCam.perspective;
-	stdData.camPos = &g_objs->playerCam.pos;
-	
-	glm::ivec2 mainSize = GetMainFramebufferSize();
-	glBindFramebuffer(GL_FRAMEBUFFER, GetMainFramebuffer());
-	glViewport(0, 0, mainSize.x, mainSize.y);
-	glClearColor(1.0f, 0.4f, 0.4f, 1.0f);
-	glClearDepthf(1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	
-	stdData.renderSize = { mainSize.x, mainSize.y };
-
-	RenderAmbientOcclusion(g_objs->UnoScene, &stdData, &g_objs->rendererData, sizeX, sizeY);
-	glBindFramebuffer(GL_FRAMEBUFFER, GetMainFramebuffer());
-	glViewport(0, 0, mainSize.x, mainSize.y);
-	RenderSceneStandard(g_objs->UnoScene, &stdData);
-
-
-
-	RenderPostProcessing(&g_objs->rendererData, GetScreenFramebuffer(), sizeX, sizeY);
-
-	DrawUI();
-	
-	
-	
-	EndScene();
-
-	g_objs->ms.FrameEnd();
-	g_objs->p.EndFrame();
-	EndFrameAndResetData();
-
 	
 }
 
@@ -538,12 +526,13 @@ void UnoPlugin::KeyDownCallback(Key k, bool isRepeat)
 	if (k == Key::Key_0) {
 		for (auto& h : g_objs->hands)
 		{
-			h.FetchCard(g_objs->playerCam, g_objs->stack, g_objs->deck, g_objs->anims);
+			h.PullCardServer(g_objs->playerCam, g_objs->stack, g_objs->deck, g_objs->anims, CARD_ID::CARD_ID_BLUE_2);
 		}
 	}
 }
 void UnoPlugin::KeyUpCallback(Key k, bool isRepeat)
 {
+	GameStateData& game = *GetGameState();
 #ifdef ALLOW_FREEMOVEMENT
 	if (!isRepeat)
 	{
@@ -607,9 +596,9 @@ void UnoPlugin::TouchMoveCallback(int x, int y, int dx, int dy, int touchID)
 void UnoPlugin::CleanUp()
 {
 	glDeleteTextures(1, &g_objs->skybox);
-	CleanUpOpenGL();
 	DestroySingleFBO(&g_objs->reflectFBO);
 	
+	CleanUpOpenGL();
 	delete g_objs;
 }
 

@@ -500,6 +500,7 @@ bool NetServer::ClientStatePacketCallback(ServerData* s, ServerConnection* clien
 		client->activePlugin = INVALID_ID;
 	}
 
+
 	if (s->info.net->stateCB && ((oldAppState != client->state) || (oldPlugin != client->activePlugin)))
 	{
 		s->info.net->stateCB((NetServerInfo*)s, client);
@@ -718,6 +719,7 @@ static void StartHighestPlugin(ServerData* s)
 	if (s->activePluingID != INVALID_ID)
 	{
 		s->info.plugin = s->plugins.at(s->activePluingID).pl;
+		s->info.plugin->Initialize((NetServerInfo*)&s->info);
 	}
 
 	for (uint16_t i = 0; i < MAX_PLAYERS; i++)

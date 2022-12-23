@@ -39,7 +39,7 @@ enum CardColor : uint8_t
 
 struct CardData
 {
-	CardData(CardFace f, CardColor c) : face(f), color(c) {}
+	constexpr CardData(CardFace f, CardColor c) : face(f), color(c) {}
 	CardFace face;
 	CardColor color;
 };
@@ -55,3 +55,22 @@ enum ServerUnoMessages
 	Server_UnoPullCards = NUM_SERVER_BASE_MESSAGES,
 	Server_UnoPlayCard,
 };
+
+
+static bool IsCardPlayable(CardData top, CardData play)
+{
+	if (play.color == CARD_COLOR_UNKOWN || play.face == CARD_UNKNOWN) return false;
+	if (top.face == CARD_CHOOSE_COLOR || top.face == CARD_PULL_4)
+	{
+		if (play.face == CARD_CHOOSE_COLOR || play.face == CARD_PULL_4) return false;
+		if (play.color != top.color) return false;
+	}
+	else
+	{
+		if (play.face != CARD_CHOOSE_COLOR && play.face != CARD_PULL_4)
+		{
+			if (top.color != play.color && top.face != play.face) return false;
+		}
+	}
+	return true;
+}

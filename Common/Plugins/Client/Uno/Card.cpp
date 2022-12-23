@@ -431,7 +431,7 @@ void DrawCards(const glm::mat4& proj, const glm::mat4& view, const glm::vec3& ca
 	glBindVertexArray(0);
 }
 
-bool HitTest(const glm::vec3& center, const glm::quat& rot, float scaleX, float scaleY, const glm::vec3& camPos, const glm::vec3& mouseRay)
+static bool HitTest(const glm::vec3& center, const glm::quat& rot, float scaleX, float scaleY, const glm::vec3& camPos, const glm::vec3& mouseRay)
 {
 	glm::vec3 normal = normalize(rot * glm::vec3(0.0f, 0.0f, 1.0f));
 	glm::vec3 tangent1 = rot * glm::vec3(1.0f, 0.0f, 0.0f);
@@ -463,64 +463,13 @@ bool HitTest(const glm::vec3& center, const glm::quat& rot, float scaleX, float 
 	return false;
 }
 
-// use exact order of website
-std::vector<CARD_ID> GenerateDeck()
-{
-	return {
-		CARD_ID::CARD_ID_RED_0, CARD_ID::CARD_ID_RED_1, CARD_ID::CARD_ID_RED_2, CARD_ID::CARD_ID_RED_3, CARD_ID::CARD_ID_RED_4, CARD_ID::CARD_ID_RED_5, CARD_ID::CARD_ID_RED_6, 
-		CARD_ID::CARD_ID_RED_7, CARD_ID::CARD_ID_RED_8, CARD_ID::CARD_ID_RED_9, CARD_ID::CARD_ID_RED_PAUSE, CARD_ID::CARD_ID_RED_SWAP, CARD_ID::CARD_ID_RED_ADD, CARD_ID::CARD_ID_CHOOSE_COLOR,
 
-		CARD_ID::CARD_ID_YELLOW_0, CARD_ID::CARD_ID_YELLOW_1, CARD_ID::CARD_ID_YELLOW_2, CARD_ID::CARD_ID_YELLOW_3, CARD_ID::CARD_ID_YELLOW_4, CARD_ID::CARD_ID_YELLOW_5, CARD_ID::CARD_ID_YELLOW_6,
-		CARD_ID::CARD_ID_YELLOW_7, CARD_ID::CARD_ID_YELLOW_8, CARD_ID::CARD_ID_YELLOW_9, CARD_ID::CARD_ID_YELLOW_PAUSE, CARD_ID::CARD_ID_YELLOW_SWAP, CARD_ID::CARD_ID_YELLOW_ADD, CARD_ID::CARD_ID_CHOOSE_COLOR,
-
-		CARD_ID::CARD_ID_BLUE_0, CARD_ID::CARD_ID_BLUE_1, CARD_ID::CARD_ID_BLUE_2, CARD_ID::CARD_ID_BLUE_3, CARD_ID::CARD_ID_BLUE_4, CARD_ID::CARD_ID_BLUE_5, CARD_ID::CARD_ID_BLUE_6,
-		CARD_ID::CARD_ID_BLUE_7, CARD_ID::CARD_ID_BLUE_8, CARD_ID::CARD_ID_BLUE_9, CARD_ID::CARD_ID_BLUE_PAUSE, CARD_ID::CARD_ID_BLUE_SWAP, CARD_ID::CARD_ID_BLUE_ADD, CARD_ID::CARD_ID_CHOOSE_COLOR,
-
-		CARD_ID::CARD_ID_GREEN_0, CARD_ID::CARD_ID_GREEN_1, CARD_ID::CARD_ID_GREEN_2, CARD_ID::CARD_ID_GREEN_3, CARD_ID::CARD_ID_GREEN_4, CARD_ID::CARD_ID_GREEN_5, CARD_ID::CARD_ID_GREEN_6,
-		CARD_ID::CARD_ID_GREEN_7, CARD_ID::CARD_ID_GREEN_8, CARD_ID::CARD_ID_GREEN_9, CARD_ID::CARD_ID_GREEN_PAUSE, CARD_ID::CARD_ID_GREEN_SWAP, CARD_ID::CARD_ID_GREEN_ADD, CARD_ID::CARD_ID_CHOOSE_COLOR,
-
-
-		CARD_ID::CARD_ID_RED_1, CARD_ID::CARD_ID_RED_2, CARD_ID::CARD_ID_RED_3, CARD_ID::CARD_ID_RED_4, CARD_ID::CARD_ID_RED_5, CARD_ID::CARD_ID_RED_6,
-		CARD_ID::CARD_ID_RED_7, CARD_ID::CARD_ID_RED_8, CARD_ID::CARD_ID_RED_9, CARD_ID::CARD_ID_RED_PAUSE, CARD_ID::CARD_ID_RED_SWAP, CARD_ID::CARD_ID_RED_ADD, CARD_ID::CARD_ID_ADD_4,
-
-		CARD_ID::CARD_ID_YELLOW_1, CARD_ID::CARD_ID_YELLOW_2, CARD_ID::CARD_ID_YELLOW_3, CARD_ID::CARD_ID_YELLOW_4, CARD_ID::CARD_ID_YELLOW_5, CARD_ID::CARD_ID_YELLOW_6,
-		CARD_ID::CARD_ID_YELLOW_7, CARD_ID::CARD_ID_YELLOW_8, CARD_ID::CARD_ID_YELLOW_9, CARD_ID::CARD_ID_YELLOW_PAUSE, CARD_ID::CARD_ID_YELLOW_SWAP, CARD_ID::CARD_ID_YELLOW_ADD, CARD_ID::CARD_ID_ADD_4,
-
-		CARD_ID::CARD_ID_BLUE_1, CARD_ID::CARD_ID_BLUE_2, CARD_ID::CARD_ID_BLUE_3, CARD_ID::CARD_ID_BLUE_4, CARD_ID::CARD_ID_BLUE_5, CARD_ID::CARD_ID_BLUE_6,
-		CARD_ID::CARD_ID_BLUE_7, CARD_ID::CARD_ID_BLUE_8, CARD_ID::CARD_ID_BLUE_9, CARD_ID::CARD_ID_BLUE_PAUSE, CARD_ID::CARD_ID_BLUE_SWAP, CARD_ID::CARD_ID_BLUE_ADD, CARD_ID::CARD_ID_ADD_4,
-
-		CARD_ID::CARD_ID_GREEN_1, CARD_ID::CARD_ID_GREEN_2, CARD_ID::CARD_ID_GREEN_3, CARD_ID::CARD_ID_GREEN_4, CARD_ID::CARD_ID_GREEN_5, CARD_ID::CARD_ID_GREEN_6,
-		CARD_ID::CARD_ID_GREEN_7, CARD_ID::CARD_ID_GREEN_8, CARD_ID::CARD_ID_GREEN_9, CARD_ID::CARD_ID_GREEN_PAUSE, CARD_ID::CARD_ID_GREEN_SWAP, CARD_ID::CARD_ID_GREEN_ADD, CARD_ID::CARD_ID_ADD_4,
-	};
-}
-
-bool CardSort(CARD_ID low, CARD_ID high)
+static bool CardSort(CARD_ID low, CARD_ID high)
 {
 	return low < high;
 }
 
 
-bool CardIsPlayable(CARD_ID topCard, CARD_ID playing, COLOR_ID colorRefrenceCard)
-{
-	if (topCard == CARD_ID::CARD_ID_BLANK || topCard == CARD_ID::CARD_ID_BLANK2) return true;
-
-	COLOR_ID colorIDTop = GetColorIDFromCardID(topCard);
-	COLOR_ID colorIDPlay = GetColorIDFromCardID(playing);
-
-	int numIDTop = topCard % 14;
-	int numIDPlay = playing % 14;
-
-	if (topCard == CARD_ID::CARD_ID_ADD_4 || topCard == CARD_ID::CARD_ID_CHOOSE_COLOR) {
-		if (colorRefrenceCard == colorIDPlay && colorIDPlay != COLOR_BLACK) return true;
-		return false;
-	}
-	else if (playing == CARD_ID::CARD_ID_ADD_4 || playing == CARD_ID::CARD_ID_CHOOSE_COLOR)
-	{
-		return true;
-	}
-
-	return ((colorIDTop == colorIDPlay) || (numIDTop == numIDPlay));
-}
 
 COLOR_ID GetColorIDFromCardID(CARD_ID id)
 {
@@ -683,14 +632,6 @@ void CardDeck::Draw()
 		RendererAddCard(CARD_ID_BLANK, CARD_ID_BLANK, glm::vec3(dx, i * dy, 0.0f), rotation, g_cardScale, g_cardScale);
 	}
 }
-CARD_ID CardDeck::PullCard()
-{
-	if (deck.empty()) deck = GenerateDeck();
-	int randIdx = rand() % deck.size();
-	CARD_ID res = deck.at(randIdx);
-	deck.erase(deck.begin() + randIdx);
-	return res;
-}
 
 void CardStack::Draw()
 {
@@ -803,7 +744,7 @@ void SetNextStateFromCardID(CARD_ID card)
 {
 	GameStateData* state = GetGameState();
 	uint32_t cur = (state->playerInTurn % state->players.size());
-	LOG("playing card: %d\n", card);
+	
 	if (card == CARD_ID_ADD_4 || card == CARD_ID_CHOOSE_COLOR)
 	{
 		state->isChoosingColor = true;
@@ -828,44 +769,84 @@ void SetNextStateFromCardID(CARD_ID card)
 void CardHand::PlayCard(const CardStack& stack, CardsInAnimation& anim, int cardIdx)
 {
 	COLOR_ID blackColRef;
-	CARD_ID top = stack.GetTop(blackColRef);
 	UnoPlugin* instance = GetInstance();
-	if (CardIsPlayable(top, cards.at(cardIdx).front, blackColRef))
+
+	if (cards.at(cardIdx).front == CARD_ID::CARD_ID_ADD_4 || cards.at(cardIdx).front == CARD_ID::CARD_ID_CHOOSE_COLOR)
 	{
-		GameStateData* state = GetGameState();
-		SetNextStateFromCardID(cards.at(cardIdx).front);
-		auto& c = cards.at(cardIdx);
-		CARD_ID card = c.front;
-		//if (instance->backendData->localPlayer.groupMask & ADMIN_GROUP_MASK)
-		//{
-		//	anim.AddAnim(stack, c, handID, CARD_ANIMATIONS::ANIM_PLAY_CARD);
-		//
-		//	if (c.front == CARD_ID::CARD_ID_ADD_4 || c.front == CARD_ID::CARD_ID_CHOOSE_COLOR)
-		//	{
-		//		this->choosingCardColor = true;
-		//	}
-		//	cards.erase(cards.begin() + cardIdx);
-		//	
-		//}
-		//else
-		//{
-		//
-		//}
+
 	}
 	else
 	{
+		CardData internalData = RenderCardToCardData(cards.at(cardIdx).front, COLOR_ID::COLOR_BLACK);
+		if (internalData.color != CARD_COLOR_UNKOWN && internalData.face != CARD_UNKNOWN)
+		{
+			if (IsCardPlayable(instance->g_objs->game.topCard, internalData))
+			{
+				cardIdxSendToServer = cardIdx;
+				uno::ClientPlayCard play;
+				play.mutable_card()->set_color(internalData.color);
+				play.mutable_card()->set_face(internalData.face);
+				const std::string serMsg = play.SerializeAsString();
+				instance->backendData->net->SendData(Client_UnoPlayCard, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
+			}
+		}
 	}
+
 	
 }
-void CardHand::FetchCard(const Camera& cam, const CardStack& stack, CardDeck& deck, CardsInAnimation& anim)
+void CardHand::PlayCardServer(const CardStack& stack, CardsInAnimation& anim, CARD_ID id, COLOR_ID col)
 {
 	UnoPlugin* instance = GetInstance();
-	//if (instance->backendData->localPlayer.groupMask & ADMIN_GROUP_MASK)
-	//{
-	//	CARD_ID card = instance->g_objs->deck.PullCard();
-	//	int idx = AddTemp(cam, card);
-	//	anim.AddAnim(stack, cards.at(idx), handID, CARD_ANIMATIONS::ANIM_FETCH_CARD);
-	//}
+	if (handID != instance->backendData->localPlayer.clientID)
+	{
+		if (cards.size() == 0)
+		{
+			this->Add(id);
+			GenTransformations(instance->g_objs->playerCam);
+		}
+		cards.at(0).front = id;
+		anim.AddAnim(stack, cards.at(0), handID, CARD_ANIMATIONS::ANIM_PLAY_CARD);
+		cards.erase(cards.begin());
+	}
+	else
+	{
+		if (cardIdxSendToServer >= 0 && cardIdxSendToServer < cards.size() && cards.at(cardIdxSendToServer).front == id)
+		{
+			anim.AddAnim(stack, cards.at(cardIdxSendToServer), handID, CARD_ANIMATIONS::ANIM_PLAY_CARD);
+			cards.erase(cards.begin() + cardIdxSendToServer);
+			cardIdxSendToServer = -1;	
+		}
+		else
+		{
+			int foundIdx = -1;
+			while (foundIdx < 0)
+			{
+				for (int i = 0; i < cards.size(); i++)
+				{
+					const auto& c = cards.at(i);
+					if (c.front == id) {
+						foundIdx = i;
+						break;
+					}
+				}
+				if (foundIdx < 0) {
+					Add(id);
+					GenTransformations(instance->g_objs->playerCam);
+				}
+			}
+
+			anim.AddAnim(stack, cards.at(foundIdx), handID, CARD_ANIMATIONS::ANIM_PLAY_CARD);
+			cards.erase(cards.begin() + foundIdx);
+			cardIdxSendToServer = -1;
+		}
+	}
+}
+
+void CardHand::PullCardServer(const Camera& cam, const CardStack& stack, CardDeck& deck, CardsInAnimation& anim, CARD_ID id)
+{
+	UnoPlugin* instance = GetInstance();
+	int idx = AddTemp(cam, id);
+	anim.AddAnim(stack, cards.at(idx), handID, CARD_ANIMATIONS::ANIM_FETCH_CARD);
 }
 void CardHand::Update(CardStack& stack, CardsInAnimation& anim, ColorPicker& picker, const Camera& cam, const glm::vec3& mouseRay, const Pointer& p, bool allowInput)
 {
@@ -916,7 +897,6 @@ void CardHand::Update(CardStack& stack, CardsInAnimation& anim, ColorPicker& pic
 			stack.blackColorID = id;
 			state->isChoosingColor = false;
 			state->playerInTurn = (state->playerInTurn + 1) % state->players.size();
-			// update the game state to go to the next player here!
 			
 		}
 	}
@@ -1172,4 +1152,54 @@ void CardsInAnimation::OnFinish(std::vector<CardHand>& hands, CardStack& stack, 
 	if (type == CARD_ANIMATIONS::ANIM_PLAY_CARD) {
 		stack.AddToStack(id, position, rotation);
 	}
+}
+
+
+#define CardTranslationRow(color, last)  CardData(CARD_VAL_0, color),CardData(CARD_VAL_1, color),CardData(CARD_VAL_2, color),CardData(CARD_VAL_3, color),CardData(CARD_VAL_4, color),CardData(CARD_VAL_5, color),\
+										 CardData(CARD_VAL_6, color),CardData(CARD_VAL_7, color),CardData(CARD_VAL_8, color),CardData(CARD_VAL_9, color),CardData(CARD_PAUSE, color),CardData(CARD_FLIP, color),CardData(CARD_PULL_2, color),CardData(last, CARD_COLOR_BLACK)
+
+static constexpr CardData translationTable[56] = {
+	CardTranslationRow(CARD_COLOR_RED, CARD_CHOOSE_COLOR),
+	CardTranslationRow(CARD_COLOR_YELLOW, CARD_PULL_4),
+	CardTranslationRow(CARD_COLOR_GREEN, CARD_UNKNOWN),
+	CardTranslationRow(CARD_COLOR_BLUE, CARD_UNKNOWN),
+};
+CardData RenderCardToCardData(CARD_ID id, COLOR_ID optionalColor)
+{
+	if (id >= NUM_AVAILABLE_CARDS) return CardData(CARD_UNKNOWN, CARD_COLOR_UNKOWN);
+
+	CardData out = translationTable[id];
+	if (out.color == COLOR_BLACK) {
+		if (out.face == CARD_UNKNOWN) out.color = CARD_COLOR_UNKOWN;
+		else out.color = (CardColor)optionalColor;
+	}
+
+	return out;
+}
+
+void CardDataToRenderCard(CardData in, CARD_ID& outID, COLOR_ID& outColor)
+{
+	for (int i = 0; i < sizeof(translationTable); i++)
+	{
+		if (translationTable[i].face == in.face)
+		{
+			if (in.face == CARD_CHOOSE_COLOR || in.face == CARD_PULL_4)
+			{
+				outID = (CARD_ID)i;
+				outColor = (COLOR_ID)in.color;
+				return;
+			}
+			else
+			{
+				if (translationTable[i].color == in.color) {
+					outID = (CARD_ID)i;
+					outColor = (COLOR_ID)translationTable[i].color;
+					return;
+				}
+			}
+		}
+	}
+
+	outID = CARD_ID::CARD_ID_BLANK;
+	outColor = COLOR_ID::COLOR_INVALID;
 }

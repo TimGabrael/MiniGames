@@ -6,6 +6,8 @@
 #include "Animator.h"
 #include "Pointer.h"
 #include "Graphics/Helper.h"
+#include "Plugins/Shared/Uno/UnoBase.h"
+
 
 static float g_cardScale = 0.3f;
 static constexpr float g_cardMinDiff = 0.35f;
@@ -74,25 +76,9 @@ CardSceneObject* CreateCardBatchSceneObject(PScene scene);
 
 void DrawCards(const glm::mat4& proj, const glm::mat4& view, const glm::vec3& camPos, const glm::vec3& lDir, bool geomOnly);
 
-bool HitTest(const glm::mat4& model, const glm::vec3& camPos, const glm::vec3& mouseRay);
-
-
-// The Deck consists of the official UNO deck specification, is stored IN ORDER, blank cards are not included
-// https://www.unorules.org/how-many-cards-in-uno/
-std::vector<CARD_ID> GenerateDeck();
-
-
-bool CardSort(CARD_ID low, CARD_ID high);
-
-// color refrence card is used for black cards, (user choice)
-bool CardIsPlayable(CARD_ID topCard, CARD_ID playing, COLOR_ID colorRefrenceCard);
-
 COLOR_ID GetColorIDFromCardID(CARD_ID id);
 uint32_t GetColorFromColorID(COLOR_ID id);
 uint32_t GetColorFromCardID(CARD_ID id);
-
-void SetNextStateFromCardID(CARD_ID card);
-
 
 struct ColorPicker
 {
@@ -131,9 +117,7 @@ struct CardDeck
 	static constexpr float dy = 0.003f;
 	static constexpr int numCards = 40;
 	static constexpr float topY = dy * numCards;
-	std::vector<CARD_ID> deck;
-	void Draw();
-	CARD_ID PullCard();
+	static void Draw();
 };
 struct CardStack
 {
@@ -164,6 +148,8 @@ struct CardHand
 	int currentAssignedAnimID = 1;
 	int mouseSelectedCard = -1;
 
+	int cardIdxSendToServer = -1;
+
 	int handID = 0;
 	float rotation = 0.0f;
 	
@@ -178,7 +164,8 @@ struct CardHand
 	// returns the index that the card got placed in
 	int AddTemp(const Camera& cam, CARD_ID id);
 	void PlayCard(const CardStack& stack, CardsInAnimation& anim, int cardIdx);
-	void FetchCard(const Camera& cam, const CardStack& stack, CardDeck& deck, CardsInAnimation& anim);
+	void PlayCardServer(const CardStack& stack, CardsInAnimation& anim, CARD_ID id, COLOR_ID col);
+	void PullCardServer(const Camera& cam, const CardStack& stack, CardDeck& deck, CardsInAnimation& anim, CARD_ID id);
 	void Update(CardStack& stack, CardsInAnimation& anim, ColorPicker& picker, const Camera& cam, const glm::vec3& mouseRay, const Pointer& p, bool allowInput);
 	void GenTransformations(const Camera& cam);
 	void Draw(const Camera& cam);
@@ -212,3 +199,5 @@ struct CardsInAnimation
 
 
 
+CardData RenderCardToCardData(CARD_ID id, COLOR_ID optionalColor);
+void CardDataToRenderCard(CardData in, CARD_ID& outID, COLOR_ID& outColor);

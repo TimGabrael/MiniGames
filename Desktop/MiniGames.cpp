@@ -159,13 +159,10 @@ void MainWindow::InternalSetState(MAIN_WINDOW_STATE state)
 {
     if (this->state == MAIN_WINDOW_STATE::STATE_PLUGIN && state != MAIN_WINDOW_STATE::STATE_PLUGIN)
     {        
-        if (state != MAIN_WINDOW_STATE::STATE_MENU)
-        {
-            MainApplication* app = MainApplication::GetInstance();
-            app->SetNetworkingLobbyState();
-            
-        }
         PluginFrame::activePlugin->CleanUp();
+        MainApplication* app = MainApplication::GetInstance();
+        app->SetNetworkingLobbyState();
+        app->StartNetworkThread();
     }
     this->state = state;
     switch (state)

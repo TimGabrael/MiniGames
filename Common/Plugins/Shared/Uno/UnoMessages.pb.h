@@ -877,10 +877,11 @@ class ServerPlayCard final :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kCardFieldNumber = 2,
+    kCardFieldNumber = 3,
     kClientIdFieldNumber = 1,
+    kNextPlayerInTurnFieldNumber = 2,
   };
-  // required .uno.CardData card = 2;
+  // required .uno.CardData card = 3;
   bool has_card() const;
   void clear_card() ;
   const ::uno::CardData& card() const;
@@ -903,6 +904,15 @@ class ServerPlayCard final :
   ::int32_t _internal_client_id() const;
   void _internal_set_client_id(::int32_t value);
   public:
+  // required int32 next_player_in_turn = 2;
+  bool has_next_player_in_turn() const;
+  void clear_next_player_in_turn() ;
+  ::int32_t next_player_in_turn() const;
+  void set_next_player_in_turn(::int32_t value);
+  private:
+  ::int32_t _internal_next_player_in_turn() const;
+  void _internal_set_next_player_in_turn(::int32_t value);
+  public:
   // @@protoc_insertion_point(class_scope:uno.ServerPlayCard)
  private:
   class _Internal;
@@ -918,6 +928,7 @@ class ServerPlayCard final :
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
     ::uno::CardData* card_;
     ::int32_t client_id_;
+    ::int32_t next_player_in_turn_;
   };
   union { Impl_ _impl_; };
   friend struct ::TableStruct_UnoMessages_2eproto;
@@ -1222,7 +1233,32 @@ inline void ServerPlayCard::set_client_id(::int32_t value) {
   // @@protoc_insertion_point(field_set:uno.ServerPlayCard.client_id)
 }
 
-// required .uno.CardData card = 2;
+// required int32 next_player_in_turn = 2;
+inline bool ServerPlayCard::has_next_player_in_turn() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000004u) != 0;
+  return value;
+}
+inline void ServerPlayCard::clear_next_player_in_turn() {
+  _impl_.next_player_in_turn_ = 0;
+  _impl_._has_bits_[0] &= ~0x00000004u;
+}
+inline ::int32_t ServerPlayCard::_internal_next_player_in_turn() const {
+  return _impl_.next_player_in_turn_;
+}
+inline ::int32_t ServerPlayCard::next_player_in_turn() const {
+  // @@protoc_insertion_point(field_get:uno.ServerPlayCard.next_player_in_turn)
+  return _internal_next_player_in_turn();
+}
+inline void ServerPlayCard::_internal_set_next_player_in_turn(::int32_t value) {
+  _impl_._has_bits_[0] |= 0x00000004u;
+  _impl_.next_player_in_turn_ = value;
+}
+inline void ServerPlayCard::set_next_player_in_turn(::int32_t value) {
+  _internal_set_next_player_in_turn(value);
+  // @@protoc_insertion_point(field_set:uno.ServerPlayCard.next_player_in_turn)
+}
+
+// required .uno.CardData card = 3;
 inline bool ServerPlayCard::has_card() const {
   bool value = (_impl_._has_bits_[0] & 0x00000001u) != 0;
   PROTOBUF_ASSUME(!value || _impl_.card_ != nullptr);

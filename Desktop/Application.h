@@ -28,6 +28,12 @@ public:
 
 	void SetNetworkingLobbyState();
 
+	void CloseNetworkThread();
+	void StartNetworkThread();
+
+	void NetworkPoll();
+
+
 	ApplicationData appData;
 	std::vector<PluginInfo> serverPlugins;
 	SessionInput input;

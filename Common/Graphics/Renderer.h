@@ -74,9 +74,9 @@ const IntermediateTextureData* GetIntermediateTexture(int requiredX, int require
 
 struct PostProcessingFBO
 {
-	GLuint fbo;
-	GLuint texture;
-	GLuint maybeDepth;	// might not be initialized, depending on the state of the SceneRenderData
+	GLuint fbo = 0;
+	GLuint texture = 0;
+	GLuint maybeDepth = 0;	// might not be initialized, depending on the state of the SceneRenderData
 };
 struct SceneRenderData
 {
@@ -95,12 +95,12 @@ struct SceneRenderData
 	DepthFBO shadowFBO;
 	PostProcessingFBO ppFBO;
 	BloomFBO bloomFBO;
-	int baseWidth;
-	int baseHeight;
-	int shadowWidth;
-	int shadowHeight;
-	uint8_t _internal_msaa_quality;
-	uint8_t _internal_flags;
+	int baseWidth = 0;
+	int baseHeight = 0;
+	int shadowWidth = 0;
+	int shadowHeight = 0;
+	uint8_t _internal_msaa_quality = 0;
+	uint8_t _internal_flags = 0;
 };
 
 

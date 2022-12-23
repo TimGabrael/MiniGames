@@ -9,13 +9,11 @@
 
 static void NetworkPollFunction(MainApplication* app)
 {
-	auto time = std::chrono::high_resolution_clock::now();
 	while (!app->networkThreadShouldJoin)
 	{
 		if (app->client)
 		{
-			app->client->Poll();
-			NetRunCallbacks();
+			app->NetworkPoll();
 		}
 		std::this_thread::sleep_for(std::chrono::duration<float>(0.1f));
 	}
@@ -113,10 +111,12 @@ static bool __stdcall NetSetStateCallback(ApplicationData* c, base::ServerSetSta
 					std::string infoStr(info.ID, 19);
 					if (infoStr == plInfo.id)
 					{
+
 						PluginFrame::activePlugin = pls.at(j);
 						PluginFrame::activePluginID = plInfo.sessionID;
 						SafeAsyncUI([](MainWindow* wnd) {
 							MainApplication* app = MainApplication::GetInstance();
+							app->CloseNetworkThread();
 							app->mainWindow->SetState(MAIN_WINDOW_STATE::STATE_PLUGIN);
 		
 							base::ClientState response;
@@ -258,4 +258,23 @@ void MainApplication::SetNetworkingLobbyState()
 	client->SendData(Client_State, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
 
 
+}
+void MainApplication::CloseNetworkThread()
+{
+	if (networkPollThread.joinable())
+	{
+		networkThreadShouldJoin = true;
+		networkPollThread.join();
+	}
+}
+void MainApplication::StartNetworkThread()
+{
+	if (networkPollThread.joinable()) return;
+	networkThreadShouldJoin = false;
+	networkPollThread = std::thread(std::bind(NetworkPollFunction, this));
+}
+void MainApplication::NetworkPoll()
+{
+	client->Poll();
+	NetRunCallbacks();
 }

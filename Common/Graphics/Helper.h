@@ -48,24 +48,24 @@ struct StreamArrayBuffer
 };
 struct SingleFBO
 {
-	GLuint fbo;
-	GLuint depth;
-	GLuint texture;
+	GLuint fbo = 0;
+	GLuint depth = 0;
+	GLuint texture = 0;
 };
 struct DepthFBO
 {
-	GLuint fbo;
-	GLuint depth;
+	GLuint fbo = 0;
+	GLuint depth = 0;
 };
 struct BloomFBO
 {
-	GLuint* bloomFBOs1;
-	GLuint* bloomFBOs2;
-	GLuint bloomTexture1;
-	GLuint bloomTexture2;
-	int sizeX;
-	int sizeY;
-	int numBloomFbos; // numBloomFbos == numMipMaps
+	GLuint* bloomFBOs1 = nullptr;
+	GLuint* bloomFBOs2 = nullptr;
+	GLuint bloomTexture1 = 0;
+	GLuint bloomTexture2 = 0;
+	int sizeX = 0;
+	int sizeY = 0;
+	int numBloomFbos = 0; // numBloomFbos == numMipMaps
 	void Create(int sx, int sy);
 	void Resize(int sx, int sy);
 	void CleanUp();

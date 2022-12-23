@@ -52,14 +52,7 @@ void PluginWidget::initializeGL()
 	plugin->Init(&app->appData);
 	isInitialized = true;
 	
-	if (app->appData.localPlayer.isAdmin)
-	{
-
-	}
-	else
-	{
-
-	}
+	
 }
 
 void PluginWidget::resizeGL(int w, int h)
@@ -76,10 +69,13 @@ void PluginWidget::paintGL()
 	QImGui::newFrame();
 
 	if(hovered) hovered = underMouse();
-	
-	MainApplication* app = MainApplication::GetInstance();
-	plugin->Render(&app->appData);
 
+	MainApplication* app = MainApplication::GetInstance();
+
+	app->NetworkPoll();
+
+	
+	plugin->Render(&app->appData);
 
 	ImGui::Render();
 	QImGui::render();
@@ -101,14 +97,19 @@ void PluginWidget::mouseMoveEvent(QMouseEvent* event)
 		//QApplication::setOverrideCursor(cursor);
 		//QApplication::changeOverrideCursor(cursor);
 
-		memset(&mouseData.lPressed, 0, 6);
-		QPoint glob = mapToGlobal(QPoint(width() / 2, height() / 2));
-		QCursor::setPos(glob);
-		mouseData.xPos = width() / 2;
-		mouseData.yPos = height() / 2;
+		//memset(&mouseData.lPressed, 0, 6);
+		//QPoint glob = mapToGlobal(QPoint(width() / 2, height() / 2));
+		//QCursor::setPos(glob);
+
+		//mouseData.xPos = width() / 2;
+		//mouseData.yPos = height() / 2;
 
 		mouseData.dx = mouseData.xPos - pos.x();
 		mouseData.dy = mouseData.yPos - pos.y();
+
+		mouseData.xPos = pos.x();
+		mouseData.yPos = pos.y();
+
 		if (mouseData.dx == 0 && mouseData.dy == 0) {
 			return;
 		}

@@ -85,7 +85,8 @@ PROTOBUF_CONSTEXPR ServerPlayCard::ServerPlayCard(
     /*decltype(_impl_._has_bits_)*/{}
   , /*decltype(_impl_._cached_size_)*/{}
   , /*decltype(_impl_.card_)*/nullptr
-  , /*decltype(_impl_.client_id_)*/0} {}
+  , /*decltype(_impl_.client_id_)*/0
+  , /*decltype(_impl_.next_player_in_turn_)*/0} {}
 struct ServerPlayCardDefaultTypeInternal {
   PROTOBUF_CONSTEXPR ServerPlayCardDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
   ~ServerPlayCardDefaultTypeInternal() {}
@@ -156,8 +157,10 @@ const ::uint32_t TableStruct_UnoMessages_2eproto::offsets[] PROTOBUF_SECTION_VAR
     ~0u,  // no _split_
     ~0u,  // no sizeof(Split)
     PROTOBUF_FIELD_OFFSET(::uno::ServerPlayCard, _impl_.client_id_),
+    PROTOBUF_FIELD_OFFSET(::uno::ServerPlayCard, _impl_.next_player_in_turn_),
     PROTOBUF_FIELD_OFFSET(::uno::ServerPlayCard, _impl_.card_),
     1,
+    2,
     0,
 };
 
@@ -167,7 +170,7 @@ static const ::_pbi::MigrationSchema
         { 12, 21, -1, sizeof(::uno::ClientPlayCard)},
         { 22, 32, -1, sizeof(::uno::PullData)},
         { 34, -1, -1, sizeof(::uno::ServerPullCards)},
-        { 43, 53, -1, sizeof(::uno::ServerPlayCard)},
+        { 43, 54, -1, sizeof(::uno::ServerPlayCard)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -183,15 +186,15 @@ const char descriptor_table_protodef_UnoMessages_2eproto[] PROTOBUF_SECTION_VARI
     "ard\022\033\n\004card\030\001 \002(\0132\r.uno.CardData\";\n\010Pull"
     "Data\022\021\n\tclient_id\030\001 \002(\005\022\034\n\005cards\030\002 \003(\0132\r"
     ".uno.CardData\"/\n\017ServerPullCards\022\034\n\005pull"
-    "s\030\001 \003(\0132\r.uno.PullData\"@\n\016ServerPlayCard"
-    "\022\021\n\tclient_id\030\001 \002(\005\022\033\n\004card\030\002 \002(\0132\r.uno."
-    "CardData"
+    "s\030\001 \003(\0132\r.uno.PullData\"]\n\016ServerPlayCard"
+    "\022\021\n\tclient_id\030\001 \002(\005\022\033\n\023next_player_in_tu"
+    "rn\030\002 \002(\005\022\033\n\004card\030\003 \002(\0132\r.uno.CardData"
 };
 static ::absl::once_flag descriptor_table_UnoMessages_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_UnoMessages_2eproto = {
     false,
     false,
-    288,
+    317,
     descriptor_table_protodef_UnoMessages_2eproto,
     "UnoMessages.proto",
     &descriptor_table_UnoMessages_2eproto_once,
@@ -1122,12 +1125,15 @@ class ServerPlayCard::_Internal {
   static void set_has_client_id(HasBits* has_bits) {
     (*has_bits)[0] |= 2u;
   }
+  static void set_has_next_player_in_turn(HasBits* has_bits) {
+    (*has_bits)[0] |= 4u;
+  }
   static const ::uno::CardData& card(const ServerPlayCard* msg);
   static void set_has_card(HasBits* has_bits) {
     (*has_bits)[0] |= 1u;
   }
   static bool MissingRequiredFields(const HasBits& has_bits) {
-    return ((has_bits[0] & 0x00000003) ^ 0x00000003) != 0;
+    return ((has_bits[0] & 0x00000007) ^ 0x00000007) != 0;
   }
 };
 
@@ -1147,13 +1153,16 @@ ServerPlayCard::ServerPlayCard(const ServerPlayCard& from)
       decltype(_impl_._has_bits_){from._impl_._has_bits_}
     , /*decltype(_impl_._cached_size_)*/{}
     , decltype(_impl_.card_){nullptr}
-    , decltype(_impl_.client_id_){}};
+    , decltype(_impl_.client_id_){}
+    , decltype(_impl_.next_player_in_turn_){}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   if ((from._impl_._has_bits_[0] & 0x00000001u) != 0) {
     _this->_impl_.card_ = new ::uno::CardData(*from._impl_.card_);
   }
-  _this->_impl_.client_id_ = from._impl_.client_id_;
+  ::memcpy(&_impl_.client_id_, &from._impl_.client_id_,
+    static_cast<::size_t>(reinterpret_cast<char*>(&_impl_.next_player_in_turn_) -
+    reinterpret_cast<char*>(&_impl_.client_id_)) + sizeof(_impl_.next_player_in_turn_));
   // @@protoc_insertion_point(copy_constructor:uno.ServerPlayCard)
 }
 
@@ -1164,6 +1173,7 @@ inline void ServerPlayCard::SharedCtor(::_pb::Arena* arena) {
     , /*decltype(_impl_._cached_size_)*/{}
     , decltype(_impl_.card_){nullptr}
     , decltype(_impl_.client_id_){0}
+    , decltype(_impl_.next_player_in_turn_){0}
   };
 }
 
@@ -1196,7 +1206,11 @@ void ServerPlayCard::Clear() {
     GOOGLE_ABSL_DCHECK(_impl_.card_ != nullptr);
     _impl_.card_->Clear();
   }
-  _impl_.client_id_ = 0;
+  if (cached_has_bits & 0x00000006u) {
+    ::memset(&_impl_.client_id_, 0, static_cast<::size_t>(
+        reinterpret_cast<char*>(&_impl_.next_player_in_turn_) -
+        reinterpret_cast<char*>(&_impl_.client_id_)) + sizeof(_impl_.next_player_in_turn_));
+  }
   _impl_._has_bits_.Clear();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
@@ -1219,9 +1233,19 @@ const char* ServerPlayCard::_InternalParse(const char* ptr, ::_pbi::ParseContext
           goto handle_unusual;
         }
         continue;
-      // required .uno.CardData card = 2;
+      // required int32 next_player_in_turn = 2;
       case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 18)) {
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 16)) {
+          _Internal::set_has_next_player_in_turn(&has_bits);
+          _impl_.next_player_in_turn_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else {
+          goto handle_unusual;
+        }
+        continue;
+      // required .uno.CardData card = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::uint8_t>(tag) == 26)) {
           ptr = ctx->ParseMessage(_internal_mutable_card(), ptr);
           CHK_(ptr);
         } else {
@@ -1266,10 +1290,16 @@ failure:
     target = ::_pbi::WireFormatLite::WriteInt32ToArray(1, this->_internal_client_id(), target);
   }
 
-  // required .uno.CardData card = 2;
+  // required int32 next_player_in_turn = 2;
+  if (cached_has_bits & 0x00000004u) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteInt32ToArray(2, this->_internal_next_player_in_turn(), target);
+  }
+
+  // required .uno.CardData card = 3;
   if (cached_has_bits & 0x00000001u) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(2, _Internal::card(this),
+      InternalWriteMessage(3, _Internal::card(this),
         _Internal::card(this).GetCachedSize(), target, stream);
   }
 
@@ -1286,7 +1316,7 @@ failure:
   ::size_t total_size = 0;
 
   if ((_impl_._has_bits_[0] & 0x00000001u) != 0) {
-    // required .uno.CardData card = 2;
+    // required .uno.CardData card = 3;
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
         *_impl_.card_);
@@ -1297,6 +1327,11 @@ failure:
     total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_client_id());
   }
 
+  if ((_impl_._has_bits_[0] & 0x00000004u) != 0) {
+    // required int32 next_player_in_turn = 2;
+    total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_next_player_in_turn());
+  }
+
   return total_size;
 }
 ::size_t ServerPlayCard::ByteSizeLong() const {
@@ -1304,14 +1339,17 @@ failure:
 // @@protoc_insertion_point(message_byte_size_start:uno.ServerPlayCard)
   ::size_t total_size = 0;
 
-  if (((_impl_._has_bits_[0] & 0x00000003) ^ 0x00000003) == 0) {  // All required fields are present.
-    // required .uno.CardData card = 2;
+  if (((_impl_._has_bits_[0] & 0x00000007) ^ 0x00000007) == 0) {  // All required fields are present.
+    // required .uno.CardData card = 3;
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
         *_impl_.card_);
 
     // required int32 client_id = 1;
     total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_client_id());
+
+    // required int32 next_player_in_turn = 2;
+    total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_next_player_in_turn());
 
   } else {
     total_size += RequiredFieldsByteSizeFallback();
@@ -1340,13 +1378,16 @@ void ServerPlayCard::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const :
   (void) cached_has_bits;
 
   cached_has_bits = from._impl_._has_bits_[0];
-  if (cached_has_bits & 0x00000003u) {
+  if (cached_has_bits & 0x00000007u) {
     if (cached_has_bits & 0x00000001u) {
       _this->_internal_mutable_card()->::uno::CardData::MergeFrom(
           from._internal_card());
     }
     if (cached_has_bits & 0x00000002u) {
       _this->_impl_.client_id_ = from._impl_.client_id_;
+    }
+    if (cached_has_bits & 0x00000004u) {
+      _this->_impl_.next_player_in_turn_ = from._impl_.next_player_in_turn_;
     }
     _this->_impl_._has_bits_[0] |= cached_has_bits;
   }
@@ -1373,8 +1414,8 @@ void ServerPlayCard::InternalSwap(ServerPlayCard* other) {
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(ServerPlayCard, _impl_.client_id_)
-      + sizeof(ServerPlayCard::_impl_.client_id_)
+      PROTOBUF_FIELD_OFFSET(ServerPlayCard, _impl_.next_player_in_turn_)
+      + sizeof(ServerPlayCard::_impl_.next_player_in_turn_)
       - PROTOBUF_FIELD_OFFSET(ServerPlayCard, _impl_.card_)>(
           reinterpret_cast<char*>(&_impl_.card_),
           reinterpret_cast<char*>(&other->_impl_.card_));

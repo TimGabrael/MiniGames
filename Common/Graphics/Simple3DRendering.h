@@ -15,15 +15,15 @@ struct SVertex3D
 
 struct S3DVertexBuffer
 {
-	GLuint vao;
-	GLuint vtxBuf;
-	uint32_t numVertices;
+	GLuint vao = 0;
+	GLuint vtxBuf = 0;
+	uint32_t numVertices = 0;
 };
 struct S3DCombinedBuffer
 {
 	S3DVertexBuffer vtxBuf;
-	GLuint idxBuf;
-	uint32_t numIndices;
+	GLuint idxBuf = 0;
+	uint32_t numIndices = 0;
 };
 
 struct S3DSceneObject

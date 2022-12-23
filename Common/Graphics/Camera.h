@@ -6,10 +6,10 @@ struct MovementComponent
 {
 	struct TouchJoystickData
 	{
-		int initialX;
-		int initialY;
-		float stateX;	// states are between [-1, 1]
-		float stateY;
+		int initialX = 0;
+		int initialY = 0;
+		float stateX = 0.0f;	// states are between [-1, 1]
+		float stateY = 0.0f;
 		int touchID = -1;
 	};
 	enum DIRECTION {
@@ -78,9 +78,9 @@ struct Camera
 	glm::vec3 pos = glm::vec3(0.0f, 0.0f, 0.0f);
 
 	glm::mat4 viewProj;
-	GLuint uniform;
+	GLuint uniform = 0;
 
-	int screenX, screenY;
+	int screenX = 0, screenY = 0;
 
 
 	void SetTightFit(OrthographicCamera* outCam, const glm::vec3& dir, float lastSplitDist, float splitDist, float* splitDepth) const;
@@ -110,6 +110,6 @@ struct OrthographicCamera
 
 	glm::mat4 viewProj;
 
-	GLuint uniform;
+	GLuint uniform = 0;
 
 };
