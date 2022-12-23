@@ -2,4 +2,29 @@ syntax = "proto2";
 
 package uno;
 
+message CardData
+{
+	required int32 face = 1;
+	required int32 color = 2;
+}
 
+message ClientPlayCard
+{
+	required CardData card = 1;
+}
+
+message PullData
+{
+	required int32 client_id = 1;
+	repeated CardData cards = 2;
+}
+message ServerPullCards
+{
+	repeated PullData pulls = 1;
+}
+message ServerPlayCard
+{
+	required int32 client_id = 1;
+	required int32 next_player_in_turn = 2;
+	required CardData card = 3;
+}

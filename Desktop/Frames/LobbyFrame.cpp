@@ -340,8 +340,9 @@ public:
 		{
 			if (!countDown.isActive())
 			{
+				float waitTime = adminChooses->checkState() == Qt::Checked ? 0.0f : maxTimer;
 				base::ClientLobbyAdminTimer timerMsg;
-				timerMsg.set_time(maxTimer);
+				timerMsg.set_time(waitTime);
 				const std::string serMsg = timerMsg.SerializeAsString();
 
 				app->client->SendData(Client_LobbyAdminTimer, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);

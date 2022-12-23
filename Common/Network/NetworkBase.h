@@ -125,6 +125,10 @@ struct NetServerInterface
 	virtual bool SendData(ServerConnection* conn, uint16_t packetID, const void* data, uint32_t size, uint32_t flags) = 0;
 
 	virtual bool IsP2P() const = 0;
+
+	// Verify ServerData state, needs to have ServerData set as userdata
+	virtual bool CheckConnectionStateAndSend(ServerConnection* c) = 0;
+
 };
 struct NetClientInterface
 {

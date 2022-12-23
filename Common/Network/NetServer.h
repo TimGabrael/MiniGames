@@ -28,7 +28,7 @@ struct NetServer : public NetServerInterface
 
 
 	// Verify ServerData state, needs to have ServerData set as userdata
-	bool CheckConnectionStateAndSend(ServerConnection* c);
+	virtual bool CheckConnectionStateAndSend(ServerConnection* c);
 
 	struct ServerData* data = nullptr;
 	NetSocketServer socket;

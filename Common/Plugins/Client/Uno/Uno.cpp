@@ -250,7 +250,7 @@ void UnoPlugin::Init(ApplicationData* data)
 
 	game.hands = &g_objs->hands;
 
-	g_objs->rendererData.Create(10, 10, 10, 10, 0, true, true);
+	g_objs->rendererData.Create(10, 10, 10, 10, 0, false, false);
 	g_objs->reflectFBO = CreateSingleFBO(1200, 800);
 
 	g_objs->lightDir = { -1.0f / sqrtf(3.0f), -1.0f / sqrt(3.0f), -1.0f / sqrt(3.0f) };

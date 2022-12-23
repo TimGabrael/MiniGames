@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include "UnoMessages.pb.h"
 
 #define UNO_PLUGIN_ID "a3fV-6giK-10Eb-2rdT"
 
@@ -38,6 +39,7 @@ enum CardColor : uint8_t
 
 struct CardData
 {
+	CardData(CardFace f, CardColor c) : face(f), color(c) {}
 	CardFace face;
 	CardColor color;
 };
@@ -45,9 +47,11 @@ struct CardData
 
 enum ClientUnoMessages
 {
-		
+	Client_UnoPlayCard = NUM_CLIENT_BASE_MESSAGES,
+	Client_UnoPullCards,
 };
 enum ServerUnoMessages
 {
-
+	Server_UnoPullCards = NUM_SERVER_BASE_MESSAGES,
+	Server_UnoPlayCard,
 };
