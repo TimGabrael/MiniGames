@@ -737,6 +737,7 @@ int CardHand::AddTemp(const Camera& cam, CARD_ID id)
 	}
 	needRegen = true;
 	GenTransformations(cam);
+	needRegen = true;
 	return idx;
 }
 
@@ -1110,6 +1111,11 @@ void CardsInAnimation::AddAnim(const CardStack& stack, const CardInfo& info, int
 }
 void CardsInAnimation::Update(std::vector<CardHand>& hands, CardStack& stack, float dt)
 {
+	if (list.size() == 0) {
+		inputsAllowed = true;
+		return;
+	}
+
 	bool anyTrue = false;
 	for (auto& a : list)
 	{
@@ -1118,6 +1124,15 @@ void CardsInAnimation::Update(std::vector<CardHand>& hands, CardStack& stack, fl
 		RendererAddCard(a.back, a.front, curPos, curRot, g_cardScale, g_cardScale);
 		if (a.done) anyTrue = true;
 	}
+	
+	//{
+	//	auto& a = list.at(0);
+	//	glm::vec3 curPos = a.posAnim.GetTransform(dt, a.done);
+	//	glm::quat curRot = a.rotAnim.GetTransform(dt, a.done);
+	//	RendererAddCard(a.back, a.front, curPos, curRot, g_cardScale, g_cardScale);
+	//	if (a.done) anyTrue = true;
+	//}
+
 	if (anyTrue)
 	{
 		std::vector<AnimatedCard> newList;

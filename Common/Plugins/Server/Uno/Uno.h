@@ -87,8 +87,9 @@ struct UnoData
 	Deck cardDeck;
 	std::vector<PlayerData> playerData;
 	CardData topCard;
-	uint16_t playerInTurn = 0xFFFF;
+	uint16_t playerInTurnIdx = 0xFFFF;
 	uint16_t accumulatedPull = 0;
+	bool forward = true;
 };
 
 

@@ -715,9 +715,10 @@ class ServerPullCards final :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kPullsFieldNumber = 1,
+    kPullsFieldNumber = 2,
+    kNextPlayerInTurnFieldNumber = 1,
   };
-  // repeated .uno.PullData pulls = 1;
+  // repeated .uno.PullData pulls = 2;
   int pulls_size() const;
   private:
   int _internal_pulls_size() const;
@@ -735,6 +736,15 @@ class ServerPullCards final :
   ::uno::PullData* add_pulls();
   const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::uno::PullData >&
       pulls() const;
+  // required int32 next_player_in_turn = 1;
+  bool has_next_player_in_turn() const;
+  void clear_next_player_in_turn() ;
+  ::int32_t next_player_in_turn() const;
+  void set_next_player_in_turn(::int32_t value);
+  private:
+  ::int32_t _internal_next_player_in_turn() const;
+  void _internal_set_next_player_in_turn(::int32_t value);
+  public:
   // @@protoc_insertion_point(class_scope:uno.ServerPullCards)
  private:
   class _Internal;
@@ -743,8 +753,10 @@ class ServerPullCards final :
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   struct Impl_ {
-    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::uno::PullData > pulls_;
+    ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::uno::PullData > pulls_;
+    ::int32_t next_player_in_turn_;
   };
   union { Impl_ _impl_; };
   friend struct ::TableStruct_UnoMessages_2eproto;
@@ -1164,7 +1176,32 @@ PullData::cards() const {
 
 // ServerPullCards
 
-// repeated .uno.PullData pulls = 1;
+// required int32 next_player_in_turn = 1;
+inline bool ServerPullCards::has_next_player_in_turn() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000001u) != 0;
+  return value;
+}
+inline void ServerPullCards::clear_next_player_in_turn() {
+  _impl_.next_player_in_turn_ = 0;
+  _impl_._has_bits_[0] &= ~0x00000001u;
+}
+inline ::int32_t ServerPullCards::_internal_next_player_in_turn() const {
+  return _impl_.next_player_in_turn_;
+}
+inline ::int32_t ServerPullCards::next_player_in_turn() const {
+  // @@protoc_insertion_point(field_get:uno.ServerPullCards.next_player_in_turn)
+  return _internal_next_player_in_turn();
+}
+inline void ServerPullCards::_internal_set_next_player_in_turn(::int32_t value) {
+  _impl_._has_bits_[0] |= 0x00000001u;
+  _impl_.next_player_in_turn_ = value;
+}
+inline void ServerPullCards::set_next_player_in_turn(::int32_t value) {
+  _internal_set_next_player_in_turn(value);
+  // @@protoc_insertion_point(field_set:uno.ServerPullCards.next_player_in_turn)
+}
+
+// repeated .uno.PullData pulls = 2;
 inline int ServerPullCards::_internal_pulls_size() const {
   return _impl_.pulls_.size();
 }

@@ -218,6 +218,7 @@ static bool __stdcall PlayCardCallback(ApplicationData* app, uno::ServerPlayCard
 }
 static bool __stdcall PullCardCallback(ApplicationData* app, uno::ServerPullCards* pull, int packetSize)
 {
+	UnoPlugin* uno = GetInstance();
 	GameStateData* game = GetGameState();
 	
 	for (const auto& p : pull->pulls())
@@ -231,14 +232,15 @@ static bool __stdcall PullCardCallback(ApplicationData* app, uno::ServerPullCard
 			CARD_ID addCard = CARD_ID_BLANK;
 			COLOR_ID temp = COLOR_INVALID;
 			CardDataToRenderCard(card, addCard, temp);
-			info->hand->Add(addCard);
+			info->hand->PullCardServer(uno->g_objs->playerCam, uno->g_objs->stack, uno->g_objs->deck, uno->g_objs->anims, addCard);
 		}
 	}
+	game->playerInTurn = pull->next_player_in_turn();
 	return true;
 }
 
 
-#define ALLOW_FREEMOVEMENT
+//#define ALLOW_FREEMOVEMENT
 SceneDirLight* light = nullptr;
 void UnoPlugin::Init(ApplicationData* data)
 {
@@ -306,7 +308,6 @@ void UnoPlugin::Init(ApplicationData* data)
 		glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraData), nullptr, GL_DYNAMIC_DRAW);
 	}
 	void* pbrModel = CreateInternalPBRFromFile("Assets/Helmet.gltf", 1.0f);
-	//void* pbrModel = CreateInternalPBRFromFile("C:/Users/deder/OneDrive/Desktop/3DModels/glTF-Sample-Models-master/2.0/Sponza/glTF/Sponza.gltf", 1.0f);
 
 
 	// CREATE SCENE
@@ -428,15 +429,11 @@ void UnoPlugin::Render(ApplicationData* data)
 	ray = g_objs->playerCam.ScreenToWorld(g_objs->p.x, g_objs->p.y);
 	
 	
-	//if (game.state == STATE_PENDING)
-	{
-		
-	}
-	//else if (game.state == STATE_PLAYING)
-	{
-		g_objs->cardHandlingTimer = 0.0f;
-		GameUpdateFunction(g_objs, dt);
-	}
+	
+	
+	g_objs->cardHandlingTimer = 0.0f;
+	GameUpdateFunction(g_objs, dt);
+	
 
 
 	// RENDER

@@ -20,7 +20,8 @@ message PullData
 }
 message ServerPullCards
 {
-	repeated PullData pulls = 1;
+	required int32 next_player_in_turn = 1;
+	repeated PullData pulls = 2;
 }
 message ServerPlayCard
 {
