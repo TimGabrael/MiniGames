@@ -189,7 +189,7 @@ struct AnimatedCard
 struct CardsInAnimation
 {
 	std::vector<AnimatedCard> list;
-	bool inputsAllowed;
+	bool inputsAllowed = true;
 	void AddAnim(const CardStack& stack, const CardInfo& info, int handID, CARD_ANIMATIONS id);
 	void Update(std::vector<CardHand>& hands, CardStack& stack, float dt);
 	void OnFinish(std::vector<CardHand>& hands, CardStack& stack, const glm::vec3& position, const glm::quat& rotation, CARD_ID id, CARD_ANIMATIONS type, int handID, int transitionID);

@@ -205,14 +205,13 @@ static bool __stdcall PlayCardCallback(ApplicationData* app, uno::ServerPlayCard
 		{
 			// server plays the card
 			uno->g_objs->stack.SetTop(outCard, outColor);
-			game->playerInTurn = play->next_player_in_turn();
 		}
 		else
 		{
 			CardHand* hand = game->GetHandForcefully(cID);
 			hand->PlayCardServer(uno->g_objs->stack, uno->g_objs->anims, outCard, outColor);
-			game->playerInTurn = play->next_player_in_turn();
 		}
+		game->playerInTurn = play->next_player_in_turn();
 		game->topCard = playing;
 	}
 	return true;
@@ -261,6 +260,8 @@ void UnoPlugin::Init(ApplicationData* data)
 	InitializeOpenGL(data->assetManager);
 	InitializeCardPipeline(data->assetManager);
 	ImGui::SetCurrentContext(data->imGuiCtx);
+
+	ImGui::GetIO().Fonts->AddFontFromFileTTF("Assets/consola.ttf", 32.0f);
 
 
 	GLint maxTexSize = 0;
@@ -531,7 +532,12 @@ void UnoPlugin::Render(ApplicationData* data)
 
 		DrawUI();
 
-
+		ImGui::Begin("_pull_button", nullptr, ImGuiWindowFlags_::ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_::ImGuiWindowFlags_NoDecoration);
+		bool pressed = ImGui::Button("Pull-Cards", ImVec2(200, 100));
+		if (game.playerInTurn == backendData->localPlayer.clientID && g_objs->anims.inputsAllowed && pressed) {
+			backendData->net->SendData(Client_UnoPullCards, nullptr, 0, SendFlags::Send_Reliable);
+		}
+		ImGui::End();
 
 		EndScene();
 

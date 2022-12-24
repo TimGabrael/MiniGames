@@ -121,7 +121,7 @@ static bool __stdcall UnoPullCardsCallback(NetServerInfo* info, ServerConnection
 	Uno* uno = (Uno*)info->plugin;
 	if (uno->data->playerInTurn == client->id)
 	{
-		
+		std::cout << "client pulling cards" << std::endl;
 	}
 	return true;
 }
@@ -133,6 +133,7 @@ void Uno::Initialize(NetServerInfo* s)
 
 	s->net->SetClientStateCallback((ServerClientStateChangeCallbackFunction)UnoStateChangeCallback);
 	s->net->SetDeserializer(UnoPlayCardDeserializer, Client_UnoPlayCard);
+	s->net->SetDeserializer(nullptr, Client_UnoPullCards);
 	s->net->SetCallback((ServerPacketFunction)UnoPlayCardCallback, Client_UnoPlayCard);
 	s->net->SetCallback((ServerPacketFunction)UnoPullCardsCallback, Client_UnoPullCards);
 

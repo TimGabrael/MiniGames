@@ -635,6 +635,7 @@ void CardDeck::Draw()
 
 void CardStack::Draw()
 {
+	const float scale = g_cardScale;
 	for (int i = 0; i < cards.size(); i++)
 	{
 		auto& c = cards.at(i);
@@ -650,11 +651,11 @@ void CardStack::Draw()
 				topAnim = std::min(topAnim + 0.02f, 1.0f);
 				if (topAnim == 1.0f) countDown = true;
 			}
-			const float s = g_cardScale * (1.3f + 0.4f * topAnim);
+			const float s = scale * (1.3f + 0.4f * topAnim);
 			const uint32_t col = GetColorFromColorID(this->blackColorID);
-			RendererAddEffect(CARD_EFFECT_BLUR, c.position, c.rotation, s, s - 0.1f * g_cardScale, col);
+			RendererAddEffect(CARD_EFFECT_BLUR, c.position, c.rotation, s, s - 0.1f * scale, col);
 		}
-		RendererAddCard(c.back, c.front, c.position, c.rotation, g_cardScale, g_cardScale);
+		RendererAddCard(c.back, c.front, c.position, c.rotation, scale, scale);
 	}
 }
 void CardStack::AddToStack(CARD_ID card, const glm::vec3& pos, const glm::quat& rot)
@@ -684,16 +685,15 @@ CARD_ID CardStack::GetTop(COLOR_ID& blackColorRef) const
 }
 void CardStack::SetTop(CARD_ID topCard, COLOR_ID blackColorRef)
 {
+	this->blackColorID = blackColorRef;
 	if (!cards.empty())
 	{
 		cards.at(cards.size() - 1).front = topCard;
-		this->blackColorID = blackColorRef;
 	}
 	else
 	{
 		glm::quat rotation = glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-
-		cards.emplace_back(CARD_ID::CARD_ID_BLANK, topCard, glm::vec3(0.0f, 0.001f, 0.0f), rotation , false, true);
+		cards.emplace_back(CARD_ID::CARD_ID_BLANK, topCard, glm::vec3(0.0f, 0.001f, 0.0f), rotation, false, true);
 	}
 }
 
@@ -1129,9 +1129,9 @@ void CardsInAnimation::Update(std::vector<CardHand>& hands, CardStack& stack, fl
 				OnFinish(hands, stack, a.posAnim.currentTransform, a.rotAnim.currentTransform, a.front, a.type, a.handID, a.cardID);
 			}
 		}
-		if (newList.size() == 0) inputsAllowed = true;
 		list = std::move(newList);
 	}
+	if (list.size() == 0) inputsAllowed = true;
 }
 
 void CardsInAnimation::OnFinish(std::vector<CardHand>& hands, CardStack& stack, const glm::vec3& position, const glm::quat& rotation, CARD_ID id, CARD_ANIMATIONS type, int handID, int transitionID)
