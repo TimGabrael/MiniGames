@@ -402,7 +402,7 @@ void LoadTextures(const tinygltf::Model& m, InternalPBR& pbr)
 
 		if (deleteBuffer)
 		{
-			delete buffer;
+			delete[] buffer;
 		}
 
 		pbr.textures.push_back(curTexture);
