@@ -1,4 +1,5 @@
 #include "Uno.h"
+#include "Network/NetworkBase.h"
 #include "Plugins/Shared/Uno/UnoBase.h"
 #include <stdio.h>
 
@@ -13,15 +14,29 @@ static uint16_t UnoGetCurrentPlayerID(Uno* uno)
 	return 0xFFFF;
 }
 
+
 static void UnoNextPlayer(Uno* uno)
 {
+    uno->data->cur_made_action = false;
 	if (uno->data->forward) uno->data->playerInTurnIdx = (uno->data->playerInTurnIdx + 1) % uno->data->playerData.size();
-	else uno->data->playerInTurnIdx = (uno->data->playerInTurnIdx - 1) % uno->data->playerData.size();
+	else {
+        if(uno->data->playerInTurnIdx == 0) {
+            uno->data->playerInTurnIdx = (uint16_t)(uno->data->playerData.size() - 1);
+        }
+        else {
+            uno->data->playerInTurnIdx = (uno->data->playerInTurnIdx - 1);
+        }
+    }
 }
 static void UnoSkipPlayer(Uno* uno)
 {
+    uno->data->cur_made_action = false;
 	if (uno->data->forward) uno->data->playerInTurnIdx = (uno->data->playerInTurnIdx + 2) % uno->data->playerData.size();
-	else uno->data->playerInTurnIdx = (uno->data->playerInTurnIdx - 2) % uno->data->playerData.size();
+	else { 
+        if(uno->data->playerInTurnIdx == 0) uno->data->playerInTurnIdx = (uint16_t)(uno->data->playerData.size() - 2);
+        else if(uno->data->playerInTurnIdx == 1) uno->data->playerInTurnIdx = (uint16_t)(uno->data->playerData.size() - 1);
+        else uno->data->playerInTurnIdx = (uno->data->playerInTurnIdx - 2);
+    }
 }
 
 static void __stdcall UnoStateChangeCallback(NetServerInfo* info, ServerConnection* client)
@@ -58,7 +73,6 @@ static void __stdcall UnoStateChangeCallback(NetServerInfo* info, ServerConnecti
 				}
 			}
 			cards.set_next_player_in_turn(playerID);
-			const std::string serMsg = cards.SerializeAsString();
             if(info->net->SerializeAndStore(Server_UnoPullCards, &cards)) {
                 info->net->SendData(client, SendFlags::Send_Reliable);
             }
@@ -83,6 +97,52 @@ static void* __stdcall UnoPlayCardDeserializer(char* packet, int packetSize)
 	if (card.ParseFromArray(packet, packetSize)) return &card;
 	return nullptr;
 }
+static void UnoServerPullCards(Uno* uno, ServerConnection* net_client, PlayerData* client, uint32_t numCards, uint16_t nextPlayerId) {
+    if(numCards == 0) return;
+    // pull cards for real and send to the current connection
+    {
+    
+        uno::ServerPullCards pull;
+        pull.set_next_player_in_turn(nextPlayerId);
+        uno::PullData* p = pull.add_pulls();
+        p->set_client_id(net_client->id);
+        for (uint32_t i = 0; i < numCards; i++)
+        {
+            uno::CardData* card = p->add_cards();
+            CardData pulled = uno->data->cardDeck.PullCard();
+            card->set_color(pulled.color);
+            card->set_face(pulled.face);
+            client->cardHand.cards.push_back(pulled);
+        }
+        if(uno->net->net->SerializeAndStore(Server_UnoPullCards, &pull)) {
+            uno->net->net->SendData(net_client, SendFlags::Send_Reliable);
+        }
+    }
+
+    // tell the others the player pulled "some" cards
+    {
+        uno::ServerPullCards pull;
+        pull.set_next_player_in_turn(nextPlayerId);
+        uno::PullData* p = pull.add_pulls();
+        p->set_client_id(net_client->id);
+        for (uint32_t i = 0; i < numCards; i++)
+        {
+            uno::CardData* card = p->add_cards();
+            card->set_color(CARD_COLOR_UNKOWN);
+            card->set_face(CARD_UNKNOWN);
+        }
+        if(uno->net->net->SerializeAndStore(Server_UnoPullCards, &pull)) {
+            for (uint16_t i = 0; i < MAX_PLAYERS; i++)
+            {
+                ServerConnection* conn = uno->net->net->GetConnection(i);
+                if (conn && conn != net_client && uno->net->net->CheckConnectionStateAndSend(conn))
+                {
+                    uno->net->net->SendData(conn, SendFlags::Send_Reliable);
+                }
+            }
+        }
+    }
+}
 static bool __stdcall UnoPlayCardCallback(NetServerInfo* info, ServerConnection* client, uno::ClientPlayCard* play, int packetSize)
 {
 	Uno* uno = (Uno*)info->plugin;
@@ -91,7 +151,9 @@ static bool __stdcall UnoPlayCardCallback(NetServerInfo* info, ServerConnection*
 	{
 		uint32_t face = play->card().face();
 		uint32_t col = play->card().color();
-        if(col == CARD_COLOR_BLACK || col == CARD_COLOR_UNKOWN) return true;
+        if(uno->data->accumulatedPull != 0 && face != CARD_PULL_2 && uno->data->topCard.face == CARD_PULL_2) {
+            return true;
+        }
 		if (face < CardFace::CARD_PULL_4 + 1 && col < CardColor::CARD_COLOR_BLACK + 1)
 		{
 			for (auto& p : uno->data->playerData)
@@ -109,6 +171,7 @@ static bool __stdcall UnoPlayCardCallback(NetServerInfo* info, ServerConnection*
                             continue;
                         }
 					}
+                    
 
 					if (IsCardPlayable(uno->data->topCard, c))
 					{
@@ -124,6 +187,16 @@ static bool __stdcall UnoPlayCardCallback(NetServerInfo* info, ServerConnection*
 
 
 						const uint16_t nextID = UnoGetCurrentPlayerID(uno);
+
+                        if(c.face == CARD_PULL_4 && uno->data->playerInTurnIdx < uno->data->playerData.size()) {
+                            for(uint16_t i = 0; i < MAX_PLAYERS; i++) {
+                                ServerConnection* conn = info->net->GetConnection(i);
+                                if(conn && conn->id == nextID) {
+                                    UnoServerPullCards(uno, conn, &uno->data->playerData.at(uno->data->playerInTurnIdx), 4, nextID);
+                                    break;
+                                }
+                            }
+                        }
 
 						uno::ServerPlayCard play;
 						play.set_client_id(client->id);
@@ -148,27 +221,26 @@ static bool __stdcall UnoPlayCardCallback(NetServerInfo* info, ServerConnection*
 			
 			}
 		}
-		else if (face == CardFace::CARD_UNKNOWN && CardColor::CARD_COLOR_UNKOWN)
+		else if (face == CardFace::CARD_UNKNOWN && col == CardColor::CARD_COLOR_UNKOWN)
 		{
-			// TODO: Check if player is allowed to skip the turn
+            if(uno->data->cur_made_action) {
+                uno->data->cur_made_action = false;
+                UnoNextPlayer(uno);
+                const uint16_t nextID = UnoGetCurrentPlayerID(uno);
 
-			UnoNextPlayer(uno);
-			const uint16_t nextID = UnoGetCurrentPlayerID(uno);
-
-			uno::ServerPullCards skip;
-			skip.set_next_player_in_turn(nextID);
-			const std::string serMsg = skip.SerializeAsString();
-            if(info->net->SerializeAndStore(Server_UnoPullCards, &skip)) {
-                for (uint16_t j = 0; j < MAX_PLAYERS; j++)
-                {
-                    ServerConnection* conn = info->net->GetConnection(j);
-                    if (conn && info->net->CheckConnectionStateAndSend(conn))
+                uno::ServerPullCards skip;
+                skip.set_next_player_in_turn(nextID);
+                if(info->net->SerializeAndStore(Server_UnoPullCards, &skip)) {
+                    for (uint16_t j = 0; j < MAX_PLAYERS; j++)
                     {
-                        info->net->SendData(conn, SendFlags::Send_Reliable);
+                        ServerConnection* conn = info->net->GetConnection(j);
+                        if (conn && info->net->CheckConnectionStateAndSend(conn))
+                        {
+                            info->net->SendData(conn, SendFlags::Send_Reliable);
+                        }
                     }
                 }
             }
-
 		}
 	}
 	return true;
@@ -180,58 +252,18 @@ static bool __stdcall UnoPullCardsCallback(NetServerInfo* info, ServerConnection
 	const uint16_t turnID = UnoGetCurrentPlayerID(uno);
 	if (info->net->CheckConnectionStateAndSend(client) && turnID == client->id)
 	{
-		const int numCardsToBePulled = uno->data->accumulatedPull > 0 ? uno->data->accumulatedPull : 1;
+        const bool pulling_multiple = uno->data->accumulatedPull > 0;
+		const int numCardsToBePulled = pulling_multiple ? uno->data->accumulatedPull : 1;
 		uno->data->accumulatedPull = 0;
 
-		UnoNextPlayer(uno);
+		if(!pulling_multiple) { 
+            uno->data->cur_made_action = true;
+        }
 		const uint16_t nextID = UnoGetCurrentPlayerID(uno);
 
 		PlayerData* turnPlayer = &uno->data->playerData.at(turnIdx);
 
-		// pull cards for real and send to the current connection
-		{
-			uno::ServerPullCards pull;
-			pull.set_next_player_in_turn(nextID);
-			uno::PullData* p = pull.add_pulls();
-			p->set_client_id(client->id);
-			for (int i = 0; i < numCardsToBePulled; i++)
-			{
-				uno::CardData* card = p->add_cards();
-				CardData pulled = uno->data->cardDeck.PullCard();
-				card->set_color(pulled.color);
-				card->set_face(pulled.face);
-				turnPlayer->cardHand.cards.push_back(pulled);
-			}
-            if(info->net->SerializeAndStore(Server_UnoPullCards, &pull)) {
-                info->net->SendData(client, SendFlags::Send_Reliable);
-            }
-		}
-
-		// tell the others the player pulled "some" cards
-		{
-			uno::ServerPullCards pull;
-			pull.set_next_player_in_turn(nextID);
-			uno::PullData* p = pull.add_pulls();
-			p->set_client_id(client->id);
-			for (int i = 0; i < numCardsToBePulled; i++)
-			{
-				uno::CardData* card = p->add_cards();
-				card->set_color(CARD_COLOR_UNKOWN);
-				card->set_face(CARD_UNKNOWN);
-			}
-            if(info->net->SerializeAndStore(Server_UnoPullCards, &pull)) {
-                for (uint16_t i = 0; i < MAX_PLAYERS; i++)
-                {
-                    ServerConnection* conn = info->net->GetConnection(i);
-                    if (conn && conn != client && info->net->CheckConnectionStateAndSend(conn))
-                    {
-                        info->net->SendData(conn, SendFlags::Send_Reliable);
-                    }
-                }
-            }
-
-		}
-
+        UnoServerPullCards(uno, client, turnPlayer, numCardsToBePulled, nextID);
 	}
 	return true;
 }
@@ -240,7 +272,7 @@ static bool __stdcall UnoPullCardsCallback(NetServerInfo* info, ServerConnection
 void Uno::Initialize(NetServerInfo* s)
 {
 	this->data = new UnoData();
-
+    this->net = s;
 	s->net->SetClientStateCallback((ServerClientStateChangeCallbackFunction)UnoStateChangeCallback);
 	s->net->SetDeserializer(UnoPlayCardDeserializer, Client_UnoPlayCard);
 	s->net->SetDeserializer(nullptr, Client_UnoPullCards);
@@ -284,3 +316,4 @@ SERVER_PLUGIN_INFO Uno::GetInfo() const
 void Uno::CleanUp()
 {
 }
+

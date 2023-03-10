@@ -3,6 +3,7 @@
 #include "Graphics/Helper.h"
 #include <glm/glm.hpp>
 #include "FileQuery.h"
+#include "imgui_internal.h"
 #include "logging.h"
 #include <glm/matrix.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -294,9 +295,9 @@ void InitializeCardPipeline(void* assetManager)
 
 }
 
-void RendererAddCard(CARD_ID back, CARD_ID front, const glm::vec3& pos, const glm::quat& rot, float sx, float sy)
+void RendererAddCard(CARD_ID back, CARD_ID front, const glm::vec3& pos, const glm::quat& rot, float sx, float sy, uint32_t col)
 {
-	g_cards.bufs.cardCache.push_back({ pos, rot, sx, sy, 0xFFFFFFFF, (uint16_t)front, (uint16_t)back });
+	g_cards.bufs.cardCache.push_back({ pos, rot, sx, sy, col, (uint16_t)front, (uint16_t)back });
 }
 void RendererAddEffect(CARD_EFFECT effect, const glm::vec3& pos, const glm::quat& rot, float sx, float sy, uint32_t col)
 {
@@ -635,27 +636,41 @@ void CardDeck::Draw()
 
 void CardStack::Draw()
 {
+    UnoPlugin* uno = GetInstance();
 	const float scale = g_cardScale;
-	for (int i = 0; i < cards.size(); i++)
+	for (size_t i = 0; i < cards.size(); i++)
 	{
-		auto& c = cards.at(i);
-		if ((i == cards.size() - 1) && (c.front == CARD_ID::CARD_ID_ADD_4 || c.front == CARD_ID::CARD_ID_CHOOSE_COLOR) && (blackColorID != COLOR_INVALID))
-		{
-			if (countDown)
-			{
-				topAnim = std::max(topAnim - 0.02f, 0.0f);
-				if (topAnim == 0.0f) countDown = false;
-			}
-			else
-			{
-				topAnim = std::min(topAnim + 0.02f, 1.0f);
-				if (topAnim == 1.0f) countDown = true;
-			}
-			const float s = scale * (1.3f + 0.4f * topAnim);
-			const uint32_t col = GetColorFromColorID(this->blackColorID);
-			RendererAddEffect(CARD_EFFECT_BLUR, c.position, c.rotation, s, s - 0.1f * scale, col);
-		}
-		RendererAddCard(c.back, c.front, c.position, c.rotation, scale, scale);
+        auto& c = cards.at(i);
+        if (i == cards.size() - 1) {
+            if (countDown)
+            {
+                topAnim = std::max(topAnim - 0.02f, 0.0f);
+                if (topAnim == 0.0f) countDown = false;
+            }
+            else
+            {
+                topAnim = std::min(topAnim + 0.02f, 1.0f);
+                if (topAnim == 1.0f) countDown = true;
+            }
+            const float s = scale * (1.3f + 0.4f * topAnim);
+            const uint32_t col = GetColorFromColorID(this->blackColorID);
+            if((c.front == CARD_ID::CARD_ID_ADD_4 || c.front == CARD_ID::CARD_ID_CHOOSE_COLOR) && (blackColorID != COLOR_INVALID)) RendererAddEffect(CARD_EFFECT_BLUR, c.position, c.rotation, s, s - 0.1f * scale, col);
+            RendererAddCard(c.back, c.front, c.position, c.rotation, scale, scale);
+
+            const glm::vec3 front = uno->g_objs->playerCam.GetFront();
+            const glm::vec3 right = uno->g_objs->playerCam.GetRight();
+            const glm::vec3 up = uno->g_objs->playerCam.GetUp();
+            const glm::vec3 translated = c.position + 1.5f * right + up * 1.5f + glm::cross(right, up) * 1.5f;
+            const glm::quat rotation = glm::quatLookAt(front, up);
+            const float extra_scale = 5.0f;
+            const uint32_t big_col = (col & 0xFFFFFF) | (0x30 << 24);
+            if((c.front == CARD_ID::CARD_ID_ADD_4 || c.front == CARD_ID::CARD_ID_CHOOSE_COLOR) && (blackColorID != COLOR_INVALID)) RendererAddEffect(CARD_EFFECT_BLUR, translated, rotation, s * extra_scale, (s - 0.1f * scale) * extra_scale, big_col);
+            RendererAddCard(c.back, c.front, translated, rotation, scale * extra_scale, scale * extra_scale, 0x60FFFFFF);
+
+        }
+        else {
+            RendererAddCard(c.back, c.front, c.position, c.rotation, scale, scale);
+        }
 	}
 }
 void CardStack::AddToStack(CARD_ID card, const glm::vec3& pos, const glm::quat& rot)
@@ -1031,10 +1046,18 @@ void CardHand::Draw(const Camera& cam)
 	static bool countDown = false;
 	//if (needRegen)
 	GenTransformations(cam);
+    
+    if (countDown) idx = std::max(idx - 0.02f, 0.0f);
+    else idx = std::min(idx + 0.02f, 1.0f);
 
-	if (countDown) idx = std::max(idx - 0.02f, 0.0f);
-	else idx = std::min(idx + 0.02f, 1.0f);
-	
+	const glm::quat transRot = glm::rotate(glm::mat4(1.0f), glm::radians(rotation), glm::vec3(0.0f, 1.0f, 0.0f));
+    const glm::vec3 camUp = transRot * cam.GetRealUp();
+	const glm::vec3 camFront = transRot * cam.GetFront();
+	const glm::vec3 right = transRot * cam.GetRight();
+	const glm::vec3 baseTranslate = transRot * cam.pos + (camFront + camUp * -1.0f);
+
+    if(this->handID == GetGameState()->playerInTurn) RendererAddEffect(CARD_EFFECT_BLUR, baseTranslate, glm::quat(), 1.0f + idx * 0.1f, 1.0f+ idx * 0.1f, 0x8000FF00);
+
 	if (idx == 0.0f) countDown = false;
 	else if (idx == 1.0f) countDown = true;
 	

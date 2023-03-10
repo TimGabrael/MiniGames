@@ -254,8 +254,6 @@ void MainApplication::SetNetworkingLobbyState()
 	base::ClientState response;
 	response.set_state((int32_t)AppState::LOBBY);
 	client->SendData(Client_State, &response, SendFlags::Send_Reliable);
-
-
 }
 void MainApplication::CloseNetworkThread()
 {

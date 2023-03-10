@@ -3,6 +3,8 @@
 #include "Graphics/Helper.h"
 #include "Graphics/Camera.h"
 #include "Plugins/Client/Uno/NetHandlers.h"
+#include "Plugins/Shared/Uno/UnoBase.h"
+#include "Plugins/Shared/Uno/UnoMessages.pb.h"
 #include "logging.h" // REMINDER USE THIS !! USE THIS NOT <iostream> !!
 #include "Graphics/PbrRendering.h"
 #include "Graphics/UiRendering.h"
@@ -109,7 +111,6 @@ CardHand* GameStateData::GetHandForcefully(uint16_t id)
 		int testIdx = (frontIdx + i) % players.size();
 		players.at(testIdx).hand->rotation = dA * i;
 	}
-	
 
 	return GetHandForcefully(id);
 }
@@ -353,7 +354,7 @@ void UnoPlugin::Render(ApplicationData* data)
 	
 	
 	auto& ray = g_objs->moveComp.mouseRay;
-	ray = g_objs->playerCam.ScreenToWorld(g_objs->p.x, g_objs->p.y);
+	ray = g_objs->playerCam.ScreenToWorld((float)g_objs->p.x, (float)g_objs->p.y);
 	
 	
 	
@@ -445,7 +446,7 @@ void UnoPlugin::Render(ApplicationData* data)
 
 		stdData.renderSize = { mainSize.x, mainSize.y };
 
-		RenderAmbientOcclusion(g_objs->UnoScene, &stdData, &g_objs->rendererData, sizeX, sizeY);
+		RenderAmbientOcclusion(g_objs->UnoScene, &stdData, &g_objs->rendererData, (float)sizeX, (float)sizeY);
 		glBindFramebuffer(GL_FRAMEBUFFER, GetMainFramebuffer());
 		glViewport(0, 0, mainSize.x, mainSize.y);
 		RenderSceneStandard(g_objs->UnoScene, &stdData);
@@ -455,12 +456,23 @@ void UnoPlugin::Render(ApplicationData* data)
 		RenderPostProcessing(&g_objs->rendererData, GetScreenFramebuffer(), sizeX, sizeY);
 
 		DrawUI();
-
+        
 		ImGui::Begin("_pull_button", nullptr, ImGuiWindowFlags_::ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_::ImGuiWindowFlags_NoDecoration);
-		bool pressed = ImGui::Button("Pull-Cards", ImVec2(200, 100));
-		if (game.playerInTurn == backendData->localPlayer.clientID && g_objs->anims.inputsAllowed && pressed) {
-			backendData->net->SendData(Client_UnoPullCards, nullptr, SendFlags::Send_Reliable);
-		}
+        ImGui::SetWindowSize(ImVec2(400, 400));
+        if(game.playerInTurn == backendData->localPlayer.clientID) {
+            ImGui::Text("It's your turn!");
+            bool pressed = ImGui::Button("Pull-Cards", ImVec2(200, 100));
+            if (g_objs->anims.inputsAllowed && pressed) {
+                backendData->net->SendData(Client_UnoPullCards, nullptr, SendFlags::Send_Reliable);
+            }
+            pressed = ImGui::Button("Finish", ImVec2(200, 100));
+            if(g_objs->anims.inputsAllowed && pressed) {
+                uno::ClientPlayCard skip;
+                skip.mutable_card()->set_face(CARD_UNKNOWN);
+                skip.mutable_card()->set_color(CARD_COLOR_UNKOWN);
+                backendData->net->SendData(Client_UnoPlayCard, &skip, SendFlags::Send_Reliable);
+            }
+        }
 		ImGui::End();
 
 		EndScene();

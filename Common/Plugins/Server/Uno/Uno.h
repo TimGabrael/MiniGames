@@ -90,6 +90,7 @@ struct UnoData
 	uint16_t playerInTurnIdx = 0xFFFF;
 	uint16_t accumulatedPull = 0;
 	bool forward = true;
+    bool cur_made_action = false;
 };
 
 
@@ -103,6 +104,7 @@ struct Uno : public ServerPlugin
 	virtual void CleanUp() override;
 
 	UnoData* data = nullptr;
+    NetServerInfo* net = nullptr;
 };
 
 SERVER_PLUGIN_EXPORTS();

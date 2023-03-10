@@ -46,6 +46,7 @@ static bool __stdcall PlayCardCallback(ApplicationData* app, uno::ServerPlayCard
 		}
 		game->playerInTurn = play->next_player_in_turn();
 		game->topCard = playing;
+        uno->g_objs->stack.blackColorID = (COLOR_ID)playing.color;
 	}
 	return true;
 }
