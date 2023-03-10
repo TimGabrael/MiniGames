@@ -771,28 +771,26 @@ void CardHand::PlayCard(const CardStack& stack, CardsInAnimation& anim, int card
 {
 	COLOR_ID blackColRef;
 	UnoPlugin* instance = GetInstance();
-
-	if (cards.at(cardIdx).front == CARD_ID::CARD_ID_ADD_4 || cards.at(cardIdx).front == CARD_ID::CARD_ID_CHOOSE_COLOR)
-	{
-
-	}
-	else
-	{
-		CardData internalData = RenderCardToCardData(cards.at(cardIdx).front, COLOR_ID::COLOR_BLACK);
-		if (internalData.color != CARD_COLOR_UNKOWN && internalData.face != CARD_UNKNOWN)
-		{
-			if (IsCardPlayable(instance->g_objs->game.topCard, internalData))
-			{
-				cardIdxSendToServer = cardIdx;
-				uno::ClientPlayCard play;
-				play.mutable_card()->set_color(internalData.color);
-				play.mutable_card()->set_face(internalData.face);
-				const std::string serMsg = play.SerializeAsString();
-				instance->backendData->net->SendData(Client_UnoPlayCard, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
-			}
-		}
-	}
-
+	GameStateData* state = GetGameState();
+    CardData internalData = RenderCardToCardData(cards.at(cardIdx).front, COLOR_ID::COLOR_BLACK);
+    if(IsCardPlayable(instance->g_objs->game.topCard, internalData)) {
+        if (cards.at(cardIdx).front == CARD_ID::CARD_ID_ADD_4 || cards.at(cardIdx).front == CARD_ID::CARD_ID_CHOOSE_COLOR)
+        {
+            state->isChoosingColor = true;
+			this->choosingCardColor = true;
+            this->playIdxAfterChoosing = cardIdx;
+        }
+        else
+        {
+            cardIdxSendToServer = cardIdx;
+            uno::ClientPlayCard play;
+            play.mutable_card()->set_color(internalData.color);
+            play.mutable_card()->set_face(internalData.face);
+            instance->backendData->net->SendData(Client_UnoPlayCard, &play, SendFlags::Send_Reliable);
+            playIdxAfterChoosing = -1;
+            
+        }
+    }
 	
 }
 void CardHand::PlayCardServer(const CardStack& stack, CardsInAnimation& anim, CARD_ID id, COLOR_ID col)
@@ -903,6 +901,16 @@ void CardHand::Update(CardStack& stack, CardsInAnimation& anim, ColorPicker& pic
 				state->isChoosingColor = false;
 				state->playerInTurn = (state->playerInTurn + 1) % state->players.size();
 
+                CardData internalData = RenderCardToCardData(this->cards.at(playIdxAfterChoosing).front, choosenCardColor);
+                choosenCardColor = id;
+                internalData.color = (CardColor)id;
+
+                cardIdxSendToServer = playIdxAfterChoosing;
+                uno::ClientPlayCard play;
+                play.mutable_card()->set_color(id);
+                play.mutable_card()->set_face(internalData.face);
+                instance->backendData->net->SendData(Client_UnoPlayCard, &play, SendFlags::Send_Reliable);
+                playIdxAfterChoosing = -1;
 			}
 		}
 		else if (allowInput)
@@ -1125,13 +1133,6 @@ void CardsInAnimation::Update(std::vector<CardHand>& hands, CardStack& stack, fl
 		if (a.done) anyTrue = true;
 	}
 	
-	//{
-	//	auto& a = list.at(0);
-	//	glm::vec3 curPos = a.posAnim.GetTransform(dt, a.done);
-	//	glm::quat curRot = a.rotAnim.GetTransform(dt, a.done);
-	//	RendererAddCard(a.back, a.front, curPos, curRot, g_cardScale, g_cardScale);
-	//	if (a.done) anyTrue = true;
-	//}
 
 	if (anyTrue)
 	{

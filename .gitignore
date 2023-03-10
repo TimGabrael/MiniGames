@@ -1,6 +1,7 @@
 build/
 bin/
 .vs/
+.cache/
 Android/.gradle
 Android/.idea
 Android/app/.cxx

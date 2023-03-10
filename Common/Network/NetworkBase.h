@@ -13,6 +13,7 @@
 #define MAX_NAME_LENGTH 30
 #define MAX_PLAYERS 0xFF
 #define NET_VERSION 0
+#define MAX_MESSAGE_LENGTH 4096
 
 
 enum class ConnectionState : uint8_t
@@ -110,6 +111,8 @@ enum SendFlags
 	Send_CurrentThread = 16,
 };
 
+namespace google {namespace protobuf { class Message; }; };
+
 struct NetServerInterface
 {
 	virtual ~NetServerInterface() { };
@@ -122,7 +125,10 @@ struct NetServerInterface
 	virtual void SetClientStateCallback(ServerClientStateChangeCallbackFunction fn) = 0;
 	virtual void SetDisconnectCallback(ServerDisconnectCallbackFunction fn) = 0;
 
-	virtual bool SendData(ServerConnection* conn, uint16_t packetID, const void* data, uint32_t size, uint32_t flags) = 0;
+    virtual bool SerializeAndStore(uint16_t packetID, const google::protobuf::Message* msg) = 0;
+    virtual bool SerializeAndStore(uint16_t packetID, const void* data, uint32_t data_size) = 0;
+    virtual bool SendData(ServerConnection* conn, uint32_t flags) = 0;
+    virtual bool SendDataRaw(ServerConnection* conn, const void* data, uint32_t data_size, uint32_t flags) = 0;
 
 	virtual bool IsP2P() const = 0;
 
@@ -144,7 +150,8 @@ struct NetClientInterface
 	virtual void SetClientInfoCallback(ClientInfoCallbackFunction fn) = 0;
 	virtual void SetDisconnectCallback(ClientDisconnectCallbackFunction fn) = 0;
 
-	virtual bool SendData(uint16_t packetID, const void* data, uint32_t size, uint32_t flags) = 0;
+	virtual bool SendDataRaw(uint16_t packetID, const void* data, uint32_t size, uint32_t flags) = 0;
+	virtual bool SendData(uint16_t packetID, google::protobuf::Message* msg, uint32_t flags) = 0;
 
 	virtual bool IsP2P() const = 0;
 

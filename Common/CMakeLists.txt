@@ -7,7 +7,7 @@ set(OPENGL_SOURCES ${CMAKE_CURRENT_LIST_DIR}/Graphics/GLCompat.cpp ${CMAKE_CURRE
 
 
 
-add_library(Uno SHARED "Plugins/Shared/Uno/UnoMessages.pb.cc" "Plugins/Client/Uno/Uno.cpp" "Plugins/Client/Uno/Card.h" "Plugins/Client/Uno/Card.cpp" ${IMGUI_BASE_SOURCES} ${LOCAL_COLLECTION_SOURCES} ${OPENGL_SOURCES} "Plugins/Client/Uno/Animator.h" "Plugins/Client/Uno/Animator.cpp" "Plugins/Client/Uno/Pointer.h" "Plugins/Client/Uno/Pointer.cpp" "Graphics/Scene.h" "Graphics/Scene.cpp" "Graphics/Renderer.h" "Graphics/Renderer.cpp" "Graphics/ReflectiveSurfaceRendering.cpp" "Graphics/ReflectiveSurfaceRendering.h" "Graphics/BloomRendering.h" "Graphics/BloomRendering.cpp" "Graphics/AmbientOcclusionRendering.h" "Graphics/AmbientOcclusionRendering.cpp" "Network/NetworkBase.h" "Plugins/Shared/Uno/UnoBase.h")
+add_library(Uno SHARED "Plugins/Shared/Uno/UnoMessages.pb.cc" "Plugins/Client/Uno/Uno.cpp" "Plugins/Client/Uno/Card.h" "Plugins/Client/Uno/Card.cpp" ${IMGUI_BASE_SOURCES} ${LOCAL_COLLECTION_SOURCES} ${OPENGL_SOURCES} "Plugins/Client/Uno/Animator.h" "Plugins/Client/Uno/Animator.cpp" "Plugins/Client/Uno/Pointer.h" "Plugins/Client/Uno/Pointer.cpp" "Graphics/Scene.h" "Graphics/Scene.cpp" "Graphics/Renderer.h" "Graphics/Renderer.cpp" "Graphics/ReflectiveSurfaceRendering.cpp" "Graphics/ReflectiveSurfaceRendering.h" "Graphics/BloomRendering.h" "Graphics/BloomRendering.cpp" "Graphics/AmbientOcclusionRendering.h" "Graphics/AmbientOcclusionRendering.cpp" "Network/NetworkBase.h" "Plugins/Shared/Uno/UnoBase.h" "Plugins/Client/Uno/NetHandlers.cpp")
 
 add_library(UnoServer SHARED "Plugins/Server/Uno/Uno.cpp" "Plugins/Shared/Uno/UnoBase.h" "Plugins/Shared/Uno/UnoMessages.pb.cc")
 

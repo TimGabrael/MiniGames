@@ -122,8 +122,7 @@ static bool __stdcall NetSetStateCallback(ApplicationData* c, base::ServerSetSta
 							base::ClientState response;
 							response.set_state((int32_t)AppState::PLUGIN);
 							response.set_plugin_session_id(PluginFrame::activePluginID);
-							std::string serMsg = response.SerializeAsString();
-							app->client->SendData(Client_State, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
+							app->client->SendData(Client_State, &response, SendFlags::Send_Reliable);
 						});
 						break;
 					}
@@ -254,8 +253,7 @@ void MainApplication::SetNetworkingLobbyState()
 
 	base::ClientState response;
 	response.set_state((int32_t)AppState::LOBBY);
-	std::string serMsg = response.SerializeAsString();
-	client->SendData(Client_State, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
+	client->SendData(Client_State, &response, SendFlags::Send_Reliable);
 
 
 }

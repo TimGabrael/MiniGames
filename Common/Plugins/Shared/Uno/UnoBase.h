@@ -1,6 +1,9 @@
 #pragma once
 #include <stdint.h>
+#include <stdio.h>
+#include <vector>
 #include "UnoMessages.pb.h"
+#include "Network/NetworkBase.h"
 
 #define UNO_PLUGIN_ID "a3fV-6giK-10Eb-2rdT"
 
@@ -54,6 +57,7 @@ enum ServerUnoMessages
 {
 	Server_UnoPullCards = NUM_SERVER_BASE_MESSAGES,
 	Server_UnoPlayCard,
+    Server_UnoResync,
 };
 
 
@@ -74,3 +78,10 @@ static bool IsCardPlayable(CardData top, CardData play)
 	}
 	return true;
 }
+
+
+
+
+
+
+

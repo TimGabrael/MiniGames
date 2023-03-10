@@ -1,6 +1,8 @@
 #include "NetClient.h"
 #include "NetCommon.h"
+#include "Network/NetworkBase.h"
 #include "Plugins/CLient/PluginCommon.h"
+#include <stdio.h>
 
 static void* __stdcall ClientInfoDeserializer(char* packet, int size)
 {
@@ -129,9 +131,7 @@ NetResult NetClient::Connect(const char* ip, uint32_t port, const std::string& n
 
 	base::ClientJoin join;
 	join.set_name(name);
-	std::string str = join.SerializeAsString();
-
-	SendData(Client_Join, str.data(), str.length(), SendFlags::Send_Reliable);
+	SendData(Client_Join, &join, SendFlags::Send_Reliable);
 
 	connectionState = State::Connecting;
 	joinRes.success = true;
@@ -199,17 +199,42 @@ void NetClient::SetDisconnectCallback(ClientDisconnectCallbackFunction fn)
 	disconnectCB = fn;
 }
 
-bool NetClient::SendData(uint16_t packetID, const void* data, uint32_t size, uint32_t flags)
+bool NetClient::SendDataRaw(uint16_t packetID, const void* data, uint32_t size, uint32_t flags)
 {
-	if (tempStorage.size() < size + 10)
-	{
-		tempStorage.resize(size + 10);
-	}
-	*(uint16_t*)&tempStorage.at(0) = packetID;
-	memcpy(&tempStorage.at(sizeof(packetID)), data, size);
+    if(size >= MAX_MESSAGE_LENGTH) {
+        LOG("[WARNING]: MESSAGE IS OVER THE SIZE LIMIT\n");
+    }
+    *(uint16_t*)tempStorage = packetID;
+    if(data) {
+	    memcpy(&tempStorage + sizeof(packetID), data, size);
+    } else { 
+        size = 0;
+    }
 	int64 outMsgNum = 0;
-	EResult res = socket.networking->SendMessageToConnection(socket.socket, tempStorage.data(), size + sizeof(packetID), flags, &outMsgNum);
+	EResult res = socket.networking->SendMessageToConnection(socket.socket, tempStorage, size + sizeof(packetID), flags, &outMsgNum);
 	return EResult::k_EResultOK == res;
+}
+
+bool NetClient::SendData(uint16_t packetID, google::protobuf::Message* msg, uint32_t flags) {
+    *(uint16_t*)tempStorage = packetID;
+    size_t size = 0;
+    if(msg) {
+        size = msg->ByteSizeLong();
+        if(size < MAX_MESSAGE_LENGTH) {
+            if(!msg->SerializeToArray(tempStorage + sizeof(packetID), size)) { 
+                return false;
+            }
+        }
+    }
+    if(size < MAX_MESSAGE_LENGTH) {
+        int64 outMsgNum = 0;
+	    EResult res = socket.networking->SendMessageToConnection(socket.socket, tempStorage, size + sizeof(packetID), flags, &outMsgNum);
+        return EResult::k_EResultOK == res;
+    }
+    else {
+        LOG("[WARNING]: MESSAGE IS OVER THE SIZE LIMIT\n");
+    }
+    return false;
 }
 
 bool NetClient::IsP2P() const
@@ -298,3 +323,4 @@ bool __stdcall NetClient::ServerInfoCallback(ApplicationData* app, base::ServerC
 	}
 	return true;
 }
+

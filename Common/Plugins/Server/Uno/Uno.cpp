@@ -1,4 +1,6 @@
 #include "Uno.h"
+#include "Plugins/Shared/Uno/UnoBase.h"
+#include <stdio.h>
 
 SERVER_PLUGIN_EXPORT_DEFINITION(Uno);
 
@@ -57,7 +59,9 @@ static void __stdcall UnoStateChangeCallback(NetServerInfo* info, ServerConnecti
 			}
 			cards.set_next_player_in_turn(playerID);
 			const std::string serMsg = cards.SerializeAsString();
-			info->net->SendData(client, Server_UnoPullCards, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
+            if(info->net->SerializeAndStore(Server_UnoPullCards, &cards)) {
+                info->net->SendData(client, SendFlags::Send_Reliable);
+            }
 		}
 		// Set the top card
 		{
@@ -67,8 +71,9 @@ static void __stdcall UnoStateChangeCallback(NetServerInfo* info, ServerConnecti
 			play.mutable_card()->set_face(uno->data->topCard.face);
 			play.mutable_card()->set_color(uno->data->topCard.color);
 
-			const std::string serMsg = play.SerializeAsString();
-			info->net->SendData(client, Server_UnoPlayCard, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
+            if(info->net->SerializeAndStore(Server_UnoPlayCard, &play)) {
+                info->net->SendData(client, SendFlags::Send_Reliable);
+            }
 		}
 	}
 }
@@ -86,6 +91,7 @@ static bool __stdcall UnoPlayCardCallback(NetServerInfo* info, ServerConnection*
 	{
 		uint32_t face = play->card().face();
 		uint32_t col = play->card().color();
+        if(col == CARD_COLOR_BLACK || col == CARD_COLOR_UNKOWN) return true;
 		if (face < CardFace::CARD_PULL_4 + 1 && col < CardColor::CARD_COLOR_BLACK + 1)
 		{
 			for (auto& p : uno->data->playerData)
@@ -97,18 +103,17 @@ static bool __stdcall UnoPlayCardCallback(NetServerInfo* info, ServerConnection*
 					const CardData& c = p.cardHand.cards.at(i);
 					if (c.face != face) continue;
 
-					if (c.color == CARD_COLOR_BLACK && (col == CARD_COLOR_BLACK || col == CARD_COLOR_UNKOWN))
+					if(c.color != col)
 					{
-						continue;
-					}
-					else if(c.color != col)
-					{
-						continue;
+                        if(face != CARD_CHOOSE_COLOR && face != CARD_PULL_4) {
+                            continue;
+                        }
 					}
 
 					if (IsCardPlayable(uno->data->topCard, c))
 					{
-						uno->data->topCard = c;
+						uno->data->topCard.color = (CardColor)col;
+                        uno->data->topCard.face = (CardFace)face;
 
 						if (c.face == CARD_FLIP) uno->data->forward = !uno->data->forward;
 						else if (c.face == CardFace::CARD_PULL_2) uno->data->accumulatedPull += 2;
@@ -125,18 +130,17 @@ static bool __stdcall UnoPlayCardCallback(NetServerInfo* info, ServerConnection*
 						play.mutable_card()->set_face(face);
 						play.mutable_card()->set_color(col);
 						play.set_next_player_in_turn(nextID);
-						const std::string serMsg = play.SerializeAsString();
-
-						for (uint16_t j = 0; j < MAX_PLAYERS; j++)
-						{
-							ServerConnection* conn = info->net->GetConnection(j);
-							if (conn && info->net->CheckConnectionStateAndSend(conn))
-							{
-								info->net->SendData(conn, Server_UnoPlayCard, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
-							}
-						}
-
-						p.cardHand.cards.erase(p.cardHand.cards.begin() + i);
+                        if(info->net->SerializeAndStore(Server_UnoPlayCard, &play)) {
+                            for (uint16_t j = 0; j < MAX_PLAYERS; j++)
+                            {
+                                ServerConnection* conn = info->net->GetConnection(j);
+                                if (conn && info->net->CheckConnectionStateAndSend(conn))
+                                {
+                                    info->net->SendData(conn, SendFlags::Send_Reliable);
+                                }
+                            }
+                        }
+                        p.cardHand.cards.erase(p.cardHand.cards.begin() + i);
 					}
 					return true;
 					
@@ -154,15 +158,16 @@ static bool __stdcall UnoPlayCardCallback(NetServerInfo* info, ServerConnection*
 			uno::ServerPullCards skip;
 			skip.set_next_player_in_turn(nextID);
 			const std::string serMsg = skip.SerializeAsString();
-
-			for (uint16_t j = 0; j < MAX_PLAYERS; j++)
-			{
-				ServerConnection* conn = info->net->GetConnection(j);
-				if (conn && info->net->CheckConnectionStateAndSend(conn))
-				{
-					info->net->SendData(conn, Server_UnoPullCards, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
-				}
-			}
+            if(info->net->SerializeAndStore(Server_UnoPullCards, &skip)) {
+                for (uint16_t j = 0; j < MAX_PLAYERS; j++)
+                {
+                    ServerConnection* conn = info->net->GetConnection(j);
+                    if (conn && info->net->CheckConnectionStateAndSend(conn))
+                    {
+                        info->net->SendData(conn, SendFlags::Send_Reliable);
+                    }
+                }
+            }
 
 		}
 	}
@@ -197,8 +202,9 @@ static bool __stdcall UnoPullCardsCallback(NetServerInfo* info, ServerConnection
 				card->set_face(pulled.face);
 				turnPlayer->cardHand.cards.push_back(pulled);
 			}
-			const std::string serMsg = pull.SerializeAsString();
-			info->net->SendData(client, Server_UnoPullCards, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
+            if(info->net->SerializeAndStore(Server_UnoPullCards, &pull)) {
+                info->net->SendData(client, SendFlags::Send_Reliable);
+            }
 		}
 
 		// tell the others the player pulled "some" cards
@@ -213,17 +219,16 @@ static bool __stdcall UnoPullCardsCallback(NetServerInfo* info, ServerConnection
 				card->set_color(CARD_COLOR_UNKOWN);
 				card->set_face(CARD_UNKNOWN);
 			}
-			const std::string serMsg = pull.SerializeAsString();
-
-			for (uint16_t i = 0; i < MAX_PLAYERS; i++)
-			{
-				ServerConnection* conn = info->net->GetConnection(i);
-				if (conn && conn != client && info->net->CheckConnectionStateAndSend(conn))
-				{
-					info->net->SendData(conn, Server_UnoPullCards, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
-				}
-			}
-
+            if(info->net->SerializeAndStore(Server_UnoPullCards, &pull)) {
+                for (uint16_t i = 0; i < MAX_PLAYERS; i++)
+                {
+                    ServerConnection* conn = info->net->GetConnection(i);
+                    if (conn && conn != client && info->net->CheckConnectionStateAndSend(conn))
+                    {
+                        info->net->SendData(conn, SendFlags::Send_Reliable);
+                    }
+                }
+            }
 
 		}
 

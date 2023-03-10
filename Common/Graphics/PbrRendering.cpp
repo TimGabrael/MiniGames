@@ -565,7 +565,7 @@ void LoadNode(InternalPBR& pbr, Node* parent, const tinygltf::Node& node, uint32
 	glm::mat4 rotation = glm::mat4(1.0f);
 	if (node.rotation.size() == 4) {
 		const double* rot = node.rotation.data();
-		glm::quat q = glm::quat(rot[3], rot[0], rot[1], rot[2]);
+		glm::quat q = glm::quat((float)rot[3], (float)rot[0], (float)rot[1], (float)rot[2]);
 		newNode->rotation = glm::mat4(q);
 	}
 	glm::vec3 scale = glm::vec3(1.0f);

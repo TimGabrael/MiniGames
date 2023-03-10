@@ -66,6 +66,9 @@ extern ServerPlayCardDefaultTypeInternal _ServerPlayCard_default_instance_;
 class ServerPullCards;
 struct ServerPullCardsDefaultTypeInternal;
 extern ServerPullCardsDefaultTypeInternal _ServerPullCards_default_instance_;
+class ServerResync;
+struct ServerResyncDefaultTypeInternal;
+extern ServerResyncDefaultTypeInternal _ServerResync_default_instance_;
 }  // namespace uno
 PROTOBUF_NAMESPACE_OPEN
 template <>
@@ -78,6 +81,8 @@ template <>
 ::uno::ServerPlayCard* Arena::CreateMaybeMessage<::uno::ServerPlayCard>(Arena*);
 template <>
 ::uno::ServerPullCards* Arena::CreateMaybeMessage<::uno::ServerPullCards>(Arena*);
+template <>
+::uno::ServerResync* Arena::CreateMaybeMessage<::uno::ServerResync>(Arena*);
 PROTOBUF_NAMESPACE_CLOSE
 
 namespace uno {
@@ -944,6 +949,168 @@ class ServerPlayCard final :
   };
   union { Impl_ _impl_; };
   friend struct ::TableStruct_UnoMessages_2eproto;
+};// -------------------------------------------------------------------
+
+class ServerResync final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:uno.ServerResync) */ {
+ public:
+  inline ServerResync() : ServerResync(nullptr) {}
+  ~ServerResync() override;
+  explicit PROTOBUF_CONSTEXPR ServerResync(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  ServerResync(const ServerResync& from);
+  ServerResync(ServerResync&& from) noexcept
+    : ServerResync() {
+    *this = ::std::move(from);
+  }
+
+  inline ServerResync& operator=(const ServerResync& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline ServerResync& operator=(ServerResync&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  inline const ::PROTOBUF_NAMESPACE_ID::UnknownFieldSet& unknown_fields() const {
+    return _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance);
+  }
+  inline ::PROTOBUF_NAMESPACE_ID::UnknownFieldSet* mutable_unknown_fields() {
+    return _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const ServerResync& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const ServerResync* internal_default_instance() {
+    return reinterpret_cast<const ServerResync*>(
+               &_ServerResync_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    5;
+
+  friend void swap(ServerResync& a, ServerResync& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(ServerResync* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(ServerResync* other) {
+    if (other == this) return;
+    GOOGLE_ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  ServerResync* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<ServerResync>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const ServerResync& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const ServerResync& from) {
+    ServerResync::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  ::size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  ::uint8_t* _InternalSerialize(
+      ::uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(ServerResync* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::absl::string_view FullMessageName() {
+    return "uno.ServerResync";
+  }
+  protected:
+  explicit ServerResync(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kSyncFieldNumber = 1,
+  };
+  // repeated .uno.PullData sync = 1;
+  int sync_size() const;
+  private:
+  int _internal_sync_size() const;
+
+  public:
+  void clear_sync() ;
+  ::uno::PullData* mutable_sync(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::uno::PullData >*
+      mutable_sync();
+  private:
+  const ::uno::PullData& _internal_sync(int index) const;
+  ::uno::PullData* _internal_add_sync();
+  public:
+  const ::uno::PullData& sync(int index) const;
+  ::uno::PullData* add_sync();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::uno::PullData >&
+      sync() const;
+  // @@protoc_insertion_point(class_scope:uno.ServerResync)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::uno::PullData > sync_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_UnoMessages_2eproto;
 };
 
 // ===================================================================
@@ -1380,6 +1547,50 @@ inline void ServerPlayCard::set_allocated_card(::uno::CardData* card) {
   }
   _impl_.card_ = card;
   // @@protoc_insertion_point(field_set_allocated:uno.ServerPlayCard.card)
+}
+
+// -------------------------------------------------------------------
+
+// ServerResync
+
+// repeated .uno.PullData sync = 1;
+inline int ServerResync::_internal_sync_size() const {
+  return _impl_.sync_.size();
+}
+inline int ServerResync::sync_size() const {
+  return _internal_sync_size();
+}
+inline void ServerResync::clear_sync() {
+  _impl_.sync_.Clear();
+}
+inline ::uno::PullData* ServerResync::mutable_sync(int index) {
+  // @@protoc_insertion_point(field_mutable:uno.ServerResync.sync)
+  return _impl_.sync_.Mutable(index);
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::uno::PullData >*
+ServerResync::mutable_sync() {
+  // @@protoc_insertion_point(field_mutable_list:uno.ServerResync.sync)
+  return &_impl_.sync_;
+}
+inline const ::uno::PullData& ServerResync::_internal_sync(int index) const {
+  return _impl_.sync_.Get(index);
+}
+inline const ::uno::PullData& ServerResync::sync(int index) const {
+  // @@protoc_insertion_point(field_get:uno.ServerResync.sync)
+  return _internal_sync(index);
+}
+inline ::uno::PullData* ServerResync::_internal_add_sync() {
+  return _impl_.sync_.Add();
+}
+inline ::uno::PullData* ServerResync::add_sync() {
+  ::uno::PullData* _add = _internal_add_sync();
+  // @@protoc_insertion_point(field_add:uno.ServerResync.sync)
+  return _add;
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::uno::PullData >&
+ServerResync::sync() const {
+  // @@protoc_insertion_point(field_list:uno.ServerResync.sync)
+  return _impl_.sync_;
 }
 
 #ifdef __GNUC__

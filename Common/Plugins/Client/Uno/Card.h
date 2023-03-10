@@ -40,7 +40,7 @@ enum COLOR_ID : uint32_t
 	COLOR_GREEN,
 	COLOR_BLUE,
 	COLOR_BLACK,
-	COLOR_INVALID = -1
+	COLOR_INVALID = (uint32_t)-1
 };
 
 enum CARD_EFFECT
@@ -149,6 +149,7 @@ struct CardHand
 	int mouseSelectedCard = -1;
 
 	int cardIdxSendToServer = -1;
+    int playIdxAfterChoosing = -1; // play this card, after choosing a color 
 
 	int handID = 0;
 	float rotation = 0.0f;

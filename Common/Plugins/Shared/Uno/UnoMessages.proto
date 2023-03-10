@@ -29,3 +29,8 @@ message ServerPlayCard
 	required int32 next_player_in_turn = 2;
 	required CardData card = 3;
 }
+message ServerResync 
+{
+    repeated PullData sync = 1;
+    required CardData top_card = 2;
+}

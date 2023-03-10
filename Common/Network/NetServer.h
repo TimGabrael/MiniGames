@@ -11,24 +11,28 @@ struct NetServer : public NetServerInterface
 
 	virtual ~NetServer();
 
-	virtual ServerConnection* GetConnection(uint16_t id);
-	virtual void SetCallback(ServerPacketFunction fn, uint16_t packetID);
-	virtual void SetDeserializer(DeserializationFunc fn, uint16_t packetID);
+	virtual ServerConnection* GetConnection(uint16_t id) override;
+	virtual void SetCallback(ServerPacketFunction fn, uint16_t packetID) override;
+	virtual void SetDeserializer(DeserializationFunc fn, uint16_t packetID) override;
 
-	virtual void SetJoinCallback(ServerJoinCallbackFunction fn);
-	virtual void SetClientStateCallback(ServerClientStateChangeCallbackFunction fn);
-	virtual void SetDisconnectCallback(ServerDisconnectCallbackFunction fn);
+	virtual void SetJoinCallback(ServerJoinCallbackFunction fn) override;
+	virtual void SetClientStateCallback(ServerClientStateChangeCallbackFunction fn) override;
+	virtual void SetDisconnectCallback(ServerDisconnectCallbackFunction fn) override;
 
-	virtual bool SendData(ServerConnection* conn, uint16_t packetID, const void* data, uint32_t size, uint32_t flags);
+    virtual bool SerializeAndStore(uint16_t packetID, const google::protobuf::Message* msg) override;
+    virtual bool SerializeAndStore(uint16_t packetID, const void* data, uint32_t data_size) override;
+    virtual bool SendData(ServerConnection* conn, uint32_t flags) override;
+    virtual bool SendDataRaw(ServerConnection* conn, const void* data, uint32_t data_size, uint32_t flags) override;
 
-	virtual bool IsP2P() const;
+
+	virtual bool IsP2P() const override;
 
 
 	void Poll();
 
 
 	// Verify ServerData state, needs to have ServerData set as userdata
-	virtual bool CheckConnectionStateAndSend(ServerConnection* c);
+	virtual bool CheckConnectionStateAndSend(ServerConnection* c) override;
 
 	struct ServerData* data = nullptr;
 	NetSocketServer socket;
@@ -62,7 +66,8 @@ private:
 	ServerClientStateChangeCallbackFunction stateCB = nullptr;
 	ServerDisconnectCallbackFunction disconnectCB = nullptr;
 	std::vector<CallbackInfo> callbacks;
-	std::vector<char> tempStorage;
+	uint8_t tempStorage[MAX_MESSAGE_LENGTH + 20];
+    size_t storedSize;
 
 };
 

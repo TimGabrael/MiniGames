@@ -54,8 +54,7 @@ public:
 
 			base::ClientLobbyVote netVote;
 			netVote.set_plugin_id(INVALID_ID);
-			std::string serMsg = netVote.SerializeAsString();
-			app->client->SendData(Client_LobbyVote, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
+			app->client->SendData(Client_LobbyVote, &netVote, SendFlags::Send_Reliable);
 
 		}
 	}
@@ -158,8 +157,7 @@ private:
 			
 			base::ClientLobbyVote netVote;
 			netVote.set_plugin_id(plugID);
-			std::string serMsg = netVote.SerializeAsString();
-			app->client->SendData(Client_LobbyVote, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
+			app->client->SendData(Client_LobbyVote, &netVote, SendFlags::Send_Reliable);
 
 		}
 	}
@@ -343,9 +341,7 @@ public:
 				float waitTime = adminChooses->checkState() == Qt::Checked ? 0.0f : maxTimer;
 				base::ClientLobbyAdminTimer timerMsg;
 				timerMsg.set_time(waitTime);
-				const std::string serMsg = timerMsg.SerializeAsString();
-
-				app->client->SendData(Client_LobbyAdminTimer, serMsg.data(), serMsg.length(), SendFlags::Send_Reliable);
+				app->client->SendData(Client_LobbyAdminTimer, &timerMsg, SendFlags::Send_Reliable);
 			}
 		}
 	}

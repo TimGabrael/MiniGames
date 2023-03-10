@@ -2,6 +2,7 @@
 #include <string>
 #include "Graphics/Helper.h"
 #include "Graphics/Camera.h"
+#include "Plugins/Client/Uno/NetHandlers.h"
 #include "logging.h" // REMINDER USE THIS !! USE THIS NOT <iostream> !!
 #include "Graphics/PbrRendering.h"
 #include "Graphics/UiRendering.h"
@@ -175,71 +176,6 @@ void GameUpdateFunction(UnoGlobals* g_objs, float dt)
 
 
 
-static void* __stdcall PlayCardDeserializer(char* packet, int packetSize)
-{
-	static uno::ServerPlayCard play;
-	if (play.ParseFromArray(packet, packetSize))  return &play;
-	return nullptr;
-}
-static void* __stdcall PullCardsDeserializer(char* packet, int packetSize)
-{
-	static uno::ServerPullCards pull;
-	if (pull.ParseFromArray(packet, packetSize)) return &pull;
-	return nullptr;
-}
-
-static bool __stdcall PlayCardCallback(ApplicationData* app, uno::ServerPlayCard* play, int packetSize)
-{
-	UnoPlugin* uno = GetInstance();
-	GameStateData* game = GetGameState();
-	uint16_t cID = play->client_id();
-	uint32_t face = play->card().face();
-	uint32_t color = play->card().color();
-	if (face <= CardFace::CARD_UNKNOWN && color <= CardColor::CARD_COLOR_UNKOWN)
-	{
-		CardData playing((CardFace)face, (CardColor)color);
-		CARD_ID outCard = CARD_ID::NUM_AVAILABLE_CARDS;
-		COLOR_ID outColor = COLOR_INVALID;
-		CardDataToRenderCard(playing, outCard, outColor);
-		if (cID == 0xFFFF)
-		{
-			// server plays the card
-			uno->g_objs->stack.SetTop(outCard, outColor);
-		}
-		else
-		{
-			CardHand* hand = game->GetHandForcefully(cID);
-			hand->PlayCardServer(uno->g_objs->stack, uno->g_objs->anims, outCard, outColor);
-		}
-		game->playerInTurn = play->next_player_in_turn();
-		game->topCard = playing;
-	}
-	return true;
-}
-static bool __stdcall PullCardCallback(ApplicationData* app, uno::ServerPullCards* pull, int packetSize)
-{
-	UnoPlugin* uno = GetInstance();
-	GameStateData* game = GetGameState();
-	
-	for (const auto& p : pull->pulls())
-	{
-		PlayerInfo* info = game->GetPlayerInfoForcefully(p.client_id());
-		if (!info->hand) info->hand = game->GetHandForcefully(p.client_id());
-
-		for (const auto& c : p.cards())
-		{
-			CardData card((CardFace)c.face(), (CardColor)c.color());
-			CARD_ID addCard = CARD_ID_BLANK;
-			COLOR_ID temp = COLOR_INVALID;
-			CardDataToRenderCard(card, addCard, temp);
-			info->hand->PullCardServer(uno->g_objs->playerCam, uno->g_objs->stack, uno->g_objs->deck, uno->g_objs->anims, addCard);
-		}
-	}
-	game->playerInTurn = pull->next_player_in_turn();
-	return true;
-}
-
-
 //#define ALLOW_FREEMOVEMENT
 SceneDirLight* light = nullptr;
 void UnoPlugin::Init(ApplicationData* data)
@@ -248,16 +184,7 @@ void UnoPlugin::Init(ApplicationData* data)
 	initialized = true;
 	this->backendData = data;
 	
-
-
-
-	data->net->SetDeserializer(PlayCardDeserializer, Server_UnoPlayCard);
-	data->net->SetDeserializer(PullCardsDeserializer, Server_UnoPullCards);
-	data->net->SetCallback((ClientPacketFunction)PlayCardCallback, Server_UnoPlayCard);
-	data->net->SetCallback((ClientPacketFunction)PullCardCallback, Server_UnoPullCards);
-
-
-
+    UnoFillNetHandlers(data);
 
 	InitializeOpenGL(data->assetManager);
 	InitializeCardPipeline(data->assetManager);
@@ -532,7 +459,7 @@ void UnoPlugin::Render(ApplicationData* data)
 		ImGui::Begin("_pull_button", nullptr, ImGuiWindowFlags_::ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_::ImGuiWindowFlags_NoDecoration);
 		bool pressed = ImGui::Button("Pull-Cards", ImVec2(200, 100));
 		if (game.playerInTurn == backendData->localPlayer.clientID && g_objs->anims.inputsAllowed && pressed) {
-			backendData->net->SendData(Client_UnoPullCards, nullptr, 0, SendFlags::Send_Reliable);
+			backendData->net->SendData(Client_UnoPullCards, nullptr, SendFlags::Send_Reliable);
 		}
 		ImGui::End();
 
