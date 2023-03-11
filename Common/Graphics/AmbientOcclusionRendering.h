@@ -7,3 +7,4 @@ void CleanUpAmbientOcclusionPipeline();
 
 
 void RenderAmbientOcclusionQuad(GLuint depthTexture, float depthTexSizeX, float depthTexSizeY);
+

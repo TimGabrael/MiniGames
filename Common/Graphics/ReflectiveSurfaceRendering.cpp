@@ -1,4 +1,5 @@
 #include "ReflectiveSurfaceRendering.h"
+#include "Graphics/Scene.h"
 #include "Helper.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include "Renderer.h"
@@ -99,13 +100,23 @@ struct ReflectiveSurfaceMaterial
 	GLuint dataUniform;
 };
 
-struct ReflectiveSurfaceSceneObject
+struct ReflectiveSurfaceSceneObject : public SceneObject
 {
-	BaseSceneObject base;
-	glm::mat4* modelTransform;
-	ReflectiveSurfaceMaterial* material;
+
+	glm::mat4 modelTransform;
+	ReflectiveSurfaceMaterial material;
+
+    ReflectiveSurfaceSceneObject(const glm::vec3* pos, const glm::vec3* normal, float scaleX, float scaleY, const ReflectiveSurfaceMaterialData* data, const ReflectiveSurfaceTextures* texData);
+    virtual ~ReflectiveSurfaceSceneObject() override;
+    virtual size_t GetType() const override;
+    virtual void DrawGeometry(StandardRenderPassData* pass) override;
+    virtual void DrawOpaque(StandardRenderPassData* pass) override;
+    virtual void DrawBlend(StandardRenderPassData* pass) override;
+    virtual void DrawBlendClip(ReflectPlanePassData* pass) override;
+    virtual void DrawOpaqueClip(ReflectPlanePassData* pass) override;
+
+
 };
-static_assert(sizeof(ReflectiveSurfaceSceneObject) <= sizeof(SceneObject), "INVALID OBJECT SIZE");
 
 
 void InitializeReflectiveSurfacePipeline()
@@ -135,64 +146,25 @@ void InitializeReflectiveSurfacePipeline()
 	g_reflect.geomUnis.clipPlaneLoc = glGetUniformLocation(g_reflect.geometryProgram, "clipPlane");
 	g_reflect.geomUnis.materialLoc = glGetUniformBlockIndex(g_reflect.geometryProgram, "Material");
 	glUniformBlockBinding(g_reflect.geometryProgram, g_reflect.geomUnis.materialLoc, g_reflect.geomUnis.materialLoc);
-
 }
-SceneObject* AddReflectiveSurface(PScene scene, const glm::vec3* pos, const glm::vec3* normal, float scaleX, float scaleY, const ReflectiveSurfaceMaterialData* data, const ReflectiveSurfaceTextures* texData)
+void UninitializeReflectiveSurfacePipeline() {
+    glDeleteProgram(g_reflect.geometryProgram);
+    glDeleteProgram(g_reflect.program);
+}
+
+SceneObject* AddReflectiveSurface(PScene scene, const glm::vec3* pos, const glm::vec3* normal, float scaleX, float scaleY, const ReflectiveSurfaceMaterialData* data, const ReflectiveSurfaceTextures* texData) 
 {
-	ReflectiveSurfaceSceneObject* obj = (ReflectiveSurfaceSceneObject*)SC_AddSceneObject(scene, REFLECTIVE_RENDERABLE);
-	
-	obj->base.flags = SCENE_OBJECT_FLAGS::SCENE_OBJECT_OPAQUE | SCENE_OBJECT_FLAGS::SCENE_OBJECT_CAST_SHADOW | SCENE_OBJECT_FLAGS::SCENE_OBJECT_REFLECTED | SCENE_OBJECT_FLAGS::SCENE_OBJECT_SURFACE_REFLECTED;
-
-	obj->base.bbox.leftTopFront = { -0.5f, -0.5f, -0.1f };
-	obj->base.bbox.rightBottomBack = { 0.5f, 0.5f, 0.1f };
-
-
-	obj->material = (ReflectiveSurfaceMaterial*)SC_AddMaterial(scene, REFLECTIVE_RENDERABLE, sizeof(ReflectiveSurfaceMaterial));
-	obj->modelTransform = (glm::mat4*)SC_AddTransform(scene, REFLECTIVE_RENDERABLE, sizeof(glm::mat4));
-
-	const glm::vec3 norm = glm::normalize(*normal);
-	const float product = glm::dot(norm, glm::vec3(0.0f, 0.0f, 1.0f));
-	const glm::vec3 rotVec = glm::cross(norm, glm::vec3(0.0f, 0.0f, 1.0f));
-	const float angle = acosf(product);
-	
-
-	if(angle != 0.0f)
-	{
-		*obj->modelTransform = glm::translate(glm::mat4(1.0f), *pos) * glm::rotate(glm::mat4(1.0f), -angle, rotVec) * glm::scale(glm::mat4(1.0f), glm::vec3(scaleX, scaleY, 1.0f));
-	}
-	else
-	{
-		*obj->modelTransform = glm::translate(glm::mat4(1.0f), *pos) * glm::scale(glm::mat4(1.0f), glm::vec3(scaleX, scaleY, 1.0f));
-	}
-	obj->base.bbox.leftTopFront = *obj->modelTransform * glm::vec4(obj->base.bbox.leftTopFront, 1.0f);
-	obj->base.bbox.rightBottomBack = *obj->modelTransform * glm::vec4(obj->base.bbox.rightBottomBack, 1.0f);
-	auto& min = obj->base.bbox.leftTopFront;
-	auto& max = obj->base.bbox.rightBottomBack;
-	if (min.x > max.x) { float temp = max.x; max.x = min.x; min.x = temp; }
-	if (min.y > max.y) { float temp = max.y; max.y = min.y; min.y = temp; }
-	if (min.z > max.z) { float temp = max.z; max.z = min.z; min.z = temp; }
-
-	if (texData)
-	{
-		obj->material->dudv = texData->dudv;
-		obj->material->reflectionTexture = texData->reflect;
-		obj->material->refractionTexture = texData->refract;
-	}
-
-	glGenBuffers(1, &obj->material->dataUniform);
-	glBindBuffer(GL_UNIFORM_BUFFER, obj->material->dataUniform);
-
-	glBufferData(GL_UNIFORM_BUFFER, sizeof(ReflectiveSurfaceMaterialData), data, GL_STATIC_DRAW);
-
-	return (SceneObject*)obj;
+    SceneObject* obj = new ReflectiveSurfaceSceneObject(pos, normal, scaleX, scaleY, data, texData);
+    SC_AddSceneObject(scene, obj);
+    return obj;
 }
 
 void ReflectiveSurfaceSetTextureData(SceneObject* objd, const ReflectiveSurfaceTextures* texData)
 {
 	ReflectiveSurfaceSceneObject* obj = (ReflectiveSurfaceSceneObject*)objd;
-	obj->material->dudv = texData->dudv;
-	obj->material->reflectionTexture = texData->reflect;
-	obj->material->refractionTexture = texData->refract;
+	obj->material.dudv = texData->dudv;
+	obj->material.reflectionTexture = texData->reflect;
+	obj->material.refractionTexture = texData->refract;
 }
 
 static void DrawReflectiveSurface(ReflectiveSurfaceSceneObject* obj, const StandardRenderPassData* stdData, const glm::vec4* clipPlane, bool geometryOnly)
@@ -200,14 +172,14 @@ static void DrawReflectiveSurface(ReflectiveSurfaceSceneObject* obj, const Stand
 	ReflectiveSurfaceUniforms* unis = geometryOnly ? &g_reflect.geomUnis : &g_reflect.unis;
 	glUseProgramWrapper(geometryOnly ? g_reflect.geometryProgram : g_reflect.program);
 	if(!geometryOnly)
-		glBindBufferBase(GL_UNIFORM_BUFFER, unis->materialLoc, obj->material->dataUniform);
+		glBindBufferBase(GL_UNIFORM_BUFFER, unis->materialLoc, obj->material.dataUniform);
 	
 	glActiveTexture(GL_TEXTURE0 + RS_TEXTURE_REFLECT);
-	glBindTexture(GL_TEXTURE_2D, obj->material->reflectionTexture);
+	glBindTexture(GL_TEXTURE_2D, obj->material.reflectionTexture);
 	glActiveTexture(GL_TEXTURE0 + RS_TEXTURE_REFRACT);
-	glBindTexture(GL_TEXTURE_2D, obj->material->refractionTexture);
+	glBindTexture(GL_TEXTURE_2D, obj->material.refractionTexture);
 	glActiveTexture(GL_TEXTURE0 + RS_TEXTURE_DVDU);
-	glBindTexture(GL_TEXTURE_2D, obj->material->dudv);
+	glBindTexture(GL_TEXTURE_2D, obj->material.dudv);
 	glActiveTexture(GL_TEXTURE0 + RS_TEXTURE_SHADOWMAP);
 	glBindTexture(GL_TEXTURE_2D, stdData->shadowMap);
 	glActiveTexture(GL_TEXTURE0 + RS_TEXTURE_GLOBAL_AOMAP);
@@ -217,7 +189,7 @@ static void DrawReflectiveSurface(ReflectiveSurfaceSceneObject* obj, const Stand
 
 	glUniformMatrix4fv(unis->projLoc, 1, GL_FALSE, (const GLfloat*)stdData->camProj);
 	glUniformMatrix4fv(unis->viewLoc, 1, GL_FALSE, (const GLfloat*)stdData->camView);
-	glUniformMatrix4fv(unis->modelLoc, 1, GL_FALSE, (const GLfloat*)obj->modelTransform);
+	glUniformMatrix4fv(unis->modelLoc, 1, GL_FALSE, (const GLfloat*)&obj->modelTransform);
 	glBindBufferBase(GL_UNIFORM_BUFFER, unis->lightDataLoc, stdData->lightData);
 	
 
@@ -228,7 +200,6 @@ static void DrawReflectiveSurface(ReflectiveSurfaceSceneObject* obj, const Stand
 
 
 	glDrawArrays(GL_TRIANGLES, 0, 6);
-
 }
 
 static void DrawReflectGeoemtry(SceneObject* obj, void* data)
@@ -248,10 +219,64 @@ static void DrawReflectPlane(SceneObject* obj, void* data)
 	SetDefaultOpaqueState();
 	DrawReflectiveSurface((ReflectiveSurfaceSceneObject*)obj, planeData->base, planeData->planeEquation, false);
 }
-PFUNCDRAWSCENEOBJECT ReflectiveSurfaceGetDrawFunction(TYPE_FUNCTION f)
-{
-	if (f == TYPE_FUNCTION::TYPE_FUNCTION_OPAQUE) return DrawReflectStandard;
-	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_CLIP_PLANE_OPAQUE) return DrawReflectPlane;
-	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_GEOMETRY) return DrawReflectGeoemtry;
-	return nullptr;
+
+ReflectiveSurfaceSceneObject::ReflectiveSurfaceSceneObject(const glm::vec3* pos, const glm::vec3* normal, float scaleX, float scaleY, const ReflectiveSurfaceMaterialData* data, const ReflectiveSurfaceTextures* texData) {
+	
+	flags = SCENE_OBJECT_FLAGS::SCENE_OBJECT_OPAQUE | SCENE_OBJECT_FLAGS::SCENE_OBJECT_CAST_SHADOW | SCENE_OBJECT_FLAGS::SCENE_OBJECT_REFLECTED | SCENE_OBJECT_FLAGS::SCENE_OBJECT_SURFACE_REFLECTED;
+    lightGroups = 0xFFFF;
+
+	bbox.leftTopFront = { -0.5f, -0.5f, -0.1f };
+	bbox.rightBottomBack = { 0.5f, 0.5f, 0.1f };
+
+	const glm::vec3 norm = glm::normalize(*normal);
+	const float product = glm::dot(norm, glm::vec3(0.0f, 0.0f, 1.0f));
+	const glm::vec3 rotVec = glm::cross(norm, glm::vec3(0.0f, 0.0f, 1.0f));
+	const float angle = acosf(product);
+	if(angle != 0.0f)
+	{
+		modelTransform = glm::translate(glm::mat4(1.0f), *pos) * glm::rotate(glm::mat4(1.0f), -angle, rotVec) * glm::scale(glm::mat4(1.0f), glm::vec3(scaleX, scaleY, 1.0f));
+	}
+	else
+	{
+		modelTransform = glm::translate(glm::mat4(1.0f), *pos) * glm::scale(glm::mat4(1.0f), glm::vec3(scaleX, scaleY, 1.0f));
+	}
+
+	bbox.leftTopFront = modelTransform * glm::vec4(bbox.leftTopFront, 1.0f);
+	bbox.rightBottomBack = modelTransform * glm::vec4(bbox.rightBottomBack, 1.0f);
+	auto& min = bbox.leftTopFront;
+	auto& max = bbox.rightBottomBack;
+	if (min.x > max.x) { float temp = max.x; max.x = min.x; min.x = temp; }
+	if (min.y > max.y) { float temp = max.y; max.y = min.y; min.y = temp; }
+	if (min.z > max.z) { float temp = max.z; max.z = min.z; min.z = temp; }
+
+	if (texData)
+	{
+		material.dudv = texData->dudv;
+		material.reflectionTexture = texData->reflect;
+		material.refractionTexture = texData->refract;
+	}
+
+	glGenBuffers(1, &material.dataUniform);
+	glBindBuffer(GL_UNIFORM_BUFFER, material.dataUniform);
+
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(ReflectiveSurfaceMaterialData), data, GL_STATIC_DRAW);
 }
+ReflectiveSurfaceSceneObject::~ReflectiveSurfaceSceneObject() {
+
+}
+size_t ReflectiveSurfaceSceneObject::GetType() const {
+    return 1;
+}
+
+void ReflectiveSurfaceSceneObject::DrawGeometry(StandardRenderPassData* pass) {
+	//DrawReflectiveSurface(this, pass, nullptr, true);
+}
+void ReflectiveSurfaceSceneObject::DrawOpaque(StandardRenderPassData* pass) {
+	DrawReflectiveSurface(this, pass, nullptr, false);
+}
+void ReflectiveSurfaceSceneObject::DrawBlend(StandardRenderPassData* pass) {}
+void ReflectiveSurfaceSceneObject::DrawBlendClip(ReflectPlanePassData* pass) {}
+void ReflectiveSurfaceSceneObject::DrawOpaqueClip(ReflectPlanePassData* pass) {}
+
+
+

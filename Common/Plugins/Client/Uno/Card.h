@@ -56,9 +56,16 @@ enum CARD_ANIMATIONS
 	ANIM_UNPLAYABLE,	// shake card if it is not playable
 };
 
-struct CardSceneObject	// doesn't have any data in it, uses the global card data to draw batches
+struct CardSceneObject : public SceneObject// doesn't have any data in it, uses the global card data to draw batches
 {
-	BaseSceneObject base;
+    virtual ~CardSceneObject() override;
+    virtual size_t GetType() const override;
+
+    virtual void DrawGeometry(StandardRenderPassData* pass) override;
+    virtual void DrawOpaque(StandardRenderPassData* pass) override;
+    virtual void DrawBlend(StandardRenderPassData* pass) override;
+    virtual void DrawBlendClip(ReflectPlanePassData* pass) override;
+    virtual void DrawOpaqueClip(ReflectPlanePassData* pass) override;
 };
 
 
@@ -70,7 +77,6 @@ void RendererAddEffect(CARD_EFFECT effect, const glm::vec3& pos, const glm::quat
 void ClearCards();
 
 
-void AddCardTypeToScene(PScene scene);
 CardSceneObject* CreateCardBatchSceneObject(PScene scene);
 
 
@@ -202,3 +208,4 @@ struct CardsInAnimation
 
 CardData RenderCardToCardData(CARD_ID id, COLOR_ID optionalColor);
 void CardDataToRenderCard(CardData in, CARD_ID& outID, COLOR_ID& outColor);
+

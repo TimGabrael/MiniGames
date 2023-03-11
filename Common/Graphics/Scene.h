@@ -2,14 +2,39 @@
 #include <glm/glm.hpp>
 #include "GLCompat.h"
 
+struct StandardRenderPassData
+{
+	const glm::mat4* camView;
+	const glm::mat4* camProj;
+	const glm::vec3* camPos;
+	const glm::mat4* camViewProj;
+	glm::vec2 renderSize;
+
+	GLuint cameraUniform;
+	GLuint skyBox;
+	GLuint shadowMap;
+	GLuint ambientOcclusionMap;
+
+	// These will be set by the renderer
+	GLuint lightData;
+    bool drawShadow;
+};
+struct ReflectPlanePassData
+{
+	const StandardRenderPassData* base;
+	const glm::vec4* planeEquation;
+};
+struct AmbientOcclusionPassData
+{
+	const StandardRenderPassData* std;
+	GLuint noiseTexture;
+	GLuint depthMap;
+	GLuint aoUBO;
+};
+
+
 
 typedef void* PScene;
-typedef void* PMesh;
-typedef void* PMaterial;
-typedef void* PTransform;
-struct SceneObject;
-
-typedef void(*PFUNCDRAWSCENEOBJECT)(SceneObject* obj, void* renderPassData);
 
 struct BoundingBox
 {
@@ -35,51 +60,35 @@ enum TYPE_FUNCTION
 	TYPE_FUNCTION_CLIP_PLANE_BLEND,		// drawing with a set clipping plane, used for reflective surfaces
 	NUM_TYPE_FUNCTION
 };
-typedef PFUNCDRAWSCENEOBJECT(*PFUNCGETDRAWFUNCTION)(TYPE_FUNCTION f);
 
-struct BaseSceneObject
-{
+struct SceneObject {
 	BoundingBox bbox;
 	uint16_t lightGroups;	// bit field
 	uint16_t flags;
 	uint32_t additionalFlags;
+
+    virtual ~SceneObject() {}
+
+    virtual size_t GetType() const = 0;
+    virtual void DrawGeometry(StandardRenderPassData* pass) = 0;
+    virtual void DrawOpaque(StandardRenderPassData* pass) = 0;
+    virtual void DrawBlend(StandardRenderPassData* pass) = 0;
+    virtual void DrawBlendClip(ReflectPlanePassData* pass) = 0;
+    virtual void DrawOpaqueClip(ReflectPlanePassData* pass) = 0;
+
+
 };
-
-struct SceneObject	// the mesh/material/transform component can be interchanged with anything, but the Base shall stay the same for all scene object types
-{
-	BaseSceneObject base;
-	PMesh mesh;					// these just show intended uses, nothing is enforced here
-	PMaterial material;			// these just show intended uses, nothing is enforced here
-	PTransform transform;		// these just show intended uses, nothing is enforced here
-};
-
-
-struct ObjectRenderStruct
-{
-	SceneObject* obj;
-	PFUNCDRAWSCENEOBJECT DrawFunc;
-};
-
 
 
 
 PScene SC_CreateScene();
+void SC_DestroyScene(PScene scene);
 
-// returns the type index, increases by one every time a new type is added starting from 0
-uint32_t SC_AddType(PScene scene, PFUNCGETDRAWFUNCTION functions);
-PMaterial SC_AddMaterial(PScene scene, uint32_t typeIndex, uint32_t materialSize);
-PMesh SC_AddMesh(PScene scene, uint32_t typeIndex, uint32_t meshSize);
-PTransform SC_AddTransform(PScene scene, uint32_t typeIndex, uint32_t transformSize);
-SceneObject* SC_AddSceneObject(PScene scene, uint32_t typeIndex);
+void SC_AddSceneObject(PScene scene, SceneObject* obj);
 
 ScenePointLight* SC_AddPointLight(PScene scene);
 SceneDirLight* SC_AddDirectionalLight(PScene scene);
 
-
-void SC_RemoveType(PScene scene, uint32_t typeIndex);
-void SC_RemoveMaterial(PScene scene, uint32_t typeIndex, uint32_t materialSize, PMaterial rmMaterial);
-void SC_RemoveMesh(PScene scene, uint32_t typeIndex, uint32_t meshSize, PMesh rmMesh);
-void SC_RemoveTransform(PScene scene, uint32_t typeIndex, uint32_t transformSize, PTransform rmTransform);
 void SC_RemoveSceneObject(PScene scene, uint32_t typeIndex, SceneObject* rmObj);
 
 void SC_RemovePointLight(PScene scene, ScenePointLight* light);
@@ -89,7 +98,9 @@ int SC_GetNumLights(PScene scene);
 void SC_FillLights(PScene scene, ScenePointLight** pl, SceneDirLight** dl);
 
 
-ObjectRenderStruct* SC_GenerateRenderList(PScene scene);
-ObjectRenderStruct* SC_FillRenderList(PScene scene, ObjectRenderStruct* list, const glm::mat4* viewProjMatrix, int* num, TYPE_FUNCTION funcType, uint32_t objFlag);
-ObjectRenderStruct* SC_AppendRenderList(PScene scene, ObjectRenderStruct* list, const glm::mat4* viewProjMatrix, int* num, TYPE_FUNCTION funcType, uint32_t objFlag, int curNum);
-void SC_FreeRenderList(ObjectRenderStruct* list);
+SceneObject** SC_GenerateRenderList(PScene scene);
+SceneObject** SC_FillRenderList(PScene scene, SceneObject** list, const glm::mat4* viewProjMatrix, int* num, uint32_t objFlag);
+SceneObject** SC_AppendRenderList(PScene scene, SceneObject** list, const glm::mat4* viewProjMatrix, int* num, uint32_t objFlag, int curNum);
+void SC_FreeRenderList(SceneObject** list);
+
+

@@ -25,14 +25,21 @@ struct UBOParams
 	float debugViewInputs = 0.0f;
 	float debugViewEquation = 0.0f;
 };
-struct PBRSceneObject
+struct PBRSceneObject : public SceneObject
 {
-	BaseSceneObject base;
 	void* model;
-	glm::mat4* transform;
+	glm::mat4 transform;
 	GLuint uboParamsUniform;
+    void Set(void* internal, UBOParams params, const glm::mat4& transform);
+
+    virtual ~PBRSceneObject();
+    virtual size_t GetType() const override;
+    virtual void DrawGeometry(StandardRenderPassData* pass) override;
+    virtual void DrawOpaque(StandardRenderPassData* pass) override;
+    virtual void DrawBlend(StandardRenderPassData* pass) override;
+    virtual void DrawBlendClip(ReflectPlanePassData* pass) override;
+    virtual void DrawOpaqueClip(ReflectPlanePassData* pass) override;
 };
-static_assert(sizeof(PBRSceneObject) <= sizeof(SceneObject), "INVALID SIZE");
 
 
 void InitializePbrPipeline(void* assetManager);
@@ -42,12 +49,8 @@ void CleanUpPbrPipeline();
 void* CreateInternalPBRFromFile(const char* filename, float scale);
 void CleanUpInternal(void* internalObj);
 
-void DrawPBRModel(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform, GLuint environmentMap, GLuint shadowMap, GLuint globalAOMap, GLuint lightDataUniform, const glm::vec2& renderSz, const glm::mat4* model, const glm::vec4* clipPlane, bool drawOpaque, bool geomOnly);
-void DrawPBRModelNode(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform, GLuint lightDataUniform, GLuint environmentMap, const glm::mat4* model, const glm::vec4* clipPlane, int nodeIdx, bool drawOpaque, bool geomOnly);
 void UpdateAnimation(void* internalObj, uint32_t index, float time);
 
 
+PBRSceneObject* AddPbrModelToScene(PScene scene, void* internal, UBOParams params, const glm::mat4& transform);
 
-PFUNCDRAWSCENEOBJECT PBRModelGetDrawFunction(TYPE_FUNCTION f);
-
-PBRSceneObject* AddPbrModelToScene(PScene scene, void* internalObj, UBOParams params, const glm::mat4& transform);

@@ -35,35 +35,6 @@ struct IntermediateTextureData
 };
 
 
-struct StandardRenderPassData
-{
-	const glm::mat4* camView;
-	const glm::mat4* camProj;
-	const glm::vec3* camPos;
-	const glm::mat4* camViewProj;
-	glm::vec2 renderSize;
-
-	GLuint cameraUniform;
-	GLuint skyBox;
-	GLuint shadowMap;
-	GLuint ambientOcclusionMap;
-
-	// These will be set by the renderer
-	GLuint lightData;
-};
-struct ReflectPlanePassData
-{
-	const StandardRenderPassData* base;
-	const glm::vec4* planeEquation;
-};
-struct AmbientOcclusionPassData
-{
-	const StandardRenderPassData* std;
-	GLuint noiseTexture;
-	GLuint depthMap;
-	GLuint aoUBO;
-};
-
 void InitializeRendererBackendData();
 void CleanUpRendererBackendData();
 

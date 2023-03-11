@@ -563,20 +563,6 @@ void StreamArrayBuffer::Append(const void* data, uint32_t dataSize, uint32_t siz
 }
 
 
-
-PScene CreateAndInitializeSceneAsDefault()
-{
-	PScene scene = SC_CreateScene();
-	const uint32_t indexS3D = SC_AddType(scene, S3DGetDrawFunctions);
-	assert(indexS3D == 0);
-	const uint32_t indexPBR = SC_AddType(scene, PBRModelGetDrawFunction);
-	assert(indexPBR == 1);
-	const uint32_t indexReflect = SC_AddType(scene, ReflectiveSurfaceGetDrawFunction);
-	assert(indexReflect == 2);
-
-	return scene;
-}
-
 SingleFBO CreateSingleFBO(int width, int height)
 {
 	SingleFBO out;

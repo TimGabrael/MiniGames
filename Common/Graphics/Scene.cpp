@@ -3,6 +3,8 @@
 #include <malloc.h>
 #include <assert.h>
 #include <memory.h>
+#include <vector>
+#include <algorithm>
 
 
 #include "logging.h"
@@ -128,137 +130,47 @@ static void* GetElementFromList(PtrSafeBatchListHeader64* list, uint32_t idx, ui
 
 
 
+
 struct _ImplScene
 {
-	PtrSafeBatchListHeader64** objectDatas;
-
-
-	PtrSafeBatchListHeader64** meshes;
-	PtrSafeBatchListHeader64** materials;
-	PtrSafeBatchListHeader64** transforms;
+    std::vector<SceneObject*> objects;
 
 	PtrSafeBatchListHeader64* pointLights;
 	PtrSafeBatchListHeader64* directionalLights;
 
-	PFUNCGETDRAWFUNCTION* functions;
-
-	int numTypes;
-	int capacityTypes;
-
-	int numObjects;
-	int numPointLights;
-	int numDirectionalLights;
+	int numPointLights = 0;
+	int numDirectionalLights = 0;
 };
 
 
 
 PScene SC_CreateScene()
 {
-	_ImplScene* scene = (_ImplScene*)malloc(sizeof(_ImplScene));
-	assert(scene != nullptr);
-	memset(scene, 0, sizeof(_ImplScene));
+	_ImplScene* scene = new _ImplScene();
 	scene->pointLights = CreateBatchList(sizeof(PointLightData));
 	scene->directionalLights = CreateBatchList(sizeof(DirectionalLightData));
 	return scene;
 }
-uint32_t SC_AddType(PScene scene, PFUNCGETDRAWFUNCTION function)
-{
-	assert(scene != nullptr && function != nullptr);
-	_ImplScene* sc = (_ImplScene*)scene;
-	if (sc->numTypes + 1 >= sc->capacityTypes)
-	{
-		sc->capacityTypes = sc->capacityTypes + SCENE_ALLOCATION_TYPES_STEPS;
-		{
-			PFUNCGETDRAWFUNCTION* funcs = (PFUNCGETDRAWFUNCTION*)malloc(sc->capacityTypes * sizeof(PFUNCGETDRAWFUNCTION));
-			memset(funcs, 0, sc->capacityTypes * sizeof(PFUNCGETDRAWFUNCTION));
-			if (sc->functions)
-			{
-				memcpy(funcs, sc->functions, sc->numTypes * sizeof(PFUNCGETDRAWFUNCTION));
-				free(sc->functions);
-			}
-			sc->functions = funcs;
-		}
-		{
-			PtrSafeBatchListHeader64** objs = (PtrSafeBatchListHeader64**)malloc(sc->capacityTypes * sizeof(void*));
-			memset(objs, 0, sc->capacityTypes * sizeof(void*));
-			if (sc->objectDatas)
-			{
-				memcpy(objs, sc->objectDatas, sc->numTypes * sizeof(void*));
-				free(sc->objectDatas);
-			}
-			sc->objectDatas = objs;
-		}
-		{
-			PtrSafeBatchListHeader64** meshes = (PtrSafeBatchListHeader64**)malloc(sc->capacityTypes * sizeof(void*));
-			memset(meshes, 0, sc->capacityTypes * sizeof(void*));
-			if (sc->meshes) 
-			{
-				memcpy(meshes, sc->meshes, sc->numTypes * sizeof(void*));
-				free(sc->meshes);
-			}
-			sc->meshes = meshes;
-		}
-		{
-			PtrSafeBatchListHeader64** materials = (PtrSafeBatchListHeader64**)malloc(sc->capacityTypes * sizeof(void*));
-			memset(materials, 0, sc->capacityTypes * sizeof(void*));
-			if (sc->materials)
-			{
-				memcpy(materials, sc->materials, sc->numTypes * sizeof(void*));
-				free(sc->materials);
-			}
-			sc->materials = materials;
-		}
-		{
-			PtrSafeBatchListHeader64** transforms = (PtrSafeBatchListHeader64**)malloc(sc->capacityTypes * sizeof(void*));
-			memset(transforms, 0, sc->capacityTypes * sizeof(void*));
-			if (sc->transforms)
-			{
-				memcpy(transforms, sc->transforms, sc->numTypes * sizeof(void*));
-				free(sc->transforms);
-			}
-			sc->transforms = transforms;
-		}
-	}
-	sc->functions[sc->numTypes] = function;
-	sc->numTypes = sc->numTypes + 1;
-	return sc->numTypes - 1;
+void SC_DestroyScene(PScene scene) {
+    _ImplScene* s = (_ImplScene*)scene;
+    DeleteList(s->pointLights);
+    DeleteList(s->directionalLights);
+    delete s;
 }
-PMaterial SC_AddMaterial(PScene scene, uint32_t typeIndex, uint32_t materialSize)
+
+
+void SC_AddSceneObject(PScene scene, SceneObject* obj)
 {
-	assert(scene != nullptr);
-	_ImplScene* sc = (_ImplScene*)scene;
-	if (typeIndex >= sc->numTypes) return nullptr;
-	if (!sc->materials[typeIndex]) sc->materials[typeIndex] = CreateBatchList(materialSize);
-	return AddElementToBatchList(sc->materials[typeIndex], materialSize);
-}
-PMesh SC_AddMesh(PScene scene, uint32_t typeIndex, uint32_t meshSize)
-{
-	assert(scene != nullptr);
-	_ImplScene* sc = (_ImplScene*)scene;
-	if (typeIndex >= sc->numTypes) return nullptr;
-	if (!sc->meshes[typeIndex]) sc->meshes[typeIndex] = CreateBatchList(meshSize);
-	return AddElementToBatchList(sc->meshes[typeIndex], meshSize);
-}
-PTransform SC_AddTransform(PScene scene, uint32_t typeIndex, uint32_t transformSize)
-{
-	assert(scene != nullptr);
-	_ImplScene* sc = (_ImplScene*)scene;
-	if (typeIndex >= sc->numTypes) return nullptr;
-	if (!sc->transforms[typeIndex]) sc->transforms[typeIndex] = CreateBatchList(transformSize);
-	return AddElementToBatchList(sc->transforms[typeIndex], transformSize);
-}
-SceneObject* SC_AddSceneObject(PScene scene, uint32_t typeIndex)
-{
-	assert(scene != nullptr);
-	_ImplScene* sc = (_ImplScene*)scene;
-	if (typeIndex >= sc->numTypes) return nullptr;
-	if (!sc->objectDatas[typeIndex]) sc->objectDatas[typeIndex] = CreateBatchList(sizeof(SceneObject));
-	SceneObject* obj = (SceneObject*)AddElementToBatchList(sc->objectDatas[typeIndex], sizeof(SceneObject));
-	if (obj) {
-		sc->numObjects = sc->numObjects + 1;
-		obj->base.lightGroups = 0xFFFF;
-	}
-	return obj;
+    assert(scene != nullptr);
+    _ImplScene* s = (_ImplScene*)scene;
+    s->objects.push_back(obj);
+    std::sort(s->objects.begin(), s->objects.end(), [](SceneObject* o1, SceneObject* o2) {
+            size_t t1 = o1->GetType();
+            size_t t2 = o2->GetType();
+            if(t1 < t2) return 1;
+            else if(t1 > t2) return -1;
+            return 0;
+    });
 }
 
 ScenePointLight* SC_AddPointLight(PScene scene)
@@ -286,45 +198,16 @@ SceneDirLight* SC_AddDirectionalLight(PScene scene)
 	return out;
 }
 
-
-
-
-void SC_RemoveType(PScene scene, uint32_t typeIndex)	// TODO: IM NOT TO SURE WHAT TO DO IN HERE, ( SHOULD THE ARRAY BE RECENTERED TO FILL IN THE HOLE CREATED BY THIS FUNCTION? )
-{
-	assert(scene != nullptr);
-	_ImplScene* sc = (_ImplScene*)scene;
-	if (typeIndex >= sc->numTypes) return;
-}
-void SC_RemoveMaterial(PScene scene, uint32_t typeIndex, uint32_t materialSize, PMaterial rmMaterial)
-{
-	assert(scene != nullptr);
-	_ImplScene* sc = (_ImplScene*)scene;
-	if (typeIndex >= sc->numTypes) return;
-	RemoveFromList(sc->materials[typeIndex], rmMaterial, materialSize);
-}
-void SC_RemoveMesh(PScene scene, uint32_t typeIndex, uint32_t meshSize, PMesh rmMesh)
-{
-	assert(scene != nullptr);
-	_ImplScene* sc = (_ImplScene*)scene;
-	if (typeIndex >= sc->numTypes) return;
-	RemoveFromList(sc->materials[typeIndex], rmMesh, meshSize);
-}
-void SC_RemoveTransform(PScene scene, uint32_t typeIndex, uint32_t transformSize, PTransform rmTransform)
-{
-	assert(scene != nullptr);
-	_ImplScene* sc = (_ImplScene*)scene;
-	if (typeIndex >= sc->numTypes) return;
-	RemoveFromList(sc->materials[typeIndex], rmTransform, transformSize);
-}
 void SC_RemoveSceneObject(PScene scene, uint32_t typeIndex, SceneObject* rmObj)
 {
 	assert(scene != nullptr);
 	_ImplScene* sc = (_ImplScene*)scene;
-	if (typeIndex >= sc->numTypes) return;
-	if (RemoveFromList(sc->materials[typeIndex], rmObj, sizeof(SceneObject)))
-	{
-		sc->numObjects = sc->numObjects - 1;
-	}
+    for(size_t i = 0; i < sc->objects.size(); i++) {
+        if(sc->objects.at(i) == rmObj) {
+            sc->objects.erase(sc->objects.begin() + i);
+            break;
+        }
+    }
 }
 
 
@@ -450,93 +333,55 @@ void GenerateBBoxView(BoundingBox* view, const glm::mat4* viewProjMatrix)
 
 
 
-ObjectRenderStruct* SC_GenerateRenderList(PScene scene)
+SceneObject** SC_GenerateRenderList(PScene scene)
 {
 	_ImplScene* sc = (_ImplScene*)scene;
-	ObjectRenderStruct* output = (ObjectRenderStruct*)malloc(sc->numObjects * 2 * sizeof(ObjectRenderStruct));	// twice as big for both opaque and blended objects
-
+	SceneObject** output = (SceneObject**)malloc(sc->objects.size() * 2 * sizeof(void*));	// twice as big for both opaque and blended objects
 	return output;
 }
-ObjectRenderStruct* SC_FillRenderList(PScene scene, ObjectRenderStruct* list, const glm::mat4* viewProjMatrix, int* num, TYPE_FUNCTION f, uint32_t objFlag)
+SceneObject** SC_FillRenderList(PScene scene, SceneObject** list, const glm::mat4* viewProjMatrix, int* num, uint32_t objFlag)
 {
-	assert(scene != nullptr && viewProjMatrix != nullptr && num != nullptr && list != nullptr && f < TYPE_FUNCTION::NUM_TYPE_FUNCTION && objFlag != 0);
+	assert(scene != nullptr && viewProjMatrix != nullptr && num != nullptr && list != nullptr && objFlag != 0);
 	_ImplScene* sc = (_ImplScene*)scene;
 	BoundingBox viewSpace;
 	GenerateBBoxView(&viewSpace, viewProjMatrix);
 
-	int count = 0;
-	for (int i = 0; i < sc->numTypes; i++)
-	{
-		PtrSafeBatchListHeader64* cur = sc->objectDatas[i];
-		PFUNCDRAWSCENEOBJECT func = sc->functions[i](f);
-		if (!func) continue;
-		while (cur)
-		{
-			for (int j = 0; j < NUM_ELEMENTS_IN_BATCH_LIST64; j++)
-			{
-				SceneObject* sObj = (SceneObject*)GetElementFromList(cur, j, sizeof(SceneObject));
-				if (sObj)
-				{
-					if ((sObj->base.flags & objFlag) == objFlag)
-					{
-						if (CubeCubeIntersectionTest(&viewSpace, &sObj->base.bbox))
-						{
-							list[count].obj = sObj;
-							list[count].DrawFunc = func;
-							count++;
-						}
-					}
-				}
-			}
-			cur = cur->next;
-		}
-	}
+    int count = 0;
+    for(SceneObject* obj : sc->objects) {
+        if((obj->flags & objFlag) == objFlag) {
+            if(CubeCubeIntersectionTest(&viewSpace, &obj->bbox)) {
+                list[count] = obj;
+                count++;
+            }
+        }
+    }
 	*num = count;
 	return list;
 }
-ObjectRenderStruct* SC_AppendRenderList(PScene scene, ObjectRenderStruct* list, const glm::mat4* viewProjMatrix, int* num, TYPE_FUNCTION f, uint32_t objFlag, int curNum)
+SceneObject** SC_AppendRenderList(PScene scene, SceneObject** list, const glm::mat4* viewProjMatrix, int* num, uint32_t objFlag, int curNum)
 {
-	assert(scene != nullptr && viewProjMatrix != nullptr && num != nullptr && list != nullptr && f < TYPE_FUNCTION::NUM_TYPE_FUNCTION&& objFlag != 0);
+	assert(scene != nullptr && viewProjMatrix != nullptr && num != nullptr && list != nullptr && objFlag != 0);
 	_ImplScene* sc = (_ImplScene*)scene;
 	BoundingBox viewSpace;
 	GenerateBBoxView(&viewSpace, viewProjMatrix);
 
 	int count = curNum;
-	for (int i = 0; i < sc->numTypes; i++)
-	{
-		PtrSafeBatchListHeader64* cur = sc->objectDatas[i];
-		PFUNCDRAWSCENEOBJECT func = sc->functions[i](f);
-		if (!func) continue;
-		while (cur)
-		{
-			for (int j = 0; j < NUM_ELEMENTS_IN_BATCH_LIST64; j++)
-			{
-				SceneObject* sObj = (SceneObject*)GetElementFromList(cur, j, sizeof(SceneObject));
-				if (sObj)
-				{
-					if ((sObj->base.flags & objFlag) == objFlag)
-					{
-						if (CubeCubeIntersectionTest(&viewSpace, &sObj->base.bbox))
-						{
-							list[count].obj = sObj;
-							list[count].DrawFunc = func;
-							count++;
-						}
-					}
-				}
-			}
-			cur = cur->next;
-		}
-	}
+    for(SceneObject* obj : sc->objects) {
+        if((obj->flags & objFlag) == objFlag) {
+            if(CubeCubeIntersectionTest(&viewSpace, &obj->bbox)) {
+                list[count] = obj;
+                count++;
+            }
+        }
+    }
 	*num = count;
 	return list;
 }
 
 
-void SC_FreeRenderList(ObjectRenderStruct* list)
+void SC_FreeRenderList(SceneObject** list)
 {
-	if (list)
-	{
+	if (list) {
 		free(list);
 	}
 }

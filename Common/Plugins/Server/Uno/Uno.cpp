@@ -315,5 +315,12 @@ SERVER_PLUGIN_INFO Uno::GetInfo() const
 
 void Uno::CleanUp()
 {
+    delete data;
+	net->net->SetClientStateCallback(nullptr);
+	net->net->SetDeserializer(nullptr, Client_UnoPlayCard);
+	net->net->SetDeserializer(nullptr, Client_UnoPullCards);
+	net->net->SetCallback(nullptr, Client_UnoPlayCard);
+	net->net->SetCallback(nullptr, Client_UnoPullCards);
+
 }
 

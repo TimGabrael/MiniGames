@@ -84,9 +84,6 @@ void InitializeSimple3DPipeline()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
-
-
-
 }
 
 S3DCombinedBuffer S3DGenerateBuffer(SVertex3D* verts, size_t numVerts, uint32_t* indices, size_t numIndices)
@@ -129,7 +126,7 @@ S3DVertexBuffer S3DGenerateBuffer(SVertex3D* verts, size_t numVerts)
 	return res;
 }
 
-BoundingBox GenerateBoundingBoxFromVertices(SVertex3D* verts, size_t numVerts)
+static BoundingBox GenerateBoundingBoxFromVertices(SVertex3D* verts, size_t numVerts)
 {
 	assert(numVerts != 0);
 	BoundingBox r = { verts[0].pos, verts[0].pos };
@@ -153,37 +150,36 @@ BoundingBox GenerateBoundingBoxFromVertices(SVertex3D* verts, size_t numVerts)
 }
 S3DSceneObject* AddSceneObject(PScene scene, uint32_t s3dTypeIndex, SVertex3D* verts, size_t numVerts)
 {
-	S3DSceneObject* obj = (S3DSceneObject*)SC_AddSceneObject(scene, s3dTypeIndex);
-	if (!obj) return nullptr;
+	//S3DSceneObject* obj = (S3DSceneObject*)SC_AddSceneObject(scene, s3dTypeIndex);
+	//if (!obj) return nullptr;
 
-	obj->mesh = (S3DCombinedBuffer*)SC_AddMesh(scene, s3dTypeIndex, sizeof(S3DCombinedBuffer));
+	//obj->mesh = (S3DCombinedBuffer*)SC_AddMesh(scene, s3dTypeIndex, sizeof(S3DCombinedBuffer));
 
-	obj->mesh->vtxBuf = S3DGenerateBuffer(verts, numVerts);
-	obj->texture = 0;
-	obj->transform = nullptr;
-	obj->base.bbox = GenerateBoundingBoxFromVertices(verts, numVerts);
-	obj->base.flags = SCENE_OBJECT_FLAGS::SCENE_OBJECT_OPAQUE | SCENE_OBJECT_FLAGS::SCENE_OBJECT_CAST_SHADOW | SCENE_OBJECT_FLAGS::SCENE_OBJECT_REFLECTED;
-	obj->base.additionalFlags = 1;
+	//obj->mesh->vtxBuf = S3DGenerateBuffer(verts, numVerts);
+	//obj->texture = 0;
+	//obj->transform = nullptr;
+	//obj->base.bbox = GenerateBoundingBoxFromVertices(verts, numVerts);
+	//obj->base.flags = SCENE_OBJECT_FLAGS::SCENE_OBJECT_OPAQUE | SCENE_OBJECT_FLAGS::SCENE_OBJECT_CAST_SHADOW | SCENE_OBJECT_FLAGS::SCENE_OBJECT_REFLECTED;
+	//obj->base.additionalFlags = 1;
 	
 
-	return obj;
+	return nullptr;
 }
 S3DSceneObject* AddSceneObject(PScene scene, uint32_t s3dTypeIndex, SVertex3D* verts, size_t numVerts, uint32_t* indices, size_t numIndices)
 {
-	S3DSceneObject* obj = (S3DSceneObject*)SC_AddSceneObject(scene, s3dTypeIndex);
-	if (!obj) return nullptr;
+	//S3DSceneObject* obj = (S3DSceneObject*)SC_AddSceneObject(scene, s3dTypeIndex);
+	//if (!obj) return nullptr;
 
-	obj->mesh = (S3DCombinedBuffer*)SC_AddMesh(scene, s3dTypeIndex, sizeof(S3DCombinedBuffer));
+	//obj->mesh = (S3DCombinedBuffer*)SC_AddMesh(scene, s3dTypeIndex, sizeof(S3DCombinedBuffer));
 
-	*obj->mesh = S3DGenerateBuffer(verts, numVerts, indices, numIndices);
-	obj->texture = 0;
-	obj->transform = nullptr;
-	obj->base.bbox = GenerateBoundingBoxFromVertices(verts, numVerts);
-	obj->base.flags = SCENE_OBJECT_FLAGS::SCENE_OBJECT_OPAQUE | SCENE_OBJECT_FLAGS::SCENE_OBJECT_CAST_SHADOW | SCENE_OBJECT_FLAGS::SCENE_OBJECT_REFLECTED;
-	obj->base.additionalFlags = 1;
+	//*obj->mesh = S3DGenerateBuffer(verts, numVerts, indices, numIndices);
+	//obj->texture = 0;
+	//obj->transform = nullptr;
+	//obj->base.bbox = GenerateBoundingBoxFromVertices(verts, numVerts);
+	//obj->base.flags = SCENE_OBJECT_FLAGS::SCENE_OBJECT_OPAQUE | SCENE_OBJECT_FLAGS::SCENE_OBJECT_CAST_SHADOW | SCENE_OBJECT_FLAGS::SCENE_OBJECT_REFLECTED;
+	//obj->base.additionalFlags = 1;
 
-
-	return obj;
+	return nullptr;
 }
 
 void CleanUpSimple3DPipeline()
@@ -308,77 +304,60 @@ void DrawSimple3D(const S3DCombinedBuffer& buf, const glm::mat4& proj, const glm
 }
 
 
-void DrawSimple3DGeometry(SceneObject* sceneObject, void* renderPassData)
-{
-	S3DSceneObject* obj = (S3DSceneObject*)sceneObject;
-	StandardRenderPassData* data = (StandardRenderPassData*)renderPassData;
-	glm::mat4 matrix(1.0f);
-	if (obj->transform)
+S3DSceneObject::~S3DSceneObject() {
+}
+
+size_t S3DSceneObject::GetType() const {
+    return 2;
+}
+void S3DSceneObject::DrawGeometry(StandardRenderPassData* pass) {
+	if (additionalFlags)	// 0 => combined buf,  1 => vertex buf
 	{
-		matrix = *obj->transform;
-	}
-	if (obj->base.additionalFlags)	// 0 => combined buf,  1 => vertex buf
-	{
-		if (obj->texture) DrawSimple3D(*obj->mesh, *data->camProj, *data->camView, obj->texture, matrix, true);
-		else DrawSimple3D(*obj->mesh, *data->camProj, *data->camView, matrix, true);
+		if (texture) DrawSimple3D(mesh, *pass->camProj, *pass->camView, texture, transform, true);
+		else DrawSimple3D(mesh, *pass->camProj, *pass->camView, transform, true);
 	}
 	else
 	{
-		if (obj->texture) DrawSimple3D(obj->mesh->vtxBuf, *data->camProj, *data->camView, obj->texture, matrix, true);
-		else DrawSimple3D(obj->mesh->vtxBuf, *data->camProj, *data->camView, matrix, true);
+		if (texture) DrawSimple3D(mesh.vtxBuf, *pass->camProj, *pass->camView, texture, transform, true);
+		else DrawSimple3D(mesh.vtxBuf, *pass->camProj, *pass->camView, transform, true);
 	}
 }
-void DrawSimple3DOpaque(SceneObject* sceneObject, void* renderPassData)
-{
-	S3DSceneObject* obj = (S3DSceneObject*)sceneObject;
-	StandardRenderPassData* data = (StandardRenderPassData*)renderPassData;
-	glm::mat4 matrix(1.0f);
-	SetDefaultOpaqueState();
-	if (obj->transform)
-	{
-		matrix = *obj->transform;
-	}
-	if (obj->base.additionalFlags)	// 0 => combined buf,  1 => vertex buf
-	{
-		if (obj->texture) DrawSimple3D(*obj->mesh, *data->camProj, *data->camView, obj->texture, matrix);
-		else DrawSimple3D(*obj->mesh, *data->camProj, *data->camView, matrix);
-	}
-	else
-	{
-		if (obj->texture) DrawSimple3D(obj->mesh->vtxBuf, *data->camProj, *data->camView, obj->texture, matrix);
-		else DrawSimple3D(obj->mesh->vtxBuf, *data->camProj, *data->camView, matrix);
-	}
-}
-void DrawSimple3DOpaqueClipPlane(SceneObject* sceneObject, void* renderPassData)
-{
-	S3DSceneObject* obj = (S3DSceneObject*)sceneObject;
-	ReflectPlanePassData* planeData = (ReflectPlanePassData*)renderPassData;
-	const StandardRenderPassData* data = planeData->base;
-	glm::mat4 matrix(1.0f);
+void S3DSceneObject::DrawOpaque(StandardRenderPassData* pass) {
 	SetDefaultOpaqueState();
 	
-	if (obj->transform)
+	if (additionalFlags)	// 0 => combined buf,  1 => vertex buf
 	{
-		matrix = *obj->transform;
-	}
-	if (obj->base.additionalFlags)	// 0 => combined buf,  1 => vertex buf
-	{
-		if (obj->texture) DrawSimple3D(*obj->mesh, *data->camProj, *data->camView, obj->texture, matrix, *planeData->planeEquation);
-		else DrawSimple3D(*obj->mesh, *data->camProj, *data->camView, matrix);
+		if (texture) DrawSimple3D(mesh, *pass->camProj, *pass->camView, texture, transform, false);
+		else DrawSimple3D(mesh, *pass->camProj, *pass->camView, transform, false);
 	}
 	else
 	{
-		if (obj->texture) DrawSimple3D(obj->mesh->vtxBuf, *data->camProj, *data->camView, obj->texture, matrix, *planeData->planeEquation);
-		else DrawSimple3D(obj->mesh->vtxBuf, *data->camProj, *data->camView, g_3d.defaultTexture, matrix);
+		if (texture) DrawSimple3D(mesh.vtxBuf, *pass->camProj, *pass->camView, texture, transform, false);
+		else DrawSimple3D(mesh.vtxBuf, *pass->camProj, *pass->camView, transform, false);
 	}
 }
+void S3DSceneObject::DrawBlend(StandardRenderPassData* pass) {
 
-
-PFUNCDRAWSCENEOBJECT S3DGetDrawFunctions(TYPE_FUNCTION f)
-{
-	if (f == TYPE_FUNCTION::TYPE_FUNCTION_SHADOW) return DrawSimple3DGeometry;
-	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_GEOMETRY) return DrawSimple3DGeometry;
-	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_OPAQUE) return DrawSimple3DOpaque;
-	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_CLIP_PLANE_OPAQUE) return DrawSimple3DOpaqueClipPlane;
-	return nullptr;
 }
+void S3DSceneObject::DrawBlendClip(ReflectPlanePassData* pass) {
+
+}
+void S3DSceneObject::DrawOpaqueClip(ReflectPlanePassData* pass) {
+    const StandardRenderPassData* data = pass->base;
+    SetDefaultOpaqueState();
+
+    if (additionalFlags)	// 0 => combined buf,  1 => vertex buf
+    {
+        if (texture) DrawSimple3D(mesh, *data->camProj, *data->camView, texture, transform, *pass->planeEquation, false);
+        else DrawSimple3D(mesh, *data->camProj, *data->camView, transform, false);
+    }
+    else
+    {
+        if (texture) DrawSimple3D(mesh.vtxBuf, *data->camProj, *data->camView, texture, transform, *pass->planeEquation, false);
+        else DrawSimple3D(mesh.vtxBuf, *data->camProj, *data->camView, g_3d.defaultTexture, transform, false);
+    }
+}
+
+
+
+

@@ -1,4 +1,5 @@
 #include "PbrRendering.h"
+#include "Graphics/Scene.h"
 #include "Helper.h"
 #include "../logging.h"
 #include <vector>
@@ -332,8 +333,6 @@ struct InternalPBR
 	float animationTime = 0.0f;
 
 };
-static constexpr size_t internalPBRSize = sizeof(InternalPBR);
-
 
 
 
@@ -1679,7 +1678,8 @@ void CleanUpPbrPipeline()
 {
 	glDeleteTextures(1, &g_pipeline.brdfLutMap);
 	glDeleteProgram(g_pipeline.shaderProgram);
-	g_pipeline.brdfLutMap = 0; g_pipeline.shaderProgram = 0;
+    glDeleteProgram(g_pipeline.geomProgram);
+	g_pipeline.brdfLutMap = 0; g_pipeline.shaderProgram = 0; g_pipeline.geomProgram = 0;
 	g_pipeline.currentBoundMaterial = nullptr;
 }
 
@@ -1907,73 +1907,18 @@ void UpdateAnimation(void* internalObj, uint32_t index, float time)
 	}
 }
 
-void DrawScenePBRGeometry(SceneObject* obj, void* renderPassData)
-{
-	PBRSceneObject* o = (PBRSceneObject*)obj;
-	StandardRenderPassData* passData = (StandardRenderPassData*)renderPassData;
-	DrawPBRModel(o->model, passData->cameraUniform, o->uboParamsUniform, passData->skyBox, passData->shadowMap, passData->ambientOcclusionMap, passData->lightData, passData->renderSize, o->transform, nullptr, true, true);
-}
-void DrawScenePBROpaque(SceneObject* obj, void* renderPassData)
-{
-	PBRSceneObject* o = (PBRSceneObject*)obj;
-	StandardRenderPassData* passData = (StandardRenderPassData*)renderPassData;
-	SetDefaultOpaqueState();
-	DrawPBRModel(o->model, passData->cameraUniform, o->uboParamsUniform, passData->skyBox, passData->shadowMap, passData->ambientOcclusionMap, passData->lightData, passData->renderSize, o->transform, nullptr, true, false);
 
-}
-void DrawScenePBRBlend(SceneObject* obj, void* renderPassData)
-{
-	PBRSceneObject* o = (PBRSceneObject*)obj;
-	StandardRenderPassData* passData = (StandardRenderPassData*)renderPassData;
-	SetDefaultBlendState();
-	DrawPBRModel(o->model, passData->cameraUniform, o->uboParamsUniform, passData->skyBox, passData->shadowMap, passData->ambientOcclusionMap, passData->lightData, passData->renderSize, o->transform, nullptr, false, false);
-}
-void DrawScenePBROpaqueClip(SceneObject* obj, void* renderPassData)
-{
-	PBRSceneObject* o = (PBRSceneObject*)obj;
-	ReflectPlanePassData* passData = (ReflectPlanePassData*)renderPassData;
-	SetDefaultOpaqueState();
-	DrawPBRModel(o->model, passData->base->cameraUniform, o->uboParamsUniform, passData->base->skyBox, passData->base->shadowMap, passData->base->ambientOcclusionMap, passData->base->lightData, passData->base->renderSize, o->transform, passData->planeEquation, true, false);
-}
-void DrawScenePBRBlendClip(SceneObject* obj, void* renderPassData)
-{
-	PBRSceneObject* o = (PBRSceneObject*)obj; 
-	ReflectPlanePassData* passData = (ReflectPlanePassData*)renderPassData;
-	SetDefaultBlendState();
-	DrawPBRModel(o->model, passData->base->cameraUniform, o->uboParamsUniform, passData->base->skyBox, passData->base->shadowMap, passData->base->ambientOcclusionMap, passData->base->lightData, passData->base->renderSize, o->transform, passData->planeEquation, false, false);
-}
-
-PFUNCDRAWSCENEOBJECT PBRModelGetDrawFunction(TYPE_FUNCTION f)
-{
-	if (f == TYPE_FUNCTION::TYPE_FUNCTION_SHADOW) return DrawScenePBRGeometry;
-	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_GEOMETRY) return DrawScenePBRGeometry;
-	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_OPAQUE) return DrawScenePBROpaque;
-	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_BLEND) return DrawScenePBRBlend;
-	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_CLIP_PLANE_OPAQUE) return DrawScenePBROpaqueClip;
-	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_CLIP_PLANE_BLEND) return DrawScenePBRBlendClip;
-	return nullptr;
-}
-
-
-PBRSceneObject* AddPbrModelToScene(PScene scene, void* internalObj, UBOParams params, const glm::mat4& transform)
-{
-	InternalPBR* realObj = (InternalPBR*)internalObj;
-	PBRSceneObject* pbr = (PBRSceneObject*)SC_AddSceneObject(scene, PBR_RENDERABLE);
-	pbr->transform = (glm::mat4*)SC_AddTransform(scene, PBR_RENDERABLE, sizeof(glm::mat4));
-	*pbr->transform = transform;
-
-	pbr->model = internalObj;
-
-	glm::vec3 min(FLT_MAX);
-	glm::vec3 max(-FLT_MAX);
-
-	for (int i = 0; i < realObj->nodes.size(); i++)
-	{
-		BoundingBoxPbr pbrBB = realObj->nodes.at(i)->mesh->bb.getAABB(transform);
-		auto& s = realObj->nodes.at(i)->scale;
-
-		glm::vec3& minRes = pbrBB.min;
-		glm::vec3& maxRes = pbrBB.max;
+void PBRSceneObject::Set(void* internal, UBOParams params, const glm::mat4& transform) {
+    InternalPBR* pbr = (InternalPBR*)internal;
+    this->transform = transform;
+    this->model = internal;
+    glm::vec3 min(FLT_MAX);
+    glm::vec3 max(FLT_MAX);
+    for(size_t i = 0; i < pbr->nodes.size(); i++) {
+        BoundingBoxPbr pbrBB = pbr->nodes.at(i)->mesh->bb.getAABB(transform);
+        auto& s = pbr->nodes.at(i)->scale;
+        glm::vec3& minRes = pbrBB.min;
+        glm::vec3& maxRes = pbrBB.max;
 
 		if (minRes.x < min.x) min.x = minRes.x;
 		if (maxRes.x < min.x) min.x = maxRes.x;
@@ -1988,16 +1933,48 @@ PBRSceneObject* AddPbrModelToScene(PScene scene, void* internalObj, UBOParams pa
 		if (minRes.z < min.z) min.z = minRes.z;
 		if (maxRes.z < min.z) min.z = maxRes.z;
 		if (minRes.z > max.z) max.z = minRes.z;
-		if (maxRes.z > max.z) max.z = maxRes.z;
-	}
+		if (maxRes.z > max.z) max.z = maxRes.z; 
+    }
+    bbox.leftTopFront = min;
+    bbox.rightBottomBack = max;
 
-	pbr->base.bbox.leftTopFront = min;
-	pbr->base.bbox.rightBottomBack = max;
-
-	glGenBuffers(1, &pbr->uboParamsUniform);
-	glBindBuffer(GL_UNIFORM_BUFFER, pbr->uboParamsUniform);
+	glGenBuffers(1, &uboParamsUniform);
+	glBindBuffer(GL_UNIFORM_BUFFER, uboParamsUniform);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(UBOParams), &params, GL_STATIC_DRAW);
-	
-	pbr->base.flags = SCENE_OBJECT_OPAQUE | SCENE_OBJECT_BLEND | SCENE_OBJECT_CAST_SHADOW | SCENE_OBJECT_REFLECTED | SCENE_OBJECT_SURFACE_REFLECTED;
-	return pbr;
+	lightGroups = 0xFFFF;
+	flags = SCENE_OBJECT_OPAQUE | SCENE_OBJECT_BLEND | SCENE_OBJECT_CAST_SHADOW | SCENE_OBJECT_REFLECTED | SCENE_OBJECT_SURFACE_REFLECTED;
+}
+
+PBRSceneObject::~PBRSceneObject() {
+    
+}
+size_t PBRSceneObject::GetType() const {
+    return 0;
+}
+void PBRSceneObject::DrawGeometry(StandardRenderPassData* pass) {
+	DrawPBRModel(model, pass->cameraUniform, uboParamsUniform, pass->skyBox, pass->shadowMap, 
+            pass->ambientOcclusionMap, pass->lightData, pass->renderSize, &transform, nullptr, true, true);
+}
+void PBRSceneObject::DrawOpaque(StandardRenderPassData* pass) {
+	DrawPBRModel(model, pass->cameraUniform, uboParamsUniform, pass->skyBox, pass->shadowMap, 
+            pass->ambientOcclusionMap, pass->lightData, pass->renderSize, &transform, nullptr, true, false);
+}
+void PBRSceneObject::DrawBlend(StandardRenderPassData* pass) {
+	DrawPBRModel(model, pass->cameraUniform, uboParamsUniform, pass->skyBox, pass->shadowMap, 
+            pass->ambientOcclusionMap, pass->lightData, pass->renderSize, &transform, nullptr, false, false);
+}
+void PBRSceneObject::DrawBlendClip(ReflectPlanePassData* pass) {
+	DrawPBRModel(model, pass->base->cameraUniform, uboParamsUniform, pass->base->skyBox, pass->base->shadowMap, 
+            pass->base->ambientOcclusionMap, pass->base->lightData, pass->base->renderSize, &transform, pass->planeEquation, false, false);
+}
+void PBRSceneObject::DrawOpaqueClip(ReflectPlanePassData* pass) {
+	DrawPBRModel(model, pass->base->cameraUniform, uboParamsUniform, pass->base->skyBox, pass->base->shadowMap, 
+            pass->base->ambientOcclusionMap, pass->base->lightData, pass->base->renderSize, &transform, pass->planeEquation, true, false);
+}
+
+PBRSceneObject* AddPbrModelToScene(PScene scene, void* internal, UBOParams params, const glm::mat4& transform) {
+    PBRSceneObject* obj = new PBRSceneObject;
+    obj->Set(internal, params, transform);
+    SC_AddSceneObject(scene, obj);
+    return obj;
 }

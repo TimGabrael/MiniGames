@@ -1,7 +1,9 @@
 #include "Uno.h"
 #include <string>
+#include "Graphics/GLCompat.h"
 #include "Graphics/Helper.h"
 #include "Graphics/Camera.h"
+#include "Graphics/Scene.h"
 #include "Plugins/Client/Uno/NetHandlers.h"
 #include "Plugins/Shared/Uno/UnoBase.h"
 #include "Plugins/Shared/Uno/UnoMessages.pb.h"
@@ -240,8 +242,7 @@ void UnoPlugin::Init(ApplicationData* data)
 
 	// CREATE SCENE
 	{
-		g_objs->UnoScene = CreateAndInitializeSceneAsDefault();
-		AddCardTypeToScene(g_objs->UnoScene);
+		g_objs->UnoScene = SC_CreateScene();
 
 		g_objs->cardRenderObject = CreateCardBatchSceneObject(g_objs->UnoScene);
 
@@ -275,7 +276,7 @@ void UnoPlugin::Init(ApplicationData* data)
 
 		UBOParams params = UBOParams();
 		PBRSceneObject* o = AddPbrModelToScene(g_objs->UnoScene, pbrModel, params, glm::translate(glm::mat4(1.0f), glm::vec3(-2.0f, 0.7f, -2.0f)));
-		o->base.flags &= ~(SCENE_OBJECT_BLEND);
+		o->flags &= ~(SCENE_OBJECT_BLEND);
 	}
 	g_objs->skybox = LoadCubemap(
 		"Assets/CitySkybox/right.jpg",
@@ -381,24 +382,22 @@ void UnoPlugin::Render(ApplicationData* data)
 		}
 
 		BeginScene(g_objs->UnoScene);
-		StandardRenderPassData stdData;
-		stdData.skyBox = g_objs->skybox;
-		stdData.shadowMap = 0;
-		stdData.ambientOcclusionMap = 0;
 
-		glm::vec4 plane = { 0.0f, 1.0f, 0.0f, 0.0f };
-
-
-
+        SetOpenGLDepthWrite(true);
 		glBindFramebuffer(GL_FRAMEBUFFER, g_objs->rendererData.shadowFBO.fbo);
+        glViewport(0, 0, g_objs->rendererData.shadowWidth, g_objs->rendererData.shadowHeight);
 		glClearDepthf(1.0f);
 		glClear(GL_DEPTH_BUFFER_BIT);
 
-
 		RenderSceneCascadeShadow(g_objs->UnoScene, &g_objs->rendererData, &g_objs->playerCam, &g_objs->shadowCam, &light->data, { 0.0f, 0.0f }, { 1.0f, 1.0f }, 0.8f);
+        
+        StandardRenderPassData stdData;
+		stdData.skyBox = g_objs->skybox;
+		stdData.ambientOcclusionMap = 0;
+        glm::vec4 plane = { 0.0f, 1.0f, 0.0f, 0.0f };
 
-		stdData.shadowMap = g_objs->rendererData.shadowFBO.depth;
 
+        SetOpenGLDepthWrite(true);
 		glBindFramebuffer(GL_FRAMEBUFFER, g_objs->reflectFBO.fbo);
 		glViewport(0, 0, g_objs->offscreenX, g_objs->offscreenY);
 		glClearColor(1.0f, 0.4f, 0.4f, 1.0f);
@@ -419,6 +418,7 @@ void UnoPlugin::Render(ApplicationData* data)
 		stdData.camView = &reflected.view;
 		stdData.camProj = &reflected.perspective;
 		stdData.camPos = &reflected.pos;
+        stdData.drawShadow = false;
 		ReflectPlanePassData reflectData;
 		reflectData.base = &stdData;
 		reflectData.planeEquation = &plane;
@@ -433,6 +433,7 @@ void UnoPlugin::Render(ApplicationData* data)
 
 			glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraData), &camData, GL_DYNAMIC_DRAW);
 		}
+        stdData.shadowMap = g_objs->rendererData.shadowFBO.depth;
 		stdData.camView = &g_objs->playerCam.view;
 		stdData.camProj = &g_objs->playerCam.perspective;
 		stdData.camPos = &g_objs->playerCam.pos;
@@ -485,7 +486,7 @@ void UnoPlugin::Render(ApplicationData* data)
 }
 
 
-
+#define ALLOW_FREEMOVEMENT 1
 void UnoPlugin::MouseCallback(const PB_MouseData* mData)
 {
 #ifdef ALLOW_FREEMOVEMENT
@@ -580,7 +581,12 @@ void UnoPlugin::CleanUp()
 {
 	glDeleteTextures(1, &g_objs->skybox);
 	DestroySingleFBO(&g_objs->reflectFBO);
-	
+    SC_DestroyScene(g_objs->UnoScene);
+    
+    glDeleteBuffers(1, &g_objs->shadowCam.uniform);
+    glDeleteBuffers(1, &g_objs->playerCam.uniform);
+
+    	
 	CleanUpOpenGL();
 	delete g_objs;
 }

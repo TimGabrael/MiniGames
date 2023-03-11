@@ -69,7 +69,7 @@ struct RendererBackendData
 	StandardRenderPassData mainData;
 	ScenePointLight** pointLightTemp = nullptr;
 	SceneDirLight** dirLightTemp = nullptr;
-	ObjectRenderStruct* objs = nullptr;
+	SceneObject** objs = nullptr;
 	int capacityPointLights = 0;
 	int capacityDirLights = 0;
 
@@ -136,7 +136,6 @@ static void UpdateLightUniformFromCurrent()
 	memset(&u, 0, sizeof(LightUniformData));
 	u.numDirLights = c->numCurDirLights;
 	u.numPointLights = c->numCurPointLights;
-	bool shadowFound = false;
 	for (int i = 0; i < c->numCurDirLights; i++)
 	{
 		u.dirLights[i] = c->curDirLights[i].data;
@@ -434,8 +433,8 @@ void BeginScene(PScene scene)
 		if (g_render->pointLightTemp) delete[] g_render->pointLightTemp;
 		g_render->pointLightTemp = new ScenePointLight*[g_render->capacityPointLights];
 	}
-	memset(g_render->dirLightTemp, 0, sizeof(SceneDirLight*) * g_render->capacityDirLights);
-	memset(g_render->pointLightTemp, 0, sizeof(ScenePointLight*) * g_render->capacityPointLights);
+	memset(g_render->dirLightTemp, 0, sizeof(void*) * g_render->capacityDirLights);
+	memset(g_render->pointLightTemp, 0, sizeof(void*) * g_render->capacityPointLights);
 	memset(&g_render->cur, 0, sizeof(CurrentLightInformation));
 	SC_FillLights(scene, g_render->pointLightTemp, g_render->dirLightTemp);
 }
@@ -477,15 +476,15 @@ void RenderSceneGeometry(PScene scene, const StandardRenderPassData* data)
 {
 	UpdateTemporary(data);
 	SetDefaultOpaqueState();
-
+    g_render->mainData.drawShadow = false;
+    
 	int num;
 	glm::mat4 camViewProj = *g_render->mainData.camProj * *g_render->mainData.camView;
-	SC_FillRenderList(scene, g_render->objs, &camViewProj, &num, TYPE_FUNCTION_GEOMETRY, SCENE_OBJECT_CAST_SHADOW);
-
+	SC_FillRenderList(scene, g_render->objs, &camViewProj, &num, SCENE_OBJECT_CAST_SHADOW);
 	for (int i = 0; i < num; i++)
 	{
-		ObjectRenderStruct* o = &g_render->objs[i];
-		o->DrawFunc(o->obj, (void*)&g_render->mainData);
+		SceneObject* o = g_render->objs[i];
+		o->DrawGeometry(&g_render->mainData);
 	}
 	SetOpenGLDepthWrite(true);
 }
@@ -493,19 +492,20 @@ void RenderSceneShadow(PScene scene, const StandardRenderPassData* data)
 {
 	UpdateTemporary(data);
 	SetDefaultOpaqueState();
+    g_render->mainData.drawShadow = true;
 
 	glEnable(GL_POLYGON_OFFSET_FILL);
 	glPolygonOffset(2.0f, 4.0f);
 	int num;
 	glm::mat4 camViewProj = *g_render->mainData.camProj * *g_render->mainData.camView;
-	SC_FillRenderList(scene, g_render->objs, &camViewProj, &num, TYPE_FUNCTION_SHADOW, SCENE_OBJECT_CAST_SHADOW);
+	SC_FillRenderList(scene, g_render->objs, &camViewProj, &num, SCENE_OBJECT_CAST_SHADOW);
 	
 	for (int i = 0; i < num; i++)
 	{
-		ObjectRenderStruct* o = &g_render->objs[i];
-		BoundingBox* bbox = &o->obj->base.bbox;
+		SceneObject* o = g_render->objs[i];
+		BoundingBox* bbox = &o->bbox;
 		glm::vec3 middle = (bbox->leftTopFront + bbox->rightBottomBack) / 2.0f;
-		o->DrawFunc(o->obj, (void*)&g_render->mainData);
+		o->DrawGeometry(&g_render->mainData);
 	}
 	glDisable(GL_POLYGON_OFFSET_FILL);
 }
@@ -521,6 +521,7 @@ void RenderSceneCascadeShadow(PScene scene, const SceneRenderData* renderData, c
 	g_render->mainData.shadowMap = 0;
 	g_render->mainData.ambientOcclusionMap = GetWhiteTexture2D();
 	g_render->mainData.lightData = 0;
+    g_render->mainData.drawShadow = true;
 	SetDefaultOpaqueState();
 
 
@@ -528,7 +529,7 @@ void RenderSceneCascadeShadow(PScene scene, const SceneRenderData* renderData, c
 	glPolygonOffset(2.0f, 4.0f);
 	int num;
 	glm::mat4 camViewProj = *g_render->mainData.camProj * *g_render->mainData.camView;
-	SC_FillRenderList(scene, g_render->objs, &camViewProj, &num, TYPE_FUNCTION_SHADOW, SCENE_OBJECT_CAST_SHADOW);
+	SC_FillRenderList(scene, g_render->objs, &camViewProj, &num, SCENE_OBJECT_CAST_SHADOW);
 	
 	const glm::vec2 stepSize = (regionEnd - regionStart) / 2.0f;
 
@@ -554,15 +555,13 @@ void RenderSceneCascadeShadow(PScene scene, const SceneRenderData* renderData, c
 
 		for (int j = 0; j < num; j++)
 		{
-			ObjectRenderStruct* o = &g_render->objs[j];
-			o->DrawFunc(o->obj, (void*)&g_render->mainData);
+			SceneObject* o = g_render->objs[j];
+			o->DrawGeometry(&g_render->mainData);
 		}
 
 		lastSplitDist = logStepSizes[i] * endRelativeDist;
 	}
 	dirLight->numCascades = 4;
-
-
 
 	glDisable(GL_POLYGON_OFFSET_FILL);
 }
@@ -578,18 +577,26 @@ void RenderSceneReflectedOnPlane(PScene scene, const ReflectPlanePassData* data)
 
 	int num;
 	glm::mat4 camViewProj = *g_render->mainData.camProj * *g_render->mainData.camView;
-	SC_FillRenderList(scene, g_render->objs, &camViewProj, &num, TYPE_FUNCTION::TYPE_FUNCTION_CLIP_PLANE_OPAQUE, SCENE_OBJECT_FLAGS::SCENE_OBJECT_SURFACE_REFLECTED);
-	SC_AppendRenderList(scene, g_render->objs, &camViewProj, &num, TYPE_FUNCTION::TYPE_FUNCTION_CLIP_PLANE_BLEND, SCENE_OBJECT_FLAGS::SCENE_OBJECT_SURFACE_REFLECTED, num);
+	SC_FillRenderList(scene, g_render->objs, &camViewProj, &num, SCENE_OBJECT_FLAGS::SCENE_OBJECT_SURFACE_REFLECTED);
 
 	DrawSkybox(data->base->skyBox, camViewProj);
+
 	for (int i = 0; i < num; i++)
 	{
-		ObjectRenderStruct* o = &g_render->objs[i];
-		BoundingBox* bbox = &o->obj->base.bbox;
+		SceneObject* o = g_render->objs[i];
+		BoundingBox* bbox = &o->bbox;
 		glm::vec3 middle = (bbox->leftTopFront + bbox->rightBottomBack) / 2.0f;
-		UpdateLightInformation(&middle, o->obj->base.lightGroups, data->planeEquation);
-		o->DrawFunc(o->obj, (void*)&reflectPassData);
+		UpdateLightInformation(&middle, o->lightGroups, data->planeEquation);
+		o->DrawOpaqueClip(&reflectPassData);
 	}
+	SetOpenGLDepthWrite(false);
+    for(int i = 0; i < num; i++) {
+        SceneObject* o = g_render->objs[i];
+		BoundingBox* bbox = &o->bbox;
+		glm::vec3 middle = (bbox->leftTopFront + bbox->rightBottomBack) / 2.0f;
+		UpdateLightInformation(&middle, o->lightGroups, data->planeEquation);
+        o->DrawBlendClip(&reflectPassData);
+    }
 	SetOpenGLDepthWrite(true);
 }
 
@@ -600,18 +607,27 @@ void RenderSceneStandard(PScene scene, const StandardRenderPassData* data)
 
 	int num;
 	glm::mat4 camViewProj = *g_render->mainData.camProj * *g_render->mainData.camView;
-	SC_FillRenderList(scene, g_render->objs, &camViewProj, &num, TYPE_FUNCTION::TYPE_FUNCTION_OPAQUE, SCENE_OBJECT_FLAGS::SCENE_OBJECT_OPAQUE);
-	SC_AppendRenderList(scene, g_render->objs, &camViewProj, &num, TYPE_FUNCTION::TYPE_FUNCTION_BLEND, SCENE_OBJECT_FLAGS::SCENE_OBJECT_BLEND, num);
+	SC_FillRenderList(scene, g_render->objs, &camViewProj, &num, SCENE_OBJECT_FLAGS::SCENE_OBJECT_OPAQUE);
 
 	DrawSkybox(data->skyBox, camViewProj);
 	for (int i = 0; i < num; i++)
 	{
-		ObjectRenderStruct* o = &g_render->objs[i];
-		BoundingBox* bbox = &o->obj->base.bbox;
+		SceneObject* o = g_render->objs[i];
+		BoundingBox* bbox = &o->bbox;
 		glm::vec3 middle = (bbox->leftTopFront + bbox->rightBottomBack) / 2.0f;
-		UpdateLightInformation(&middle, o->obj->base.lightGroups, nullptr);
-		o->DrawFunc(o->obj, (void*)&g_render->mainData);
+		UpdateLightInformation(&middle, o->lightGroups, nullptr);
+		o->DrawOpaque(&g_render->mainData);
 	}
+    SC_FillRenderList(scene, g_render->objs, &camViewProj, &num, SCENE_OBJECT_FLAGS::SCENE_OBJECT_BLEND);
+    SetOpenGLDepthWrite(false);
+    for(int i = 0; i < num; i++) {
+        SceneObject* o = g_render->objs[i];
+        BoundingBox* bbox = &o->bbox;
+		glm::vec3 middle = (bbox->leftTopFront + bbox->rightBottomBack) / 2.0f;
+		UpdateLightInformation(&middle, o->lightGroups, nullptr);
+        o->DrawBlend(&g_render->mainData);
+
+    }
 	SetOpenGLDepthWrite(true);
 }
 void RenderPostProcessingBloom(const BloomFBO* bloomData, GLuint finalFBO, int finalSizeX, int finalSizeY, GLuint ppFBOTexture, int ppSizeX, int ppSizeY)

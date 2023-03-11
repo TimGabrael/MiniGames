@@ -3,6 +3,7 @@
 #include "Graphics/Helper.h"
 #include <glm/glm.hpp>
 #include "FileQuery.h"
+#include "Graphics/Scene.h"
 #include "imgui_internal.h"
 #include "logging.h"
 #include <glm/matrix.hpp>
@@ -294,6 +295,15 @@ void InitializeCardPipeline(void* assetManager)
 	g_cards.bufs.bufferSize = 0;
 
 }
+void UnInitializeCardPipeline() {
+    glDeleteBuffers(1, &g_cards.bufs.inds);
+    glDeleteBuffers(1, &g_cards.bufs.verts);
+    glDeleteVertexArrays(1, &g_cards.bufs.vao);
+    glDeleteProgram(g_cards.program);
+    glDeleteProgram(g_cards.geometryProgram);
+    glDeleteTextures(1, &g_cards.texture);
+    
+}
 
 void RendererAddCard(CARD_ID back, CARD_ID front, const glm::vec3& pos, const glm::quat& rot, float sx, float sy, uint32_t col)
 {
@@ -310,29 +320,15 @@ void ClearCards()
 	g_cards.bufs.cardCache.clear();
 }
 
-void DrawCardsInSceneBlended(SceneObject* obj, void* renderPassData);
-void DrawCardsInSceneBlendedClip(SceneObject* obj, void* renderPassData);
-void DrawCardsInSceneShadow(SceneObject* obj, void* renderPassData);
-static PFUNCDRAWSCENEOBJECT GetDrawSceneObjectFunction(TYPE_FUNCTION f)
-{
-	if (f == TYPE_FUNCTION::TYPE_FUNCTION_SHADOW) return DrawCardsInSceneShadow;
-	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_BLEND) return DrawCardsInSceneBlended;
-	else if (f == TYPE_FUNCTION::TYPE_FUNCTION_CLIP_PLANE_BLEND) return DrawCardsInSceneBlendedClip;
-	return nullptr;
-}
-void AddCardTypeToScene(PScene scene)
-{
-	const uint32_t index = SC_AddType(scene, GetDrawSceneObjectFunction);
-	assert(index == CARD_SCENE_TYPE_INDEX);
-}
 CardSceneObject* CreateCardBatchSceneObject(PScene scene)
 {
-	CardSceneObject* obj = (CardSceneObject*)SC_AddSceneObject(scene, CARD_SCENE_TYPE_INDEX);
-	memset(obj, 0, sizeof(CardSceneObject));
-	obj->base.flags = SCENE_OBJECT_BLEND | SCENE_OBJECT_REFLECTED | SCENE_OBJECT_CAST_SHADOW | SCENE_OBJECT_SURFACE_REFLECTED;
-	obj->base.bbox.leftTopFront = { -3.0f, -3.0f, -3.0f };
-	obj->base.bbox.rightBottomBack = { 3.0f, 3.0f, 3.0f };
-	obj->base.lightGroups = 0xFFFF;
+	CardSceneObject* obj = new CardSceneObject();
+	obj->flags = SCENE_OBJECT_BLEND | SCENE_OBJECT_REFLECTED | SCENE_OBJECT_CAST_SHADOW | SCENE_OBJECT_SURFACE_REFLECTED;
+	obj->bbox.leftTopFront = { -3.0f, -3.0f, -3.0f };
+	obj->bbox.rightBottomBack = { 3.0f, 3.0f, 3.0f };
+	obj->lightGroups = 0xFFFF;
+    obj->additionalFlags = 0;
+    SC_AddSceneObject(scene, obj);
 	return obj;
 }
 
@@ -358,59 +354,6 @@ int FillCardListAndMapToBuffer(const glm::vec3& pos, bool backwards)
 	glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
 	return numInds;
 }
-void DrawCardsInSceneBlended(SceneObject* obj, void* renderPassData)
-{
-	StandardRenderPassData* data = (StandardRenderPassData*)renderPassData;
-	const CurrentLightInformation* cur = GetCurrentLightInformation();
-	glm::vec3 dir(0.0f);
-	if (cur->numCurDirLights > 0)
-	{
-		dir = cur->curDirLights[0].data.dir;
-	}	
-	SetDefaultBlendState();
-	DrawCards(*data->camProj, *data->camView, *data->camPos, dir, false);
-}
-void DrawCardsInSceneShadow(SceneObject* obj, void* renderPassData)
-{
-	StandardRenderPassData* data = (StandardRenderPassData*)renderPassData;
-	const CurrentLightInformation* cur = GetCurrentLightInformation();
-	glm::vec3 dir(0.0f);
-	if (cur->numCurDirLights > 0)
-	{
-		dir = cur->curDirLights[0].data.dir;
-	}
-	DrawCards(*data->camProj, *data->camView, *data->camPos, dir, true);
-}
-void DrawCardsInSceneBlendedClip(SceneObject* obj, void* renderPassData)
-{
-	ReflectPlanePassData* rData = (ReflectPlanePassData*)renderPassData;
-	const glm::vec3* camPos = rData->base->camPos;
-
-	SetDefaultBlendState();
-
-	const CurrentLightInformation* cur = GetCurrentLightInformation();
-	glm::vec3 lightDir(0.0f);
-	if (cur->numCurDirLights > 0)
-	{
-		lightDir = cur->curDirLights[0].data.dir;
-	}
-
-	glUseProgramWrapper(g_cards.program);
-	glBindVertexArray(g_cards.bufs.vao);
-	glUniformMatrix4fv(g_cards.unis.projection, 1, GL_FALSE, (const GLfloat*)rData->base->camProj);
-	glUniformMatrix4fv(g_cards.unis.view, 1, GL_FALSE, (const GLfloat*)rData->base->camView);
-	glUniform4fv(g_cards.unis.plane, 1, (const GLfloat*)rData->planeEquation);
-	glUniform3fv(g_cards.unis.lightDir, 1, (const GLfloat*)&lightDir);
-
-	int numInds = FillCardListAndMapToBuffer(*rData->base->camPos, true);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, g_cards.texture);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_cards.bufs.inds);
-
-	glDrawElementsWrapper(GL_TRIANGLES, numInds, GL_UNSIGNED_INT, nullptr);
-}
 void DrawCards(const glm::mat4& proj, const glm::mat4& view, const glm::vec3& camPos, const glm::vec3& lDir, bool geomOnly)
 {
 	CardUniforms* unis = geomOnly ? &g_cards.geomUnis : &g_cards.unis;
@@ -430,6 +373,67 @@ void DrawCards(const glm::mat4& proj, const glm::mat4& view, const glm::vec3& ca
 	glDrawElementsWrapper(GL_TRIANGLES, numInds, GL_UNSIGNED_INT, nullptr);
 	
 	glBindVertexArray(0);
+}
+
+CardSceneObject::~CardSceneObject() {
+}
+
+size_t CardSceneObject::GetType() const {
+    return 4;
+}
+void CardSceneObject::DrawGeometry(StandardRenderPassData* pass)  {
+	const CurrentLightInformation* cur = GetCurrentLightInformation();
+	glm::vec3 dir(0.0f);
+	if (cur->numCurDirLights > 0) {
+		dir = cur->curDirLights[0].data.dir;
+	}
+    if(pass->drawShadow) { 
+        DrawCards(*pass->camProj, *pass->camView, *pass->camPos, dir, true);
+    }
+}
+void CardSceneObject::DrawOpaque(StandardRenderPassData* pass)  {
+
+}
+void CardSceneObject::DrawBlend(StandardRenderPassData* pass)  {
+	const CurrentLightInformation* cur = GetCurrentLightInformation();
+	glm::vec3 dir(0.0f);
+	if (cur->numCurDirLights > 0)
+	{
+		dir = cur->curDirLights[0].data.dir;
+	}	
+	SetDefaultBlendState();
+	DrawCards(*pass->camProj, *pass->camView, *pass->camPos, dir, false);
+}
+void CardSceneObject::DrawBlendClip(ReflectPlanePassData* pass)  {
+	const glm::vec3* camPos = pass->base->camPos;
+
+	SetDefaultBlendState();
+
+	const CurrentLightInformation* cur = GetCurrentLightInformation();
+	glm::vec3 lightDir(0.0f);
+	if (cur->numCurDirLights > 0)
+	{
+		lightDir = cur->curDirLights[0].data.dir;
+	}
+
+	glUseProgramWrapper(g_cards.program);
+	glBindVertexArray(g_cards.bufs.vao);
+	glUniformMatrix4fv(g_cards.unis.projection, 1, GL_FALSE, (const GLfloat*)pass->base->camProj);
+	glUniformMatrix4fv(g_cards.unis.view, 1, GL_FALSE, (const GLfloat*)pass->base->camView);
+	glUniform4fv(g_cards.unis.plane, 1, (const GLfloat*)pass->planeEquation);
+	glUniform3fv(g_cards.unis.lightDir, 1, (const GLfloat*)&lightDir);
+
+	const int numInds = FillCardListAndMapToBuffer(*pass->base->camPos, true);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, g_cards.texture);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_cards.bufs.inds);
+
+	glDrawElementsWrapper(GL_TRIANGLES, numInds, GL_UNSIGNED_INT, nullptr);
+}
+void CardSceneObject::DrawOpaqueClip(ReflectPlanePassData* pass)  {
+
 }
 
 static bool HitTest(const glm::vec3& center, const glm::quat& rot, float scaleX, float scaleY, const glm::vec3& camPos, const glm::vec3& mouseRay)

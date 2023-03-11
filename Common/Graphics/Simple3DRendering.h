@@ -26,14 +26,20 @@ struct S3DCombinedBuffer
 	uint32_t numIndices = 0;
 };
 
-struct S3DSceneObject
+struct S3DSceneObject : public SceneObject
 {
-	BaseSceneObject base;
-	S3DCombinedBuffer* mesh;
-	uintptr_t texture;
-	glm::mat4* transform;
+	S3DCombinedBuffer mesh;
+	GLuint texture;
+	glm::mat4 transform;
+
+    virtual ~S3DSceneObject();
+    virtual size_t GetType() const override;
+    virtual void DrawGeometry(StandardRenderPassData* pass) override;
+    virtual void DrawOpaque(StandardRenderPassData* pass) override;
+    virtual void DrawBlend(StandardRenderPassData* pass) override;
+    virtual void DrawBlendClip(ReflectPlanePassData* pass) override;
+    virtual void DrawOpaqueClip(ReflectPlanePassData* pass) override;
 };
-static_assert(sizeof(S3DSceneObject) <= sizeof(SceneObject), "SIZE_MISMATCH");
 
 void InitializeSimple3DPipeline();
 void CleanUpSimple3DPipeline();
@@ -41,16 +47,9 @@ void CleanUpSimple3DPipeline();
 S3DCombinedBuffer S3DGenerateBuffer(SVertex3D* verts, size_t numVerts, uint32_t* indices, size_t numIndices);
 S3DVertexBuffer S3DGenerateBuffer(SVertex3D* verts, size_t numVerts);
 
-BoundingBox GenerateBoundingBoxFromVertices(SVertex3D* verts, size_t numVerts);
 S3DSceneObject* AddSceneObject(PScene scene, uint32_t s3dTypeIndex, SVertex3D* verts, size_t numVerts);
 S3DSceneObject* AddSceneObject(PScene scene, uint32_t s3dTypeIndex, SVertex3D* verts, size_t numVerts, uint32_t* indices, size_t numIndices);
 
 
+void DrawSimple3D(const S3DCombinedBuffer& buf, const glm::mat4& proj, const glm::mat4& view, const glm::mat4& model, bool geometryOnly);
 
-void DrawSimple3D(const S3DCombinedBuffer& buf, const glm::mat4& proj, const glm::mat4& view, const glm::mat4& model = glm::mat4(1.0f), bool geometryOnly = false);
-void DrawSimple3D(const S3DCombinedBuffer& buf, const glm::mat4& proj, const glm::mat4& view, GLuint texture, const glm::mat4& model = glm::mat4(1.0f), bool geometryOnly = false);
-void DrawSimple3D(const S3DVertexBuffer& buf, const glm::mat4& proj, const glm::mat4& view, const glm::mat4& model = glm::mat4(1.0f), bool geometryOnly = false);
-void DrawSimple3D(const S3DVertexBuffer& buf, const glm::mat4& proj, const glm::mat4& view, GLuint texture, const glm::mat4& model = glm::mat4(1.0f), bool geometryOnly = false);
-
-
-PFUNCDRAWSCENEOBJECT S3DGetDrawFunctions(TYPE_FUNCTION f);
