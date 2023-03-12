@@ -137,7 +137,7 @@ struct _InternalCard
 static void GenerateCardListsFromCache(CardVertex* vertList, uint32_t* indList, const std::vector<_InternalCard>& cache, const glm::vec3& camPos, int* numInds, bool backwards)
 {
 	const size_t cardCount = cache.size() - 1;
-	size_t curVert = 0;
+	uint32_t curVert = 0;
 	int curIdx = 0;
 	for (size_t i = 0; i < cache.size(); i++)
 	{
@@ -339,8 +339,8 @@ int FillCardListAndMapToBuffer(const glm::vec3& pos, bool backwards)
 	if (g_cards.bufs.cardCache.size() > g_cards.bufs.bufferSize)
 	{
 		g_cards.bufs.bufferSize = g_cards.bufs.cardCache.size() + 100;
-		const uint32_t vtxSize = sizeof(CardVertex) * g_cards.bufs.bufferSize * 4;
-		const uint32_t idxSize = sizeof(uint32_t) * g_cards.bufs.bufferSize * 6;
+		const uint32_t vtxSize = (uint32_t)(sizeof(CardVertex) * g_cards.bufs.bufferSize * 4);
+		const uint32_t idxSize = (uint32_t)(sizeof(uint32_t) * g_cards.bufs.bufferSize * 6);
 		glBufferData(GL_ARRAY_BUFFER, vtxSize, nullptr, GL_DYNAMIC_DRAW);
 
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, idxSize, nullptr, GL_DYNAMIC_DRAW);
@@ -760,35 +760,8 @@ int CardHand::AddTemp(const Camera& cam, CARD_ID id)
 	return idx;
 }
 
-void SetNextStateFromCardID(CARD_ID card)
-{
-	GameStateData* state = GetGameState();
-	uint32_t cur = (state->playerInTurn % state->players.size());
-	
-	if (card == CARD_ID_ADD_4 || card == CARD_ID_CHOOSE_COLOR)
-	{
-		state->isChoosingColor = true;
-	}
-	else if (card == CARD_ID_RED_SWAP || card == CARD_ID_YELLOW_SWAP || card == CARD_ID_GREEN_SWAP || card == CARD_ID_BLUE_SWAP)
-	{
-		state->isChoosingColor = false;
-		state->playerInTurn = (cur - 1) % state->players.size();
-	}
-	else if (card == CARD_ID_RED_PAUSE || card == CARD_ID_YELLOW_PAUSE || card == CARD_ID_GREEN_PAUSE || card == CARD_ID_BLUE_PAUSE)
-	{
-		state->isChoosingColor = false;
-		state->playerInTurn = (cur + 2) % state->players.size();
-	}
-	else
-	{
-		state->isChoosingColor = false;
-		state->playerInTurn = (cur + 1) % state->players.size();
-	}
-}
-
 void CardHand::PlayCard(const CardStack& stack, CardsInAnimation& anim, int cardIdx)
 {
-	COLOR_ID blackColRef;
 	UnoPlugin* instance = GetInstance();
 	GameStateData* state = GetGameState();
     CardData internalData = RenderCardToCardData(cards.at(cardIdx).front, COLOR_ID::COLOR_BLACK);
@@ -890,7 +863,7 @@ void CardHand::Update(CardStack& stack, CardsInAnimation& anim, ColorPicker& pic
 		mouseSelectedCard = -1;
 	}
 	int hitIdx = -1;
-	for (int i = cards.size() - 1; i >= 0; i--)
+	for (int i = (int)(cards.size() - 1); i >= 0; i--)
 	{
 		auto& c = cards.at(i);
 		if (hitIdx == -1 && HitTest(c.position, c.rotation, g_cardScale, g_cardScale, cp, mRay))
@@ -978,7 +951,7 @@ void CardHand::GenTransformations(const Camera& cam)
 	float camYaw = cam.GetYaw() + 90.0f - rotation;
 	const glm::quat frontFaceingRotation = glm::rotate(glm::mat4(1.0f), glm::radians(-40.0f), right) * glm::rotate(glm::mat4(1.0f), glm::radians(camYaw), glm::vec3(0.0f, -1.0f, 0.0f));
 	
-	const int numCards = cards.size();
+	const size_t numCards = cards.size();
 	const float distBetween = std::min(std::max(maxWidth * 2.0f / (float)cards.size(), g_cardMinDiff), maxDiff);
 
 	if (distBetween * numCards > maxWidth * 2.0f)

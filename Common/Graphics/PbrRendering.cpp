@@ -1946,7 +1946,12 @@ void PBRSceneObject::Set(void* internal, UBOParams params, const glm::mat4& tran
 }
 
 PBRSceneObject::~PBRSceneObject() {
-    
+    if(model) {
+        CleanUpInternal(model);
+        model = 0;
+    }
+    glDeleteBuffers(1, &uboParamsUniform);
+    uboParamsUniform = 0;
 }
 size_t PBRSceneObject::GetType() const {
     return 0;

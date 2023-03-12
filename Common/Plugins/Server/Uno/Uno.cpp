@@ -33,7 +33,7 @@ static void UnoSkipPlayer(Uno* uno)
     uno->data->cur_made_action = false;
 	if (uno->data->forward) uno->data->playerInTurnIdx = (uno->data->playerInTurnIdx + 2) % uno->data->playerData.size();
 	else { 
-        if(uno->data->playerInTurnIdx == 0) uno->data->playerInTurnIdx = (uint16_t)(uno->data->playerData.size() - 2);
+        if(uno->data->playerInTurnIdx == 0) uno->data->playerInTurnIdx = (uint16_t)(uno->data->playerData.size() - 2) % uno->data->playerData.size();
         else if(uno->data->playerInTurnIdx == 1) uno->data->playerInTurnIdx = (uint16_t)(uno->data->playerData.size() - 1);
         else uno->data->playerInTurnIdx = (uno->data->playerInTurnIdx - 2);
     }

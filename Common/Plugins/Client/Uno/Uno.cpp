@@ -358,16 +358,12 @@ void UnoPlugin::Render(ApplicationData* data)
 	ray = g_objs->playerCam.ScreenToWorld((float)g_objs->p.x, (float)g_objs->p.y);
 	
 	
-	
-	
 	g_objs->cardHandlingTimer = 0.0f;
 	GameUpdateFunction(g_objs, dt);
 	
 
-
 	// RENDER
 	{
-
 		{ // render all cards
 			ClearCards();
 			g_objs->deck.Draw();
@@ -378,7 +374,6 @@ void UnoPlugin::Render(ApplicationData* data)
 			{
 				g_objs->hands.at(i).Draw(g_objs->playerCam);
 			}
-
 		}
 
 		BeginScene(g_objs->UnoScene);
@@ -486,7 +481,6 @@ void UnoPlugin::Render(ApplicationData* data)
 }
 
 
-#define ALLOW_FREEMOVEMENT 1
 void UnoPlugin::MouseCallback(const PB_MouseData* mData)
 {
 #ifdef ALLOW_FREEMOVEMENT
