@@ -1,6 +1,7 @@
 #pragma once
 #include "../PluginCommon.h"
 #include "Graphics/Camera.h"
+#include "Graphics/Helper.h"
 #include "Graphics/Simple3DRendering.h"
 #include "Graphics/Renderer.h"
 #include "Card.h"
@@ -56,7 +57,7 @@ struct UnoGlobals
 	MovementComponent moveComp;
 	SingleFBO reflectFBO;
 	SceneRenderData rendererData;
-	GLuint skybox = 0;
+	EnvironmentMaps environment;
 	GLuint refGroundTexture = 0;
 	S3DCombinedBuffer platform;
 	std::vector<CardHand> hands;

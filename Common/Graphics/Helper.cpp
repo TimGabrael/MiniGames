@@ -156,7 +156,7 @@ in vec3 TexCoords;\n\
 uniform samplerCube skybox;\n\
 void main()\
 {\
-	FragColor = texture(skybox, TexCoords);\n\
+	FragColor = textureLod(skybox, TexCoords, 0.0);\n\
 }";
 
 //  x------x
@@ -210,7 +210,7 @@ stbi_uc* stbi_load_wrapper(const char* file, int* width, int* height, int* numCh
 
 void InitializeOpenGL(void* assetManager)
 {
-#if !defined(ANDROID) and !defined(EMSCRIPTEN)
+#if !defined(ANDROID) && !defined(EMSCRIPTEN)
 	gladLoadGL();
 #endif
 	g_helper.assetManager = assetManager;
@@ -317,8 +317,8 @@ GLuint CreateProgram(const char* vertexShader)
 GLuint CreateProgramExtended(const char* vertexShader, const char* fragmentShaderExtension, GLuint* lightUniform, GLuint* fboSizeUniformLoc, uint32_t shadowMapIdx, uint32_t globalAmbientOcclusionMapIdx)
 {
 	const char* fraBase = GetFragmentShaderBase();
-	uint32_t fraBaseSize = strnlen(fraBase, 100000);
-	uint32_t fragSize = strnlen(fragmentShaderExtension, 100000);
+	uint32_t fraBaseSize = (uint32_t)strnlen(fraBase, 100000);
+	uint32_t fragSize = (uint32_t)strnlen(fragmentShaderExtension, 100000);
 
 	char* fullFragmentShader = new char[fraBaseSize + fragSize + 1];
 	memcpy(fullFragmentShader, fraBase, fraBaseSize);
@@ -395,6 +395,79 @@ GLuint LoadCubemap(const char* file)
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
 	return textureID;
+}
+EnvironmentMaps LoadEnvironmentMaps(const char* file) {
+    FileContent fileContent = LoadFileContent(g_helper.assetManager, file);
+    if(!fileContent.data) {
+        LOG("WARNING: EnvironmentMap failed to load\n");
+    }
+    struct EnvironmentMapsHeader{
+        int w, h;
+        int irr_w, irr_h;
+    };
+    if(fileContent.size < sizeof(EnvironmentMapsHeader)) { 
+        LOG("WARNING: EnvironmentMap size invalid\n");
+        return {0};
+    }
+    EnvironmentMapsHeader* header = (EnvironmentMapsHeader*)fileContent.data;
+    const int numMipMaps = (int)(1 + floor(log2(std::max(header->w, header->h))));
+    size_t prefilteredSize = 0;
+    for(int i = 0; i < numMipMaps; i++) {
+        const int sx = std::max(header->w >> i, 1);
+        const int sy = std::max(header->h >> i, 1);
+        prefilteredSize += (size_t)(4 * sx * sy * 6);
+    }
+    const size_t fullSize = (prefilteredSize + header->irr_w * header->irr_h * 4 * 6) * 4 + sizeof(EnvironmentMapsHeader);
+    if(fileContent.size != fullSize) {
+        LOG("WARNING: EnvironmentMap full-size invalid, %d %d\n", fileContent.size, fullSize);
+        return {0};
+    }
+    float* pre = (float*)(fileContent.data + sizeof(EnvironmentMapsHeader));
+    float* irr = (float*)(fileContent.data + sizeof(EnvironmentMapsHeader) + prefilteredSize * 4);
+
+    EnvironmentMaps out;
+    out.width = header->w;
+    out.height = header->h;
+    out.irradiance_width = header->irr_w;
+    out.irradiance_height = header->irr_h;
+    GLuint texs[2];
+    glGenTextures(2, texs);
+    out.irradiance = texs[0];
+    out.prefiltered = texs[1];
+    glBindTexture(GL_TEXTURE_CUBE_MAP, texs[0]);
+ 	
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    static constexpr int mapping[] = { 3,5,4,1,0,2 };
+    for(int i = 0; i < 6; i++) {
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + mapping[i], 0, GL_RGBA32F, header->irr_w,
+                header->irr_h, 0, GL_RGBA, GL_FLOAT, irr + 4 * header->irr_w * header->irr_h * i);
+    }
+
+    glBindTexture(GL_TEXTURE_CUBE_MAP, texs[1]);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    
+    for(int mip = 0; mip < numMipMaps; mip++) {
+        const int cw = std::max(header->w >> mip, 1);
+        const int ch = std::max(header->h >> mip, 1);
+        for(int i = 0; i < 6; i++) {
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + mapping[i], mip, GL_RGBA32F, cw,
+                    ch, 0, GL_RGBA, GL_FLOAT, pre);
+            pre += 4 * cw * ch;
+        }
+    }
+
+    
+    delete[] fileContent.data; 
+    return out;
 }
 
 
@@ -736,7 +809,7 @@ void BloomFBO::Create(int sx, int sy)
 	sizeX = sx;
 	sizeY = sy;
 
-	numBloomFbos = 1 + floor(log2(std::max(sx, sy)));
+	numBloomFbos = (int)(1 + floor(log2(std::max(sx, sy))));
 	int curX = sx; int curY = sy;
 	for (int i = 1; i < numBloomFbos; i++)
 	{

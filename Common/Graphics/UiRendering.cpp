@@ -72,7 +72,7 @@ void AddVerticesToBuffer(Vertex2D* verts, int numVerts, GLuint boundTexture, boo
 	static constexpr int sizeSteps = 1000;
 	auto& sb = g_ui.streamBuffer;
 	const int addingSize = numVerts * sizeof(Vertex2D);
-	if (sb.instructions.empty() || sb.instructions.at(sb.instructions.size() - 1).boundTexture != boundTexture || sb.instructions.at(sb.instructions.size() - 1).numVerts != areTriangles)
+	if (sb.instructions.empty() || sb.instructions.at(sb.instructions.size() - 1).boundTexture != boundTexture || sb.instructions.at(sb.instructions.size() - 1).isTriangle != areTriangles)
 	{
 		sb.instructions.emplace_back(boundTexture, numVerts, areTriangles);
 	}

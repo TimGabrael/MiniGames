@@ -120,18 +120,18 @@ void MovementComponent::Update()
 		else velocity = std::max(velocity - 0.1f, 0.0f);
 		if (keyboardMoveDirs[DIRECTION::FORWARD])
 		{
-			if (keyboardMoveDirs[DIRECTION::LEFT]) moveAngle = -M_PI / 4.0f;
-			else if (keyboardMoveDirs[DIRECTION::RIGHT]) moveAngle = M_PI / 4.0f;
+			if (keyboardMoveDirs[DIRECTION::LEFT]) moveAngle = -(float)M_PI / 4.0f;
+			else if (keyboardMoveDirs[DIRECTION::RIGHT]) moveAngle = (float)M_PI / 4.0f;
 			else moveAngle = 0.0f;
 		}
 		else if (keyboardMoveDirs[DIRECTION::BACKWARD])
 		{
-			if (keyboardMoveDirs[DIRECTION::LEFT]) moveAngle = -3.0f * M_PI / 4.0f;
-			else if (keyboardMoveDirs[DIRECTION::RIGHT]) moveAngle = -5.0f * M_PI / 4.0f;
-			else moveAngle = -M_PI;
+			if (keyboardMoveDirs[DIRECTION::LEFT]) moveAngle = -3.0f * (float)M_PI / 4.0f;
+			else if (keyboardMoveDirs[DIRECTION::RIGHT]) moveAngle = -5.0f * (float)M_PI / 4.0f;
+			else moveAngle = -(float)M_PI;
 		}
-		else if (keyboardMoveDirs[DIRECTION::LEFT]) moveAngle = -M_PI / 2.0f;
-		else moveAngle = M_PI / 2.0f;
+		else if (keyboardMoveDirs[DIRECTION::LEFT]) moveAngle = -(float)M_PI / 2.0f;
+		else moveAngle = (float)M_PI / 2.0f;
 
 		glm::vec3 moveVec = sinf(moveAngle) * right + cosf(moveAngle) * front;
 		pos += moveVec * velocity;

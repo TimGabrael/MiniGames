@@ -11,7 +11,7 @@ struct StandardRenderPassData
 	glm::vec2 renderSize;
 
 	GLuint cameraUniform;
-	GLuint skyBox;
+	struct EnvironmentMaps* env;
 	GLuint shadowMap;
 	GLuint ambientOcclusionMap;
 

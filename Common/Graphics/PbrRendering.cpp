@@ -316,7 +316,7 @@ struct InternalPBR
 	GLuint vertexBuffer;
 	struct Indices {
 		GLuint indexBuffer;
-		int count;
+		uint32_t count;
 	}indices;
 	glm::mat4 aabb;
 	std::vector<GLuint> textures;
@@ -589,8 +589,8 @@ void LoadNode(InternalPBR& pbr, Node* parent, const tinygltf::Node& node, uint32
 		MeshPbr* newMesh = new MeshPbr(newNode->matrix);
 		for (size_t j = 0; j < mesh.primitives.size(); j++) {
 			const tinygltf::Primitive& primitive = mesh.primitives[j];
-			uint32_t vertexStart = loaderInfo.vertexPos;
-			uint32_t indexStart = loaderInfo.indexPos;
+			uint32_t vertexStart = (uint32_t)loaderInfo.vertexPos;
+			uint32_t indexStart = (uint32_t)loaderInfo.indexPos;
 			uint32_t indexCount = 0;
 			uint32_t vertexCount = 0;
 			glm::vec3 posMin{};
@@ -1020,7 +1020,7 @@ void* CreateInternalPBRFromFile(const char* filename, float scale)
 	}
 	size_t vertexBufferSize = vertexCount * sizeof(Vertex);
 	size_t indexBufferSize = indexCount * sizeof(uint32_t);
-	pbr.indices.count = indexCount;
+	pbr.indices.count = (uint32_t)indexCount;
 
 
 	glGenVertexArrays(1, &pbr.vao);
@@ -1750,7 +1750,7 @@ void DrawNode(InternalPBR* realObj, Node* node, bool drawOpaque, GLTFUniforms* u
 		DrawNode(realObj, child, drawOpaque, unis);
 	}
 }
-void DrawPBRModel(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform, GLuint environmentMap, GLuint shadowMap, GLuint globalAOMap, GLuint lightDataUniform, const glm::vec2& renderSz, const glm::mat4* model, const glm::vec4* clipPlane, bool drawOpaque, bool geomOnly)
+void DrawPBRModel(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform, EnvironmentMaps* env, GLuint shadowMap, GLuint globalAOMap, GLuint lightDataUniform, const glm::vec2& renderSz, const glm::mat4* model, const glm::vec4* clipPlane, bool drawOpaque, bool geomOnly)
 {
 	GLTFUniforms* unis = nullptr;
 	if (geomOnly) unis = &g_pipeline.geomUnis;
@@ -1782,10 +1782,10 @@ void DrawPBRModel(void* internalObj, GLuint UboUniform, GLuint UBOParamsUniform,
 		glUniform2f(unis->fboSizeLoc, renderSz.x, renderSz.y);
 
 		glActiveTexture(GL_TEXTURE0 + GLTF_Textures::PREFILTERED_MAP);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, environmentMap);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, env->prefiltered);
 
 		glActiveTexture(GL_TEXTURE0 + GLTF_Textures::IRRADIANCE);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, environmentMap);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, env->irradiance);
 
 
 		glActiveTexture(GL_TEXTURE0 + GLTF_Textures::BRDF_LUT);
@@ -1957,23 +1957,23 @@ size_t PBRSceneObject::GetType() const {
     return 0;
 }
 void PBRSceneObject::DrawGeometry(StandardRenderPassData* pass) {
-	DrawPBRModel(model, pass->cameraUniform, uboParamsUniform, pass->skyBox, pass->shadowMap, 
+	DrawPBRModel(model, pass->cameraUniform, uboParamsUniform, pass->env, pass->shadowMap, 
             pass->ambientOcclusionMap, pass->lightData, pass->renderSize, &transform, nullptr, true, true);
 }
 void PBRSceneObject::DrawOpaque(StandardRenderPassData* pass) {
-	DrawPBRModel(model, pass->cameraUniform, uboParamsUniform, pass->skyBox, pass->shadowMap, 
+	DrawPBRModel(model, pass->cameraUniform, uboParamsUniform, pass->env, pass->shadowMap, 
             pass->ambientOcclusionMap, pass->lightData, pass->renderSize, &transform, nullptr, true, false);
 }
 void PBRSceneObject::DrawBlend(StandardRenderPassData* pass) {
-	DrawPBRModel(model, pass->cameraUniform, uboParamsUniform, pass->skyBox, pass->shadowMap, 
+	DrawPBRModel(model, pass->cameraUniform, uboParamsUniform, pass->env, pass->shadowMap, 
             pass->ambientOcclusionMap, pass->lightData, pass->renderSize, &transform, nullptr, false, false);
 }
 void PBRSceneObject::DrawBlendClip(ReflectPlanePassData* pass) {
-	DrawPBRModel(model, pass->base->cameraUniform, uboParamsUniform, pass->base->skyBox, pass->base->shadowMap, 
+	DrawPBRModel(model, pass->base->cameraUniform, uboParamsUniform, pass->base->env, pass->base->shadowMap, 
             pass->base->ambientOcclusionMap, pass->base->lightData, pass->base->renderSize, &transform, pass->planeEquation, false, false);
 }
 void PBRSceneObject::DrawOpaqueClip(ReflectPlanePassData* pass) {
-	DrawPBRModel(model, pass->base->cameraUniform, uboParamsUniform, pass->base->skyBox, pass->base->shadowMap, 
+	DrawPBRModel(model, pass->base->cameraUniform, uboParamsUniform, pass->base->env, pass->base->shadowMap, 
             pass->base->ambientOcclusionMap, pass->base->lightData, pass->base->renderSize, &transform, pass->planeEquation, true, false);
 }
 

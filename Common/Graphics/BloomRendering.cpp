@@ -254,7 +254,7 @@ void BloomTextureToFramebuffer(GLuint endFbo, int fboX, int fboY, GLuint interme
     glUniform1f(g_bloom.bloomUnis.blurUnis.blurRadiusLoc, blurRadius);
     glUniform1i(g_bloom.bloomUnis.blurUnis.blurAxisLoc, (int)BLUR_AXIS::X_AXIS);
     glUniform1f(g_bloom.bloomUnis.intensityLoc, bloomIntensity);
-    glUniform1f(g_bloom.bloomUnis.mipLevelLoc, texMipLevel);
+    glUniform1f(g_bloom.bloomUnis.mipLevelLoc, (GLfloat)texMipLevel);
 
     glDrawArraysWrapper(GL_TRIANGLES, 0, 3);
 
@@ -263,7 +263,7 @@ void BloomTextureToFramebuffer(GLuint endFbo, int fboX, int fboY, GLuint interme
 
     glBindTexture(GL_TEXTURE_2D, intermediateTexture);
     glUniform1f(g_bloom.bloomUnis.intensityLoc, 0.0f);
-    glUniform1f(g_bloom.bloomUnis.mipLevelLoc, endMipLevel);
+    glUniform1f(g_bloom.bloomUnis.mipLevelLoc, (GLfloat)endMipLevel);
     glUniform1i(g_bloom.bloomUnis.blurUnis.blurAxisLoc, (int)BLUR_AXIS::Y_AXIS);
 
     glDrawArraysWrapper(GL_TRIANGLES, 0, 3);
@@ -275,7 +275,7 @@ void CopyTextureToFramebuffer(GLuint tex, int mipMapLevel)
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, tex);
 
-    glUniform1f(g_bloom.copyUnis.mipLevelLoc, mipMapLevel);
+    glUniform1f(g_bloom.copyUnis.mipLevelLoc, (GLfloat)mipMapLevel);
 
     glDrawArraysWrapper(GL_TRIANGLES, 0, 3);
 }
@@ -289,8 +289,8 @@ void CopyTexturesToFramebuffer(GLuint tex1, int mipMapLevel1, GLuint tex2, int m
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, tex2);
 
-    glUniform1f(g_bloom.copyDualUnis.mipLevel1Loc, mipMapLevel1);
-    glUniform1f(g_bloom.copyDualUnis.mipLevel2Loc, mipMapLevel2);
+    glUniform1f(g_bloom.copyDualUnis.mipLevel1Loc, (GLfloat)mipMapLevel1);
+    glUniform1f(g_bloom.copyDualUnis.mipLevel2Loc, (GLfloat)mipMapLevel2);
 
     glDrawArraysWrapper(GL_TRIANGLES, 0, 3);
 }
@@ -301,7 +301,7 @@ void UpsampleTextureToFramebuffer(GLuint tex, int mipMapLevel)
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, tex);
 
-    glUniform1f(g_bloom.upsamplingUnis.mipLevelLoc, mipMapLevel);
+    glUniform1f(g_bloom.upsamplingUnis.mipLevelLoc, (GLfloat)mipMapLevel);
 
     glDrawArraysWrapper(GL_TRIANGLES, 0, 3);
 }

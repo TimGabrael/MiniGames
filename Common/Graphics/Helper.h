@@ -8,6 +8,15 @@
 #include <glm/glm.hpp>
 #include "Scene.h"
 
+struct EnvironmentMaps {
+    int width;
+    int height;
+    int irradiance_width;
+    int irradiance_height;
+    GLuint prefiltered;
+    GLuint irradiance;
+};
+
 void InitializeOpenGL(void* assetManager);
 void CleanUpOpenGL();
 
@@ -19,6 +28,8 @@ GLuint CreateProgramExtended(const char* vertexShader, const char* fragmentShade
 
 GLuint LoadCubemap(const char* right, const char* left, const char* bottom, const char* top, const char* front, const char* back);
 GLuint LoadCubemap(const char* file);
+
+EnvironmentMaps LoadEnvironmentMaps(const char* file);
 
 GLuint GenerateBRDF_LUT(int dim);
 

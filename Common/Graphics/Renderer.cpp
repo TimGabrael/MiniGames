@@ -464,7 +464,7 @@ void RenderAmbientOcclusion(PScene scene, StandardRenderPassData* data, const Sc
 
 		RenderAmbientOcclusionQuad(frameData->aoFBO.depth, screenSizeX, screenSizeY);
 
-		const IntermediateTextureData* data = GetIntermediateTexture(screenSizeX, screenSizeY, 8, true, false, false, false);
+		const IntermediateTextureData* data = GetIntermediateTexture((int)screenSizeX, (int)screenSizeY, 8, true, false, false, false);
 		BlurTextureToFramebuffer(frameData->aoFBO.fbo, frameData->baseWidth, frameData->baseHeight, frameData->aoFBO.texture, 2.0f, data->fbo, data->sizeX, data->sizeY, data->texture);
 	}
 	else
@@ -579,7 +579,7 @@ void RenderSceneReflectedOnPlane(PScene scene, const ReflectPlanePassData* data)
 	glm::mat4 camViewProj = *g_render->mainData.camProj * *g_render->mainData.camView;
 	SC_FillRenderList(scene, g_render->objs, &camViewProj, &num, SCENE_OBJECT_FLAGS::SCENE_OBJECT_SURFACE_REFLECTED);
 
-	DrawSkybox(data->base->skyBox, camViewProj);
+	DrawSkybox(data->base->env->prefiltered, camViewProj);
 
 	for (int i = 0; i < num; i++)
 	{
@@ -609,7 +609,7 @@ void RenderSceneStandard(PScene scene, const StandardRenderPassData* data)
 	glm::mat4 camViewProj = *g_render->mainData.camProj * *g_render->mainData.camView;
 	SC_FillRenderList(scene, g_render->objs, &camViewProj, &num, SCENE_OBJECT_FLAGS::SCENE_OBJECT_OPAQUE);
 
-	DrawSkybox(data->skyBox, camViewProj);
+	DrawSkybox(data->env->prefiltered, camViewProj);
 	for (int i = 0; i < num; i++)
 	{
 		SceneObject* o = g_render->objs[i];

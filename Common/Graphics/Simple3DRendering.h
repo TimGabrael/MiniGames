@@ -44,11 +44,11 @@ struct S3DSceneObject : public SceneObject
 void InitializeSimple3DPipeline();
 void CleanUpSimple3DPipeline();
 
-S3DCombinedBuffer S3DGenerateBuffer(SVertex3D* verts, size_t numVerts, uint32_t* indices, size_t numIndices);
-S3DVertexBuffer S3DGenerateBuffer(SVertex3D* verts, size_t numVerts);
+S3DCombinedBuffer S3DGenerateBuffer(SVertex3D* verts, uint32_t numVerts, uint32_t* indices, uint32_t numIndices);
+S3DVertexBuffer S3DGenerateBuffer(SVertex3D* verts, uint32_t numVerts);
 
-S3DSceneObject* AddSceneObject(PScene scene, uint32_t s3dTypeIndex, SVertex3D* verts, size_t numVerts);
-S3DSceneObject* AddSceneObject(PScene scene, uint32_t s3dTypeIndex, SVertex3D* verts, size_t numVerts, uint32_t* indices, size_t numIndices);
+S3DSceneObject* AddSceneObject(PScene scene, uint32_t s3dTypeIndex, SVertex3D* verts, uint32_t numVerts);
+S3DSceneObject* AddSceneObject(PScene scene, uint32_t s3dTypeIndex, SVertex3D* verts, uint32_t numVerts, uint32_t* indices, uint32_t numIndices);
 
 
 void DrawSimple3D(const S3DCombinedBuffer& buf, const glm::mat4& proj, const glm::mat4& view, const glm::mat4& model, bool geometryOnly);

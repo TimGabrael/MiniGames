@@ -27,7 +27,7 @@ void PrintHelpScreen()
 	std::cout << "--pluginID -id: required PluginID needs to be exactly 16 Characters long\n";
 	std::cout << "--allowAsyncLoad -load: flag allows to join late\n";
 	std::cout << "--maxPlayerCount -max: maximum player count\n";
-	std::cout << "--environment -env: generate environment maps from hdr images\n";
+	std::cout << "--environment -env: generate environment maps from hdr images\nfile order: bottom, back, front, left, right, top\n";
 }
 
 void ParseAllResources(const std::filesystem::path& path, std::vector<std::string>& fill)
@@ -312,11 +312,13 @@ int main(int argc, char* argv[])
             }
             else if(_strnicmp(argv[i], "-env", 5) == 0 || _strnicmp(argv[i], "--environment", 14) == 0) {
                 if((i + 6) < argc) {
+                    // env settings
                     static constexpr float dphi = (float)M_PI * 2.0f / 180.0f;
                     static constexpr float dthe = (float)M_PI * 0.5f / 64.0f;
                     static constexpr uint32_t num_samples = 32;
-                    //static constexpr float dphi = (float)M_PI * 2.0f / 4.0f;
-                    //static constexpr float dthe = (float)M_PI * 0.5f / 4.0f;
+                    static constexpr int irr_w = 128;
+                    static constexpr int irr_h = 128;
+
                     int w = 0,h = 0;
                     float* buffers[6] = { 0 };
                     for(int j = 0; j < 6; j++) {
@@ -337,10 +339,8 @@ int main(int argc, char* argv[])
                         }
                     }
                     if(w > 0 && h > 0) {
-                        printf("worked\n");
+                        printf("Generating Environment\n");
                         int numMipMaps = (int)(1 + floor(log2(std::max(w, h))));
-                        const int irr_w = 128;
-                        const int irr_h = 128;
                         float* irradiance = new float[4 * irr_w * irr_h * 6];
                         size_t prefiltered_size = 0;
                         for(int j = 0; j < numMipMaps; j++) {
@@ -367,25 +367,43 @@ int main(int argc, char* argv[])
                         }
 
                         outs.clear();
-                        stbi_write_hdr("test0.hdr", irr_w, irr_h, 4, irradiance);
-                        stbi_write_hdr("test1.hdr", irr_w, irr_h, 4, irradiance + 4 * irr_w * irr_h * 1);
-                        stbi_write_hdr("test2.hdr", irr_w, irr_h, 4, irradiance + 4 * irr_w * irr_h * 2);
-                        stbi_write_hdr("test3.hdr", irr_w, irr_h, 4, irradiance + 4 * irr_w * irr_h * 3);
-                        stbi_write_hdr("test4.hdr", irr_w, irr_h, 4, irradiance + 4 * irr_w * irr_h * 4);
-                        stbi_write_hdr("test5.hdr", irr_w, irr_h, 4, irradiance + 4 * irr_w * irr_h * 5);
-
-                        std::string base_str = "pretest";
-                        cur_pref = prefiltered;
-                        for(int mip = 0; mip < 1; mip++) {
-                            int cur_w = std::max((w >> mip), 1);
-                            int cur_h = std::max((h >> mip), 1);
-                            for(int j = 0; j < 6; j++) {
-                                std::string str = base_str + std::to_string(mip) + "_" + std::to_string(j) + ".hdr";
-                                stbi_write_hdr(str.c_str(), cur_w, cur_h, 4, cur_pref);
-                                cur_pref += 4 * cur_w * cur_h;
-
-                            }
+                        struct EnvironmentHeaderInfo {
+                            int w,h;
+                            int irr_w, irr_h;
+                        };
+                        EnvironmentHeaderInfo info;
+                        info.w = w;
+                        info.h = h;
+                        info.irr_w = irr_w;
+                        info.irr_h = irr_h;
+                        std::ofstream env_file("environment.env", std::ios_base::binary);
+                        if(env_file.is_open()) {
+                            env_file.write((const char*)&info, sizeof(EnvironmentHeaderInfo));
+                            env_file.write((const char*)prefiltered, prefiltered_size * 4);
+                            env_file.write((const char*)irradiance, 4 * 6 * irr_w * irr_h * 4);
+                            env_file.close();
                         }
+                        
+
+                        //stbi_write_hdr("test0.hdr", irr_w, irr_h, 4, irradiance);
+                        //stbi_write_hdr("test1.hdr", irr_w, irr_h, 4, irradiance + 4 * irr_w * irr_h * 1);
+                        //stbi_write_hdr("test2.hdr", irr_w, irr_h, 4, irradiance + 4 * irr_w * irr_h * 2);
+                        //stbi_write_hdr("test3.hdr", irr_w, irr_h, 4, irradiance + 4 * irr_w * irr_h * 3);
+                        //stbi_write_hdr("test4.hdr", irr_w, irr_h, 4, irradiance + 4 * irr_w * irr_h * 4);
+                        //stbi_write_hdr("test5.hdr", irr_w, irr_h, 4, irradiance + 4 * irr_w * irr_h * 5);
+
+                        //std::string base_str = "pretest";
+                        //cur_pref = prefiltered;
+                        //for(int mip = 0; mip < 1; mip++) {
+                        //    int cur_w = std::max((w >> mip), 1);
+                        //    int cur_h = std::max((h >> mip), 1);
+                        //    for(int j = 0; j < 6; j++) {
+                        //        std::string str = base_str + std::to_string(mip) + "_" + std::to_string(j) + ".hdr";
+                        //        stbi_write_hdr(str.c_str(), cur_w, cur_h, 4, cur_pref);
+                        //        cur_pref += 4 * cur_w * cur_h;
+
+                        //    }
+                        //}
                         printf("finished\n");
                     }
 

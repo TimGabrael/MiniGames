@@ -2,6 +2,7 @@
 #include "Helper.h"
 #include "logging.h"
 #include "Renderer.h"
+#include <stdint.h>
 
 static const char* uiVertexShader = "#version 300 es\n\
 \n\
@@ -86,7 +87,7 @@ void InitializeSimple3DPipeline()
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-S3DCombinedBuffer S3DGenerateBuffer(SVertex3D* verts, size_t numVerts, uint32_t* indices, size_t numIndices)
+S3DCombinedBuffer S3DGenerateBuffer(SVertex3D* verts, uint32_t numVerts, uint32_t* indices, uint32_t numIndices)
 {
 	S3DCombinedBuffer res;
 	res.vtxBuf = S3DGenerateBuffer(verts, numVerts);
@@ -102,7 +103,7 @@ S3DCombinedBuffer S3DGenerateBuffer(SVertex3D* verts, size_t numVerts, uint32_t*
 
 	return res;
 }
-S3DVertexBuffer S3DGenerateBuffer(SVertex3D* verts, size_t numVerts)
+S3DVertexBuffer S3DGenerateBuffer(SVertex3D* verts, uint32_t numVerts)
 {
 	S3DVertexBuffer res;
 	res.numVertices = numVerts;
@@ -126,14 +127,14 @@ S3DVertexBuffer S3DGenerateBuffer(SVertex3D* verts, size_t numVerts)
 	return res;
 }
 
-static BoundingBox GenerateBoundingBoxFromVertices(SVertex3D* verts, size_t numVerts)
+static BoundingBox GenerateBoundingBoxFromVertices(SVertex3D* verts, uint32_t numVerts)
 {
 	assert(numVerts != 0);
 	BoundingBox r = { verts[0].pos, verts[0].pos };
 	glm::vec3& rl = r.leftTopFront;
 	glm::vec3& rh = r.rightBottomBack;
 
-	for (size_t i = 1; i < numVerts; i++)
+	for (uint32_t i = 1; i < numVerts; i++)
 	{
 		glm::vec3 p = verts[i].pos;
 		p += glm::vec3(0.1f);
@@ -148,7 +149,7 @@ static BoundingBox GenerateBoundingBoxFromVertices(SVertex3D* verts, size_t numV
 
 	return r;
 }
-S3DSceneObject* AddSceneObject(PScene scene, uint32_t s3dTypeIndex, SVertex3D* verts, size_t numVerts)
+S3DSceneObject* AddSceneObject(PScene scene, uint32_t s3dTypeIndex, SVertex3D* verts, uint32_t numVerts)
 {
 	//S3DSceneObject* obj = (S3DSceneObject*)SC_AddSceneObject(scene, s3dTypeIndex);
 	//if (!obj) return nullptr;
@@ -165,7 +166,7 @@ S3DSceneObject* AddSceneObject(PScene scene, uint32_t s3dTypeIndex, SVertex3D* v
 
 	return nullptr;
 }
-S3DSceneObject* AddSceneObject(PScene scene, uint32_t s3dTypeIndex, SVertex3D* verts, size_t numVerts, uint32_t* indices, size_t numIndices)
+S3DSceneObject* AddSceneObject(PScene scene, uint32_t s3dTypeIndex, SVertex3D* verts, uint32_t numVerts, uint32_t* indices, uint32_t numIndices)
 {
 	//S3DSceneObject* obj = (S3DSceneObject*)SC_AddSceneObject(scene, s3dTypeIndex);
 	//if (!obj) return nullptr;

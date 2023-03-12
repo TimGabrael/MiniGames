@@ -1,7 +1,7 @@
 #pragma once
 
 
-#if defined(ANDROID) or defined(EMSCRIPTEN)
+#if defined(ANDROID) || defined(EMSCRIPTEN)
 #include <GLES3/gl3.h>
 #include <GLES3/gl3platform.h>
 #else

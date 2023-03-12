@@ -6,7 +6,6 @@
 #include "Graphics/Scene.h"
 #include "Plugins/Client/Uno/NetHandlers.h"
 #include "Plugins/Shared/Uno/UnoBase.h"
-#include "Plugins/Shared/Uno/UnoMessages.pb.h"
 #include "logging.h" // REMINDER USE THIS !! USE THIS NOT <iostream> !!
 #include "Graphics/PbrRendering.h"
 #include "Graphics/UiRendering.h"
@@ -179,7 +178,7 @@ void GameUpdateFunction(UnoGlobals* g_objs, float dt)
 
 
 
-//#define ALLOW_FREEMOVEMENT
+#define ALLOW_FREEMOVEMENT
 SceneDirLight* light = nullptr;
 void UnoPlugin::Init(ApplicationData* data)
 {
@@ -278,13 +277,16 @@ void UnoPlugin::Init(ApplicationData* data)
 		PBRSceneObject* o = AddPbrModelToScene(g_objs->UnoScene, pbrModel, params, glm::translate(glm::mat4(1.0f), glm::vec3(-2.0f, 0.7f, -2.0f)));
 		o->flags &= ~(SCENE_OBJECT_BLEND);
 	}
-	g_objs->skybox = LoadCubemap(
-		"Assets/CitySkybox/right.jpg",
-		"Assets/CitySkybox/left.jpg",
-		"Assets/CitySkybox/top.jpg",
-		"Assets/CitySkybox/bottom.jpg",
-		"Assets/CitySkybox/front.jpg",
-		"Assets/CitySkybox/back.jpg");
+//	g_objs->skybox = LoadCubemap(
+//		"Assets/CitySkybox/right.jpg",
+//		"Assets/CitySkybox/left.jpg",
+//		"Assets/CitySkybox/top.jpg",
+//		"Assets/CitySkybox/bottom.jpg",
+//		"Assets/CitySkybox/front.jpg",
+//		"Assets/CitySkybox/back.jpg");
+
+    g_objs->environment = LoadEnvironmentMaps("Assets/CitySkybox/environment.env");
+
 
 
 	GLuint colTex;
@@ -387,7 +389,7 @@ void UnoPlugin::Render(ApplicationData* data)
 		RenderSceneCascadeShadow(g_objs->UnoScene, &g_objs->rendererData, &g_objs->playerCam, &g_objs->shadowCam, &light->data, { 0.0f, 0.0f }, { 1.0f, 1.0f }, 0.8f);
         
         StandardRenderPassData stdData;
-		stdData.skyBox = g_objs->skybox;
+		stdData.env = &g_objs->environment;
 		stdData.ambientOcclusionMap = 0;
         glm::vec4 plane = { 0.0f, 1.0f, 0.0f, 0.0f };
 
@@ -486,7 +488,7 @@ void UnoPlugin::MouseCallback(const PB_MouseData* mData)
 #ifdef ALLOW_FREEMOVEMENT
 	if (mData->lDown && (mData->dx || mData->dy))
 	{
-		g_objs->moveComp.UpdateFromMouseMovement(-mData->dx, mData->dy);
+		g_objs->moveComp.UpdateFromMouseMovement((float)-mData->dx, (float)mData->dy);
 	}
 #endif
 	g_objs->ms.SetFromPBState(mData);
@@ -573,7 +575,6 @@ void UnoPlugin::TouchMoveCallback(int x, int y, int dx, int dy, int touchID)
 }
 void UnoPlugin::CleanUp()
 {
-	glDeleteTextures(1, &g_objs->skybox);
 	DestroySingleFBO(&g_objs->reflectFBO);
     SC_DestroyScene(g_objs->UnoScene);
     

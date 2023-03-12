@@ -2,7 +2,20 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <vector>
+
+#ifdef _WIN32
+// SHUT UP PROTOBUF I DON'T CARE ABOUT YOUR WARNINGS!
+#pragma warning(push)
+#pragma warning(disable: 4005)
+#pragma warning(disable: 4251)
+#pragma warning(disable: 4146)
+#pragma warning(disable: 4267)
+#endif
 #include "UnoMessages.pb.h"
+#ifdef _WIN32
+#pragma warning(pop)
+#endif
+
 #include "Network/NetworkBase.h"
 
 #define UNO_PLUGIN_ID "a3fV-6giK-10Eb-2rdT"
