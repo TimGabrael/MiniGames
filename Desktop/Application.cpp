@@ -198,7 +198,6 @@ MainApplication::~MainApplication()
     client->Disconnect();
 	networkThreadShouldJoin = true;
 	if(networkPollThread.joinable()) networkPollThread.join();
-    MessageBoxA(0, "FINISH", "ENDE", 0);
 }
 MainApplication* MainApplication::GetInstance()
 {

@@ -2,6 +2,7 @@
 #include <filesystem>
 #include "NetCommon.h"
 #include "Network/NetworkBase.h"
+#include <stdio.h>
 #include <unordered_map>
 
 #ifdef _WIN32
@@ -65,8 +66,7 @@ void NetServer::SteamNetServerConnectionStatusChangedCallback(SteamNetConnection
 	case k_ESteamNetworkingConnectionState_ProblemDetectedLocally:
 	{
 		ServerConnection* conn = server->GetFromNetworkConnection(pInfo->m_hConn);
-		if (conn)
-		{
+		if (conn) {
 			server->CloseConnection(conn);
 		}
 		else
@@ -410,6 +410,18 @@ void NetServer::CloseConnection(ServerConnection* c)
 		c->isConnected = ConnectionState::Disconnected;
 		c->name = "";
 		c->state = AppState::INVALID;
+
+        bool noneConnected = true;
+        for(int i = 0; i < MAX_PLAYERS; i++) {
+            if(socket.connected[i].isConnected != ConnectionState::Disconnected) {
+                noneConnected = false;
+                break;
+            }
+        }
+        if(noneConnected) {
+            g_serverInstance->data->SetLobbyState();
+        }
+        
 	}
 }
 uint16_t NetServer::GetClientID(ServerConnection* conn)
@@ -631,6 +643,7 @@ static void __stdcall LobbyDisconnectCallback(ServerData* s, ServerConnection* c
 			i--;
 		}
 	}
+    
 
 
 }
@@ -710,6 +723,7 @@ static bool __stdcall ClientLobbyVotePacketCallback(ServerData* s, ServerConnect
 					s->info.net->SendData(conn, SendFlags::Send_Reliable);
 				}
 			}
+            g_serverInstance->data->SetLobbyState();
 		}
 
 
@@ -874,6 +888,10 @@ ServerData::~ServerData()
 }
 void ServerData::SetLobbyState()
 {
+    if(info.plugin) {
+        info.plugin->CleanUp();
+        info.plugin = nullptr;
+    }
 	info.net->SetDeserializer(LobbyVoteDeserializer, Client_LobbyVote);
 	info.net->SetDeserializer(LobbyAdminTimerDeserializer, Client_LobbyAdminTimer);
     info.net->SetDeserializer(0, Client_Disconnect);
@@ -885,6 +903,7 @@ void ServerData::SetLobbyState()
 	info.net->SetClientStateCallback((ServerClientStateChangeCallbackFunction)LobbyClientStateChangeCallback);
 	info.net->SetJoinCallback((ServerJoinCallbackFunction)LobbyJoinCallback);
 	info.net->SetDisconnectCallback((ServerDisconnectCallbackFunction)LobbyDisconnectCallback);
+
 
 }
 void ServerData::Update(float dt)
