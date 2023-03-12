@@ -107,7 +107,7 @@ void CustomCheckBox::mouseReleaseEvent(QMouseEvent* e)
 	// QCheckBox::mouseReleaseEvent(e);
 	released();
 
-	const QPointF& p = e->localPos();
+	const QPointF& p = e->position();
 	const QSize& sz = size();
 	int x = p.x(); int y = p.y();
 	if (x >= 0 && y >= 0 && x <= sz.width() && y < sz.height())

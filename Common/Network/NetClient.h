@@ -16,6 +16,7 @@ struct NetClient : public NetClientInterface
 	static NetClient* Create();
 
 	NetResult Connect(const char* ip, uint32_t port, const std::string& name);
+    void Disconnect();
 
 
 	virtual ~NetClient();
@@ -63,3 +64,4 @@ private:
 	NetClient() {};
 
 };
+

@@ -1,7 +1,6 @@
 #pragma once
-#include "NetworkBase.h"
+#include "NetCommon.h"
 #include "../Plugins/Server/ServerPlugin.h"
-#include "BaseMessages.pb.h"
 
 
 

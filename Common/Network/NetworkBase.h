@@ -31,6 +31,7 @@ enum class AppState : uint8_t
 enum ClientBaseMessages : uint16_t
 {
 	Client_Join,
+    Client_Disconnect,
 	Client_State,
 	Client_Adminkick,
 	NUM_CLIENT_BASE_MESSAGES,

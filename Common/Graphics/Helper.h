@@ -30,6 +30,7 @@ GLuint LoadCubemap(const char* right, const char* left, const char* bottom, cons
 GLuint LoadCubemap(const char* file);
 
 EnvironmentMaps LoadEnvironmentMaps(const char* file);
+void UnloadEnvironmentMaps(EnvironmentMaps* env);
 
 GLuint GenerateBRDF_LUT(int dim);
 

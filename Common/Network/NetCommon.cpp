@@ -10,7 +10,7 @@ uint32_t ParseIP(const char* ip)
 {
 	uint32_t ipAddr = 0;
 	
-	int ipLen = strnlen(ip, 100);
+	int ipLen = (int)strnlen(ip, 100);
 	int curIdx = 0;
 	for (int i = 0; i < ipLen; i++)
 	{

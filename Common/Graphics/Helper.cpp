@@ -256,6 +256,7 @@ void CleanUpOpenGL()
 	CleanUpUiPipeline();
 	CleanUpSimple3DPipeline();
 	CleanUpRendererBackendData();
+
 	glDeleteBuffers(1, &g_helper.cubeVertexBuffer);
 	glDeleteProgram(g_helper.cubemapProgram);
 	glDeleteVertexArrays(1, &g_helper.skyboxVAO);
@@ -469,6 +470,11 @@ EnvironmentMaps LoadEnvironmentMaps(const char* file) {
     delete[] fileContent.data; 
     return out;
 }
+void UnloadEnvironmentMaps(EnvironmentMaps* env) {
+    if(env->prefiltered) glDeleteTextures(1, &env->prefiltered);
+    if(env->irradiance) glDeleteTextures(1, &env->irradiance);
+}
+
 
 
 GLuint GenerateBRDF_LUT(int dim)

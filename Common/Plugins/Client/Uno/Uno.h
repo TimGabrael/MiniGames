@@ -2,6 +2,7 @@
 #include "../PluginCommon.h"
 #include "Graphics/Camera.h"
 #include "Graphics/Helper.h"
+#include "Graphics/PbrRendering.h"
 #include "Graphics/Simple3DRendering.h"
 #include "Graphics/Renderer.h"
 #include "Card.h"
@@ -71,6 +72,7 @@ struct UnoGlobals
 	PScene UnoScene = nullptr;
 	SceneObject* basePlatform = nullptr;
 	CardSceneObject* cardRenderObject = nullptr;
+    PBRSceneObject* helmet = nullptr;
 	int offscreenX = 0;
 	int offscreenY = 0;
 	float cardHandlingTimer = 0.0f;

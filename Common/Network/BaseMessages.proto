@@ -32,6 +32,7 @@ message ClientAdminKick
 }
 
 
+
 message ServerClientInfo
 {
 	required ClientData data = 1;

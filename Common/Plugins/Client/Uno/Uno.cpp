@@ -274,17 +274,10 @@ void UnoPlugin::Init(ApplicationData* data)
 
 
 		UBOParams params = UBOParams();
-		PBRSceneObject* o = AddPbrModelToScene(g_objs->UnoScene, pbrModel, params, glm::translate(glm::mat4(1.0f), glm::vec3(-2.0f, 0.7f, -2.0f)));
-		o->flags &= ~(SCENE_OBJECT_BLEND);
+		g_objs->helmet = AddPbrModelToScene(g_objs->UnoScene, pbrModel, params, glm::translate(glm::mat4(1.0f), glm::vec3(-2.0f, 0.7f, -2.0f)));
+		g_objs->helmet->flags &= ~(SCENE_OBJECT_BLEND);
 	}
-//	g_objs->skybox = LoadCubemap(
-//		"Assets/CitySkybox/right.jpg",
-//		"Assets/CitySkybox/left.jpg",
-//		"Assets/CitySkybox/top.jpg",
-//		"Assets/CitySkybox/bottom.jpg",
-//		"Assets/CitySkybox/front.jpg",
-//		"Assets/CitySkybox/back.jpg");
-
+    
     g_objs->environment = LoadEnvironmentMaps("Assets/CitySkybox/environment.env");
 
 
@@ -575,6 +568,11 @@ void UnoPlugin::TouchMoveCallback(int x, int y, int dx, int dy, int touchID)
 }
 void UnoPlugin::CleanUp()
 {
+    delete g_objs->helmet;
+	delete g_objs->cardRenderObject;
+    delete g_objs->basePlatform;
+    UnloadEnvironmentMaps(&g_objs->environment);
+    
 	DestroySingleFBO(&g_objs->reflectFBO);
     SC_DestroyScene(g_objs->UnoScene);
     

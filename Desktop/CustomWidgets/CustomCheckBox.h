@@ -5,7 +5,6 @@
 class CustomCheckBox : public QCheckBox
 {
 	Q_OBJECT
-	Q_PROPERTY(qreal val WRITE SetInterpolationValue)
 public:
 	CustomCheckBox(QWidget* parent);
 
@@ -54,3 +53,4 @@ private:
 	bool mouseInside = false;
 
 };
+

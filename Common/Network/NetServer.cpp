@@ -221,7 +221,7 @@ bool NetServer::SerializeAndStore(uint16_t packetID, const void* data, uint32_t 
 bool NetServer::SendData(ServerConnection* conn, uint32_t flags) {
     if(storedSize >= MAX_MESSAGE_LENGTH) return false;
     int64 outMsgNum = 0;
-	EResult res = socket.networking->SendMessageToConnection(conn->conn, tempStorage, storedSize + sizeof(uint16_t), flags, &outMsgNum);
+	EResult res = socket.networking->SendMessageToConnection(conn->conn, tempStorage, (uint32_t)(storedSize + sizeof(uint16_t)), (int)flags, &outMsgNum);
 	return EResult::k_EResultOK == res;
 }
 
@@ -313,7 +313,7 @@ bool NetServer::CheckConnectionStateAndSendInternal(ServerConnection* c, AppStat
         return false;
     }
     if(stateChange.SerializeToArray(ser_data + sizeof(uint16_t), 98)) {
-        return SendDataRaw(c, ser_data, ser_size, SendFlags::Send_Reliable);
+        return SendDataRaw(c, ser_data, (uint32_t)ser_size, SendFlags::Send_Reliable);
     }
 	return false;
 }
@@ -417,7 +417,7 @@ uint16_t NetServer::GetClientID(ServerConnection* conn)
 	uintptr_t id = ((uintptr_t)conn - (uintptr_t)socket.connected) / sizeof(ServerConnection);
 	if (id < 0xFFFF)
 	{
-		return id;
+		return (uint16_t)id;
 	}
 	return INVALID_ID;
 }
@@ -484,7 +484,7 @@ bool NetServer::ClientJoinPacketCallback(ServerData* s, ServerConnection* client
 				ServerConnection* conn = s->info.net->GetConnection(i);
 				if (conn == client) continue;
 				if (conn) {
-                    if(s->info.net->SerializeAndStore(Server_ClientInfo, serMsg.data(), serMsg.size())) {
+                    if(s->info.net->SerializeAndStore(Server_ClientInfo, serMsg.data(), (uint32_t)serMsg.size())) {
 					    s->info.net->SendData(conn, SendFlags::Send_Reliable);
                     }
 					base::ServerClientInfo otherConn;
@@ -494,7 +494,7 @@ bool NetServer::ClientJoinPacketCallback(ServerData* s, ServerConnection* client
 					otherConn.set_is_local(false);
 					otherConn.set_is_connected(true);
 					std::string otherMsg = otherConn.SerializeAsString();
-                    if(s->info.net->SerializeAndStore(Server_ClientInfo,  otherMsg.data(), otherMsg.size())) {
+                    if(s->info.net->SerializeAndStore(Server_ClientInfo,  otherMsg.data(), (uint32_t)otherMsg.size())) {
                         s->info.net->SendData(client, SendFlags::Send_Reliable);
                     }
 				}
@@ -744,7 +744,7 @@ static void StartHighestPlugin(ServerData* s)
 	else
 	{
 
-		s->activePluingID = rand() % s->plugins.size();
+		s->activePluingID = (uint16_t)(rand() % s->plugins.size());
 		base::ServerSetState state;
 		state.set_plugin_id(s->activePluingID);
 		state.set_state((int32_t)AppState::PLUGIN);
@@ -798,6 +798,10 @@ static bool __stdcall ClientLobbyAdminTimerPacketCallback(ServerData* s, ServerC
 	}
 	timer->Clear();
 	return true;
+}
+static bool __stdcall ClientDisconnectCallback(ServerData* s, ServerConnection* client, void* empty, int size) {
+    LobbyDisconnectCallback(s, client);
+    return true;
 }
 static void __stdcall LobbyClientStateChangeCallback(ServerData* s, ServerConnection* client)
 {
@@ -872,9 +876,11 @@ void ServerData::SetLobbyState()
 {
 	info.net->SetDeserializer(LobbyVoteDeserializer, Client_LobbyVote);
 	info.net->SetDeserializer(LobbyAdminTimerDeserializer, Client_LobbyAdminTimer);
+    info.net->SetDeserializer(0, Client_Disconnect);
 
 	info.net->SetCallback((ServerPacketFunction)ClientLobbyVotePacketCallback, Client_LobbyVote);
 	info.net->SetCallback((ServerPacketFunction)ClientLobbyAdminTimerPacketCallback, Client_LobbyAdminTimer);
+    info.net->SetCallback((ServerPacketFunction)ClientDisconnectCallback, Client_Disconnect);
 
 	info.net->SetClientStateCallback((ServerClientStateChangeCallbackFunction)LobbyClientStateChangeCallback);
 	info.net->SetJoinCallback((ServerJoinCallbackFunction)LobbyJoinCallback);

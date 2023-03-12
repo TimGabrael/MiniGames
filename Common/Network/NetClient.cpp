@@ -137,6 +137,12 @@ NetResult NetClient::Connect(const char* ip, uint32_t port, const std::string& n
 	joinRes.success = true;
 	return joinRes;
 }
+void NetClient::Disconnect() {
+    
+    SendData(Client_Disconnect, nullptr, SendFlags::Send_Reliable);
+	this->socket.networking->CloseConnection(socket.socket, 1, "bye", false);
+    connectionState = State::Disconnected;
+}
 
 NetClient::~NetClient()
 {
@@ -221,14 +227,14 @@ bool NetClient::SendData(uint16_t packetID, google::protobuf::Message* msg, uint
     if(msg) {
         size = msg->ByteSizeLong();
         if(size < MAX_MESSAGE_LENGTH) {
-            if(!msg->SerializeToArray(tempStorage + sizeof(packetID), size)) { 
+            if(!msg->SerializeToArray(tempStorage + sizeof(packetID), (int)size)) { 
                 return false;
             }
         }
     }
     if(size < MAX_MESSAGE_LENGTH) {
         int64 outMsgNum = 0;
-	    EResult res = socket.networking->SendMessageToConnection(socket.socket, tempStorage, size + sizeof(packetID), flags, &outMsgNum);
+	    EResult res = socket.networking->SendMessageToConnection(socket.socket, tempStorage, (uint32_t)(size + sizeof(packetID)), (int)flags, &outMsgNum);
         return EResult::k_EResultOK == res;
     }
     else {

@@ -18,5 +18,5 @@ private:
 	void OnFullSceen();
 	
 	
-	struct CustomCheckBox* fullscreen;
+	class CustomCheckBox* fullscreen;
 };
