@@ -1,5 +1,6 @@
 #include "Application.h"
 #include <qfile.h>
+#include "MiniGames.h"
 #include "UtilFuncs.h"
 #include "CustomWidgets/InfoPopup.h"
 #include "Frames/LobbyFrame.h"
@@ -17,6 +18,7 @@ static void NetworkPollFunction(MainApplication* app)
 		}
 		std::this_thread::sleep_for(std::chrono::duration<float>(0.1f));
 	}
+    LOG("ENDING THE NETWORK THREAD\n");
 }
 
 static void __stdcall NetJoinCallback(ApplicationData* c, ClientConnection* conn)
@@ -186,18 +188,17 @@ MainApplication::MainApplication(int& argc, char** argv) : QApplication(argc, ar
 	client = NetClient::Create();
 	appData.net = client;
 	client->appData = &appData;
-	client->SetCallback((ClientPacketFunction)NetSetStateCallback, Server_SetState);
-	client->SetCallback((ClientPacketFunction)NetPluginCallback, Server_Plugin);
-	client->SetClientInfoCallback((ClientInfoCallbackFunction)NetJoinCallback);
-	client->SetDisconnectCallback((ClientDisconnectCallbackFunction)NetDisconnectCallback);
-
+	//client->SetCallback((ClientPacketFunction)NetSetStateCallback, Server_SetState);
+	//client->SetCallback((ClientPacketFunction)NetPluginCallback, Server_Plugin);
+	//client->SetClientInfoCallback((ClientInfoCallbackFunction)NetJoinCallback);
+	//client->SetDisconnectCallback((ClientDisconnectCallbackFunction)NetDisconnectCallback);
+    SetNetworkingLobbyState();
 
 }
 MainApplication::~MainApplication()
 {
     client->Disconnect();
-	networkThreadShouldJoin = true;
-	if(networkPollThread.joinable()) networkPollThread.join();
+    CloseNetworkThread();
 }
 MainApplication* MainApplication::GetInstance()
 {
@@ -251,10 +252,18 @@ void MainApplication::SetNetworkingLobbyState()
 	client->SetLobbyDeserializers();
 	client->SetCallback((ClientPacketFunction)NetLobbyVoteCallback, Server_LobbyVote);
 	client->SetCallback((ClientPacketFunction)NetLobbyTimerCallback, Server_LobbyTimer);
+    client->SetClientInfoCallback((ClientInfoCallbackFunction)NetJoinCallback);
+    client->SetDisconnectCallback((ClientDisconnectCallbackFunction)NetDisconnectCallback);
 
-	base::ClientState response;
-	response.set_state((int32_t)AppState::LOBBY);
-	client->SendData(Client_State, &response, SendFlags::Send_Reliable);
+    client->SetCallback((ClientPacketFunction)NetSetStateCallback, Server_SetState);
+    client->SetCallback((ClientPacketFunction)NetPluginCallback, Server_Plugin);
+
+
+    if(client->IsConnected()) {
+        base::ClientState response;
+        response.set_state((int32_t)AppState::LOBBY);
+        client->SendData(Client_State, &response, SendFlags::Send_Reliable);
+    }
 }
 void MainApplication::CloseNetworkThread()
 {
@@ -266,7 +275,9 @@ void MainApplication::CloseNetworkThread()
 }
 void MainApplication::StartNetworkThread()
 {
-	if (networkPollThread.joinable()) return;
+    if(!networkThreadShouldJoin) {
+	    if (networkPollThread.joinable()) return;
+    }
 	networkThreadShouldJoin = false;
 	networkPollThread = std::thread(std::bind(NetworkPollFunction, this));
 }
@@ -275,3 +286,6 @@ void MainApplication::NetworkPoll()
 	client->Poll();
 	NetRunCallbacks();
 }
+
+
+

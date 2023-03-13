@@ -142,6 +142,7 @@ void NetClient::Disconnect() {
     SendData(Client_Disconnect, nullptr, SendFlags::Send_Reliable);
 	this->socket.networking->CloseConnection(socket.socket, 1, "bye", false);
     connectionState = State::Disconnected;
+    socket.socket = k_HSteamListenSocket_Invalid;
 }
 
 NetClient::~NetClient()
@@ -250,8 +251,7 @@ bool NetClient::IsP2P() const
 
 void NetClient::Poll()
 {
-	if (socket.socket == k_HSteamListenSocket_Invalid) return;
-	while (true)
+	while (socket.socket != k_HSteamListenSocket_Invalid)
 	{
 		ISteamNetworkingMessage* pIncomingMsg = nullptr;
 		int numMsgs = socket.networking->ReceiveMessagesOnConnection(socket.socket, &pIncomingMsg, 1);

@@ -302,6 +302,8 @@ void UnInitializeCardPipeline() {
     glDeleteProgram(g_cards.program);
     glDeleteProgram(g_cards.geometryProgram);
     glDeleteTextures(1, &g_cards.texture);
+    g_cards.bufs.cardCache.clear();
+    g_cards.bufs.bufferSize = 0;
     
 }
 
@@ -1190,7 +1192,7 @@ CardData RenderCardToCardData(CARD_ID id, COLOR_ID optionalColor)
 	if (id >= NUM_AVAILABLE_CARDS) return CardData(CARD_UNKNOWN, CARD_COLOR_UNKOWN);
 
 	CardData out = translationTable[id];
-	if (out.color == COLOR_BLACK) {
+	if (out.color == CARD_COLOR_BLACK) {
 		if (out.face == CARD_UNKNOWN) out.color = CARD_COLOR_UNKOWN;
 		else out.color = (CardColor)optionalColor;
 	}
@@ -1224,3 +1226,4 @@ void CardDataToRenderCard(CardData in, CARD_ID& outID, COLOR_ID& outColor)
 	outID = CARD_ID::CARD_ID_BLANK;
 	outColor = COLOR_ID::COLOR_INVALID;
 }
+

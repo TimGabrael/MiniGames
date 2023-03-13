@@ -55,6 +55,7 @@ struct ApplicationData
 	ClientData localPlayer;
 	std::string serverIP;
 	PLATFORM_ID platform;
+    bool isRunning;
 };
 
 

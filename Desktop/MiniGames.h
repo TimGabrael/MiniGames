@@ -27,7 +27,6 @@ public:
     void SetPreviousState();
     MAIN_WINDOW_STATE GetState();
 
-
     void* stateWidget = nullptr;
 private:
 

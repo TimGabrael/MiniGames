@@ -250,7 +250,7 @@ static bool __stdcall UnoPullCardsCallback(NetServerInfo* info, ServerConnection
 	Uno* uno = (Uno*)info->plugin;
 	const uint16_t turnIdx = uno->data->playerInTurnIdx;
 	const uint16_t turnID = UnoGetCurrentPlayerID(uno);
-	if (info->net->CheckConnectionStateAndSend(client) && turnID == client->id)
+	if (info->net->CheckConnectionStateAndSend(client) && turnID == client->id && !uno->data->cur_made_action)
 	{
         const bool pulling_multiple = uno->data->accumulatedPull > 0;
 		const int numCardsToBePulled = pulling_multiple ? uno->data->accumulatedPull : 1;

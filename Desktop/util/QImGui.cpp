@@ -135,6 +135,7 @@ namespace QImGui
         QByteArray g_currentClipboardText;
 
     } // namespace
+    ImGuiRenderer* g_instance = nullptr;
 
     void ImGuiRenderer::initialize(WindowWrapper* window) {
         m_window.reset(window);
@@ -603,11 +604,10 @@ namespace QImGui
     }
 
     ImGuiRenderer* ImGuiRenderer::instance() {
-        static ImGuiRenderer* instance = nullptr;
-        if (!instance) {
-            instance = new ImGuiRenderer();
+        if (!g_instance) {
+            g_instance = new ImGuiRenderer();
         }
-        return instance;
+        return g_instance;
     }
 
     class QWindowWrapper : public WindowWrapper
@@ -786,6 +786,12 @@ namespace QImGui
         else {
             auto wrapper = reinterpret_cast<QWindowWrapper*>(ref);
             wrapper->render();
+        }
+    }
+    void release(void* ref) {
+        if(g_instance) {
+            delete g_instance;
+            g_instance = nullptr;
         }
     }
 }

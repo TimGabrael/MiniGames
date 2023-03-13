@@ -34,6 +34,7 @@ private:
 
 	PB_MouseData mouseData;
 	PluginClass* plugin = nullptr;
+    void* qimguiwindow = nullptr;
 	QTimer frameTimer;
 	bool isInitialized = false;
 	bool hovered = false;

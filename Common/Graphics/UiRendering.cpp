@@ -162,9 +162,12 @@ void CleanUpUiPipeline()
 		glBindBuffer(GL_ARRAY_BUFFER, g_ui.streamBuffer.buffer);
 		glUnmapBuffer(GL_ARRAY_BUFFER);
 	}
-	glDeleteBuffers(1, &g_ui.streamBuffer.buffer);
+
+    glDeleteBuffers(1, &g_ui.streamBuffer.buffer);
+    glDeleteVertexArrays(1, &g_ui.streamBuffer.vao);
 	glDeleteTextures(1, &g_ui.standardTexture);
 	glDeleteProgram(g_ui.program);
+    g_ui.streamBuffer.instructions.clear();
 }
 
 

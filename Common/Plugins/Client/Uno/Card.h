@@ -71,6 +71,7 @@ struct CardSceneObject : public SceneObject// doesn't have any data in it, uses 
 
 
 void InitializeCardPipeline(void* assetManager);
+void UnInitializeCardPipeline();
 
 void RendererAddCard(CARD_ID back, CARD_ID front, const glm::vec3& pos, const glm::quat& rot, float sx, float sy, uint32_t col = 0xFFFFFFFF);
 void RendererAddEffect(CARD_EFFECT effect, const glm::vec3& pos, const glm::quat& rot, float sx, float sy, uint32_t col);

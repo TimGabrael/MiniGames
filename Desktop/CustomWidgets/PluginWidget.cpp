@@ -24,7 +24,9 @@ PluginWidget::PluginWidget(QWidget* parent, PluginClass* plClass) : QOpenGLWidge
 
 PluginWidget::~PluginWidget()
 {
-	
+    if(qimguiwindow) {
+        QImGui::release(qimguiwindow);
+    }
 }
 
 
@@ -41,18 +43,15 @@ PluginWidget::~PluginWidget()
 
 void PluginWidget::initializeGL()
 {
+    initializeOpenGLFunctions();
+    qimguiwindow = QImGui::initialize(this);
 
-	initializeOpenGLFunctions();
-	QImGui::initialize(this);
-	MainApplication* app = MainApplication::GetInstance();
-	
-
+    MainApplication* app = MainApplication::GetInstance();
 	app->appData.imGuiCtx = ImGui::GetCurrentContext();
 	app->appData.platform = _CURRENT_PLATFORM_ID;
 	plugin->Init(&app->appData);
 	isInitialized = true;
-	
-	
+	app->appData.isRunning = true;
 }
 
 void PluginWidget::resizeGL(int w, int h)
@@ -66,19 +65,25 @@ void PluginWidget::resizeGL(int w, int h)
 
 void PluginWidget::paintGL()
 {
-	QImGui::newFrame();
+    MainApplication* app = MainApplication::GetInstance();
+    
+	QImGui::newFrame(qimguiwindow);
 
 	if(hovered) hovered = underMouse();
 
-	MainApplication* app = MainApplication::GetInstance();
 
 	app->NetworkPoll();
 
-	
 	plugin->Render(&app->appData);
 
 	ImGui::Render();
-	QImGui::render();
+	QImGui::render(qimguiwindow);
+
+    if(!app->appData.isRunning) {
+        app->client->Disconnect();
+        plugin->CleanUp();
+        app->mainWindow->SetState(MAIN_WINDOW_STATE::STATE_MENU);
+    }
 }
 
 void PluginWidget::resizeEvent(QResizeEvent* event)
@@ -93,17 +98,6 @@ void PluginWidget::mouseMoveEvent(QMouseEvent* event)
 	MainApplication* app = MainApplication::GetInstance();
 	if (centerMouse && app->mainWindow->isActiveWindow())
 	{
-		//QCursor cursor(Qt::BlankCursor);
-		//QApplication::setOverrideCursor(cursor);
-		//QApplication::changeOverrideCursor(cursor);
-
-		//memset(&mouseData.lPressed, 0, 6);
-		//QPoint glob = mapToGlobal(QPoint(width() / 2, height() / 2));
-		//QCursor::setPos(glob);
-
-		//mouseData.xPos = width() / 2;
-		//mouseData.yPos = height() / 2;
-
 		mouseData.dx = mouseData.xPos - pos.x();
 		mouseData.dy = mouseData.yPos - pos.y();
 
@@ -165,3 +159,4 @@ void PluginWidget::keyReleaseEvent(QKeyEvent* event)
 {
 	plugin->KeyUpCallback((Key)event->key(), event->isAutoRepeat());
 }
+

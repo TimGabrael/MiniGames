@@ -33,7 +33,7 @@ int16_t TwoBytesToInt(const uint8_t* source, int startIdx, bool littleEndian = t
 
 float LinearInterpolate(float samples[2], float sampleIdx)
 {
-	int normalization = sampleIdx;
+	const int normalization = (int)sampleIdx;
 	sampleIdx = (sampleIdx - (float)normalization);	// leaves behind a range between 0->1
 	return sampleIdx * samples[1] + (1.0f - sampleIdx) * samples[0];
 }
@@ -93,7 +93,7 @@ bool WavFile::Load(const char* filename)
 
 	file.unsetf(std::ios::skipws);
 	file.seekg(0, std::ios::end);
-	int len = file.tellg();
+	int len = (int)file.tellg();
 	file.seekg(0, std::ios::beg);
 
 	unsigned char* fileData = new unsigned char[len];
@@ -153,15 +153,11 @@ bool WavFile::LoadFromMemory(const void* data, int size)
 	{
 		sampleDiff = (float)fileSampleRate / (float)sampleRate;
 		needsResampling = true;
-		this->numSamples /= sampleDiff;
+		this->numSamples = (int)((float)numSamples / sampleDiff);
 	}
-
-
 	
 	this->data = new float[numSamples * numChannels];
 	memset(this->data, 0, sizeof(float) * numSamples * numChannels);
-
-	
 
 	bool finished = false;
 	for (int i = 0; i < numSamples && !finished; i++)

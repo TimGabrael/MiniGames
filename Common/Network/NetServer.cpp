@@ -622,6 +622,7 @@ static NetResult _stdcall LobbyJoinCallback(ServerData* s, ServerConnection* c)
 }
 static void __stdcall LobbyDisconnectCallback(ServerData* s, ServerConnection* c)
 {
+    printf("client disconnecting: %s\n", c->name.c_str());
 	for (int i = 0; i < s->lobbyData.votes.size(); i++)
 	{
 		if (s->lobbyData.votes.at(i).clientID == c->id)
@@ -929,3 +930,4 @@ void ServerData::Update(float dt)
 	}
 
 }
+

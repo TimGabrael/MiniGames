@@ -71,3 +71,4 @@ struct Animation
 uint32_t InterpolateInteger(uint32_t i1, uint32_t i2, float idx);
 float InterpolateFloat(float x1, float x2, float idx);
 uint32_t InterpolateColor(uint32_t c1, uint32_t c2, float idx);
+

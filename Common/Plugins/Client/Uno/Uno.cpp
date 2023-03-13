@@ -4,6 +4,7 @@
 #include "Graphics/Helper.h"
 #include "Graphics/Camera.h"
 #include "Graphics/Scene.h"
+#include "Plugins/Client/Uno/Card.h"
 #include "Plugins/Client/Uno/NetHandlers.h"
 #include "Plugins/Shared/Uno/UnoBase.h"
 #include "logging.h" // REMINDER USE THIS !! USE THIS NOT <iostream> !!
@@ -178,7 +179,7 @@ void GameUpdateFunction(UnoGlobals* g_objs, float dt)
 
 
 
-#define ALLOW_FREEMOVEMENT
+//#define ALLOW_FREEMOVEMENT
 SceneDirLight* light = nullptr;
 void UnoPlugin::Init(ApplicationData* data)
 {
@@ -203,12 +204,13 @@ void UnoPlugin::Init(ApplicationData* data)
 	g_objs = new UnoGlobals;
 	g_objs->moveComp.pos = { 0.0f, 2.6f, 3.0f };
 	g_objs->moveComp.SetRotation(-90.0f, -50.0f, 0.0f);
-
+    
 	GameStateData& game = *GetGameState();
 
 	game.hands = &g_objs->hands;
 
 	g_objs->rendererData.Create(10, 10, 10, 10, 0, false, false);
+    g_objs->rendererData.MakeMainFramebuffer();
 	g_objs->reflectFBO = CreateSingleFBO(1200, 800);
 
 	g_objs->lightDir = { -1.0f / sqrtf(3.0f), -1.0f / sqrt(3.0f), -1.0f / sqrt(3.0f) };
@@ -335,7 +337,7 @@ void UnoPlugin::Resize(ApplicationData* data)
 }
 void UnoPlugin::Render(ApplicationData* data)
 {
-	if (!(sizeX && sizeY)) return;
+	if (!(sizeX && sizeY) || !data->isRunning) return;
 	
 	GameStateData& game = *GetGameState();
 	
@@ -428,6 +430,7 @@ void UnoPlugin::Render(ApplicationData* data)
 		stdData.camProj = &g_objs->playerCam.perspective;
 		stdData.camPos = &g_objs->playerCam.pos;
 
+        glEnable(GL_DEPTH_TEST);
 		glm::ivec2 mainSize = GetMainFramebufferSize();
 		glBindFramebuffer(GL_FRAMEBUFFER, GetMainFramebuffer());
 		glViewport(0, 0, mainSize.x, mainSize.y);
@@ -442,13 +445,11 @@ void UnoPlugin::Render(ApplicationData* data)
 		glViewport(0, 0, mainSize.x, mainSize.y);
 		RenderSceneStandard(g_objs->UnoScene, &stdData);
 
-
-
 		RenderPostProcessing(&g_objs->rendererData, GetScreenFramebuffer(), sizeX, sizeY);
 
 		DrawUI();
         
-		ImGui::Begin("_pull_button", nullptr, ImGuiWindowFlags_::ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_::ImGuiWindowFlags_NoDecoration);
+		ImGui::Begin("_pull_button", nullptr, ImGuiWindowFlags_::ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_::ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_::ImGuiWindowFlags_NoMove);
         ImGui::SetWindowSize(ImVec2(400, 400));
         if(game.playerInTurn == backendData->localPlayer.clientID) {
             ImGui::Text("It's your turn!");
@@ -463,6 +464,10 @@ void UnoPlugin::Render(ApplicationData* data)
                 skip.mutable_card()->set_color(CARD_COLOR_UNKOWN);
                 backendData->net->SendData(Client_UnoPlayCard, &skip, SendFlags::Send_Reliable);
             }
+            pressed = ImGui::Button("QUIT", ImVec2(200, 100));
+            if(pressed) {
+                data->isRunning = false;
+            }
         }
 		ImGui::End();
 
@@ -472,7 +477,6 @@ void UnoPlugin::Render(ApplicationData* data)
 		g_objs->p.EndFrame();
 		EndFrameAndResetData();
 	}
-	
 }
 
 
@@ -543,6 +547,8 @@ void UnoPlugin::KeyUpCallback(Key k, bool isRepeat)
 		}
 	}
 #endif
+    if(k == Key::Key_Escape)  {
+    }
 }
 
 void UnoPlugin::TouchDownCallback(int x, int y, int touchID)
@@ -569,7 +575,7 @@ void UnoPlugin::TouchMoveCallback(int x, int y, int dx, int dy, int touchID)
 void UnoPlugin::CleanUp()
 {
     delete g_objs->helmet;
-	delete g_objs->cardRenderObject;
+    delete g_objs->cardRenderObject;
     delete g_objs->basePlatform;
     UnloadEnvironmentMaps(&g_objs->environment);
     
@@ -578,8 +584,9 @@ void UnoPlugin::CleanUp()
     
     glDeleteBuffers(1, &g_objs->shadowCam.uniform);
     glDeleteBuffers(1, &g_objs->playerCam.uniform);
+    g_objs->rendererData.CleanUp();
 
-    	
+    UnInitializeCardPipeline();	
 	CleanUpOpenGL();
 	delete g_objs;
 }

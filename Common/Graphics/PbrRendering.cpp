@@ -1066,18 +1066,17 @@ void CleanUpInternal(void* internalObj)
 	glDeleteVertexArrays(1, &realObj->vao);
 	glDeleteBuffers(1, &realObj->vertexBuffer);
 	glDeleteBuffers(1, &realObj->indices.indexBuffer);
+    
 	for (auto& t : realObj->textures) {
 		glDeleteTextures(1, &t);
-	}
-	for (auto& n : realObj->nodes)
-	{
-		delete n;
 	}
 	for (auto& nl : realObj->linearNodes)
 	{
 		delete nl;
 	}
-	
+    for(auto& s : realObj->skins) {
+        delete s;
+    }
 
 	delete realObj;
 }

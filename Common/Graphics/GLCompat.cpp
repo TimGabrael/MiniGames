@@ -28,6 +28,12 @@ void EndFrameAndResetData()
 	numDrawCallsMadeThisFrame = 0;
 #endif
 	currentlyBoundShaderProgram = 0;
+    depthTestEnabled = false;
+    writeToDepthEnabled = true;
+    blendTestEnabled = false;
+    activeDepthFunc = -1;
+    activeBlendFuncSrc = -1;
+    activeBlendFuncDst = -1;
 	glDepthMask(GL_TRUE);
 	writeToDepthEnabled = true;
 }

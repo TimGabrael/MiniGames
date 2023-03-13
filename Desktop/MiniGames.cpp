@@ -118,7 +118,6 @@ MainWindow::~MainWindow()
 void MainWindow::SetState(MAIN_WINDOW_STATE s)
 {
     if (this->state == s) return;
-    state = s;
     if (this->thread() == QThread::currentThread())
     {
         InternalSetState(s);
@@ -158,8 +157,10 @@ MAIN_WINDOW_STATE MainWindow::GetState()
 void MainWindow::InternalSetState(MAIN_WINDOW_STATE state)
 {
     if (this->state == MAIN_WINDOW_STATE::STATE_PLUGIN && state != MAIN_WINDOW_STATE::STATE_PLUGIN)
-    {        
-        PluginFrame::activePlugin->CleanUp();
+    {
+        if(PluginFrame::activePlugin) {
+            PluginFrame::activePlugin = 0;
+        }
         MainApplication* app = MainApplication::GetInstance();
         app->SetNetworkingLobbyState();
         app->StartNetworkThread();
