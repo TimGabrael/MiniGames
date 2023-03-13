@@ -2,6 +2,8 @@
 #include "NetCommon.h"
 #include "Network/NetworkBase.h"
 #include "Plugins/CLient/PluginCommon.h"
+#include "steam/isteamnetworkingutils.h"
+#include "steam/steamnetworkingtypes.h"
 #include <stdio.h>
 
 static void* __stdcall ClientInfoDeserializer(char* packet, int size)
@@ -283,6 +285,7 @@ void NetClient::Poll()
 
 		pIncomingMsg->Release();
 	}
+    
 }
 
 void NetClient::SetLobbyDeserializers()

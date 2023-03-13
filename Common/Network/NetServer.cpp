@@ -4,6 +4,7 @@
 #include "Network/NetworkBase.h"
 #include <stdio.h>
 #include <unordered_map>
+#include <thread>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -914,6 +915,7 @@ void ServerData::Update(float dt)
 
 	if (info.plugin)
 	{
+        
 
 	}
 	else
@@ -929,5 +931,6 @@ void ServerData::Update(float dt)
 		}
 	}
 
+	std::this_thread::sleep_for(std::chrono::duration<float>(0.016f));
 }
 
