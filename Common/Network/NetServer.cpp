@@ -303,9 +303,12 @@ bool NetServer::CheckConnectionStateAndSendInternal(ServerConnection* c, AppStat
 			return c->activePlugin == pluginID;
 		}
 	}
+
 	base::ServerSetState stateChange;
 	stateChange.set_state((int32_t)s);
-	if (s == AppState::PLUGIN) stateChange.set_state(pluginID);
+	if (s == AppState::PLUGIN) {
+        stateChange.set_plugin_id(pluginID);
+    }
     uint8_t ser_data[100];
     *(uint16_t*)ser_data = Server_SetState;
     size_t ser_size = sizeof(uint16_t) + stateChange.ByteSizeLong();

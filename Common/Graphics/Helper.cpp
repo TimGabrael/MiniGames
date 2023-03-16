@@ -300,13 +300,14 @@ GLuint CreateProgram(const char* vertexShaderSrc, const char* fragmentShaderSrc)
 	glLinkProgram(resultProgram);
 
 	glGetProgramiv(resultProgram, GL_LINK_STATUS, &success);
-
+    
 	glDeleteShader(vertexShader); glDeleteShader(fragmentShader);
 
 	if (!success)
 	{
 		glGetProgramInfoLog(resultProgram, 512, NULL, infoLog);
 		LOG("ERROR::SHADER::PROGRAM::LINKING_FAILED %s\n", infoLog);
+        glDeleteProgram(resultProgram);
 		return 0;
 	}
 	return resultProgram;

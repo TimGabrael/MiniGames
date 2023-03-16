@@ -1,6 +1,7 @@
 #include "Application.h"
 #include <qfile.h>
 #include "MiniGames.h"
+#include "Plugins/Client/PluginCommon.h"
 #include "UtilFuncs.h"
 #include "CustomWidgets/InfoPopup.h"
 #include "Frames/LobbyFrame.h"
@@ -135,14 +136,12 @@ static bool __stdcall NetSetStateCallback(ApplicationData* c, base::ServerSetSta
 	}
 	else
 	{
-		if (state->state() == (int32_t)AppState::LOBBY)
-		{
+        if (state->state() == (int32_t)AppState::LOBBY) {
 			SafeAsyncUI([](MainWindow* wnd) {
 				MainApplication* app = MainApplication::GetInstance();
 				wnd->SetState(MAIN_WINDOW_STATE::STATE_LOBBY);
 				app->SetNetworkingLobbyState();
 			});
-
 		}
 	}
 	state->Clear();
