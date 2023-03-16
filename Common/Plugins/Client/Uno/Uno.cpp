@@ -16,6 +16,7 @@
 #include "Graphics/ReflectiveSurfaceRendering.h"
 #include "Graphics/BloomRendering.h"
 #include "imgui.h"
+#include "Graphics/shader.h"
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -189,9 +190,14 @@ void UnoPlugin::Init(ApplicationData* data)
 	
     UnoFillNetHandlers(data);
 
+    
+
 	InitializeOpenGL(data->assetManager);
 	InitializeCardPipeline(data->assetManager);
 	ImGui::SetCurrentContext(data->imGuiCtx);
+
+    Shader s;
+    SH_Create(&s);
 
 	ImGui::GetIO().Fonts->AddFontFromFileTTF("Assets/consola.ttf", 32.0f);
 
