@@ -7,7 +7,7 @@
 
 CustomCheckBox::CustomCheckBox(QWidget* parent) : QCheckBox(parent)
 {
-	anim = new QPropertyAnimation(this, "val");
+	anim = new QPropertyAnimation(this, "value");
 	anim->setStartValue(0.0);
 	anim->setEndValue(0.4);
 	anim->setDuration(100);

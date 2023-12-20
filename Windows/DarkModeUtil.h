@@ -2,7 +2,7 @@
 
 
 void InitDarkMode();
-bool AllowDarkModeForWindow(int hWnd, bool allow);
-void RefreshTitleBarThemeColor(int hWnd);
+bool AllowDarkModeForWindow(void* hWnd, bool allow);
+void RefreshTitleBarThemeColor(void* hWnd);
 
-void SetDarkMode(int hWnd);
+void SetDarkMode(void* hWnd);

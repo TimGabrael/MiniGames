@@ -5,6 +5,7 @@
 class CustomCheckBox : public QCheckBox
 {
 	Q_OBJECT
+	Q_PROPERTY(qreal value WRITE SetInterpolationValue)
 public:
 	CustomCheckBox(QWidget* parent);
 

@@ -13,7 +13,6 @@
 SettingsFrame::SettingsFrame(QMainWindow* parent) : StateFrame(parent)
 {
 	Create();
-
 	parent->setCentralWidget(this);
 }
 SettingsFrame::~SettingsFrame()
@@ -32,7 +31,8 @@ void SettingsFrame::Create()
 
 		vertical_layout->addStretch(2);
 
-		QHBoxLayout* horizontal_layout = new QHBoxLayout(this);
+		//QHBoxLayout* horizontal_layout = new QHBoxLayout(this);
+		QHBoxLayout* horizontal_layout = new QHBoxLayout();
 		{
 			horizontal_layout->addStretch(1);
 			QLabel* label = new QLabel("Fullscreen:");
@@ -54,7 +54,7 @@ void SettingsFrame::Create()
 	}
 
 	connect(fullscreen, &QCheckBox::stateChanged, this, &SettingsFrame::OnFullSceen);
-	this->setLayout(vertical_layout);
+	//this->setLayout(vertical_layout);
 }
 void SettingsFrame::OnFullSceen()
 {

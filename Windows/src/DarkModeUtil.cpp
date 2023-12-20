@@ -184,7 +184,7 @@ bool g_darkModeSupported = false;
 bool g_darkModeEnabled = false;
 DWORD g_buildNumber = 0;
 
-bool AllowDarkModeForWindow(int hWnd, bool allow)
+bool AllowDarkModeForWindow(void* hWnd, bool allow)
 {
 	if (g_darkModeSupported)
 		return _AllowDarkModeForWindow((HWND)hWnd, allow);
@@ -199,7 +199,7 @@ bool IsHighContrast()
 	return false;
 }
 
-void RefreshTitleBarThemeColor(int hWnd)
+void RefreshTitleBarThemeColor(void* hWnd)
 {
 	BOOL dark = FALSE;
 	if (_IsDarkModeAllowedForWindow((HWND)hWnd) &&
@@ -331,7 +331,7 @@ void InitDarkMode()
 	}
 }
 
-void SetDarkMode(int hWnd)
+void SetDarkMode(void* hWnd)
 {
 	InitDarkMode();
 	AllowDarkModeForWindow(hWnd, true);

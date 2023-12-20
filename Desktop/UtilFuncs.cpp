@@ -81,14 +81,15 @@ void SafeAsyncUI(void(*uiFunction)(MainWindow* wnd))
 bool TryConnectToServer(const std::string& name)
 {
 	MainApplication* app = MainApplication::GetInstance();
-	if (app->client->connectionState != NetClient::Disconnected) return true;
+    if(app->client->connectionState == NetClient::Connected) return true;
+    else if(app->client->connectionState == NetClient::Connecting) return false;
 	MainWindow* main = app->mainWindow;
 	
 	size_t idx = app->input.ip.find(":");
 	NetResult err;
 	err.reason = "Failed to Parse IP-Port";
 	err.success = false;
-	if (idx != -1)
+	if(idx != -1)
 	{
 		uint32_t port = atoi(&app->input.ip.at(idx + 1));
 		if (port != 0)
@@ -102,6 +103,8 @@ bool TryConnectToServer(const std::string& name)
 			MainApplication* app = MainApplication::GetInstance();
 			auto rect = main->geometry();
 			InfoPopup* popUp = new InfoPopup(main, err.reason.c_str(), QPoint(rect.width() / 2, rect.height() - 100), 20, 0xFFFF0000, 3000);
+            (void)popUp;
+            (void)app;
 		});
 		return false;
 	}

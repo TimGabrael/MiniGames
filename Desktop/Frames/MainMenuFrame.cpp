@@ -35,7 +35,7 @@ MainMenuFrame::MainMenuFrame(QMainWindow* MainWindow) : StateFrame(MainWindow)
         QFont font2;
         font2.setPointSize(14);
         font2.setUnderline(true);
-        horizontalLayout = new QHBoxLayout(this);
+        horizontalLayout = new QHBoxLayout();
         horizontalLayout->addStretch(10);
         {
             nametxt = new QLabel("Username:", this);
@@ -52,7 +52,7 @@ MainMenuFrame::MainMenuFrame(QMainWindow* MainWindow) : StateFrame(MainWindow)
         }
         verticalLayout->addLayout(horizontalLayout);
 
-        horizontalLayout_1 = new QHBoxLayout(this);
+        horizontalLayout_1 = new QHBoxLayout();
         horizontalLayout_1->addStretch(10);
         {
             lobbytxt = new QLabel("Lobby Name:", this);
@@ -182,7 +182,7 @@ void MainMenuFrame::OnJoinClick()
             app->input.name = name.toStdString();
             if (TryConnectToServer(name.toStdString()))
             {
-                
+                main->SetState(MAIN_WINDOW_STATE::STATE_LOBBY);
             }
         });
     }
@@ -234,7 +234,7 @@ void MainMenuFrame::OnCreateClick()
             app->input.name = name.toStdString();
             if (TryConnectToServer(name.toStdString()))
             {
-
+                main->SetState(MAIN_WINDOW_STATE::STATE_LOBBY);
             }
         });
     }

@@ -426,7 +426,7 @@ LobbyFrame::LobbyFrame(QMainWindow* parent) : StateFrame(parent)
 		vertical_layout->addWidget(header, 0 , Qt::AlignmentFlag::AlignTop);
 
 		vertical_layout->addSpacing(10);
-		QHBoxLayout* horizontal_layout = new QHBoxLayout(this);
+		QHBoxLayout* horizontal_layout = new QHBoxLayout();
 		{
 			horizontal_layout->addSpacing(10);
 			QScrollArea* area = new QScrollArea(this);
@@ -436,7 +436,7 @@ LobbyFrame::LobbyFrame(QMainWindow* parent) : StateFrame(parent)
 			area->setWidgetResizable(true);
 			area->setVerticalScrollBar(new CustomScrollBar(this));
 			{
-				QVBoxLayout* vertical_layout1 = new QVBoxLayout(this);
+				QVBoxLayout* vertical_layout1 = new QVBoxLayout();
 
 				playerScrollContent = new QWidget(this);
 				ApplicationData& data = MainApplication::GetInstance()->appData;

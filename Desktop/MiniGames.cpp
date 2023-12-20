@@ -36,47 +36,10 @@
 #include "util/PluginLoader.h"
 
 
-
-AudioBuffer<400000> testAudioBuffer;
-
-
-
-
-void StutterCallback(void* userData)
-{
-}
-int RenderCallback(void* userData, float* frames, int numberOfFrames)
-{
-    static double curSample = 0;
-    static constexpr double SAMPLE_INV = 1.0 / 44100.0;
-    for (int i = 0; i < numberOfFrames * 2; i+=2)
-    {
-        // Perfect sine wave
-        //frames[i] = sinf(curSample * M_PI * 440 * 2) * 0.1f;
-        //frames[i+1] = sinf(curSample * M_PI * 440 * 2) * 0.1f;
-        //curSample += SAMPLE_INV;
-        //Data curData = testAudioBuffer.GetNext();
-        //frames[i] = curData.channel1*1;
-        //frames[i+1] = curData.channel2*1;
-    }
-    return 0;
-}
-void ErrorCallback(void* userData, const char* errorMessage, int errorCode) 
-{
-}
-void WillRenderCallback(void* userData)
-{
-}
-void DidRenderCallback(void* userData)
-{
-}
-
-
-
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
 {
 #ifdef _WIN32
-    SetDarkMode(this->winId());
+    SetDarkMode((void*)this->winId());
 #endif
     QPalette pal(0xD0D0D0, 0x404040, 0x606060, 0x202020, 0x505050, 0xD0D0D0, 0x202020);
     this->setPalette(pal);
@@ -119,7 +82,7 @@ void MainWindow::SetState(MAIN_WINDOW_STATE s)
     }
     else
     {
-        QTimer::singleShot(0, this, [this]() { InternalSetState(this->state); });
+        QTimer::singleShot(0, this, [this, s]() { InternalSetState(s); });
     }
     if (stackPtr < 16)
     {
