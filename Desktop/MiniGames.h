@@ -14,7 +14,6 @@ enum class MAIN_WINDOW_STATE
     STATE_INVALID,
 };
 
-namespace nativeformat { namespace driver { class NFDriver; }; };
 class MainWindow : public QMainWindow
 {
 
@@ -36,5 +35,4 @@ private:
     MAIN_WINDOW_STATE state = MAIN_WINDOW_STATE::STATE_INVALID;
     MAIN_WINDOW_STATE stateStack[MAX_STACK_SIZE];
     uint8_t stackPtr;
-    nativeformat::driver::NFDriver* audioDriver;
 };

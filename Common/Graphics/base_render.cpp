@@ -24,10 +24,8 @@ struct BaseRender* BR_Alloc() {
     std::uniform_real_distribution<float> randomFloats(0.0f, 1.0f);
     std::default_random_engine generator;
     glm::vec3* noiseData = new glm::vec3[NOISE_DATA_SIZE * NOISE_DATA_SIZE];
-    for (int y = 0; y < NOISE_DATA_SIZE; y++)
-    {
-        for (int x = 0; x < NOISE_DATA_SIZE; x++)
-        {
+    for (int y = 0; y < NOISE_DATA_SIZE; y++) {
+        for (int x = 0; x < NOISE_DATA_SIZE; x++) {
             noiseData[y * NOISE_DATA_SIZE + x] = glm::vec3(randomFloats(generator) * 2.0f - 1.0f, randomFloats(generator) * 2.0f - 1.0f, 0.0f);
         }
     }
@@ -39,7 +37,6 @@ struct BaseRender* BR_Alloc() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     delete[] noiseData;
-
 
     return base;
 }

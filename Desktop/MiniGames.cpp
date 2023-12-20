@@ -1,6 +1,5 @@
 #include "MiniGames.h"
 
-#include "NFDriver/NFDriver.h"
 #undef min
 #undef max
 #include <algorithm>
@@ -84,11 +83,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     MainApplication* app = MainApplication::GetInstance();
     app->mainWindow = this;
 
-    audioDriver = nativeformat::driver::NFDriver::createNFDriver(nullptr, StutterCallback, RenderCallback, ErrorCallback,
-        WillRenderCallback, DidRenderCallback, nativeformat::driver::OutputType::OutputTypeSoundCard);
-
     this->state = MAIN_WINDOW_STATE::STATE_INVALID;
-    //audioDriver->setPlaying(true);
 
     QSizePolicy sizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     sizePolicy.setHorizontalStretch(0);
