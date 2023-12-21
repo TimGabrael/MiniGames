@@ -34,3 +34,9 @@ message ServerResync
     repeated PullData sync = 1;
     required CardData top_card = 2;
 }
+
+message ServerGameFinished
+{
+    repeated int32 player_ids = 1;
+}
+

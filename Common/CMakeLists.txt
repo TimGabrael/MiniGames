@@ -5,14 +5,15 @@ set(LOCAL_COLLECTION_SOURCES ${CMAKE_CURRENT_LIST_DIR}/FileQuery.cpp ${CMAKE_CUR
 set(OPENGL_SOURCES ${CMAKE_CURRENT_LIST_DIR}/Graphics/GLCompat.cpp ${CMAKE_CURRENT_LIST_DIR}/Graphics/Helper.cpp ${CMAKE_CURRENT_LIST_DIR}/Graphics/PbrRendering.cpp ${CMAKE_CURRENT_LIST_DIR}/Graphics/Simple3DRendering.cpp ${CMAKE_CURRENT_LIST_DIR}/Graphics/UiRendering.cpp ${CMAKE_CURRENT_LIST_DIR}/Graphics/Camera.cpp ${CMAKE_CURRENT_LIST_DIR}/Graphics/shader.cpp ${CMAKE_CURRENT_LIST_DIR}/Graphics/base_render.cpp)
 
 
+PROTOBUF_GENERATE_CPP(ProtoSources ProtoHeaders "Plugins/Shared/Uno/UnoMessages.proto")
 
 
-add_library(Uno SHARED "Plugins/Shared/Uno/UnoMessages.pb.cc" "Plugins/Client/Uno/Uno.cpp" "Plugins/Client/Uno/Card.h" "Plugins/Client/Uno/Card.cpp" ${IMGUI_BASE_SOURCES} ${LOCAL_COLLECTION_SOURCES} ${OPENGL_SOURCES} "Plugins/Client/Uno/Animator.h" "Plugins/Client/Uno/Animator.cpp" "Plugins/Client/Uno/Pointer.h" "Plugins/Client/Uno/Pointer.cpp" "Graphics/Scene.h" "Graphics/Scene.cpp" "Graphics/Renderer.h" "Graphics/Renderer.cpp" "Graphics/ReflectiveSurfaceRendering.cpp" "Graphics/ReflectiveSurfaceRendering.h" "Graphics/BloomRendering.h" "Graphics/BloomRendering.cpp" "Graphics/AmbientOcclusionRendering.h" "Graphics/AmbientOcclusionRendering.cpp" "Network/NetworkBase.h" "Plugins/Shared/Uno/UnoBase.h" "Plugins/Client/Uno/NetHandlers.cpp")
+add_library(Uno SHARED ${ProtoSources} ${ProtoHeaders} "Plugins/Client/Uno/Uno.cpp" "Plugins/Client/Uno/Card.h" "Plugins/Client/Uno/Card.cpp" ${IMGUI_BASE_SOURCES} ${LOCAL_COLLECTION_SOURCES} ${OPENGL_SOURCES} "Plugins/Client/Uno/Animator.h" "Plugins/Client/Uno/Animator.cpp" "Plugins/Client/Uno/Pointer.h" "Plugins/Client/Uno/Pointer.cpp" "Graphics/Scene.h" "Graphics/Scene.cpp" "Graphics/Renderer.h" "Graphics/Renderer.cpp" "Graphics/ReflectiveSurfaceRendering.cpp" "Graphics/ReflectiveSurfaceRendering.h" "Graphics/BloomRendering.h" "Graphics/BloomRendering.cpp" "Graphics/AmbientOcclusionRendering.h" "Graphics/AmbientOcclusionRendering.cpp" "Network/NetworkBase.h" "Plugins/Shared/Uno/UnoBase.h" "Plugins/Client/Uno/NetHandlers.cpp")
 
-add_library(UnoServer SHARED "Plugins/Server/Uno/Uno.cpp" "Plugins/Shared/Uno/UnoBase.h" "Plugins/Shared/Uno/UnoMessages.pb.cc")
+add_library(UnoServer SHARED "Plugins/Server/Uno/Uno.cpp" "Plugins/Shared/Uno/UnoBase.h" ${ProtoSources} ${ProtoHeaders})
 
 if(EMSCRIPTEN)
-set_target_properties(Uno PROPERTIES LINK_FLAGS "-s FULL_ES3=1 -s USE_GLFW=3")
+	set_target_properties(Uno PROPERTIES LINK_FLAGS "-s FULL_ES3=1 -s USE_GLFW=3")
 endif()
 
 

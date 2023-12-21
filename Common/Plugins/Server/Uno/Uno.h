@@ -89,6 +89,7 @@ struct UnoData
 	CardData topCard;
 	uint16_t playerInTurnIdx = 0xFFFF;
 	uint16_t accumulatedPull = 0;
+    std::vector<uint16_t> winnerQueue;
 	bool forward = true;
     bool cur_made_action = false;
 };

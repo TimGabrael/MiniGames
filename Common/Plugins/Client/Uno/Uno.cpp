@@ -244,7 +244,6 @@ void UnoPlugin::Init(ApplicationData* data)
 		glBindBuffer(GL_UNIFORM_BUFFER, g_objs->playerCam.uniform);
 		glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraData), nullptr, GL_DYNAMIC_DRAW);
 	}
-	void* pbrModel = CreateInternalPBRFromFile("Assets/Helmet.gltf", 1.0f);
 
 
 	// CREATE SCENE
@@ -279,11 +278,6 @@ void UnoPlugin::Init(ApplicationData* data)
 		light->data.mapper[0].end = { 1.0f, 1.0f };
 		light->data.mapper[0].viewProj = g_objs->shadowCam.viewProj;
 		light->data.numCascades = 1;
-
-
-		UBOParams params = UBOParams();
-		g_objs->helmet = AddPbrModelToScene(g_objs->UnoScene, pbrModel, params, glm::translate(glm::mat4(1.0f), glm::vec3(-2.0f, 0.7f, -2.0f)));
-		g_objs->helmet->flags &= ~(SCENE_OBJECT_BLEND);
 	}
     
     g_objs->environment = LoadEnvironmentMaps("Assets/CitySkybox/environment.env");
@@ -320,8 +314,6 @@ void UnoPlugin::Init(ApplicationData* data)
 #ifndef ANDROID
 	glEnable(GL_MULTISAMPLE);
 #endif
-
-
 }
 
 
@@ -336,7 +328,6 @@ void UnoPlugin::Resize(ApplicationData* data)
 	GLint defaultFBO;
 	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &defaultFBO);
 	SetScreenFramebuffer(defaultFBO, { sizeX, sizeY });
-
 
 	g_objs->rendererData.Recreate(sizeX, sizeY, SHADOW_TEXTURE_SIZE, SHADOW_TEXTURE_SIZE);
 	g_objs->rendererData.MakeMainFramebuffer();
@@ -446,7 +437,7 @@ void UnoPlugin::Render(ApplicationData* data)
 
 		stdData.renderSize = { mainSize.x, mainSize.y };
 
-		RenderAmbientOcclusion(g_objs->UnoScene, &stdData, &g_objs->rendererData, (float)sizeX, (float)sizeY);
+		RenderAmbientOcclusion(g_objs->UnoScene, &stdData, &g_objs->rendererData, (float)this->sizeX, (float)this->sizeY);
 		glBindFramebuffer(GL_FRAMEBUFFER, GetMainFramebuffer());
 		glViewport(0, 0, mainSize.x, mainSize.y);
 		RenderSceneStandard(g_objs->UnoScene, &stdData);
@@ -455,27 +446,54 @@ void UnoPlugin::Render(ApplicationData* data)
 
 		DrawUI();
         
-		ImGui::Begin("_pull_button", nullptr, ImGuiWindowFlags_::ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_::ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_::ImGuiWindowFlags_NoMove);
-        ImGui::SetWindowSize(ImVec2(400, 400));
-        if(game.playerInTurn == backendData->localPlayer.clientID) {
-            ImGui::Text("It's your turn!");
-            bool pressed = ImGui::Button("Pull-Cards", ImVec2(200, 100));
-            if (g_objs->anims.inputsAllowed && pressed) {
-                backendData->net->SendData(Client_UnoPullCards, nullptr, SendFlags::Send_Reliable);
+        if(!game.finished) {
+            ImGui::Begin("_pull_button", nullptr, ImGuiWindowFlags_::ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_::ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_::ImGuiWindowFlags_NoMove);
+            ImGui::SetWindowSize(ImVec2(400, 400));
+            if(game.playerInTurn == backendData->localPlayer.clientID) {
+                ImGui::Text("It's your turn!");
+                bool pressed = ImGui::Button("Pull-Cards", ImVec2(200, 100));
+                if (g_objs->anims.inputsAllowed && pressed) {
+                    backendData->net->SendData(Client_UnoPullCards, nullptr, SendFlags::Send_Reliable);
+                }
+                pressed = ImGui::Button("Finish", ImVec2(200, 100));
+                if(g_objs->anims.inputsAllowed && pressed) {
+                    uno::ClientPlayCard skip;
+                    skip.mutable_card()->set_face(CARD_UNKNOWN);
+                    skip.mutable_card()->set_color(CARD_COLOR_UNKOWN);
+                    backendData->net->SendData(Client_UnoPlayCard, &skip, SendFlags::Send_Reliable);
+                }
+                pressed = ImGui::Button("QUIT", ImVec2(200, 100));
+                if(pressed) {
+                    data->isRunning = false;
+                }
             }
-            pressed = ImGui::Button("Finish", ImVec2(200, 100));
-            if(g_objs->anims.inputsAllowed && pressed) {
-                uno::ClientPlayCard skip;
-                skip.mutable_card()->set_face(CARD_UNKNOWN);
-                skip.mutable_card()->set_color(CARD_COLOR_UNKOWN);
-                backendData->net->SendData(Client_UnoPlayCard, &skip, SendFlags::Send_Reliable);
+            else {
+                bool pressed = ImGui::Button("QUIT", ImVec2(200, 100));
+                if (pressed) {
+                    data->isRunning = false;
+                }
             }
-            pressed = ImGui::Button("QUIT", ImVec2(200, 100));
-            if(pressed) {
+            ImGui::End();
+        }
+        else {
+            ImGui::Begin("_statistics", nullptr, ImGuiWindowFlags_::ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_::ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_::ImGuiWindowFlags_NoMove);
+            const float statistics_w = (float)this->sizeX * 2.0f / 3.0f;
+            const float statistics_h = (float)this->sizeY * 2.0f / 3.0f;
+            const float statistics_sx = ((float)this->sizeX - statistics_w) * 0.5f;
+            const float statistics_sy = ((float)this->sizeY - statistics_h) * 0.5f;
+            ImGui::SetWindowSize(ImVec2(statistics_w, statistics_h));
+            ImGui::SetWindowPos(ImVec2(statistics_sx, statistics_sy));
+            ImGui::Text("Statistics");
+            bool pressed = ImGui::Button("QUIT", ImVec2(200, 100));
+            if (pressed) {
                 data->isRunning = false;
             }
+
+            if(backendData->localPlayer.isAdmin) {
+
+            }
+            ImGui::End();
         }
-		ImGui::End();
 
 		EndScene();
 
@@ -517,8 +535,8 @@ void UnoPlugin::KeyDownCallback(Key k, bool isRepeat)
 }
 void UnoPlugin::KeyUpCallback(Key k, bool isRepeat)
 {
-	GameStateData& game = *GetGameState();
 #ifdef ALLOW_FREEMOVEMENT
+    GameStateData& game = *GetGameState();
 	if (!isRepeat)
 	{
 		if (k == Key::Key_W)g_objs->moveComp.SetMovementDirection(MovementComponent::DIRECTION::FORWARD, false);

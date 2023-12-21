@@ -6,8 +6,6 @@
 
 #ifdef _WIN32
 #include "DarkModeUtil.h"
-#include <Windows.h>
-#include <iostream>
 #endif
 #include <qapplication.h>
 #include <qpushbutton.h>

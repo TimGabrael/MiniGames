@@ -19,6 +19,11 @@ static void* __stdcall ResyncDeserializer(char* packet, int packetSize) {
     if(sync.ParseFromArray(packet, packetSize)) return &sync;
     return nullptr;
 }
+static void* __stdcall FinishedDeserializer(char* packet, int packetSize) {
+    static uno::ServerGameFinished fin;
+    if(fin.ParseFromArray(packet, packetSize)) return &fin;
+    return nullptr;
+}
 
 static bool __stdcall PlayCardCallback(ApplicationData* app, uno::ServerPlayCard* play, int packetSize)
 {
@@ -80,6 +85,13 @@ static bool __stdcall ResyncCallback(ApplicationData* app, uno::ServerResync* sy
     }
     return true;
 }
+static bool __stdcall FinishedCallback(ApplicationData* app, uno::ServerGameFinished* sync, int packetSize) {
+    UnoPlugin* uno = GetInstance();
+    GameStateData* data = GetGameState();
+    data->finished = true;
+    // todo: let the admin restart the game or quit
+    return true;
+}
 
 
 void UnoFillNetHandlers(struct ApplicationData *data) {
@@ -87,9 +99,11 @@ void UnoFillNetHandlers(struct ApplicationData *data) {
     data->net->SetDeserializer(PlayCardDeserializer, Server_UnoPlayCard);
     data->net->SetDeserializer(PullCardsDeserializer, Server_UnoPullCards);
     data->net->SetDeserializer(ResyncDeserializer, Server_UnoResync);
+    data->net->SetDeserializer(FinishedDeserializer, Server_UnoFinished);
     data->net->SetCallback((ClientPacketFunction)PlayCardCallback, Server_UnoPlayCard);
     data->net->SetCallback((ClientPacketFunction)PullCardCallback, Server_UnoPullCards);
     data->net->SetCallback((ClientPacketFunction)ResyncCallback,  Server_UnoResync);
+    data->net->SetCallback((ClientPacketFunction)FinishedCallback, Server_UnoFinished);
 
 }
 

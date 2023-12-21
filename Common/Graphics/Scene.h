@@ -75,8 +75,6 @@ struct SceneObject {
     virtual void DrawBlend(StandardRenderPassData* pass) = 0;
     virtual void DrawBlendClip(ReflectPlanePassData* pass) = 0;
     virtual void DrawOpaqueClip(ReflectPlanePassData* pass) = 0;
-
-
 };
 
 

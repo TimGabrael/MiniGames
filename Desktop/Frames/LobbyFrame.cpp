@@ -28,7 +28,7 @@ constexpr QSize gamePopUpSize = { 400, 300 };
 class GameInfo : public QWidget
 {
 public:
-	GameInfo(QWidget* parent, const QString& imgPath, uint16_t plID) : QWidget(parent), img(imgPath), voteCount(0), anim(this), plugID(plID) { 
+	GameInfo(QWidget* parent, const QString& imgPath, uint16_t plID) : QWidget(parent), anim(this), img(imgPath), plugID(plID), voteCount(0) { 
 		setMinimumSize(gamePopUpSize); setMaximumSize(gamePopUpSize); anim.SetDuration(300); selected = nullptr;
 	}
 
@@ -205,8 +205,6 @@ public:
 			vertical_layout1->setSpacing(30);
 			vertical_layout1->setContentsMargins(30, 30, 30, 30);
 
-			QSize gamePrevSize(400, 300);
-
 			{
 				MainApplication* app = MainApplication::GetInstance();
 
@@ -292,8 +290,6 @@ public:
 	{
 		//this->setPalette(QPalette(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF));
 		QGridLayout* grid_layout = new QGridLayout(this);
-		
-		ApplicationData& data = MainApplication::GetInstance()->appData;
 		
 		startBtn = new CustomButton("START", this);
 		time = new QLabel("Remaining Time: -1", this);
@@ -385,7 +381,6 @@ public:
 
 private:
 	CustomButton* startBtn = nullptr;
-	CustomTextInput* timeIn = nullptr;
 	CustomCheckBox* adminChooses = nullptr;
 	QLabel* time = nullptr;
 	int maxTimer = 30;
@@ -463,8 +458,6 @@ LobbyFrame::LobbyFrame(QMainWindow* parent) : StateFrame(parent)
 
 			adminWidget = new AdminWidget(this);
 			horizontal_layout->addWidget(adminWidget, 4, Qt::AlignTop | Qt::AlignLeft);
-
-
 		}
 		vertical_layout->addLayout(horizontal_layout, 20);
 	

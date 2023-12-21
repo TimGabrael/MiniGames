@@ -71,6 +71,7 @@ enum ServerUnoMessages
 	Server_UnoPullCards = NUM_SERVER_BASE_MESSAGES,
 	Server_UnoPlayCard,
     Server_UnoResync,
+	Server_UnoFinished,
 };
 
 

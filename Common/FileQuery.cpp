@@ -40,7 +40,7 @@ FileContent LoadFileContent(void* backendData, const char* filePath)
 	fseek(f, 0L, SEEK_END);
 	size_t sz = ftell(f);
 	outContent.data = new unsigned char[sz];
-	outContent.size = sz;
+	outContent.size = (int)sz;
 	fseek(f, 0L, SEEK_SET);
 
 	READFILE(f, outContent.data, sz);

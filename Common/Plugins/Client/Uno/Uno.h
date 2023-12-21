@@ -37,6 +37,7 @@ struct GameStateData
 	GAME_STATE state = STATE_PENDING;
 	bool isChoosingColor = false;
 	bool isClockwise = true;
+    bool finished = false;
 
 	PlayerInfo* GetPlayerInfo(uint16_t id) { for (int i = 0; i < players.size(); i++) { if (players.at(i).id == id) return &players.at(i); } return nullptr; }
 	PlayerInfo* GetPlayerInfoForcefully(uint16_t id);
@@ -107,3 +108,4 @@ UnoPlugin* GetInstance();
 GameStateData* GetGameState();
 
 PLUGIN_EXPORTS();
+

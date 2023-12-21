@@ -214,6 +214,37 @@ static bool __stdcall UnoPlayCardCallback(NetServerInfo* info, ServerConnection*
                             }
                         }
                         p.cardHand.cards.erase(p.cardHand.cards.begin() + i);
+                        if(p.cardHand.cards.empty()) 
+                        {
+                            uno->data->winnerQueue.push_back(p.clientID);
+                            int nonZeroCount = 0;
+                            for(size_t j = 0; j < uno->data->playerData.size(); j++) 
+                            {
+                                if(!uno->data->playerData.at(j).cardHand.cards.empty()) 
+                                {
+                                    nonZeroCount += 1;
+                                }
+                            }
+                            if(nonZeroCount < 2) 
+                            {
+                                uno::ServerGameFinished finished;
+                                for(size_t j = 0; j < uno->data->winnerQueue.size(); j++) {
+                                    finished.add_player_ids(uno->data->winnerQueue.at(j));
+                                }
+                                if(info->net->SerializeAndStore(Server_UnoFinished, &finished)) 
+                                {
+                                    for (uint16_t j = 0; j < MAX_PLAYERS; j++)
+                                    {
+                                        ServerConnection* conn = info->net->GetConnection(j);
+                                        if (conn && info->net->CheckConnectionStateAndSend(conn))
+                                        {
+                                            info->net->SendData(conn, SendFlags::Send_Reliable);
+                                        }
+                                    }
+                                }
+
+                            }
+                        }
 					}
 					return true;
 					

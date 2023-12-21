@@ -9,6 +9,8 @@ find_package(Protobuf REQUIRED)
 include_directories(${Protobuf_INCLUDE_DIRS})
 add_compile_definitions(PROTOBUF_USE_DLLS)
 
+include_directories(${CMAKE_BINARY_DIR}/Common)
+
 
 set(ADDITIONAL_SOURCES "")
 set(COMMON_SOURCES "")
