@@ -79,6 +79,7 @@ void ClearCards();
 
 
 CardSceneObject* CreateCardBatchSceneObject(PScene scene);
+void FreeCardBatchSceneObject(PScene scene, CardSceneObject* obj);
 
 
 void DrawCards(const glm::mat4& proj, const glm::mat4& view, const glm::vec3& camPos, const glm::vec3& lDir, bool geomOnly);

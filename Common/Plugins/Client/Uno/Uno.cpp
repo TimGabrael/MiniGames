@@ -199,7 +199,6 @@ void UnoPlugin::Init(ApplicationData* data)
     Shader s;
     SH_Create(&s);
 
-	ImGui::GetIO().Fonts->AddFontFromFileTTF("Assets/consola.ttf", 32.0f);
 
 
 	GLint maxTexSize = 0;
@@ -210,6 +209,8 @@ void UnoPlugin::Init(ApplicationData* data)
 	g_objs = new UnoGlobals;
 	g_objs->moveComp.pos = { 0.0f, 2.6f, 3.0f };
 	g_objs->moveComp.SetRotation(-90.0f, -50.0f, 0.0f);
+    g_objs->largeFont = ImGui::GetIO().Fonts->AddFontFromFileTTF("Assets/consola.ttf", 32.0f);
+    g_objs->smallFont = ImGui::GetIO().Fonts->AddFontFromFileTTF("Assets/consola.ttf", 16.0f);
     
 	GameStateData& game = *GetGameState();
 
@@ -419,7 +420,6 @@ void UnoPlugin::Render(ApplicationData* data)
 			camData.camPos = g_objs->playerCam.pos;
 			camData.view = g_objs->playerCam.view;
 			camData.projection = g_objs->playerCam.perspective;
-
 			glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraData), &camData, GL_DYNAMIC_DRAW);
 		}
         stdData.shadowMap = g_objs->rendererData.shadowFBO.depth;
@@ -476,21 +476,45 @@ void UnoPlugin::Render(ApplicationData* data)
             ImGui::End();
         }
         else {
-            ImGui::Begin("_statistics", nullptr, ImGuiWindowFlags_::ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_::ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_::ImGuiWindowFlags_NoMove);
+            ImGui::Begin("_statistics", nullptr, ImGuiWindowFlags_::ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_::ImGuiWindowFlags_NoMove);
             const float statistics_w = (float)this->sizeX * 2.0f / 3.0f;
             const float statistics_h = (float)this->sizeY * 2.0f / 3.0f;
             const float statistics_sx = ((float)this->sizeX - statistics_w) * 0.5f;
             const float statistics_sy = ((float)this->sizeY - statistics_h) * 0.5f;
             ImGui::SetWindowSize(ImVec2(statistics_w, statistics_h));
             ImGui::SetWindowPos(ImVec2(statistics_sx, statistics_sy));
+            ImVec2 headerSize = ImGui::CalcTextSize("Statistics");
+            ImGui::SetCursorPosX((statistics_w - headerSize.x) / 2.0f);
             ImGui::Text("Statistics");
+            //ImGui::PushFont(g_objs->smallFont);
+            if(game.winnerQueue.size() < UINT16_MAX) { // this Should always be the case, but just in case ...
+                ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 0, 0, 255));
+                for(uint16_t i = 0; i != (uint16_t)game.winnerQueue.size(); i++) {
+                    PlayerInfo* cur = game.GetPlayerInfo(i);
+                    if(cur) {
+                        char text_buffer[500] = {};
+                        int text_len = sprintf_s(text_buffer, "%d %s", i + 1, cur->name.c_str());
+                        ImVec2 textSize = ImGui::CalcTextSize(text_buffer, text_buffer + text_len);
+                        ImGui::SetCursorPosX((statistics_w - textSize.x) / 2.0f);
+                        ImGui::Text("%s", text_buffer);
+                    }
+                }
+                ImGui::PopStyleColor();
+            }
+            //ImGui::PopFont();
+
+            if(backendData->localPlayer.isAdmin) {
+                ImGui::SetCursorPosY(statistics_h - 110);
+                bool pressed = ImGui::Button("RESTART", ImVec2(200, 100));
+                if (pressed) {
+                    backendData->net->SendData(Client_UnoAdminRestart, nullptr, SendFlags::Send_Reliable);
+                }
+            }
+            ImGui::SetCursorPosX(statistics_w - 210);
+            ImGui::SetCursorPosY(statistics_h - 110);
             bool pressed = ImGui::Button("QUIT", ImVec2(200, 100));
             if (pressed) {
                 data->isRunning = false;
-            }
-
-            if(backendData->localPlayer.isAdmin) {
-
             }
             ImGui::End();
         }
@@ -598,9 +622,10 @@ void UnoPlugin::TouchMoveCallback(int x, int y, int dx, int dy, int touchID)
 }
 void UnoPlugin::CleanUp()
 {
-    delete g_objs->helmet;
-    delete g_objs->cardRenderObject;
     delete g_objs->basePlatform;
+    FreeCardBatchSceneObject(g_objs->UnoScene, g_objs->cardRenderObject);
+    g_objs->cardRenderObject = nullptr;
+
     UnloadEnvironmentMaps(&g_objs->environment);
     
 	DestroySingleFBO(&g_objs->reflectFBO);

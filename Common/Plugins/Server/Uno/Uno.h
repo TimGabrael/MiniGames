@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <random>
 
-#define CARDS_PULLED_AT_START 10
+#define CARDS_PULLED_AT_START 1
 
 #define CARD_ROW1(COLOR)CardData(CardFace::CARD_VAL_0, COLOR), CardData(CardFace::CARD_VAL_1, COLOR),\
 						CardData(CardFace::CARD_VAL_2, COLOR), CardData(CardFace::CARD_VAL_3, COLOR),\

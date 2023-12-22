@@ -33,6 +33,7 @@ message ServerResync
 {
     repeated PullData sync = 1;
     required CardData top_card = 2;
+	required int32 next_player_in_turn = 3;
 }
 
 message ServerGameFinished

@@ -87,7 +87,7 @@ void SC_AddSceneObject(PScene scene, SceneObject* obj);
 ScenePointLight* SC_AddPointLight(PScene scene);
 SceneDirLight* SC_AddDirectionalLight(PScene scene);
 
-void SC_RemoveSceneObject(PScene scene, uint32_t typeIndex, SceneObject* rmObj);
+void SC_RemoveSceneObject(PScene scene, SceneObject* rmObj);
 
 void SC_RemovePointLight(PScene scene, ScenePointLight* light);
 void SC_RemoveDirectionalLight(PScene scene, SceneDirLight* light);

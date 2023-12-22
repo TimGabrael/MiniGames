@@ -32,6 +32,7 @@ struct GameStateData
 	ColorPicker picker;
 	std::vector<PlayerInfo> players;
 	std::vector<CardHand>* hands;
+    std::vector<uint16_t> winnerQueue;
 	CardData topCard;
 	uint16_t playerInTurn = 0xFFFF;
 	GAME_STATE state = STATE_PENDING;
@@ -73,7 +74,8 @@ struct UnoGlobals
 	PScene UnoScene = nullptr;
 	SceneObject* basePlatform = nullptr;
 	CardSceneObject* cardRenderObject = nullptr;
-    PBRSceneObject* helmet = nullptr;
+    struct ImFont* largeFont = nullptr;
+    struct ImFont* smallFont = nullptr;
 	int offscreenX = 0;
 	int offscreenY = 0;
 	float cardHandlingTimer = 0.0f;

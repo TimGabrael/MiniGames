@@ -65,11 +65,13 @@ enum ClientUnoMessages
 {
 	Client_UnoPlayCard = NUM_CLIENT_BASE_MESSAGES,
 	Client_UnoPullCards,
+	Client_UnoAdminRestart,
 };
 enum ServerUnoMessages
 {
 	Server_UnoPullCards = NUM_SERVER_BASE_MESSAGES,
 	Server_UnoPlayCard,
+	Server_UnoRestart,
     Server_UnoResync,
 	Server_UnoFinished,
 };

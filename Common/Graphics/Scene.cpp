@@ -198,7 +198,7 @@ SceneDirLight* SC_AddDirectionalLight(PScene scene)
 	return out;
 }
 
-void SC_RemoveSceneObject(PScene scene, uint32_t typeIndex, SceneObject* rmObj)
+void SC_RemoveSceneObject(PScene scene, SceneObject* rmObj)
 {
 	assert(scene != nullptr);
 	_ImplScene* sc = (_ImplScene*)scene;

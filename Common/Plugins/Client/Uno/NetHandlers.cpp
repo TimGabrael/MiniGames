@@ -74,35 +74,52 @@ static bool __stdcall PullCardCallback(ApplicationData* app, uno::ServerPullCard
 		}
 	}
 	game->playerInTurn = pull->next_player_in_turn();
+    game->finished = false;
 	return true;
 }
 static bool __stdcall ResyncCallback(ApplicationData* app, uno::ServerResync* sync, int packetSize) {
     UnoPlugin* uno = GetInstance();
-    GameStateData* data = GetGameState();
+    GameStateData* game = GetGameState();
+    int activeHands = 0;
     for(const auto& cl : sync->sync()) {
-        PlayerInfo* info = data->GetPlayerInfoForcefully(cl.client_id());
-        // todo: change all cards of the current player
+        PlayerInfo* info = game->GetPlayerInfoForcefully(cl.client_id());
+        info->hand->cards.clear();
+        if(cl.cards_size() > 0) activeHands += 1;
+        for(auto& c : cl.cards()) {
+			CardData card((CardFace)c.face(), (CardColor)c.color());
+			CARD_ID addCard = CARD_ID_BLANK;
+			COLOR_ID temp = COLOR_INVALID;
+			CardDataToRenderCard(card, addCard, temp);
+			info->hand->PullCardServer(uno->g_objs->playerCam, uno->g_objs->stack, uno->g_objs->deck, uno->g_objs->anims, addCard);
+        }
     }
+    game->topCard.color = (CardColor)sync->top_card().color();
+    game->topCard.face = (CardFace)sync->top_card().face();
+    game->playerInTurn = sync->next_player_in_turn();
+    game->finished = activeHands > 1 ? false : true;
     return true;
 }
-static bool __stdcall FinishedCallback(ApplicationData* app, uno::ServerGameFinished* sync, int packetSize) {
-    UnoPlugin* uno = GetInstance();
+static bool __stdcall FinishedCallback(ApplicationData* app, uno::ServerGameFinished* fin, int packetSize) {
     GameStateData* data = GetGameState();
     data->finished = true;
-    // todo: let the admin restart the game or quit
+    data->winnerQueue.clear();
+    for(uint32_t id : fin->player_ids()) {
+        data->winnerQueue.push_back(id);
+    }
+    
     return true;
 }
 
-
 void UnoFillNetHandlers(struct ApplicationData *data) {
-
     data->net->SetDeserializer(PlayCardDeserializer, Server_UnoPlayCard);
     data->net->SetDeserializer(PullCardsDeserializer, Server_UnoPullCards);
     data->net->SetDeserializer(ResyncDeserializer, Server_UnoResync);
+    data->net->SetDeserializer(ResyncDeserializer, Server_UnoRestart);
     data->net->SetDeserializer(FinishedDeserializer, Server_UnoFinished);
     data->net->SetCallback((ClientPacketFunction)PlayCardCallback, Server_UnoPlayCard);
     data->net->SetCallback((ClientPacketFunction)PullCardCallback, Server_UnoPullCards);
     data->net->SetCallback((ClientPacketFunction)ResyncCallback,  Server_UnoResync);
+    data->net->SetCallback((ClientPacketFunction)ResyncCallback,  Server_UnoRestart);
     data->net->SetCallback((ClientPacketFunction)FinishedCallback, Server_UnoFinished);
 
 }

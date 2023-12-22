@@ -6,7 +6,6 @@
 SERVER_PLUGIN_EXPORT_DEFINITION(Uno);
 
 
-#define CARDS_PULLED_AT_START 10
 
 static uint16_t UnoGetCurrentPlayerID(Uno* uno)
 {
@@ -39,6 +38,71 @@ static void UnoSkipPlayer(Uno* uno)
     }
 }
 
+static void __stdcall UnoSendFullInformation(NetServerInfo* info, ServerConnection* client, uint16_t packetId) {
+	if (info->net->CheckConnectionStateAndSend(client))
+	{
+		Uno* uno = (Uno*)info->plugin;
+
+		const uint16_t playerID = UnoGetCurrentPlayerID(uno);
+
+		// tell about all cards
+		{
+            uno::ServerResync sync;
+			for (int i = 0; i < uno->data->playerData.size(); i++)
+			{
+				PlayerData& p = uno->data->playerData.at(i);
+				uno::PullData* pull = sync.mutable_sync()->Add();
+				pull->set_client_id(p.clientID);
+				for (int j = 0; j < p.cardHand.cards.size(); j++)
+				{
+
+					uno::CardData* card = pull->mutable_cards()->Add();
+					if (client->id == p.clientID)
+					{
+						const CardData& c = p.cardHand.cards.at(j);
+						card->set_color(c.color);
+						card->set_face(c.face);
+					}
+					else
+					{
+						card->set_color(CardColor::CARD_COLOR_UNKOWN);
+						card->set_face(CardFace::CARD_UNKNOWN);
+					}
+				}
+			}
+			sync.set_next_player_in_turn(playerID);
+            sync.mutable_top_card()->set_face(uno->data->topCard.face);
+            sync.mutable_top_card()->set_color(uno->data->topCard.color);
+            if(info->net->SerializeAndStore(packetId, &sync)) {
+                info->net->SendData(client, SendFlags::Send_Reliable);
+            }
+		}
+	}
+}
+static void UnoRestartGame(NetServerInfo* s, UnoData* data) {
+    data->playerData.clear();
+    for (uint16_t i = 0; i < MAX_PLAYERS; i++)
+    {
+        ServerConnection* conn = s->net->GetConnection(i);
+        if (conn) {
+            PlayerData player;
+            player.clientID = conn->id;
+            player.name = conn->name;
+            for (int i = 0; i < CARDS_PULLED_AT_START; i++)
+            {
+                player.cardHand.cards.push_back(data->cardDeck.PullCard());
+            }
+            data->playerData.push_back(std::move(player));
+        }
+    }
+    for (uint16_t i = 0; i < MAX_PLAYERS; i++)
+    {
+        ServerConnection* conn = s->net->GetConnection(i);
+        if (conn) {
+            UnoSendFullInformation(s, conn, Server_UnoRestart);
+        }
+    }
+}
 static void __stdcall UnoStateChangeCallback(NetServerInfo* info, ServerConnection* client)
 {
 	if (info->net->CheckConnectionStateAndSend(client))
@@ -227,6 +291,14 @@ static bool __stdcall UnoPlayCardCallback(NetServerInfo* info, ServerConnection*
                             }
                             if(nonZeroCount < 2) 
                             {
+                                for(size_t j = 0; j < uno->data->playerData.size(); j++) 
+                                {
+                                    if(!uno->data->playerData.at(j).cardHand.cards.empty()) 
+                                    {
+                                        uno->data->winnerQueue.push_back(uno->data->playerData.at(j).clientID);
+                                    }
+                                }
+
                                 uno::ServerGameFinished finished;
                                 for(size_t j = 0; j < uno->data->winnerQueue.size(); j++) {
                                     finished.add_player_ids(uno->data->winnerQueue.at(j));
@@ -298,7 +370,13 @@ static bool __stdcall UnoPullCardsCallback(NetServerInfo* info, ServerConnection
 	}
 	return true;
 }
-
+static bool __stdcall UnoAdminRestartCallback(NetServerInfo* info, ServerConnection* client, void* restart, int packetSize) {
+    Uno* uno = (Uno*)info->plugin;
+    if(client->isAdmin) {
+        UnoRestartGame(info, uno->data);
+    }
+    return true;
+}
 
 void Uno::Initialize(NetServerInfo* s)
 {
@@ -307,8 +385,10 @@ void Uno::Initialize(NetServerInfo* s)
 	s->net->SetClientStateCallback((ServerClientStateChangeCallbackFunction)UnoStateChangeCallback);
 	s->net->SetDeserializer(UnoPlayCardDeserializer, Client_UnoPlayCard);
 	s->net->SetDeserializer(nullptr, Client_UnoPullCards);
+	s->net->SetDeserializer(nullptr, Client_UnoAdminRestart);
 	s->net->SetCallback((ServerPacketFunction)UnoPlayCardCallback, Client_UnoPlayCard);
 	s->net->SetCallback((ServerPacketFunction)UnoPullCardsCallback, Client_UnoPullCards);
+	s->net->SetCallback((ServerPacketFunction)UnoAdminRestartCallback, Client_UnoAdminRestart);
 
 	for (uint16_t i = 0; i < MAX_PLAYERS; i++)
 	{

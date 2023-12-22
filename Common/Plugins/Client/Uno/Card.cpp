@@ -333,6 +333,10 @@ CardSceneObject* CreateCardBatchSceneObject(PScene scene)
     SC_AddSceneObject(scene, obj);
 	return obj;
 }
+void FreeCardBatchSceneObject(PScene scene, CardSceneObject* obj) {
+    SC_RemoveSceneObject(scene, obj);
+    delete obj;
+}
 
 int FillCardListAndMapToBuffer(const glm::vec3& pos, bool backwards)
 {
