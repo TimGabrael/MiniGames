@@ -31,6 +31,8 @@ public:
 	GameInfo(QWidget* parent, const QString& imgPath, uint16_t plID) : QWidget(parent), anim(this), img(imgPath), plugID(plID), voteCount(0) { 
 		setMinimumSize(gamePopUpSize); setMaximumSize(gamePopUpSize); anim.SetDuration(300); selected = nullptr;
 	}
+    virtual ~GameInfo() {
+    }
 
 	static void Unselect()
 	{
@@ -66,11 +68,6 @@ public:
 
 	static GameInfo* selected;
 private:
-
-	LobbyFrame* GetLobbyFrame()
-	{
-		return (LobbyFrame*)this->parentWidget()->parentWidget();	// this->ContentWidget->LobbyFrame
-	}
 
 	virtual void paintEvent(QPaintEvent* e) override
 	{
@@ -184,26 +181,33 @@ public:
 	}
 	~ContentWidget()
 	{
-		for (auto& c : contentList)
-		{
-			delete c.element;
-		}
 	}
 
 	void Build()
 	{
-		if (contentArea) delete contentArea;
-		contentArea = nullptr;
-		setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-		setMinimumSize(100, 100);
-		this->setWidgetResizable(true);
-		setVerticalScrollBar(new CustomScrollBar(this));
+		QVBoxLayout* verticalLayout1 = nullptr;
+        if (contentArea) 
+        {
+            GameInfo::selected = nullptr;
+            ClearLayout(this->contentArea->layout());
+            verticalLayout1 = (QVBoxLayout*)this->contentArea->layout();
+        }
+        else 
+        {
+            contentArea = new QWidget(this);
+            verticalLayout1 = new QVBoxLayout(this);
+            contentArea->setLayout(verticalLayout1);
+            this->setWidget(contentArea);
+            setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+            setMinimumSize(100, 100);
+            this->setWidgetResizable(true);
+            this->setVerticalScrollBar(new CustomScrollBar(this));
+            verticalLayout1->setSpacing(30);
+            verticalLayout1->setContentsMargins(30, 30, 30, 30);
+        }
+        contentList.clear();
 
-		contentArea = new QWidget(this);
-		QVBoxLayout* vertical_layout1 = new QVBoxLayout(this);
 		{
-			vertical_layout1->setSpacing(30);
-			vertical_layout1->setContentsMargins(30, 30, 30, 30);
 
 			{
 				MainApplication* app = MainApplication::GetInstance();
@@ -227,15 +231,12 @@ public:
 					{
 						GameInfo* gInf = new GameInfo(this, info.previewResource, found);
 						contentList.push_back({ gInf, found });
-						vertical_layout1->addWidget(gInf);
+						verticalLayout1->addWidget(gInf);
 					}
 					
 				}
 			}
-
 		}
-		contentArea->setLayout(vertical_layout1);
-		this->setWidget(contentArea);
 	}
 
 	void UpdateFromData()
@@ -431,13 +432,13 @@ LobbyFrame::LobbyFrame(QMainWindow* parent) : StateFrame(parent)
 			area->setWidgetResizable(true);
 			area->setVerticalScrollBar(new CustomScrollBar(this));
 			{
-				QVBoxLayout* vertical_layout1 = new QVBoxLayout();
+				this->nameList = new QVBoxLayout();
 
 				playerScrollContent = new QWidget(this);
 				ApplicationData& data = MainApplication::GetInstance()->appData;
 				
 				QLabel* lab = new QLabel(data.localPlayer.name.c_str(), this);
-				vertical_layout1->addWidget(lab);
+				this->nameList->addWidget(lab);
 				if(data.localPlayer.isAdmin) lab->setPalette(QPalette(0xFFFF00, 0xFFFF00, 0xFFFF00, 0xFFFF00, 0xFFFF00, 0xFFFF00, 0xFFFF00));
 				else lab->setPalette(QPalette(0x00FF00, 0x00FF00, 0x00FF00, 0x00FF00, 0x00FF00, 0x00FF00, 0x00FF00));
 
@@ -445,11 +446,11 @@ LobbyFrame::LobbyFrame(QMainWindow* parent) : StateFrame(parent)
 				{
 					auto& p = data.players.at(i);
 					QLabel* lab = new QLabel(p.name.c_str(), this);
-					vertical_layout1->addWidget(lab);
+					this->nameList->addWidget(lab);
 					if (p.isAdmin) lab->setPalette(QPalette(0xffd700, 0xffd700, 0xffd700, 0xffd700, 0xffd700, 0xffd700, 0xffd700));
 				}
-				vertical_layout1->addStretch(1);
-				playerScrollContent->setLayout(vertical_layout1);
+				this->nameList->addStretch(1);
+				playerScrollContent->setLayout(this->nameList);
 				area->setWidget(playerScrollContent);
 			}
 			horizontal_layout->addWidget(area, 4);
@@ -500,48 +501,29 @@ void LobbyFrame::StartPlugin()
 }
 void LobbyFrame::Rebuild()
 {
-	this->gamesContent->Build();
+    ApplicationData& data = MainApplication::GetInstance()->appData;
+    ClearLayout(this->nameList);
+
+    QLabel* lab = new QLabel(data.localPlayer.name.c_str(), this);
+    this->nameList->addWidget(lab);
+    if(data.localPlayer.isAdmin) lab->setPalette(QPalette(0xFFFF00, 0xFFFF00, 0xFFFF00, 0xFFFF00, 0xFFFF00, 0xFFFF00, 0xFFFF00));
+    else lab->setPalette(QPalette(0x00FF00, 0x00FF00, 0x00FF00, 0x00FF00, 0x00FF00, 0x00FF00, 0x00FF00));
+
+    for (int i = 0; i < data.players.size(); i++)
+    {
+        auto& p = data.players.at(i);
+        QLabel* lab = new QLabel(p.name.c_str(), this);
+        this->nameList->addWidget(lab);
+        if (p.isAdmin) lab->setPalette(QPalette(0xffd700, 0xffd700, 0xffd700, 0xffd700, 0xffd700, 0xffd700, 0xffd700));
+    }
+    this->nameList->addStretch(1);
+    this->playerScrollContent->setLayout(this->nameList);
+    this->gamesContent->Build();
+
+	this->gamesContent->UpdateFromData();
+	this->adminWidget->UpdateFromData();
 }
 
-
-
-void LobbyFrame::AddPlayer(const std::string& name)
-{
-	QVBoxLayout* lay = (QVBoxLayout*)playerScrollContent->layout();
-	QLabel* label = new QLabel(name.c_str(), this);
-	int wdgtCount = lay->count();
-	lay->insertWidget(wdgtCount - 1, label);
-	label->show();
-}
-void LobbyFrame::RemovePlayer(const std::string& name)
-{
-	QLayout* lay = playerScrollContent->layout();
-	for (int i = 0; i < lay->count(); i++)
-	{
-		QLabel* lab = (QLabel*)lay->itemAt(i)->widget();
-		if (lab->text().toStdString() == name)
-		{
-			QLayoutItem* item = lay->takeAt(i);
-			delete item->widget();
-			delete item;
-			return;
-		}
-	}
-}
-
-void LobbyFrame::ReSync()
-{
-	ApplicationData& data = MainApplication::GetInstance()->appData;
-	{
-		QVBoxLayout* pLay = (QVBoxLayout*)playerScrollContent->layout();
-		ClearLayout(pLay);
-		for (int i = 0; i < data.players.size(); i++)
-		{
-			pLay->addWidget(new QLabel(data.players.at(i).name.c_str(), playerScrollContent));
-		}
-		pLay->addStretch(1);
-	}
-}
 
 void LobbyFrame::UpdateFromData()
 {

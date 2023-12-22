@@ -8,6 +8,7 @@ class GrowingCircleAnim : public QObject
 	Q_PROPERTY(qreal val WRITE SetInterpolationValue)
 public:
 	GrowingCircleAnim(QWidget* w);
+	~GrowingCircleAnim();
 	void SetDuration(int ms);
 
 	void Start();

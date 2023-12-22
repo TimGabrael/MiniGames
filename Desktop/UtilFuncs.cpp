@@ -117,7 +117,9 @@ void ClearLayout(QLayout* lay)
 	QLayoutItem* item;
 	while ((item = lay->takeAt(0)) != nullptr)
 	{
-		delete item->widget();
+        if(item->widget()) {
+            delete item->widget();
+        }
 		delete item;
 	}
 }

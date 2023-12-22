@@ -30,14 +30,14 @@ public:
 
 	static VoteData data;
 	std::string pluginCache;
-private:
 
+
+
+private:
 
 	AdminWidget* adminWidget = nullptr;
 
-	void AddPlayer(const std::string& name);
-	void RemovePlayer(const std::string& name);
-	void ReSync();
+    class QVBoxLayout* nameList = nullptr;
 	QWidget* playerScrollContent = nullptr;
 	ContentWidget* gamesContent = nullptr;
 	float timerCache;

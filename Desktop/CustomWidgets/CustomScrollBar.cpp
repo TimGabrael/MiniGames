@@ -28,6 +28,8 @@ height: 0px;\
 }");
 }
 
+CustomScrollBar::~CustomScrollBar() {
+}
 
 void CustomScrollBar::paintEvent(QPaintEvent* e)
 {

@@ -18,6 +18,11 @@ GrowingCircleAnim::GrowingCircleAnim(QWidget* w) : drawnWdgt(w)
 	anim->setEndValue(1.0);
 	anim->setDirection(QAbstractAnimation::Forward);
 }
+GrowingCircleAnim::~GrowingCircleAnim() 
+{
+    delete this->anim;
+
+}
 void GrowingCircleAnim::SetDuration(int ms)
 {
 	anim->setDuration(ms);
@@ -28,11 +33,9 @@ void GrowingCircleAnim::Draw(QPainter* p)
 	if (interpolationValue == 0.0) return;
 	
 	QRect rec = drawnWdgt->rect();
-	QRect geom = drawnWdgt->geometry();
 	int max = sqrt(rec.width() * rec.width() + rec.height() * rec.height()) * 2;
 
 	int radius = interpolationValue * max;
-
 
 	QColor brCol = AlphaBlend(endBrushCol, startBrushCol, interpolationValue);
 	QColor penCol = AlphaBlend(endPenCol, startPenCol, interpolationValue);

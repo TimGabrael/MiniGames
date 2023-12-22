@@ -19,7 +19,6 @@ static void NetworkPollFunction(MainApplication* app)
 		}
 		std::this_thread::sleep_for(std::chrono::duration<float>(0.1f));
 	}
-    LOG("ENDING THE NETWORK THREAD\n");
 }
 
 static void __stdcall NetJoinCallback(ApplicationData* c, ClientConnection* conn)
@@ -58,8 +57,13 @@ static void __stdcall NetJoinCallback(ApplicationData* c, ClientConnection* conn
 	
 	if (app->mainWindow && app->mainWindow->GetState() == MAIN_WINDOW_STATE::STATE_LOBBY)
 	{
-		app->mainWindow->SetState(MAIN_WINDOW_STATE::STATE_INVALID);
-		app->mainWindow->SetState(MAIN_WINDOW_STATE::STATE_LOBBY);
+        SafeAsyncUI([](MainWindow* wnd) {
+                if (wnd && wnd->GetState() == MAIN_WINDOW_STATE::STATE_LOBBY)
+                {
+                    LobbyFrame* frame = (LobbyFrame*)wnd->stateWidget;
+                    frame->Rebuild();
+                }
+        });
 	}
 
 }
@@ -74,6 +78,7 @@ static void __stdcall NetDisconnectCallback(ApplicationData* c, ClientConnection
 		SafeAsyncUI([](MainWindow* main) {
 			auto rect = main->geometry();
 			InfoPopup* popUp = new InfoPopup(main, "FAILED TO CONNECT TO SERVER", QPoint(rect.width() / 2, rect.height() - 100), 20, 0xFFFF0000, 3000);
+            (void)popUp;
 		});
 	}
 	else
@@ -90,8 +95,13 @@ static void __stdcall NetDisconnectCallback(ApplicationData* c, ClientConnection
 	
 	if (app->mainWindow && app->mainWindow->GetState() == MAIN_WINDOW_STATE::STATE_LOBBY)
 	{
-		app->mainWindow->SetState(MAIN_WINDOW_STATE::STATE_INVALID);
-		app->mainWindow->SetState(MAIN_WINDOW_STATE::STATE_LOBBY);
+        SafeAsyncUI([](MainWindow* wnd) {
+                if (wnd && wnd->GetState() == MAIN_WINDOW_STATE::STATE_LOBBY)
+                {
+                    LobbyFrame* frame = (LobbyFrame*)wnd->stateWidget;
+                    frame->Rebuild();
+                }
+        });
 	}
 	
 
@@ -154,6 +164,12 @@ static bool __stdcall NetPluginCallback(ApplicationData* c, base::ServerPlugin* 
 	int32_t sessionID = plugin->data().session_id();
 
 	app->serverPlugins.emplace_back(id, sessionID);
+    SafeAsyncUI([](MainWindow* wnd) {
+            if (wnd && wnd->GetState() == MAIN_WINDOW_STATE::STATE_LOBBY) {
+                LobbyFrame* frame = (LobbyFrame*)wnd->stateWidget;
+                frame->Rebuild();
+            }
+    });
 
 	plugin->Clear();
 	return true;
@@ -187,10 +203,6 @@ MainApplication::MainApplication(int& argc, char** argv) : QApplication(argc, ar
 	client = NetClient::Create();
 	appData.net = client;
 	client->appData = &appData;
-	//client->SetCallback((ClientPacketFunction)NetSetStateCallback, Server_SetState);
-	//client->SetCallback((ClientPacketFunction)NetPluginCallback, Server_Plugin);
-	//client->SetClientInfoCallback((ClientInfoCallbackFunction)NetJoinCallback);
-	//client->SetDisconnectCallback((ClientDisconnectCallbackFunction)NetDisconnectCallback);
     SetNetworkingLobbyState();
 
 }
