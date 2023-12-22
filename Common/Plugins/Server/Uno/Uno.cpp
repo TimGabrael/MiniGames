@@ -17,25 +17,28 @@ static uint16_t UnoGetCurrentPlayerID(Uno* uno)
 static void UnoNextPlayer(Uno* uno)
 {
     uno->data->cur_made_action = false;
-	if (uno->data->forward) uno->data->playerInTurnIdx = (uno->data->playerInTurnIdx + 1) % uno->data->playerData.size();
+	if (uno->data->forward) {
+        do {
+        uno->data->playerInTurnIdx = (uno->data->playerInTurnIdx + 1) % uno->data->playerData.size();
+        }
+        while(uno->data->playerData.at(uno->data->playerInTurnIdx).cardHand.cards.size() == 0);
+    }
 	else {
-        if(uno->data->playerInTurnIdx == 0) {
-            uno->data->playerInTurnIdx = (uint16_t)(uno->data->playerData.size() - 1);
+        do {
+            if(uno->data->playerInTurnIdx == 0) {
+                uno->data->playerInTurnIdx = (uint16_t)(uno->data->playerData.size() - 1);
+            }
+            else {
+                uno->data->playerInTurnIdx = (uno->data->playerInTurnIdx - 1);
+            }
         }
-        else {
-            uno->data->playerInTurnIdx = (uno->data->playerInTurnIdx - 1);
-        }
+        while(uno->data->playerData.at(uno->data->playerInTurnIdx).cardHand.cards.size() == 0);
     }
 }
 static void UnoSkipPlayer(Uno* uno)
 {
     uno->data->cur_made_action = false;
-	if (uno->data->forward) uno->data->playerInTurnIdx = (uno->data->playerInTurnIdx + 2) % uno->data->playerData.size();
-	else { 
-        if(uno->data->playerInTurnIdx == 0) uno->data->playerInTurnIdx = (uint16_t)(uno->data->playerData.size() - 2) % uno->data->playerData.size();
-        else if(uno->data->playerInTurnIdx == 1) uno->data->playerInTurnIdx = (uint16_t)(uno->data->playerData.size() - 1);
-        else uno->data->playerInTurnIdx = (uno->data->playerInTurnIdx - 2);
-    }
+    UnoNextPlayer(uno); UnoNextPlayer(uno);
 }
 
 static void __stdcall UnoSendFullInformation(NetServerInfo* info, ServerConnection* client, uint16_t packetId) {
@@ -432,6 +435,7 @@ void Uno::CleanUp()
 	net->net->SetDeserializer(nullptr, Client_UnoPullCards);
 	net->net->SetCallback(nullptr, Client_UnoPlayCard);
 	net->net->SetCallback(nullptr, Client_UnoPullCards);
+	net->net->SetCallback(nullptr, Client_UnoAdminRestart);
 
 }
 

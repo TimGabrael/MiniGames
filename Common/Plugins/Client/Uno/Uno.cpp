@@ -78,6 +78,8 @@ PlayerInfo* GameStateData::GetPlayerInfoForcefully(uint16_t id)
 	players.push_back(adding);
 	std::sort(players.begin(), players.end(), [](const PlayerInfo& a, const PlayerInfo& b) { return a.id > b.id; });
 
+    GetHandForcefully(id); // ensure that the new player gets a hand allocated
+
 	return GetPlayerInfoForcefully(id);
 }
 CardHand* GameStateData::GetHandForcefully(uint16_t id)

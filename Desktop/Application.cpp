@@ -75,6 +75,7 @@ static void __stdcall NetDisconnectCallback(ApplicationData* c, ClientConnection
 		app->appData.localPlayer.clientID = 0;
 		app->appData.localPlayer.isAdmin = false;
 		app->appData.localPlayer.name = "";
+        app->appData.players.clear();
 		SafeAsyncUI([](MainWindow* main) {
 			auto rect = main->geometry();
 			InfoPopup* popUp = new InfoPopup(main, "FAILED TO CONNECT TO SERVER", QPoint(rect.width() / 2, rect.height() - 100), 20, 0xFFFF0000, 3000);
