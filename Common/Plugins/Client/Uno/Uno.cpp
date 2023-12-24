@@ -488,7 +488,6 @@ void UnoPlugin::Render(ApplicationData* data)
             ImVec2 headerSize = ImGui::CalcTextSize("Statistics");
             ImGui::SetCursorPosX((statistics_w - headerSize.x) / 2.0f);
             ImGui::Text("Statistics");
-            //ImGui::PushFont(g_objs->smallFont);
             if(game.winnerQueue.size() < UINT16_MAX) { // this Should always be the case, but just in case ...
                 ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 0, 0, 255));
                 for(uint16_t i = 0; i != (uint16_t)game.winnerQueue.size(); i++) {
@@ -503,7 +502,6 @@ void UnoPlugin::Render(ApplicationData* data)
                 }
                 ImGui::PopStyleColor();
             }
-            //ImGui::PopFont();
 
             if(backendData->localPlayer.isAdmin) {
                 ImGui::SetCursorPosY(statistics_h - 110);
